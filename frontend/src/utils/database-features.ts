@@ -30,7 +30,7 @@ export function databaseSupportsScratchpad(databaseType: DatabaseType | string |
     // Try to get scratchpad support from the database configuration first
     const dbTypeItems = getDatabaseTypeDropdownItemsSync();
     const dbConfig = dbTypeItems.find(item => item.id === databaseType);
-    
+
     if (dbConfig?.supportsScratchpad != null) {
         return dbConfig.supportsScratchpad;
     }
@@ -58,7 +58,7 @@ export function databaseSupportsSchema(databaseType: DatabaseType | string | und
     // Try to get schema support from the database configuration first
     const dbTypeItems = getDatabaseTypeDropdownItemsSync();
     const dbConfig = dbTypeItems.find(item => item.id === databaseType);
-    
+
     if (dbConfig?.supportsSchema != null) {
         return dbConfig.supportsSchema;
     }
@@ -187,7 +187,7 @@ export function databaseUsesSchemaForGraph(databaseType: DatabaseType | string |
     return !databaseSupportsDatabaseSwitching(databaseType);
 }
 
-export function databasesUsesDatabaseInsteadOfSchema(databaseType: DatabaseType | string | undefined): boolean {
+export function databaseTypesThatUseDatabaseInsteadOfSchema(databaseType: DatabaseType | string | undefined): boolean {
     if (!databaseType) {
         return false;
     }

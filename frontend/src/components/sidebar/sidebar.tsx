@@ -37,8 +37,25 @@ import {
     toast,
     useSidebar
 } from "@clidey/ux";
-import { DatabaseType, useGetDatabaseQuery, useGetSchemaQuery, useGetVersionQuery, useLoginMutation, useLoginWithProfileMutation } from '@graphql';
-import { ArrowLeftStartOnRectangleIcon, ChevronDownIcon, CogIcon, CommandLineIcon, PlusIcon, QuestionMarkCircleIcon, RectangleGroupIcon, SparklesIcon, TableCellsIcon } from "@heroicons/react/24/outline";
+import {
+    DatabaseType,
+    useGetDatabaseQuery,
+    useGetSchemaQuery,
+    useGetVersionQuery,
+    useLoginMutation,
+    useLoginWithProfileMutation
+} from '@graphql';
+import {
+    ArrowLeftStartOnRectangleIcon,
+    ChevronDownIcon,
+    CogIcon,
+    CommandLineIcon,
+    PlusIcon,
+    QuestionMarkCircleIcon,
+    RectangleGroupIcon,
+    SparklesIcon,
+    TableCellsIcon
+} from "@heroicons/react/24/outline";
 import classNames from "classnames";
 import { FC, ReactElement, useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
@@ -50,7 +67,7 @@ import { LoginForm } from "../../pages/auth/login";
 import { AuthActions, LocalLoginProfile } from "../../store/auth";
 import { DatabaseActions } from "../../store/database";
 import { useAppSelector } from "../../store/hooks";
-import { databaseSupportsDatabaseSwitching, databaseSupportsSchema, databaseSupportsScratchpad, databasesUsesDatabaseInsteadOfSchema } from "../../utils/database-features";
+import { databaseSupportsSchema, databaseSupportsScratchpad, databaseTypesThatUseDatabaseInsteadOfSchema } from "../../utils/database-features";
 import { isEEFeatureEnabled } from "../../utils/ee-loader";
 import { getDatabaseStorageUnitLabel, isNoSQL } from "../../utils/functions";
 import { Icons } from "../icons";
@@ -78,7 +95,7 @@ export const Sidebar: FC = () => {
         variables: {
             type: current?.Type as DatabaseType,
         },
-        skip: current == null || !databasesUsesDatabaseInsteadOfSchema(current?.Type),
+        skip: current == null || databaseTypesThatUseDatabaseInsteadOfSchema(current?.Type),
     });
     const { data: availableSchemas, loading: availableSchemasLoading, refetch: getSchemas } = useGetSchemaQuery({
         onCompleted(data) {
@@ -314,7 +331,7 @@ export const Sidebar: FC = () => {
                                 {/* Database Select */}
                                 <div className={cn("flex flex-col gap-2 w-full", {
                                     "opacity-0 pointer-events-none": !open,
-                                    "hidden": !current || !databasesUsesDatabaseInsteadOfSchema(current?.Type),
+                                    "hidden": !current || databaseTypesThatUseDatabaseInsteadOfSchema(current?.Type),
                                 })}>
                                     <h2 className="text-sm">Database</h2>
                                     <SearchSelect
