@@ -144,6 +144,9 @@ chmod 644 "server/redis/redis.pem"
 # Elasticsearch - standard certs with xpack format
 generate_standard_certs "elasticsearch" "DNS.5 = e2e_elasticsearch_ssl"
 
+# CockroachDB - standard certs (uses same pgx driver as Postgres for SSL)
+generate_standard_certs "cockroachdb" "DNS.5 = e2e_cockroachdb_ssl"
+
 # ClickHouse - standard certs
 generate_standard_certs "clickhouse" "DNS.5 = e2e_clickhouse_ssl"
 
@@ -161,4 +164,5 @@ echo "  - mariadb"
 echo "  - mongodb"
 echo "  - redis"
 echo "  - elasticsearch"
+echo "  - cockroachdb"
 echo "  - clickhouse"

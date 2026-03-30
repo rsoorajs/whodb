@@ -54,6 +54,7 @@ func InitializeEngine() *engine.Engine {
 
 	// Register community edition plugins
 	MainEngine.RegistryPlugin(postgres.NewPostgresPlugin())
+	MainEngine.RegistryPlugin(postgres.NewCockroachDBPlugin())
 	MainEngine.RegistryPlugin(mysql.NewMySQLPlugin())
 	MainEngine.RegistryPlugin(mysql.NewMyMariaDBPlugin())
 	MainEngine.RegistryPlugin(sqlite3.NewSqlite3Plugin())

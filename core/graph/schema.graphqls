@@ -6,6 +6,7 @@ enum DatabaseType {
   Redis,
   ElasticSearch,
   MariaDB,
+  CockroachDB,
   ClickHouse,
 }
 

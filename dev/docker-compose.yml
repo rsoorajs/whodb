@@ -113,6 +113,28 @@ services:
     networks:
       - db
 
+  e2e_cockroachdb:
+    image: cockroachdb/cockroach:latest
+    container_name: e2e_cockroachdb
+    command: start-single-node --insecure --advertise-addr=e2e_cockroachdb
+    ports:
+      - "26257:26257"
+    volumes:
+      - e2e_cockroachdb:/cockroach/cockroach-data
+    networks:
+      - db
+
+  cockroachdb-init:
+    image: cockroachdb/cockroach:latest
+    depends_on:
+      - e2e_cockroachdb
+    volumes:
+      - ./sample-data/cockroachdb/data.sql:/data.sql:ro
+      - ./sample-data/cockroachdb/init.sh:/init.sh:ro
+    entrypoint: ["/bin/sh", "/init.sh"]
+    networks:
+      - db
+
   e2e_clickhouse:
     image: clickhouse/clickhouse-server
     user: clickhouse:clickhouse
@@ -367,6 +389,63 @@ services:
     networks:
       - db
 
+  # SSL-enabled CockroachDB for SSL E2E tests
+  e2e_cockroachdb_ssl:
+    profiles: ["ssl"]
+    image: cockroachdb/cockroach:latest
+    container_name: e2e_cockroachdb_ssl
+    command: >
+      bash -c "
+        mkdir -p /certs &&
+        cp /certs-src/ca.pem /certs/ca.crt &&
+        cp /certs-src/server-cert.pem /certs/node.crt &&
+        cp /certs-src/server-key.pem /certs/node.key &&
+        cp /certs-src/client-cert.pem /certs/client.root.crt &&
+        cp /certs-src/client-key.pem /certs/client.root.key &&
+        chmod 600 /certs/node.key /certs/client.root.key &&
+        chmod 644 /certs/ca.crt /certs/node.crt /certs/client.root.crt &&
+        exec cockroach start-single-node --certs-dir=/certs --advertise-addr=e2e_cockroachdb_ssl
+      "
+    ports:
+      - "26258:26257"
+    volumes:
+      - e2e_cockroachdb_ssl:/cockroach/cockroach-data
+      - ./certs/ca/cockroachdb/ca.pem:/certs-src/ca.pem:ro
+      - ./certs/server/cockroachdb/server-cert.pem:/certs-src/server-cert.pem:ro
+      - ./certs/server/cockroachdb/server-key.pem:/certs-src/server-key.pem:ro
+      - ./certs/client/cockroachdb/client-cert.pem:/certs-src/client-cert.pem:ro
+      - ./certs/client/cockroachdb/client-key.pem:/certs-src/client-key.pem:ro
+    networks:
+      - db
+
+  cockroachdb-ssl-init:
+    profiles: ["ssl"]
+    image: cockroachdb/cockroach:latest
+    depends_on:
+      - e2e_cockroachdb_ssl
+    volumes:
+      - ./sample-data/cockroachdb/data.sql:/data.sql:ro
+      - ./sample-data/cockroachdb/init.sh:/init.sh:ro
+      - ./certs/ca/cockroachdb/ca.pem:/certs/ca.crt:ro
+      - ./certs/client/cockroachdb/client-cert.pem:/certs/client.root.crt:ro
+      - ./certs/client/cockroachdb/client-key.pem:/certs/client.root.key:ro
+    environment:
+      COCKROACH_HOST: e2e_cockroachdb_ssl
+      COCKROACH_PORT: "26257"
+    entrypoint: >
+      sh -c "
+        cp /certs/client.root.key /tmp/client.root.key &&
+        chmod 600 /tmp/client.root.key &&
+        mkdir -p /tmp/certs &&
+        cp /certs/ca.crt /tmp/certs/ &&
+        cp /certs/client.root.crt /tmp/certs/ &&
+        cp /tmp/client.root.key /tmp/certs/ &&
+        COCKROACH_CERTS_DIR=/tmp/certs /init.sh &&
+        cockroach sql --certs-dir=/tmp/certs --host=e2e_cockroachdb_ssl:26257 -e \"ALTER USER test_user WITH PASSWORD 'password';\"
+      "
+    networks:
+      - db
+
   # SSL-enabled ClickHouse for SSL E2E tests
   e2e_clickhouse_ssl:
     profiles: ["ssl"]
@@ -458,6 +537,8 @@ volumes:
   e2e_mongo:
   e2e_mongo_noauth:
   e2e_mongo_ssl:
+  e2e_cockroachdb:
+  e2e_cockroachdb_ssl:
   e2e_clickhouse:
   e2e_clickhouse_ssl:
   e2e_redis:

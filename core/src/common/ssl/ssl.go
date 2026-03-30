@@ -108,9 +108,10 @@ var (
 
 // sslModeAliases maps database-native SSL mode names to our unified mode names.
 var sslModeAliases = map[engine.DatabaseType]map[string]SSLMode{
-	engine.DatabaseType_Postgres: postgresAliases,
-	engine.DatabaseType_MySQL:    mysqlAliases,
-	engine.DatabaseType_MariaDB:  mysqlAliases,
+	engine.DatabaseType_Postgres:    postgresAliases,
+	engine.DatabaseType_CockroachDB: postgresAliases,
+	engine.DatabaseType_MySQL:       mysqlAliases,
+	engine.DatabaseType_MariaDB:     mysqlAliases,
 }
 
 // Common mode sets for databases with similar SSL support
@@ -124,6 +125,7 @@ var (
 	// databaseSSLModes holds CE database SSL modes
 	databaseSSLModes = map[engine.DatabaseType][]SSLModeInfo{
 		engine.DatabaseType_Postgres:      modesStandard,
+		engine.DatabaseType_CockroachDB:   modesStandard,
 		engine.DatabaseType_MySQL:         modesWithPreferred,
 		engine.DatabaseType_MariaDB:       modesWithPreferred,
 		engine.DatabaseType_ClickHouse:    modesSimple,
