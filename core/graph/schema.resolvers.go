@@ -19,6 +19,7 @@ import (
 	"github.com/clidey/whodb/core/src/analytics"
 	"github.com/clidey/whodb/core/src/auth"
 	"github.com/clidey/whodb/core/src/aws"
+	"github.com/clidey/whodb/core/src/azure"
 	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/common/ssl"
 	"github.com/clidey/whodb/core/src/engine"
@@ -30,6 +31,7 @@ import (
 	"github.com/clidey/whodb/core/src/plugins"
 	"github.com/clidey/whodb/core/src/providers"
 	awsprovider "github.com/clidey/whodb/core/src/providers/aws"
+	azureprovider "github.com/clidey/whodb/core/src/providers/azure"
 	"github.com/clidey/whodb/core/src/settings"
 	"github.com/clidey/whodb/core/src/version"
 	"golang.org/x/sync/errgroup"
@@ -961,30 +963,50 @@ func (r *mutationResolver) TestAWSCredentials(ctx context.Context, input model.A
 
 // RemoveCloudProvider is the resolver for the RemoveCloudProvider field.
 func (r *mutationResolver) RemoveCloudProvider(ctx context.Context, id string) (*model.StatusResponse, error) {
-	if !env.IsAWSProviderEnabled {
-		return &model.StatusResponse{Status: false}, aws.ErrAWSProviderDisabled
+	// Try AWS
+	if env.IsAWSProviderEnabled {
+		if _, err := settings.GetAWSProvider(id); err == nil {
+			if err := settings.RemoveAWSProvider(id); err != nil {
+				return &model.StatusResponse{Status: false}, err
+			}
+			return &model.StatusResponse{Status: true}, nil
+		}
 	}
-
-	// Router pattern: when adding GCP, dispatch based on settings.GetProviderType(id).
-	// See .claude/docs/cloud-providers.md for full example.
-	err := settings.RemoveAWSProvider(id)
-	if err != nil {
-		return &model.StatusResponse{Status: false}, err
+	// Try Azure
+	if env.IsAzureProviderEnabled {
+		if _, err := settings.GetAzureProvider(id); err == nil {
+			if err := settings.RemoveAzureProvider(id); err != nil {
+				return &model.StatusResponse{Status: false}, err
+			}
+			return &model.StatusResponse{Status: true}, nil
+		}
 	}
-	return &model.StatusResponse{Status: true}, nil
+	return &model.StatusResponse{Status: false}, fmt.Errorf("provider not found: %s", id)
 }
 
 // TestCloudProvider is the resolver for the TestCloudProvider field.
 func (r *mutationResolver) TestCloudProvider(ctx context.Context, id string) (model.CloudProviderStatus, error) {
-	if !env.IsAWSProviderEnabled {
-		return model.CloudProviderStatusError, aws.ErrAWSProviderDisabled
+	// Try AWS
+	if env.IsAWSProviderEnabled {
+		if _, err := settings.GetAWSProvider(id); err == nil {
+			status, err := settings.TestAWSProvider(id)
+			if err != nil {
+				return model.CloudProviderStatusError, err
+			}
+			return mapCloudProviderStatus(status), nil
+		}
 	}
-
-	status, err := settings.TestAWSProvider(id)
-	if err != nil {
-		return model.CloudProviderStatusError, err
+	// Try Azure
+	if env.IsAzureProviderEnabled {
+		if _, err := settings.GetAzureProvider(id); err == nil {
+			status, err := settings.TestAzureProvider(id)
+			if err != nil {
+				return model.CloudProviderStatusError, err
+			}
+			return mapCloudProviderStatus(status), nil
+		}
 	}
-	return mapCloudProviderStatus(status), nil
+	return model.CloudProviderStatusError, fmt.Errorf("provider not found: %s", id)
 }
 
 // RefreshCloudProvider is the resolver for the RefreshCloudProvider field.
@@ -1031,6 +1053,172 @@ func (r *mutationResolver) GenerateRDSAuthToken(ctx context.Context, providerID 
 		return "", err
 	}
 	log.Infof("GenerateRDSAuthToken: token generated successfully (length=%d)", len(token))
+	return token, nil
+}
+
+// AddAzureProvider is the resolver for the AddAzureProvider field.
+func (r *mutationResolver) AddAzureProvider(ctx context.Context, input model.AzureProviderInput) (*model.AzureProvider, error) {
+	if !env.IsAzureProviderEnabled {
+		return nil, azure.ErrAzureProviderDisabled
+	}
+
+	id := settings.GenerateAzureProviderID(input.Name, input.SubscriptionID)
+
+	authMethod := "default"
+	if input.AuthMethod != nil && *input.AuthMethod != "" {
+		authMethod = *input.AuthMethod
+	} else if input.ClientID != nil && *input.ClientID != "" {
+		authMethod = "service-principal"
+	}
+
+	cfg := &settings.AzureProviderConfig{
+		ID:                 id,
+		Name:               input.Name,
+		SubscriptionID:     input.SubscriptionID,
+		TenantID:           derefStringOr(input.TenantID, ""),
+		ClientID:           derefStringOr(input.ClientID, ""),
+		AuthMethod:         authMethod,
+		ResourceGroup:      derefStringOr(input.ResourceGroup, ""),
+		DiscoverPostgreSQL: derefBoolOr(input.DiscoverPostgreSQL, true),
+		DiscoverMySQL:      derefBoolOr(input.DiscoverMySQL, true),
+		DiscoverRedis:      derefBoolOr(input.DiscoverRedis, true),
+		DiscoverCosmosDB:   derefBoolOr(input.DiscoverCosmosDb, true),
+	}
+
+	clientSecret := derefStringOr(input.ClientSecret, "")
+
+	state, err := settings.AddAzureProvider(cfg, clientSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	return stateToAzureProvider(state), nil
+}
+
+// UpdateAzureProvider is the resolver for the UpdateAzureProvider field.
+func (r *mutationResolver) UpdateAzureProvider(ctx context.Context, id string, input model.AzureProviderInput) (*model.AzureProvider, error) {
+	if !env.IsAzureProviderEnabled {
+		return nil, azure.ErrAzureProviderDisabled
+	}
+
+	existing, err := settings.GetAzureProvider(id)
+	if err != nil {
+		return nil, err
+	}
+
+	authMethod := existing.Config.AuthMethod
+	if input.AuthMethod != nil && *input.AuthMethod != "" {
+		authMethod = *input.AuthMethod
+	} else if input.ClientID != nil && *input.ClientID != "" {
+		authMethod = "service-principal"
+	}
+
+	cfg := &settings.AzureProviderConfig{
+		ID:                 id,
+		Name:               input.Name,
+		SubscriptionID:     input.SubscriptionID,
+		TenantID:           derefStringOr(input.TenantID, existing.Config.TenantID),
+		ClientID:           derefStringOr(input.ClientID, existing.Config.ClientID),
+		AuthMethod:         authMethod,
+		ResourceGroup:      derefStringOr(input.ResourceGroup, existing.Config.ResourceGroup),
+		DiscoverPostgreSQL: derefBoolOr(input.DiscoverPostgreSQL, existing.Config.DiscoverPostgreSQL),
+		DiscoverMySQL:      derefBoolOr(input.DiscoverMySQL, existing.Config.DiscoverMySQL),
+		DiscoverRedis:      derefBoolOr(input.DiscoverRedis, existing.Config.DiscoverRedis),
+		DiscoverCosmosDB:   derefBoolOr(input.DiscoverCosmosDb, existing.Config.DiscoverCosmosDB),
+	}
+
+	clientSecret := derefStringOr(input.ClientSecret, "")
+
+	state, err := settings.UpdateAzureProvider(id, cfg, clientSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	return stateToAzureProvider(state), nil
+}
+
+// TestAzureCredentials is the resolver for the TestAzureCredentials field.
+func (r *mutationResolver) TestAzureCredentials(ctx context.Context, input model.AzureProviderInput) (model.CloudProviderStatus, error) {
+	if !env.IsAzureProviderEnabled {
+		return model.CloudProviderStatusError, azure.ErrAzureProviderDisabled
+	}
+
+	authMethod := "default"
+	if input.AuthMethod != nil && *input.AuthMethod != "" {
+		authMethod = *input.AuthMethod
+	} else if input.ClientID != nil && *input.ClientID != "" {
+		authMethod = "service-principal"
+	}
+
+	cfg := &azureprovider.Config{
+		ID:             "test-temp",
+		Name:           input.Name,
+		SubscriptionID: input.SubscriptionID,
+		TenantID:       derefStringOr(input.TenantID, ""),
+		ClientID:       derefStringOr(input.ClientID, ""),
+		ClientSecret:   derefStringOr(input.ClientSecret, ""),
+		AuthMethod:     azure.AuthMethod(authMethod),
+	}
+
+	provider, err := azureprovider.New(cfg)
+	if err != nil {
+		return model.CloudProviderStatusError, err
+	}
+
+	testCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	if err := provider.TestConnection(testCtx); err != nil {
+		return model.CloudProviderStatusError, err
+	}
+
+	return model.CloudProviderStatusConnected, nil
+}
+
+// RefreshAzureProvider is the resolver for the RefreshAzureProvider field.
+func (r *mutationResolver) RefreshAzureProvider(ctx context.Context, id string) (*model.AzureProvider, error) {
+	if !env.IsAzureProviderEnabled {
+		return nil, azure.ErrAzureProviderDisabled
+	}
+
+	state, err := settings.RefreshAzureProvider(id)
+	if err != nil {
+		return stateToAzureProvider(state), err
+	}
+
+	return stateToAzureProvider(state), nil
+}
+
+// GenerateAzureADToken is the resolver for the GenerateAzureADToken field.
+func (r *mutationResolver) GenerateAzureADToken(ctx context.Context, providerID string, databaseType string) (string, error) {
+	if !env.IsAzureProviderEnabled {
+		return "", azure.ErrAzureProviderDisabled
+	}
+
+	scope, err := azure.ScopeForDatabaseType(databaseType)
+	if err != nil {
+		return "", err
+	}
+
+	registry := providers.GetDefaultRegistry()
+	provider, err := registry.Get(providerID)
+	if err != nil {
+		return "", err
+	}
+
+	azProvider, ok := provider.(*azureprovider.Provider)
+	if !ok {
+		return "", fmt.Errorf("provider %s is not an Azure provider", providerID)
+	}
+
+	tokenCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	token, err := azure.GenerateADToken(tokenCtx, azProvider.GetAzureCredential(), scope)
+	if err != nil {
+		return "", err
+	}
+
 	return token, nil
 }
 
@@ -1574,7 +1762,7 @@ func (r *queryResolver) SettingsConfig(ctx context.Context) (*model.SettingsConf
 	currentSettings := settings.Get()
 	return &model.SettingsConfig{
 		MetricsEnabled:        &currentSettings.MetricsEnabled,
-		CloudProvidersEnabled: env.IsAWSProviderEnabled,
+		CloudProvidersEnabled: env.IsAWSProviderEnabled || env.IsAzureProviderEnabled,
 		DisableCredentialForm: env.DisableCredentialForm,
 		MaxPageSize:           env.MaxPageSize,
 	}, nil
@@ -1844,7 +2032,7 @@ func (r *queryResolver) CloudProvider(ctx context.Context, id string) (*model.AW
 
 // DiscoveredConnections is the resolver for the DiscoveredConnections field.
 func (r *queryResolver) DiscoveredConnections(ctx context.Context) ([]*model.DiscoveredConnection, error) {
-	if !env.IsAWSProviderEnabled {
+	if !env.IsAWSProviderEnabled && !env.IsAzureProviderEnabled {
 		return []*model.DiscoveredConnection{}, nil
 	}
 
@@ -1921,6 +2109,79 @@ func (r *queryResolver) AWSRegions(ctx context.Context) ([]*model.AWSRegion, err
 			Description: region.Description,
 			Partition:   region.Partition,
 		}
+	}
+	return result, nil
+}
+
+// AzureProviders is the resolver for the AzureProviders field.
+func (r *queryResolver) AzureProviders(ctx context.Context) ([]*model.AzureProvider, error) {
+	if !env.IsAzureProviderEnabled {
+		return []*model.AzureProvider{}, nil
+	}
+
+	states := settings.GetAzureProviders()
+	result := make([]*model.AzureProvider, 0, len(states))
+	for _, state := range states {
+		result = append(result, stateToAzureProvider(state))
+	}
+	return result, nil
+}
+
+// AzureProvider is the resolver for the AzureProvider field.
+func (r *queryResolver) AzureProvider(ctx context.Context, id string) (*model.AzureProvider, error) {
+	if !env.IsAzureProviderEnabled {
+		return nil, nil
+	}
+
+	state, err := settings.GetAzureProvider(id)
+	if err != nil {
+		return nil, err
+	}
+	return stateToAzureProvider(state), nil
+}
+
+// AzureSubscriptions is the resolver for the AzureSubscriptions field.
+func (r *queryResolver) AzureSubscriptions(ctx context.Context) ([]*model.AzureSubscription, error) {
+	if !env.IsAzureProviderEnabled {
+		return []*model.AzureSubscription{}, nil
+	}
+
+	// Use default credential to discover subscriptions
+	cred, err := azure.BuildCredentialFromConfig(&azure.AzureCredentialConfig{
+		SubscriptionID: "discovery",
+		AuthMethod:     azure.AuthMethodDefault,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	subs, err := azure.DiscoverSubscriptions(ctx, cred)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*model.AzureSubscription, 0, len(subs))
+	for _, sub := range subs {
+		result = append(result, &model.AzureSubscription{
+			ID:          sub.ID,
+			DisplayName: sub.DisplayName,
+			State:       sub.State,
+			TenantID:    sub.TenantID,
+		})
+	}
+	return result, nil
+}
+
+// AzureRegions is the resolver for the AzureRegions field.
+func (r *queryResolver) AzureRegions(ctx context.Context) ([]*model.AzureRegion, error) {
+	regions := azure.GetRegions()
+	result := make([]*model.AzureRegion, 0, len(regions))
+	for _, region := range regions {
+		result = append(result, &model.AzureRegion{
+			ID:          region.ID,
+			DisplayName: region.DisplayName,
+			Geography:   region.Geography,
+		})
 	}
 	return result, nil
 }

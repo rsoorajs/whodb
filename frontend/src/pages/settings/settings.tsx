@@ -37,6 +37,7 @@ import {type SupportedLanguage, SUPPORTED_LANGUAGES} from "@/utils/languages";
 import {ExternalLink} from "../../utils/external-links";
 import {usePageSize} from "../../hooks/use-page-size";
 import {AwsProvidersSection} from "../../components/aws";
+import {AzureProvidersSection} from "../../components/azure";
 import {getComponent} from "../../config/component-registry";
 import {useSettingsConfigQuery} from "@graphql";
 
@@ -297,6 +298,8 @@ export const SettingsPage: FC = () => {
                             <>
                                 <Separator className="my-6" />
                                 <AwsProvidersSection />
+                                <Separator className="my-6" />
+                                <AzureProvidersSection />
                             </>
                         )}
                         {(() => {

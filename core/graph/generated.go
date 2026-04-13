@@ -72,6 +72,37 @@ type ComplexityRoot struct {
 		Partition   func(childComplexity int) int
 	}
 
+	AzureProvider struct {
+		DiscoverCosmosDb   func(childComplexity int) int
+		DiscoverMySQL      func(childComplexity int) int
+		DiscoverPostgreSQL func(childComplexity int) int
+		DiscoverRedis      func(childComplexity int) int
+		DiscoveredCount    func(childComplexity int) int
+		Error              func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		LastDiscoveryAt    func(childComplexity int) int
+		Name               func(childComplexity int) int
+		ProviderType       func(childComplexity int) int
+		Region             func(childComplexity int) int
+		ResourceGroup      func(childComplexity int) int
+		Status             func(childComplexity int) int
+		SubscriptionID     func(childComplexity int) int
+		TenantID           func(childComplexity int) int
+	}
+
+	AzureRegion struct {
+		DisplayName func(childComplexity int) int
+		Geography   func(childComplexity int) int
+		ID          func(childComplexity int) int
+	}
+
+	AzureSubscription struct {
+		DisplayName func(childComplexity int) int
+		ID          func(childComplexity int) int
+		State       func(childComplexity int) int
+		TenantID    func(childComplexity int) int
+	}
+
 	Capabilities struct {
 		SupportsChat           func(childComplexity int) int
 		SupportsDatabaseSwitch func(childComplexity int) int
@@ -207,10 +238,12 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		AddAWSProvider       func(childComplexity int, input model.AWSProviderInput) int
+		AddAzureProvider     func(childComplexity int, input model.AzureProviderInput) int
 		AddRow               func(childComplexity int, schema string, storageUnit string, values []*model.RecordInput) int
 		AddStorageUnit       func(childComplexity int, schema string, storageUnit string, fields []*model.RecordInput) int
 		DeleteRow            func(childComplexity int, schema string, storageUnit string, values []*model.RecordInput) int
 		ExecuteConfirmedSQL  func(childComplexity int, query string, operationType string) int
+		GenerateAzureADToken func(childComplexity int, providerID string, databaseType string) int
 		GenerateChatTitle    func(childComplexity int, input model.GenerateChatTitleInput) int
 		GenerateMockData     func(childComplexity int, input model.MockDataGenerationInput) int
 		GenerateRDSAuthToken func(childComplexity int, providerID string, endpoint string, port int, region string, username string) int
@@ -220,11 +253,14 @@ type ComplexityRoot struct {
 		Login                func(childComplexity int, credentials model.LoginCredentials) int
 		LoginWithProfile     func(childComplexity int, profile model.LoginProfileInput) int
 		Logout               func(childComplexity int) int
+		RefreshAzureProvider func(childComplexity int, id string) int
 		RefreshCloudProvider func(childComplexity int, id string) int
 		RemoveCloudProvider  func(childComplexity int, id string) int
 		TestAWSCredentials   func(childComplexity int, input model.AWSProviderInput) int
+		TestAzureCredentials func(childComplexity int, input model.AzureProviderInput) int
 		TestCloudProvider    func(childComplexity int, id string) int
 		UpdateAWSProvider    func(childComplexity int, id string, input model.AWSProviderInput) int
+		UpdateAzureProvider  func(childComplexity int, id string, input model.AzureProviderInput) int
 		UpdateSettings       func(childComplexity int, newSettings model.SettingsConfigInput) int
 		UpdateStorageUnit    func(childComplexity int, schema string, storageUnit string, values []*model.RecordInput, updatedColumns []string) int
 	}
@@ -235,6 +271,10 @@ type ComplexityRoot struct {
 		AIProviders                 func(childComplexity int) int
 		AWSRegions                  func(childComplexity int) int
 		AnalyzeMockDataDependencies func(childComplexity int, schema string, storageUnit string, rowCount int, fkDensityRatio *int) int
+		AzureProvider               func(childComplexity int, id string) int
+		AzureProviders              func(childComplexity int) int
+		AzureRegions                func(childComplexity int) int
+		AzureSubscriptions          func(childComplexity int) int
 		CloudProvider               func(childComplexity int, id string) int
 		CloudProviders              func(childComplexity int) int
 		Columns                     func(childComplexity int, schema string, storageUnit string) int
@@ -340,6 +380,11 @@ type MutationResolver interface {
 	TestCloudProvider(ctx context.Context, id string) (model.CloudProviderStatus, error)
 	RefreshCloudProvider(ctx context.Context, id string) (*model.AWSProvider, error)
 	GenerateRDSAuthToken(ctx context.Context, providerID string, endpoint string, port int, region string, username string) (string, error)
+	AddAzureProvider(ctx context.Context, input model.AzureProviderInput) (*model.AzureProvider, error)
+	UpdateAzureProvider(ctx context.Context, id string, input model.AzureProviderInput) (*model.AzureProvider, error)
+	TestAzureCredentials(ctx context.Context, input model.AzureProviderInput) (model.CloudProviderStatus, error)
+	RefreshAzureProvider(ctx context.Context, id string) (*model.AzureProvider, error)
+	GenerateAzureADToken(ctx context.Context, providerID string, databaseType string) (string, error)
 }
 type QueryResolver interface {
 	Version(ctx context.Context) (string, error)
@@ -369,6 +414,10 @@ type QueryResolver interface {
 	ProviderConnections(ctx context.Context, providerID string) ([]*model.DiscoveredConnection, error)
 	LocalAWSProfiles(ctx context.Context) ([]*model.LocalAWSProfile, error)
 	AWSRegions(ctx context.Context) ([]*model.AWSRegion, error)
+	AzureProviders(ctx context.Context) ([]*model.AzureProvider, error)
+	AzureProvider(ctx context.Context, id string) (*model.AzureProvider, error)
+	AzureSubscriptions(ctx context.Context) ([]*model.AzureSubscription, error)
+	AzureRegions(ctx context.Context) ([]*model.AzureRegion, error)
 }
 
 type executableSchema graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot]
@@ -532,6 +581,141 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AWSRegion.Partition(childComplexity), true
+
+	case "AzureProvider.DiscoverCosmosDB":
+		if e.ComplexityRoot.AzureProvider.DiscoverCosmosDb == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureProvider.DiscoverCosmosDb(childComplexity), true
+	case "AzureProvider.DiscoverMySQL":
+		if e.ComplexityRoot.AzureProvider.DiscoverMySQL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureProvider.DiscoverMySQL(childComplexity), true
+	case "AzureProvider.DiscoverPostgreSQL":
+		if e.ComplexityRoot.AzureProvider.DiscoverPostgreSQL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureProvider.DiscoverPostgreSQL(childComplexity), true
+	case "AzureProvider.DiscoverRedis":
+		if e.ComplexityRoot.AzureProvider.DiscoverRedis == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureProvider.DiscoverRedis(childComplexity), true
+	case "AzureProvider.DiscoveredCount":
+		if e.ComplexityRoot.AzureProvider.DiscoveredCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureProvider.DiscoveredCount(childComplexity), true
+	case "AzureProvider.Error":
+		if e.ComplexityRoot.AzureProvider.Error == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureProvider.Error(childComplexity), true
+	case "AzureProvider.Id":
+		if e.ComplexityRoot.AzureProvider.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureProvider.ID(childComplexity), true
+	case "AzureProvider.LastDiscoveryAt":
+		if e.ComplexityRoot.AzureProvider.LastDiscoveryAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureProvider.LastDiscoveryAt(childComplexity), true
+	case "AzureProvider.Name":
+		if e.ComplexityRoot.AzureProvider.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureProvider.Name(childComplexity), true
+	case "AzureProvider.ProviderType":
+		if e.ComplexityRoot.AzureProvider.ProviderType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureProvider.ProviderType(childComplexity), true
+	case "AzureProvider.Region":
+		if e.ComplexityRoot.AzureProvider.Region == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureProvider.Region(childComplexity), true
+	case "AzureProvider.ResourceGroup":
+		if e.ComplexityRoot.AzureProvider.ResourceGroup == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureProvider.ResourceGroup(childComplexity), true
+	case "AzureProvider.Status":
+		if e.ComplexityRoot.AzureProvider.Status == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureProvider.Status(childComplexity), true
+	case "AzureProvider.SubscriptionID":
+		if e.ComplexityRoot.AzureProvider.SubscriptionID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureProvider.SubscriptionID(childComplexity), true
+	case "AzureProvider.TenantID":
+		if e.ComplexityRoot.AzureProvider.TenantID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureProvider.TenantID(childComplexity), true
+
+	case "AzureRegion.DisplayName":
+		if e.ComplexityRoot.AzureRegion.DisplayName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureRegion.DisplayName(childComplexity), true
+	case "AzureRegion.Geography":
+		if e.ComplexityRoot.AzureRegion.Geography == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureRegion.Geography(childComplexity), true
+	case "AzureRegion.Id":
+		if e.ComplexityRoot.AzureRegion.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureRegion.ID(childComplexity), true
+
+	case "AzureSubscription.DisplayName":
+		if e.ComplexityRoot.AzureSubscription.DisplayName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureSubscription.DisplayName(childComplexity), true
+	case "AzureSubscription.Id":
+		if e.ComplexityRoot.AzureSubscription.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureSubscription.ID(childComplexity), true
+	case "AzureSubscription.State":
+		if e.ComplexityRoot.AzureSubscription.State == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureSubscription.State(childComplexity), true
+	case "AzureSubscription.TenantID":
+		if e.ComplexityRoot.AzureSubscription.TenantID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AzureSubscription.TenantID(childComplexity), true
 
 	case "Capabilities.supportsChat":
 		if e.ComplexityRoot.Capabilities.SupportsChat == nil {
@@ -1036,6 +1220,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.AddAWSProvider(childComplexity, args["input"].(model.AWSProviderInput)), true
+	case "Mutation.AddAzureProvider":
+		if e.ComplexityRoot.Mutation.AddAzureProvider == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_AddAzureProvider_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.AddAzureProvider(childComplexity, args["input"].(model.AzureProviderInput)), true
 	case "Mutation.AddRow":
 		if e.ComplexityRoot.Mutation.AddRow == nil {
 			break
@@ -1080,6 +1275,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ExecuteConfirmedSQL(childComplexity, args["query"].(string), args["operationType"].(string)), true
+	case "Mutation.GenerateAzureADToken":
+		if e.ComplexityRoot.Mutation.GenerateAzureADToken == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_GenerateAzureADToken_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.GenerateAzureADToken(childComplexity, args["providerID"].(string), args["databaseType"].(string)), true
 	case "Mutation.GenerateChatTitle":
 		if e.ComplexityRoot.Mutation.GenerateChatTitle == nil {
 			break
@@ -1174,6 +1380,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.Logout(childComplexity), true
+	case "Mutation.RefreshAzureProvider":
+		if e.ComplexityRoot.Mutation.RefreshAzureProvider == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_RefreshAzureProvider_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.RefreshAzureProvider(childComplexity, args["id"].(string)), true
 	case "Mutation.RefreshCloudProvider":
 		if e.ComplexityRoot.Mutation.RefreshCloudProvider == nil {
 			break
@@ -1207,6 +1424,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.TestAWSCredentials(childComplexity, args["input"].(model.AWSProviderInput)), true
+	case "Mutation.TestAzureCredentials":
+		if e.ComplexityRoot.Mutation.TestAzureCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_TestAzureCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.TestAzureCredentials(childComplexity, args["input"].(model.AzureProviderInput)), true
 	case "Mutation.TestCloudProvider":
 		if e.ComplexityRoot.Mutation.TestCloudProvider == nil {
 			break
@@ -1229,6 +1457,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.UpdateAWSProvider(childComplexity, args["id"].(string), args["input"].(model.AWSProviderInput)), true
+	case "Mutation.UpdateAzureProvider":
+		if e.ComplexityRoot.Mutation.UpdateAzureProvider == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_UpdateAzureProvider_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateAzureProvider(childComplexity, args["id"].(string), args["input"].(model.AzureProviderInput)), true
 	case "Mutation.UpdateSettings":
 		if e.ComplexityRoot.Mutation.UpdateSettings == nil {
 			break
@@ -1297,6 +1536,35 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.AnalyzeMockDataDependencies(childComplexity, args["schema"].(string), args["storageUnit"].(string), args["rowCount"].(int), args["fkDensityRatio"].(*int)), true
+	case "Query.AzureProvider":
+		if e.ComplexityRoot.Query.AzureProvider == nil {
+			break
+		}
+
+		args, err := ec.field_Query_AzureProvider_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.AzureProvider(childComplexity, args["id"].(string)), true
+	case "Query.AzureProviders":
+		if e.ComplexityRoot.Query.AzureProviders == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.AzureProviders(childComplexity), true
+	case "Query.AzureRegions":
+		if e.ComplexityRoot.Query.AzureRegions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.AzureRegions(childComplexity), true
+	case "Query.AzureSubscriptions":
+		if e.ComplexityRoot.Query.AzureSubscriptions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.AzureSubscriptions(childComplexity), true
 	case "Query.CloudProvider":
 		if e.ComplexityRoot.Query.CloudProvider == nil {
 			break
@@ -1686,6 +1954,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputAWSProviderInput,
 		ec.unmarshalInputAtomicWhereCondition,
+		ec.unmarshalInputAzureProviderInput,
 		ec.unmarshalInputChatInput,
 		ec.unmarshalInputGenerateChatTitleInput,
 		ec.unmarshalInputImportColumnMapping,
@@ -1805,6 +2074,17 @@ func (ec *executionContext) field_Mutation_AddAWSProvider_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_AddAzureProvider_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAzureProviderInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureProviderInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_AddRow_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1881,6 +2161,22 @@ func (ec *executionContext) field_Mutation_ExecuteConfirmedSQL_args(ctx context.
 		return nil, err
 	}
 	args["operationType"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_GenerateAzureADToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "providerID", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["providerID"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "databaseType", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["databaseType"] = arg1
 	return args, nil
 }
 
@@ -2012,6 +2308,17 @@ func (ec *executionContext) field_Mutation_Login_args(ctx context.Context, rawAr
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_RefreshAzureProvider_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_RefreshCloudProvider_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2045,6 +2352,17 @@ func (ec *executionContext) field_Mutation_TestAWSCredentials_args(ctx context.C
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_TestAzureCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAzureProviderInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureProviderInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_TestCloudProvider_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2065,6 +2383,22 @@ func (ec *executionContext) field_Mutation_UpdateAWSProvider_args(ctx context.Co
 	}
 	args["id"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAWSProviderInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAWSProviderInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_UpdateAzureProvider_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAzureProviderInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureProviderInput)
 	if err != nil {
 		return nil, err
 	}
@@ -2184,6 +2518,17 @@ func (ec *executionContext) field_Query_AnalyzeMockDataDependencies_args(ctx con
 		return nil, err
 	}
 	args["fkDensityRatio"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_AzureProvider_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -3091,6 +3436,644 @@ func (ec *executionContext) _AWSRegion_Partition(ctx context.Context, field grap
 func (ec *executionContext) fieldContext_AWSRegion_Partition(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "AWSRegion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureProvider_Id(ctx context.Context, field graphql.CollectedField, obj *model.AzureProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureProvider_Id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureProvider_Id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureProvider_ProviderType(ctx context.Context, field graphql.CollectedField, obj *model.AzureProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureProvider_ProviderType,
+		func(ctx context.Context) (any, error) {
+			return obj.ProviderType, nil
+		},
+		nil,
+		ec.marshalNCloudProviderType2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐCloudProviderType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureProvider_ProviderType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CloudProviderType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureProvider_Name(ctx context.Context, field graphql.CollectedField, obj *model.AzureProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureProvider_Name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureProvider_Name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureProvider_Region(ctx context.Context, field graphql.CollectedField, obj *model.AzureProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureProvider_Region,
+		func(ctx context.Context) (any, error) {
+			return obj.Region, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureProvider_Region(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureProvider_Status(ctx context.Context, field graphql.CollectedField, obj *model.AzureProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureProvider_Status,
+		func(ctx context.Context) (any, error) {
+			return obj.Status, nil
+		},
+		nil,
+		ec.marshalNCloudProviderStatus2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐCloudProviderStatus,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureProvider_Status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CloudProviderStatus does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureProvider_LastDiscoveryAt(ctx context.Context, field graphql.CollectedField, obj *model.AzureProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureProvider_LastDiscoveryAt,
+		func(ctx context.Context) (any, error) {
+			return obj.LastDiscoveryAt, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureProvider_LastDiscoveryAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureProvider_DiscoveredCount(ctx context.Context, field graphql.CollectedField, obj *model.AzureProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureProvider_DiscoveredCount,
+		func(ctx context.Context) (any, error) {
+			return obj.DiscoveredCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureProvider_DiscoveredCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureProvider_Error(ctx context.Context, field graphql.CollectedField, obj *model.AzureProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureProvider_Error,
+		func(ctx context.Context) (any, error) {
+			return obj.Error, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureProvider_Error(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureProvider_SubscriptionID(ctx context.Context, field graphql.CollectedField, obj *model.AzureProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureProvider_SubscriptionID,
+		func(ctx context.Context) (any, error) {
+			return obj.SubscriptionID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureProvider_SubscriptionID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureProvider_TenantID(ctx context.Context, field graphql.CollectedField, obj *model.AzureProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureProvider_TenantID,
+		func(ctx context.Context) (any, error) {
+			return obj.TenantID, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureProvider_TenantID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureProvider_ResourceGroup(ctx context.Context, field graphql.CollectedField, obj *model.AzureProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureProvider_ResourceGroup,
+		func(ctx context.Context) (any, error) {
+			return obj.ResourceGroup, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureProvider_ResourceGroup(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureProvider_DiscoverPostgreSQL(ctx context.Context, field graphql.CollectedField, obj *model.AzureProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureProvider_DiscoverPostgreSQL,
+		func(ctx context.Context) (any, error) {
+			return obj.DiscoverPostgreSQL, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureProvider_DiscoverPostgreSQL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureProvider_DiscoverMySQL(ctx context.Context, field graphql.CollectedField, obj *model.AzureProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureProvider_DiscoverMySQL,
+		func(ctx context.Context) (any, error) {
+			return obj.DiscoverMySQL, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureProvider_DiscoverMySQL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureProvider_DiscoverRedis(ctx context.Context, field graphql.CollectedField, obj *model.AzureProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureProvider_DiscoverRedis,
+		func(ctx context.Context) (any, error) {
+			return obj.DiscoverRedis, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureProvider_DiscoverRedis(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureProvider_DiscoverCosmosDB(ctx context.Context, field graphql.CollectedField, obj *model.AzureProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureProvider_DiscoverCosmosDB,
+		func(ctx context.Context) (any, error) {
+			return obj.DiscoverCosmosDb, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureProvider_DiscoverCosmosDB(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureRegion_Id(ctx context.Context, field graphql.CollectedField, obj *model.AzureRegion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureRegion_Id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureRegion_Id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureRegion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureRegion_DisplayName(ctx context.Context, field graphql.CollectedField, obj *model.AzureRegion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureRegion_DisplayName,
+		func(ctx context.Context) (any, error) {
+			return obj.DisplayName, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureRegion_DisplayName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureRegion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureRegion_Geography(ctx context.Context, field graphql.CollectedField, obj *model.AzureRegion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureRegion_Geography,
+		func(ctx context.Context) (any, error) {
+			return obj.Geography, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureRegion_Geography(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureRegion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureSubscription_Id(ctx context.Context, field graphql.CollectedField, obj *model.AzureSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureSubscription_Id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureSubscription_Id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureSubscription",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureSubscription_DisplayName(ctx context.Context, field graphql.CollectedField, obj *model.AzureSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureSubscription_DisplayName,
+		func(ctx context.Context) (any, error) {
+			return obj.DisplayName, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureSubscription_DisplayName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureSubscription",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureSubscription_State(ctx context.Context, field graphql.CollectedField, obj *model.AzureSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureSubscription_State,
+		func(ctx context.Context) (any, error) {
+			return obj.State, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureSubscription_State(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureSubscription",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AzureSubscription_TenantID(ctx context.Context, field graphql.CollectedField, obj *model.AzureSubscription) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AzureSubscription_TenantID,
+		func(ctx context.Context) (any, error) {
+			return obj.TenantID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AzureSubscription_TenantID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AzureSubscription",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -6497,6 +7480,307 @@ func (ec *executionContext) fieldContext_Mutation_GenerateRDSAuthToken(ctx conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_AddAzureProvider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_AddAzureProvider,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().AddAzureProvider(ctx, fc.Args["input"].(model.AzureProviderInput))
+		},
+		nil,
+		ec.marshalNAzureProvider2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureProvider,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_AddAzureProvider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Id":
+				return ec.fieldContext_AzureProvider_Id(ctx, field)
+			case "ProviderType":
+				return ec.fieldContext_AzureProvider_ProviderType(ctx, field)
+			case "Name":
+				return ec.fieldContext_AzureProvider_Name(ctx, field)
+			case "Region":
+				return ec.fieldContext_AzureProvider_Region(ctx, field)
+			case "Status":
+				return ec.fieldContext_AzureProvider_Status(ctx, field)
+			case "LastDiscoveryAt":
+				return ec.fieldContext_AzureProvider_LastDiscoveryAt(ctx, field)
+			case "DiscoveredCount":
+				return ec.fieldContext_AzureProvider_DiscoveredCount(ctx, field)
+			case "Error":
+				return ec.fieldContext_AzureProvider_Error(ctx, field)
+			case "SubscriptionID":
+				return ec.fieldContext_AzureProvider_SubscriptionID(ctx, field)
+			case "TenantID":
+				return ec.fieldContext_AzureProvider_TenantID(ctx, field)
+			case "ResourceGroup":
+				return ec.fieldContext_AzureProvider_ResourceGroup(ctx, field)
+			case "DiscoverPostgreSQL":
+				return ec.fieldContext_AzureProvider_DiscoverPostgreSQL(ctx, field)
+			case "DiscoverMySQL":
+				return ec.fieldContext_AzureProvider_DiscoverMySQL(ctx, field)
+			case "DiscoverRedis":
+				return ec.fieldContext_AzureProvider_DiscoverRedis(ctx, field)
+			case "DiscoverCosmosDB":
+				return ec.fieldContext_AzureProvider_DiscoverCosmosDB(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AzureProvider", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_AddAzureProvider_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_UpdateAzureProvider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_UpdateAzureProvider,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().UpdateAzureProvider(ctx, fc.Args["id"].(string), fc.Args["input"].(model.AzureProviderInput))
+		},
+		nil,
+		ec.marshalNAzureProvider2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureProvider,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_UpdateAzureProvider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Id":
+				return ec.fieldContext_AzureProvider_Id(ctx, field)
+			case "ProviderType":
+				return ec.fieldContext_AzureProvider_ProviderType(ctx, field)
+			case "Name":
+				return ec.fieldContext_AzureProvider_Name(ctx, field)
+			case "Region":
+				return ec.fieldContext_AzureProvider_Region(ctx, field)
+			case "Status":
+				return ec.fieldContext_AzureProvider_Status(ctx, field)
+			case "LastDiscoveryAt":
+				return ec.fieldContext_AzureProvider_LastDiscoveryAt(ctx, field)
+			case "DiscoveredCount":
+				return ec.fieldContext_AzureProvider_DiscoveredCount(ctx, field)
+			case "Error":
+				return ec.fieldContext_AzureProvider_Error(ctx, field)
+			case "SubscriptionID":
+				return ec.fieldContext_AzureProvider_SubscriptionID(ctx, field)
+			case "TenantID":
+				return ec.fieldContext_AzureProvider_TenantID(ctx, field)
+			case "ResourceGroup":
+				return ec.fieldContext_AzureProvider_ResourceGroup(ctx, field)
+			case "DiscoverPostgreSQL":
+				return ec.fieldContext_AzureProvider_DiscoverPostgreSQL(ctx, field)
+			case "DiscoverMySQL":
+				return ec.fieldContext_AzureProvider_DiscoverMySQL(ctx, field)
+			case "DiscoverRedis":
+				return ec.fieldContext_AzureProvider_DiscoverRedis(ctx, field)
+			case "DiscoverCosmosDB":
+				return ec.fieldContext_AzureProvider_DiscoverCosmosDB(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AzureProvider", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_UpdateAzureProvider_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_TestAzureCredentials(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_TestAzureCredentials,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().TestAzureCredentials(ctx, fc.Args["input"].(model.AzureProviderInput))
+		},
+		nil,
+		ec.marshalNCloudProviderStatus2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐCloudProviderStatus,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_TestAzureCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CloudProviderStatus does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_TestAzureCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_RefreshAzureProvider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_RefreshAzureProvider,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().RefreshAzureProvider(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalNAzureProvider2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureProvider,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_RefreshAzureProvider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Id":
+				return ec.fieldContext_AzureProvider_Id(ctx, field)
+			case "ProviderType":
+				return ec.fieldContext_AzureProvider_ProviderType(ctx, field)
+			case "Name":
+				return ec.fieldContext_AzureProvider_Name(ctx, field)
+			case "Region":
+				return ec.fieldContext_AzureProvider_Region(ctx, field)
+			case "Status":
+				return ec.fieldContext_AzureProvider_Status(ctx, field)
+			case "LastDiscoveryAt":
+				return ec.fieldContext_AzureProvider_LastDiscoveryAt(ctx, field)
+			case "DiscoveredCount":
+				return ec.fieldContext_AzureProvider_DiscoveredCount(ctx, field)
+			case "Error":
+				return ec.fieldContext_AzureProvider_Error(ctx, field)
+			case "SubscriptionID":
+				return ec.fieldContext_AzureProvider_SubscriptionID(ctx, field)
+			case "TenantID":
+				return ec.fieldContext_AzureProvider_TenantID(ctx, field)
+			case "ResourceGroup":
+				return ec.fieldContext_AzureProvider_ResourceGroup(ctx, field)
+			case "DiscoverPostgreSQL":
+				return ec.fieldContext_AzureProvider_DiscoverPostgreSQL(ctx, field)
+			case "DiscoverMySQL":
+				return ec.fieldContext_AzureProvider_DiscoverMySQL(ctx, field)
+			case "DiscoverRedis":
+				return ec.fieldContext_AzureProvider_DiscoverRedis(ctx, field)
+			case "DiscoverCosmosDB":
+				return ec.fieldContext_AzureProvider_DiscoverCosmosDB(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AzureProvider", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_RefreshAzureProvider_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_GenerateAzureADToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_GenerateAzureADToken,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().GenerateAzureADToken(ctx, fc.Args["providerID"].(string), fc.Args["databaseType"].(string))
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_GenerateAzureADToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_GenerateAzureADToken_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_Version(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7701,6 +8985,216 @@ func (ec *executionContext) fieldContext_Query_AWSRegions(_ context.Context, fie
 				return ec.fieldContext_AWSRegion_Partition(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AWSRegion", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_AzureProviders(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_AzureProviders,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().AzureProviders(ctx)
+		},
+		nil,
+		ec.marshalNAzureProvider2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureProviderᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_AzureProviders(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Id":
+				return ec.fieldContext_AzureProvider_Id(ctx, field)
+			case "ProviderType":
+				return ec.fieldContext_AzureProvider_ProviderType(ctx, field)
+			case "Name":
+				return ec.fieldContext_AzureProvider_Name(ctx, field)
+			case "Region":
+				return ec.fieldContext_AzureProvider_Region(ctx, field)
+			case "Status":
+				return ec.fieldContext_AzureProvider_Status(ctx, field)
+			case "LastDiscoveryAt":
+				return ec.fieldContext_AzureProvider_LastDiscoveryAt(ctx, field)
+			case "DiscoveredCount":
+				return ec.fieldContext_AzureProvider_DiscoveredCount(ctx, field)
+			case "Error":
+				return ec.fieldContext_AzureProvider_Error(ctx, field)
+			case "SubscriptionID":
+				return ec.fieldContext_AzureProvider_SubscriptionID(ctx, field)
+			case "TenantID":
+				return ec.fieldContext_AzureProvider_TenantID(ctx, field)
+			case "ResourceGroup":
+				return ec.fieldContext_AzureProvider_ResourceGroup(ctx, field)
+			case "DiscoverPostgreSQL":
+				return ec.fieldContext_AzureProvider_DiscoverPostgreSQL(ctx, field)
+			case "DiscoverMySQL":
+				return ec.fieldContext_AzureProvider_DiscoverMySQL(ctx, field)
+			case "DiscoverRedis":
+				return ec.fieldContext_AzureProvider_DiscoverRedis(ctx, field)
+			case "DiscoverCosmosDB":
+				return ec.fieldContext_AzureProvider_DiscoverCosmosDB(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AzureProvider", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_AzureProvider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_AzureProvider,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().AzureProvider(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalOAzureProvider2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureProvider,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_AzureProvider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Id":
+				return ec.fieldContext_AzureProvider_Id(ctx, field)
+			case "ProviderType":
+				return ec.fieldContext_AzureProvider_ProviderType(ctx, field)
+			case "Name":
+				return ec.fieldContext_AzureProvider_Name(ctx, field)
+			case "Region":
+				return ec.fieldContext_AzureProvider_Region(ctx, field)
+			case "Status":
+				return ec.fieldContext_AzureProvider_Status(ctx, field)
+			case "LastDiscoveryAt":
+				return ec.fieldContext_AzureProvider_LastDiscoveryAt(ctx, field)
+			case "DiscoveredCount":
+				return ec.fieldContext_AzureProvider_DiscoveredCount(ctx, field)
+			case "Error":
+				return ec.fieldContext_AzureProvider_Error(ctx, field)
+			case "SubscriptionID":
+				return ec.fieldContext_AzureProvider_SubscriptionID(ctx, field)
+			case "TenantID":
+				return ec.fieldContext_AzureProvider_TenantID(ctx, field)
+			case "ResourceGroup":
+				return ec.fieldContext_AzureProvider_ResourceGroup(ctx, field)
+			case "DiscoverPostgreSQL":
+				return ec.fieldContext_AzureProvider_DiscoverPostgreSQL(ctx, field)
+			case "DiscoverMySQL":
+				return ec.fieldContext_AzureProvider_DiscoverMySQL(ctx, field)
+			case "DiscoverRedis":
+				return ec.fieldContext_AzureProvider_DiscoverRedis(ctx, field)
+			case "DiscoverCosmosDB":
+				return ec.fieldContext_AzureProvider_DiscoverCosmosDB(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AzureProvider", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_AzureProvider_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_AzureSubscriptions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_AzureSubscriptions,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().AzureSubscriptions(ctx)
+		},
+		nil,
+		ec.marshalNAzureSubscription2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureSubscriptionᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_AzureSubscriptions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Id":
+				return ec.fieldContext_AzureSubscription_Id(ctx, field)
+			case "DisplayName":
+				return ec.fieldContext_AzureSubscription_DisplayName(ctx, field)
+			case "State":
+				return ec.fieldContext_AzureSubscription_State(ctx, field)
+			case "TenantID":
+				return ec.fieldContext_AzureSubscription_TenantID(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AzureSubscription", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_AzureRegions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_AzureRegions,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().AzureRegions(ctx)
+		},
+		nil,
+		ec.marshalNAzureRegion2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureRegionᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_AzureRegions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Id":
+				return ec.fieldContext_AzureRegion_Id(ctx, field)
+			case "DisplayName":
+				return ec.fieldContext_AzureRegion_DisplayName(ctx, field)
+			case "Geography":
+				return ec.fieldContext_AzureRegion_Geography(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AzureRegion", field.Name)
 		},
 	}
 	return fc, nil
@@ -10321,6 +11815,106 @@ func (ec *executionContext) unmarshalInputAtomicWhereCondition(ctx context.Conte
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputAzureProviderInput(ctx context.Context, obj any) (model.AzureProviderInput, error) {
+	var it model.AzureProviderInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"Name", "SubscriptionID", "TenantID", "ClientID", "ClientSecret", "AuthMethod", "ResourceGroup", "DiscoverPostgreSQL", "DiscoverMySQL", "DiscoverRedis", "DiscoverCosmosDB"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "Name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "SubscriptionID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("SubscriptionID"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SubscriptionID = data
+		case "TenantID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("TenantID"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TenantID = data
+		case "ClientID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ClientID"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientID = data
+		case "ClientSecret":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ClientSecret"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClientSecret = data
+		case "AuthMethod":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("AuthMethod"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AuthMethod = data
+		case "ResourceGroup":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ResourceGroup"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResourceGroup = data
+		case "DiscoverPostgreSQL":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("DiscoverPostgreSQL"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DiscoverPostgreSQL = data
+		case "DiscoverMySQL":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("DiscoverMySQL"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DiscoverMySQL = data
+		case "DiscoverRedis":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("DiscoverRedis"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DiscoverRedis = data
+		case "DiscoverCosmosDB":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("DiscoverCosmosDB"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DiscoverCosmosDb = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputChatInput(ctx context.Context, obj any) (model.ChatInput, error) {
 	var it model.ChatInput
 	if obj == nil {
@@ -11022,6 +12616,13 @@ func (ec *executionContext) _CloudProvider(ctx context.Context, sel ast.Selectio
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
+	case model.AzureProvider:
+		return ec._AzureProvider(ctx, sel, &obj)
+	case *model.AzureProvider:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._AzureProvider(ctx, sel, obj)
 	case model.AWSProvider:
 		return ec._AWSProvider(ctx, sel, &obj)
 	case *model.AWSProvider:
@@ -11260,6 +12861,206 @@ func (ec *executionContext) _AWSRegion(ctx context.Context, sel ast.SelectionSet
 			}
 		case "Partition":
 			out.Values[i] = ec._AWSRegion_Partition(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var azureProviderImplementors = []string{"AzureProvider", "CloudProvider"}
+
+func (ec *executionContext) _AzureProvider(ctx context.Context, sel ast.SelectionSet, obj *model.AzureProvider) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, azureProviderImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AzureProvider")
+		case "Id":
+			out.Values[i] = ec._AzureProvider_Id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ProviderType":
+			out.Values[i] = ec._AzureProvider_ProviderType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Name":
+			out.Values[i] = ec._AzureProvider_Name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Region":
+			out.Values[i] = ec._AzureProvider_Region(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Status":
+			out.Values[i] = ec._AzureProvider_Status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "LastDiscoveryAt":
+			out.Values[i] = ec._AzureProvider_LastDiscoveryAt(ctx, field, obj)
+		case "DiscoveredCount":
+			out.Values[i] = ec._AzureProvider_DiscoveredCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Error":
+			out.Values[i] = ec._AzureProvider_Error(ctx, field, obj)
+		case "SubscriptionID":
+			out.Values[i] = ec._AzureProvider_SubscriptionID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "TenantID":
+			out.Values[i] = ec._AzureProvider_TenantID(ctx, field, obj)
+		case "ResourceGroup":
+			out.Values[i] = ec._AzureProvider_ResourceGroup(ctx, field, obj)
+		case "DiscoverPostgreSQL":
+			out.Values[i] = ec._AzureProvider_DiscoverPostgreSQL(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "DiscoverMySQL":
+			out.Values[i] = ec._AzureProvider_DiscoverMySQL(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "DiscoverRedis":
+			out.Values[i] = ec._AzureProvider_DiscoverRedis(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "DiscoverCosmosDB":
+			out.Values[i] = ec._AzureProvider_DiscoverCosmosDB(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var azureRegionImplementors = []string{"AzureRegion"}
+
+func (ec *executionContext) _AzureRegion(ctx context.Context, sel ast.SelectionSet, obj *model.AzureRegion) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, azureRegionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AzureRegion")
+		case "Id":
+			out.Values[i] = ec._AzureRegion_Id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "DisplayName":
+			out.Values[i] = ec._AzureRegion_DisplayName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Geography":
+			out.Values[i] = ec._AzureRegion_Geography(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var azureSubscriptionImplementors = []string{"AzureSubscription"}
+
+func (ec *executionContext) _AzureSubscription(ctx context.Context, sel ast.SelectionSet, obj *model.AzureSubscription) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, azureSubscriptionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AzureSubscription")
+		case "Id":
+			out.Values[i] = ec._AzureSubscription_Id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "DisplayName":
+			out.Values[i] = ec._AzureSubscription_DisplayName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "State":
+			out.Values[i] = ec._AzureSubscription_State(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "TenantID":
+			out.Values[i] = ec._AzureSubscription_TenantID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -12405,6 +14206,41 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "AddAzureProvider":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_AddAzureProvider(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "UpdateAzureProvider":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_UpdateAzureProvider(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "TestAzureCredentials":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_TestAzureCredentials(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "RefreshAzureProvider":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_RefreshAzureProvider(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "GenerateAzureADToken":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_GenerateAzureADToken(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -13020,6 +14856,91 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_AWSRegions(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "AzureProviders":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_AzureProviders(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "AzureProvider":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_AzureProvider(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "AzureSubscriptions":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_AzureSubscriptions(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "AzureRegions":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_AzureRegions(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -13959,6 +15880,93 @@ func (ec *executionContext) marshalNAWSRegion2ᚖgithubᚗcomᚋclideyᚋwhodb�
 		return graphql.Null
 	}
 	return ec._AWSRegion(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAzureProvider2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureProvider(ctx context.Context, sel ast.SelectionSet, v model.AzureProvider) graphql.Marshaler {
+	return ec._AzureProvider(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAzureProvider2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureProviderᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.AzureProvider) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNAzureProvider2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureProvider(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAzureProvider2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureProvider(ctx context.Context, sel ast.SelectionSet, v *model.AzureProvider) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AzureProvider(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNAzureProviderInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureProviderInput(ctx context.Context, v any) (model.AzureProviderInput, error) {
+	res, err := ec.unmarshalInputAzureProviderInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAzureRegion2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureRegionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.AzureRegion) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNAzureRegion2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureRegion(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAzureRegion2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureRegion(ctx context.Context, sel ast.SelectionSet, v *model.AzureRegion) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AzureRegion(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAzureSubscription2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureSubscriptionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.AzureSubscription) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNAzureSubscription2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureSubscription(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAzureSubscription2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureSubscription(ctx context.Context, sel ast.SelectionSet, v *model.AzureSubscription) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AzureSubscription(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v any) (bool, error) {
@@ -14952,6 +16960,13 @@ func (ec *executionContext) unmarshalOAtomicWhereCondition2ᚖgithubᚗcomᚋcli
 	}
 	res, err := ec.unmarshalInputAtomicWhereCondition(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOAzureProvider2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAzureProvider(ctx context.Context, sel ast.SelectionSet, v *model.AzureProvider) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AzureProvider(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v any) (bool, error) {

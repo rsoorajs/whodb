@@ -67,7 +67,8 @@ import {
     DatabaseIconWithBadge,
     isAwsConnection
 } from '../../components/aws';
-import {isAwsHostname} from '../../utils/cloud-connection-prefill';
+import {AzureConnectionPicker, isAzureConnection} from '../../components/azure';
+import {isAwsHostname, isAzureHostname} from '../../utils/cloud-connection-prefill';
 import {SSL_KEYS, SSLConfig} from '../../components/ssl-config';
 
 /**
@@ -593,14 +594,14 @@ export const LoginForm: FC<LoginFormProps> = ({
         return profiles?.Profiles
             .filter(profile => profile.Source !== "builtin")
             // Filter out AWS-hosted profiles when cloud providers are disabled
-            .filter(profile => cloudProvidersEnabled || !isAwsHostname(profile.Hostname))
+            .filter(profile => cloudProvidersEnabled || (!isAwsHostname(profile.Hostname) && !isAzureHostname(profile.Hostname)))
             .map(profile => ({
                 value: profile.Id,
                 label: profile.Alias ?? profile.Id,
                 icon: (
                     <DatabaseIconWithBadge
                         icon={(Icons.Logos as Record<string, ReactElement>)[profile.Type]}
-                        showCloudBadge={isAwsConnection(profile.Id)}
+                        showCloudBadge={isAwsConnection(profile.Id) || isAzureConnection(profile.Id)}
                         sslStatus={profile.SSLConfigured ? { IsEnabled: true, Mode: 'configured' } : undefined}
                         size="sm"
                     />
@@ -1109,6 +1110,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                     <>
                         <Separator className="my-8" />
                         <AwsConnectionPicker onSelectConnection={handleAwsConnectionPrefill} />
+                        <AzureConnectionPicker onSelectConnection={handleAwsConnectionPrefill} />
                     </>
                 )}
             </div>

@@ -151,8 +151,9 @@ func mapProviderTypeToModel(pt providers.ProviderType) model.CloudProviderType {
 	switch pt {
 	case providers.ProviderTypeAWS:
 		return model.CloudProviderTypeAWS
+	case providers.ProviderTypeAzure:
+		return model.CloudProviderTypeAzure
 	default:
-		// Default to AWS since only cloud providers appear in DiscoveredConnection
 		return model.CloudProviderTypeAWS
 	}
 }
@@ -206,6 +207,14 @@ func discoveredConnectionToModel(conn *providers.DiscoveredConnection) *model.Di
 		"connectivity":      true,
 		"service":           true,
 		"region":            true,
+		// Azure-specific metadata
+		"location":          true,
+		"resourceGroup":     true,
+		"sku":               true,
+		"version":           true,
+		"enableNonSslPort":  true,
+		"nonSslPort":        true,
+		"kind":              true,
 	}
 
 	var metadata []*model.Record
@@ -225,4 +234,62 @@ func discoveredConnectionToModel(conn *providers.DiscoveredConnection) *model.Di
 		Status:       mapConnectionStatusToModel(conn.Status),
 		Metadata:     metadata,
 	}
+}
+
+// stateToAzureProvider converts settings.AzureProviderState to the GraphQL model.
+func stateToAzureProvider(state *settings.AzureProviderState) *model.AzureProvider {
+	var tenantID *string
+	if state.Config.TenantID != "" {
+		tenantID = &state.Config.TenantID
+	}
+
+	var resourceGroup *string
+	if state.Config.ResourceGroup != "" {
+		resourceGroup = &state.Config.ResourceGroup
+	}
+
+	var lastDiscoveryAt *string
+	if state.LastDiscoveryAt != nil {
+		t := state.LastDiscoveryAt.Format("2006-01-02T15:04:05Z")
+		lastDiscoveryAt = &t
+	}
+
+	var errorStr *string
+	if state.Error != "" {
+		errorStr = &state.Error
+	}
+
+	return &model.AzureProvider{
+		ID:                 state.Config.ID,
+		ProviderType:       model.CloudProviderTypeAzure,
+		Name:               state.Config.Name,
+		Region:             state.Config.SubscriptionID,
+		SubscriptionID:     state.Config.SubscriptionID,
+		TenantID:           tenantID,
+		ResourceGroup:      resourceGroup,
+		DiscoverPostgreSQL: state.Config.DiscoverPostgreSQL,
+		DiscoverMySQL:      state.Config.DiscoverMySQL,
+		DiscoverRedis:      state.Config.DiscoverRedis,
+		DiscoverCosmosDb:   state.Config.DiscoverCosmosDB,
+		Status:             mapCloudProviderStatus(state.Status),
+		LastDiscoveryAt:    lastDiscoveryAt,
+		DiscoveredCount:    state.DiscoveredCount,
+		Error:              errorStr,
+	}
+}
+
+// derefStringOr returns the dereferenced string or the fallback if nil.
+func derefStringOr(s *string, fallback string) string {
+	if s != nil {
+		return *s
+	}
+	return fallback
+}
+
+// derefBoolOr returns the dereferenced bool or the fallback if nil.
+func derefBoolOr(b *bool, fallback bool) bool {
+	if b != nil {
+		return *b
+	}
+	return fallback
 }

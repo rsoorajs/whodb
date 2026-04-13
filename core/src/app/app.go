@@ -124,6 +124,16 @@ func Run(config AppConfig, staticFiles embed.FS) {
 		log.Warnf("Failed to initialize AWS providers from environment: %v", err)
 	}
 
+	// Load persisted Azure providers from disk (if any)
+	if err := settings.LoadAzureProvidersFromFile(); err != nil {
+		log.Warnf("Failed to load persisted Azure providers: %v", err)
+	}
+
+	// Initialize Azure providers from environment variables (may add or override persisted)
+	if err := settings.InitAzureProvidersFromEnv(); err != nil {
+		log.Warnf("Failed to initialize Azure providers from environment: %v", err)
+	}
+
 	r := router.InitializeRouter(config.Schema, config.HTTPHandlers, staticFiles)
 
 	port := os.Getenv("PORT")

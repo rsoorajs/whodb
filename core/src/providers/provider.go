@@ -53,6 +53,9 @@ const (
 
 	// ProviderTypeAWS represents AWS-discovered connections.
 	ProviderTypeAWS ProviderType = "aws"
+
+	// ProviderTypeAzure represents Azure-discovered connections.
+	ProviderTypeAzure ProviderType = "azure"
 )
 
 // ConnectionProvider discovers and builds credentials for database connections.

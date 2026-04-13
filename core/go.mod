@@ -4,6 +4,13 @@ go 1.26.1
 
 require (
 	github.com/99designs/gqlgen v0.17.88
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.20.0
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/cosmos/armcosmos/v3 v3.4.0
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/mysql/armmysqlflexibleservers v1.2.0
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/postgresql/armpostgresqlflexibleservers v1.1.0
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/redis/armredis v1.0.0
+	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions v1.3.0
 	github.com/ClickHouse/clickhouse-go/v2 v2.43.0
 	github.com/aws/aws-sdk-go-v2 v1.41.4
 	github.com/aws/aws-sdk-go-v2/config v1.32.12
@@ -44,6 +51,8 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.2.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.11.2 // indirect
+	github.com/AzureAD/microsoft-authentication-library-for-go v1.6.0 // indirect
 	github.com/ClickHouse/ch-go v0.71.0 // indirect
 	github.com/agnivade/levenshtein v1.2.1 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
@@ -77,6 +86,7 @@ require (
 	github.com/goccy/go-json v0.10.6 // indirect
 	github.com/goccy/go-yaml v1.19.2 // indirect
 	github.com/godbus/dbus/v5 v5.2.2 // indirect
+	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/flatbuffers v25.12.19+incompatible // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
@@ -88,10 +98,12 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/compress v1.18.4 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
+	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.37 // indirect
 	github.com/montanaflynn/stats v0.8.2 // indirect
 	github.com/paulmach/orb v0.12.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.26 // indirect
+	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/richardlehane/mscfb v1.0.6 // indirect
 	github.com/richardlehane/msoleps v1.0.6 // indirect
 	github.com/segmentio/asm v1.2.1 // indirect

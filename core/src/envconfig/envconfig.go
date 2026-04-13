@@ -112,6 +112,43 @@ func GetAWSProvidersFromEnv() ([]env.AWSProviderEnvConfig, error) {
 	return configs, nil
 }
 
+// GetAzureProvidersFromEnv parses the WHODB_AZURE_PROVIDER environment variable
+// into a slice of Azure provider configurations, applying defaults.
+func GetAzureProvidersFromEnv() ([]env.AzureProviderEnvConfig, error) {
+	val := os.Getenv("WHODB_AZURE_PROVIDER")
+	if val == "" {
+		return nil, nil
+	}
+
+	var configs []env.AzureProviderEnvConfig
+	if err := json.Unmarshal([]byte(val), &configs); err != nil {
+		log.Error("[Azure Provider] Failed to parse WHODB_AZURE_PROVIDER: ", err)
+		return nil, err
+	}
+
+	// Apply defaults — all discovery flags default to true
+	for i := range configs {
+		if configs[i].DiscoverPostgreSQL == nil {
+			t := true
+			configs[i].DiscoverPostgreSQL = &t
+		}
+		if configs[i].DiscoverMySQL == nil {
+			t := true
+			configs[i].DiscoverMySQL = &t
+		}
+		if configs[i].DiscoverRedis == nil {
+			t := true
+			configs[i].DiscoverRedis = &t
+		}
+		if configs[i].DiscoverCosmosDB == nil {
+			t := true
+			configs[i].DiscoverCosmosDB = &t
+		}
+	}
+
+	return configs, nil
+}
+
 // ParseGenericProviders reads WHODB_AI_GENERIC_* environment variables to
 // discover generic AI provider configurations.
 //
