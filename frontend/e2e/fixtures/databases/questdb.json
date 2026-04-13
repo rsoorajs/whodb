@@ -27,8 +27,8 @@
   "connection": {
     "host": "localhost",
     "port": 8812,
-    "user": "admin",
-    "password": "quest",
+    "user": "user",
+    "password": "password",
     "database": "qdb",
     "advanced": {}
   },

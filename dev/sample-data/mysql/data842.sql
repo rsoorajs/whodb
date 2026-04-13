@@ -13,7 +13,7 @@
 -- limitations under the License.
 
 -- Create Database
-USE test_db_842;
+USE test_db;
 
 -- Users Table
 CREATE TABLE IF NOT EXISTS users (

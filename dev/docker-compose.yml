@@ -62,7 +62,7 @@ services:
     environment:
       MYSQL_USER: user
       MYSQL_PASSWORD: password
-      MYSQL_DATABASE: test_db_842
+      MYSQL_DATABASE: test_db
       MYSQL_ROOT_PASSWORD: password
     volumes:
       - e2e_mysql_842:/var/lib/mysql
@@ -447,6 +447,9 @@ services:
   e2e_questdb:
     image: questdb/questdb:latest
     container_name: e2e_questdb
+    environment:
+      QDB_PG_USER: user
+      QDB_PG_PASSWORD: password
     ports:
       - "8812:8812"
       - "9003:9000"
@@ -469,7 +472,7 @@ services:
       - ./sample-data/questdb/data.sql:/data.sql:ro
     entrypoint: >
       sh -c "
-        PGPASSWORD=quest psql -h e2e_questdb -p 8812 -U admin -d qdb -f /data.sql &&
+        PGPASSWORD=password psql -h e2e_questdb -p 8812 -U user -d qdb -f /data.sql &&
         echo 'QuestDB data loaded'
       "
     networks:

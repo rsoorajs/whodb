@@ -15,8 +15,8 @@
 CREATE DATABASE IF NOT EXISTS test_db;
 
 -- Create a user for E2E tests (insecure mode accepts any password)
-CREATE USER IF NOT EXISTS test_user;
-GRANT admin TO test_user;
+CREATE USER IF NOT EXISTS user;
+GRANT admin TO user;
 
 USE test_db;
 
@@ -25,7 +25,7 @@ USE test_db;
 SET serial_normalization = 'sql_sequence';
 
 CREATE SCHEMA IF NOT EXISTS test_schema;
-GRANT ALL ON SCHEMA test_schema TO test_user;
+GRANT ALL ON SCHEMA test_schema TO user;
 
 -- Users Table
 CREATE TABLE IF NOT EXISTS test_schema.users (

@@ -32,12 +32,12 @@
     "port": 3308,
     "user": "user",
     "password": "password",
-    "database": "test_db_842",
+    "database": "test_db",
     "advanced": {
       "Port": "3308"
     }
   },
-  "schema": "test_db_842",
+  "schema": "test_db",
   "whereOperators": {
     "equals": "=",
     "notEquals": "!=",
@@ -65,7 +65,7 @@
   "import": {
     "sampleDataDir": "mysql",
     "supportsMultiStatement": true,
-    "supportsSqlFileImport": false,
+    "supportsSqlFileImport": true,
     "csvTable": "users",
     "excelTable": "products",
     "csvExpectedColumns": ["id", "username", "email", "password", "created_at"]
@@ -367,19 +367,19 @@
     }
   },
   "sql": {
-    "schemaPrefix": "test_db_842.",
-    "selectAllUsers": "SELECT * FROM test_db_842.users ORDER BY id;",
-    "selectUserById": "SELECT * FROM test_db_842.users WHERE id=1;",
-    "updateUser": "UPDATE test_db_842.users SET username='john_doe1' WHERE id=1",
-    "revertUser": "UPDATE test_db_842.users SET username='john_doe' WHERE id=1",
-    "countUsers": "SELECT COUNT(*) as user_count FROM test_db_842.users;",
+    "schemaPrefix": "test_db.",
+    "selectAllUsers": "SELECT * FROM test_db.users ORDER BY id;",
+    "selectUserById": "SELECT * FROM test_db.users WHERE id=1;",
+    "updateUser": "UPDATE test_db.users SET username='john_doe1' WHERE id=1",
+    "revertUser": "UPDATE test_db.users SET username='john_doe' WHERE id=1",
+    "countUsers": "SELECT COUNT(*) as user_count FROM test_db.users;",
     "countColumn": "user_count",
-    "selectUsersFiltered": "SELECT username, email FROM test_db_842.users WHERE id > 1;",
-    "invalidQuery": "SELECT * FROM test_db_842.users1;",
-    "permissionDeniedQuery": "CREATE TABLE test_db_842.users (id INT)",
-    "emptyResultQuery": "SELECT * FROM test_db_842.users WHERE id = -99999",
+    "selectUsersFiltered": "SELECT username, email FROM test_db.users WHERE id > 1;",
+    "invalidQuery": "SELECT * FROM test_db.users1;",
+    "permissionDeniedQuery": "CREATE TABLE test_db.users (id INT)",
+    "emptyResultQuery": "SELECT * FROM test_db.users WHERE id = -99999",
     "errorPatterns": {
-      "tableNotFound": "Error 1146 (42S02): Table 'test_db_842.users1' doesn't exist"
+      "tableNotFound": "Error 1146 (42S02): Table 'test_db.users1' doesn't exist"
     }
   },
   "mockData": {

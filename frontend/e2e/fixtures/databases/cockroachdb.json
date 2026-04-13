@@ -28,7 +28,7 @@
   "connection": {
     "host": "localhost",
     "port": 26257,
-    "user": "test_user",
+    "user": "user",
     "password": "password",
     "database": "test_db",
     "advanced": {}
