@@ -1278,9 +1278,18 @@ func (m *Manager) GetAIModelsWithContext(ctx context.Context, providerID, modelT
 }
 
 type ChatMessage struct {
-	Type   string
-	Result *engine.GetRowsResult
-	Text   string
+	Type                 string
+	Result               *engine.GetRowsResult
+	Text                 string
+	RequiresConfirmation bool
+}
+
+// StreamChunk represents a chunk of a streaming AI chat response.
+type StreamChunk struct {
+	Text    string         // accumulated text so far
+	IsFinal bool           // is this the final response?
+	Final   []*ChatMessage // final messages (only when IsFinal=true)
+	Err     error
 }
 
 func (m *Manager) SendAIChat(providerID, modelType, token, schema, model, previousConversation, query string) ([]*ChatMessage, error) {
@@ -1327,9 +1336,10 @@ func (m *Manager) SendAIChat(providerID, modelType, token, schema, model, previo
 	chatMessages := []*ChatMessage{}
 	for _, msg := range messages {
 		chatMessages = append(chatMessages, &ChatMessage{
-			Type:   msg.Type,
-			Result: msg.Result,
-			Text:   msg.Text,
+			Type:                 msg.Type,
+			Result:               msg.Result,
+			Text:                 msg.Text,
+			RequiresConfirmation: msg.RequiresConfirmation,
 		})
 	}
 
