@@ -52,6 +52,7 @@ import (
 	sqladmin "google.golang.org/api/sqladmin/v1beta4"
 
 	alloydb "cloud.google.com/go/alloydb/apiv1"
+	memcache "cloud.google.com/go/memcache/apiv1"
 	redis "cloud.google.com/go/redis/apiv1"
 
 	gcpinfra "github.com/clidey/whodb/core/src/gcp"
@@ -132,6 +133,7 @@ type Provider struct {
 	sqladminService   *sqladmin.Service
 	alloydbClient     *alloydb.AlloyDBAdminClient
 	memorystoreClient *redis.CloudRedisClient
+	memcachedClient   *memcache.CloudMemcacheClient
 
 	initMu      sync.Mutex
 	initialized bool
@@ -209,6 +211,13 @@ func (p *Provider) initialize(ctx context.Context) error {
 			return fmt.Errorf("failed to create Memorystore client: %w", gcpinfra.HandleGCPError(err))
 		}
 		p.memorystoreClient = client
+
+		mcClient, err := memcache.NewCloudMemcacheClient(ctx, opts...)
+		if err != nil {
+			log.Warnf("GCP Provider: failed to create Memcached client (non-fatal): %v", err)
+		} else {
+			p.memcachedClient = mcClient
+		}
 	}
 
 	p.initialized = true
@@ -244,6 +253,9 @@ func (p *Provider) DiscoverConnections(ctx context.Context) ([]providers.Discove
 	if p.config.DiscoverMemorystore && p.memorystoreClient != nil {
 		taskCount++
 	}
+	if p.config.DiscoverMemorystore && p.memcachedClient != nil {
+		taskCount++
+	}
 
 	if taskCount == 0 {
 		return nil, nil
@@ -272,6 +284,14 @@ func (p *Provider) DiscoverConnections(ctx context.Context) ([]providers.Discove
 		g.Go(func() error {
 			conns, err := p.discoverMemorystore(gctx)
 			results <- discoveryResult{conns, err, "Memorystore"}
+			return nil
+		})
+	}
+
+	if p.config.DiscoverMemorystore && p.memcachedClient != nil {
+		g.Go(func() error {
+			conns, err := p.discoverMemcached(gctx)
+			results <- discoveryResult{conns, err, "Memcached"}
 			return nil
 		})
 	}

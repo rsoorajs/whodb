@@ -187,8 +187,8 @@ func (p *Provider) discoverElastiCacheClusters(ctx context.Context) ([]providers
 				continue
 			}
 
-			if cluster.Engine != nil && !isRedisCompatibleEngine(*cluster.Engine) {
-				log.Debugf("ElastiCache: skipping cluster %s (engine=%s, only Redis/Valkey supported)", clusterID, engineName)
+			if cluster.Engine != nil && !isSupportedCacheEngine(*cluster.Engine) {
+				log.Debugf("ElastiCache: skipping cluster %s (engine=%s, unsupported)", clusterID, engineName)
 				continue
 			}
 
@@ -266,12 +266,17 @@ func (p *Provider) cacheClusterToConnection(cluster *ectypes.CacheCluster) *prov
 	metadata["endpoint"] = aws.ToString(cluster.CacheNodes[0].Endpoint.Address)
 	metadata["port"] = strconv.Itoa(int(aws.ToInt32(cluster.CacheNodes[0].Endpoint.Port)))
 
+	dbType := engine.DatabaseType(engine.DatabaseType_ElastiCache)
+	if cluster.Engine != nil && strings.ToLower(*cluster.Engine) == "memcached" {
+		dbType = engine.DatabaseType_Memcached
+	}
+
 	return &providers.DiscoveredConnection{
 		ID:           p.connectionID(*cluster.CacheClusterId),
 		ProviderType: providers.ProviderTypeAWS,
 		ProviderID:   p.config.ID,
 		Name:         *cluster.CacheClusterId,
-		DatabaseType: engine.DatabaseType_ElastiCache,
+		DatabaseType: dbType,
 		Region:       p.config.Region,
 		Status:       mapElastiCacheStatus(aws.ToString(cluster.CacheClusterStatus)),
 		Metadata:     metadata,
@@ -328,6 +333,12 @@ func mapServerlessCacheStatus(status string) providers.ConnectionStatus {
 func isRedisCompatibleEngine(engine string) bool {
 	engine = strings.ToLower(engine)
 	return engine == "redis" || engine == "valkey"
+}
+
+// isSupportedCacheEngine returns true for all supported ElastiCache engines.
+func isSupportedCacheEngine(eng string) bool {
+	eng = strings.ToLower(eng)
+	return eng == "redis" || eng == "valkey" || eng == "memcached"
 }
 
 func mapElastiCacheStatus(status string) providers.ConnectionStatus {

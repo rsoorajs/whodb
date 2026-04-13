@@ -252,6 +252,8 @@ func (p *Provider) DiscoverConnections(ctx context.Context) ([]providers.Discove
 	if p.config.DiscoverElastiCache && p.elasticacheClient != nil {
 		taskCount++
 	}
+	// OpenSearch discovery runs alongside other services (no separate toggle)
+	taskCount++
 	if p.config.DiscoverDocumentDB && p.docdbClient != nil {
 		taskCount++
 	}
@@ -288,6 +290,12 @@ func (p *Provider) DiscoverConnections(ctx context.Context) ([]providers.Discove
 			return nil
 		})
 	}
+
+	g.Go(func() error {
+		conns, err := p.discoverOpenSearch(gctx)
+		results <- discoveryResult{conns, err, "OpenSearch"}
+		return nil
+	})
 
 	if p.config.DiscoverDocumentDB && p.docdbClient != nil {
 		g.Go(func() error {
