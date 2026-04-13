@@ -98,7 +98,7 @@ func (p *PostgresPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
 		operators = append(operators, op)
 	}
 	return &engine.DatabaseMetadata{
-		DatabaseType:    engine.DatabaseType_Postgres,
+		DatabaseType:    engine.DatabaseType(p.Type),
 		TypeDefinitions: TypeDefinitions,
 		Operators:       operators,
 		AliasMap:        AliasMap,
