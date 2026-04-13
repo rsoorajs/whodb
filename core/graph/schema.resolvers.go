@@ -66,7 +66,12 @@ func (r *mutationResolver) Login(ctx context.Context, credentials model.LoginCre
 		})
 	}
 
-	if !src.MainEngine.Choose(engine.DatabaseType(credentials.Type)).IsAvailable(ctx, &engine.PluginConfig{
+	plugin := src.MainEngine.Choose(engine.DatabaseType(credentials.Type))
+	if plugin == nil {
+		return nil, errors.New("unauthorized")
+	}
+
+	if !plugin.IsAvailable(ctx, &engine.PluginConfig{
 		Credentials: &engine.Credentials{
 			Type:     credentials.Type,
 			Hostname: credentials.Hostname,

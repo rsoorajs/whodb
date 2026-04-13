@@ -21,9 +21,14 @@ import { LogoutPage } from "../pages/auth/logout";
 import { getComponent } from "./component-registry";
 import { featureFlags } from "./features";
 import { LoadingPage } from "../components/loading";
+import { getRegisteredRoutes } from "./route-registry";
+export { registerRoute } from "./route-registry";
 
-// Lazy load heavy components
-const LoginPage = lazy(() => import("../pages/auth/login").then(m => ({ default: m.LoginPage })));
+// Allow EE to override the login page via the component registry (e.g. for SSO).
+// Falls back to the CE database-credential login page when no override is registered.
+const LoginPage = getComponent('login-page')
+    ?? lazy(() => import("../pages/auth/login").then(m => ({ default: m.LoginPage })));
+
 const GraphPage = lazy(() => import("../pages/graph/graph").then(m => ({ default: m.GraphPage })));
 const ExploreStorageUnit = lazy(() => import("../pages/storage-unit/explore-storage-unit").then(m => ({ default: m.ExploreStorageUnit })));
 const StorageUnitPage = lazy(() => import("../pages/storage-unit/storage-unit").then(m => ({ default: m.StorageUnitPage })));
@@ -128,5 +133,10 @@ export const getRoutes = (): IInternalRoute[] => {
         }
         currentRoutes.push(...Object.values((currentRoute)));
     }
-    return allRoutes;
+    const extra = getRegisteredRoutes().map(({ name, path, factory }) => ({
+        name,
+        path,
+        component: <LazyRoute component={lazy(factory)} />,
+    }));
+    return [...allRoutes, ...extra];
 }
