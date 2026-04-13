@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { FC, useCallback, useEffect, useMemo, useState } from "react";
+import { FC, useCallback, useEffect, useMemo } from "react";
 import {
     Badge,
     Button,
@@ -27,15 +27,15 @@ import {
 } from "@clidey/ux";
 import {
     CloudProviderType,
-    useGetCloudProvidersQuery,
+    useGetAzureProvidersQuery,
     useGetDiscoveredConnectionsQuery,
-    useRefreshCloudProviderMutation,
+    useRefreshAzureProviderMutation,
 } from "@graphql";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { ProvidersActions, LocalCloudProvider, LocalDiscoveredConnection } from "../../store/providers";
+import { ProvidersActions, LocalDiscoveredConnection } from "../../store/providers";
 import { useTranslation } from "@/hooks/use-translation";
 import { Icons } from "../icons";
-import { GcpProviderModal } from "./gcp-provider-modal";
+import { AzureProviderModal } from "./azure-provider-modal";
 import { Tip } from "../tip";
 import {
     ArrowPathIcon,
@@ -47,83 +47,69 @@ import { ReactElement } from "react";
 import { buildConnectionPrefill, ConnectionPrefillData } from "@/utils/cloud-connection-prefill";
 import { getAppName } from "@/config/features";
 
-export type GcpConnectionPrefillData = ConnectionPrefillData;
+export type AzureConnectionPrefillData = ConnectionPrefillData;
 
-/** Checks if a profile ID belongs to a GCP-discovered connection. */
-export function isGcpConnection(profileId: string | undefined): boolean {
-    return profileId?.startsWith("gcp-") ?? false;
+/** Checks if a profile ID belongs to an Azure-discovered connection. */
+export function isAzureConnection(profileId: string | undefined): boolean {
+    return profileId?.startsWith("azure-") ?? false;
 }
 
-interface GcpConnectionPickerProps {
+interface AzureConnectionPickerProps {
     /** Called when user clicks a discovered connection - prefills the main login form */
-    onSelectConnection?: (data: GcpConnectionPrefillData) => void;
+    onSelectConnection?: (data: AzureConnectionPrefillData) => void;
 }
 
 /**
- * A picker component for GCP-discovered database connections.
- * Shows on the login page when GCP providers are configured.
+ * A picker component for Azure-discovered database connections.
+ * Shows on the login page when Azure providers are configured.
  * When a connection is clicked, it calls onSelectConnection to prefill the main login form.
  */
-export const GcpConnectionPicker: FC<GcpConnectionPickerProps> = ({
+export const AzureConnectionPicker: FC<AzureConnectionPickerProps> = ({
     onSelectConnection,
 }) => {
-    const { t } = useTranslation('components/gcp-connection-picker');
+    const { t } = useTranslation('components/azure-connection-picker');
     const appName = getAppName();
     const dispatch = useAppDispatch();
 
     // Redux state
-    const allProviders = useAppSelector(state => state.providers.cloudProviders);
-    const gcpProviders = useMemo(() =>
-        allProviders.filter(p => p.ProviderType === CloudProviderType.Gcp),
-        [allProviders]
-    );
-    const allConnections = useAppSelector(state => state.providers.discoveredConnections);
-    const gcpConnections = useMemo(() =>
-        allConnections.filter(c => c.ProviderType === CloudProviderType.Gcp),
-        [allConnections]
-    );
     const isModalOpen = useAppSelector(state => state.providers.isProviderModalOpen);
 
-    // GraphQL
-    const { data: providersData, loading: providersLoading, refetch: refetchProviders } = useGetCloudProvidersQuery();
+    // GraphQL - these operations are on the auth allowlist, so no skip needed
+    const { data: providersData, loading: providersLoading, refetch: refetchProviders } = useGetAzureProvidersQuery();
     const { data: connectionsData, loading: connectionsLoading, refetch: refetchConnections } = useGetDiscoveredConnectionsQuery();
-    const [refreshProvider, { loading: refreshLoading }] = useRefreshCloudProviderMutation();
+    const [refreshProvider, { loading: refreshLoading }] = useRefreshAzureProviderMutation();
 
-    // Sync GraphQL data with Redux
-    useEffect(() => {
-        if (providersData?.CloudProviders) {
-            dispatch(ProvidersActions.setCloudProviders(providersData.CloudProviders as LocalCloudProvider[]));
-        }
-    }, [providersData, dispatch]);
+    const azureProviders = providersData?.AzureProviders ?? [];
 
+    // Filter discovered connections to Azure provider type only
+    const azureConnections: LocalDiscoveredConnection[] = useMemo(() => {
+        const allConnections = (connectionsData?.DiscoveredConnections ?? []) as LocalDiscoveredConnection[];
+        return allConnections.filter(c => c.ProviderType === CloudProviderType.Azure);
+    }, [connectionsData]);
+
+    // Sync all discovered connections with Redux (needed for other components)
     useEffect(() => {
         if (connectionsData?.DiscoveredConnections) {
             dispatch(ProvidersActions.setDiscoveredConnections(connectionsData.DiscoveredConnections as LocalDiscoveredConnection[]));
         }
     }, [connectionsData, dispatch]);
 
-    // Track whether we initiated the add modal
-    const [gcpAddMode, setGcpAddMode] = useState(false);
-    const editingProviderId = useAppSelector(state => state.providers.editingProviderId);
-
     const handleAddProvider = useCallback(() => {
-        setGcpAddMode(true);
         dispatch(ProvidersActions.openAddProviderModal());
     }, [dispatch]);
 
     const handleRefresh = useCallback(async () => {
-        const providers = providersData?.CloudProviders ?? [];
-        const gcpOnly = providers.filter(p => p.ProviderType === CloudProviderType.Gcp);
+        const providers = azureProviders;
         let hasErrors = false;
-        for (const provider of gcpOnly) {
+        for (const provider of providers) {
             try {
                 const result = await refreshProvider({ variables: { id: provider.Id } });
-                if (result.data?.RefreshCloudProvider?.Error) {
+                if (result.data?.RefreshAzureProvider?.Error) {
                     hasErrors = true;
                 }
             } catch (error) {
                 hasErrors = true;
-                console.error(`Failed to refresh provider ${provider.Id}:`, error);
+                console.error(`Failed to refresh Azure provider ${provider.Id}:`, error);
             }
         }
         await refetchProviders();
@@ -132,10 +118,11 @@ export const GcpConnectionPicker: FC<GcpConnectionPickerProps> = ({
         if (hasErrors) {
             toast.warning(t('refreshPartialError'));
         }
-    }, [providersData, refreshProvider, refetchProviders, refetchConnections, t]);
+    }, [azureProviders, refreshProvider, refetchProviders, refetchConnections, t]);
 
     /**
      * Build prefill data from a discovered connection and call the callback.
+     * Uses shared prefill rules that handle SSL/TLS settings for each database type.
      */
     const handleSelectConnection = useCallback((conn: LocalDiscoveredConnection) => {
         if (!onSelectConnection) return;
@@ -146,7 +133,6 @@ export const GcpConnectionPicker: FC<GcpConnectionPickerProps> = ({
 
     const handleModalOpenChange = useCallback((open: boolean) => {
         if (!open) {
-            setGcpAddMode(false);
             dispatch(ProvidersActions.closeProviderModal());
         }
     }, [dispatch]);
@@ -159,28 +145,25 @@ export const GcpConnectionPicker: FC<GcpConnectionPickerProps> = ({
         return iconMap[dbType] ?? null;
     }, []);
 
-    // Show modal if we initiated add mode and no provider is being edited
-    const showModal = isModalOpen && gcpAddMode && !editingProviderId;
-
-    // Don't render if no GCP providers and no GCP connections
-    if (gcpProviders.length === 0 && gcpConnections.length === 0) {
+    // Don't render if no providers and no connections
+    if (azureProviders.length === 0 && azureConnections.length === 0) {
         return (
             <div className="flex flex-col items-center gap-4 py-6">
                 <div className="flex items-center gap-2 text-muted-foreground">
                     <CloudIcon className="w-5 h-5" />
-                    <span className="text-sm">{t('connectGcpAccount')}</span>
+                    <span className="text-sm">{t('connectAzureAccount')}</span>
                 </div>
                 <Button
                     variant="outline"
                     size="sm"
                     onClick={handleAddProvider}
-                    data-testid="add-gcp-provider-login"
+                    data-testid="add-azure-provider-login"
                 >
                     <PlusIcon className="w-4 h-4 mr-1" />
-                    {t('addGcpAccount')}
+                    {t('addAzureAccount')}
                 </Button>
-                <GcpProviderModal
-                    open={showModal}
+                <AzureProviderModal
+                    open={isModalOpen}
                     onOpenChange={handleModalOpenChange}
                 />
             </div>
@@ -192,7 +175,7 @@ export const GcpConnectionPicker: FC<GcpConnectionPickerProps> = ({
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <CloudIcon className="w-5 h-5" />
-                    <Label className="font-medium">{t('gcpConnections')}</Label>
+                    <Label className="font-medium">{t('azureConnections')}</Label>
                     <Popover>
                         <PopoverTrigger asChild>
                             <button
@@ -211,16 +194,17 @@ export const GcpConnectionPicker: FC<GcpConnectionPickerProps> = ({
                                     <div className="space-y-1">
                                         <p className="font-medium text-foreground">{t('helpAuthMethods')}</p>
                                         <ul className="list-disc list-inside space-y-1 pl-1">
-                                            <li><span className="font-medium">{t('helpAuthDefault')}</span> -- {t('helpAuthDefaultDesc')}</li>
-                                            <li><span className="font-medium">{t('helpAuthServiceAccount')}</span> -- {t('helpAuthServiceAccountDesc')}</li>
+                                            <li><span className="font-medium">{t('helpAuthDefault')}</span> – {t('helpAuthDefaultDesc')}</li>
+                                            <li><span className="font-medium">{t('helpAuthSP')}</span> – {t('helpAuthSPDesc')}</li>
                                         </ul>
                                     </div>
                                     <div className="space-y-1">
                                         <p className="font-medium text-foreground">{t('helpServices')}</p>
                                         <ul className="list-disc list-inside space-y-1 pl-1">
-                                            <li><span className="font-medium">Cloud SQL</span> -- {t('helpCloudSqlDesc')}</li>
-                                            <li><span className="font-medium">AlloyDB</span> -- {t('helpAlloyDbDesc')}</li>
-                                            <li><span className="font-medium">Memorystore</span> -- {t('helpMemorystoreDesc')}</li>
+                                            <li><span className="font-medium">PostgreSQL</span> – {t('helpPostgresDesc')}</li>
+                                            <li><span className="font-medium">MySQL</span> – {t('helpMysqlDesc')}</li>
+                                            <li><span className="font-medium">Redis</span> – {t('helpRedisDesc')}</li>
+                                            <li><span className="font-medium">Cosmos DB</span> – {t('helpCosmosdbDesc')}</li>
                                         </ul>
                                     </div>
                                     <p className="pt-1 border-t">{t('helpCredentialNote', { appName })}</p>
@@ -256,7 +240,7 @@ export const GcpConnectionPicker: FC<GcpConnectionPickerProps> = ({
                 </div>
             </div>
 
-            {gcpConnections.length === 0 ? (
+            {azureConnections.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
                     {t('noDiscoveredConnections')}
                 </p>
@@ -266,12 +250,12 @@ export const GcpConnectionPicker: FC<GcpConnectionPickerProps> = ({
                         {t('clickToFillForm')}
                     </p>
                     <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto">
-                        {gcpConnections.map((conn) => (
+                        {azureConnections.map((conn) => (
                             <button
                                 key={conn.Id}
                                 onClick={() => handleSelectConnection(conn)}
                                 className="flex items-center gap-3 p-3 rounded-lg border text-left transition-colors border-border hover:border-brand/50 hover:bg-brand/5"
-                                data-testid={`gcp-connection-${conn.Id}`}
+                                data-testid={`azure-connection-${conn.Id}`}
                             >
                                 <div className="w-8 h-8 flex items-center justify-center">
                                     {getDbIcon(conn.DatabaseType)}
@@ -284,7 +268,10 @@ export const GcpConnectionPicker: FC<GcpConnectionPickerProps> = ({
                                         </Badge>
                                     </div>
                                     <div className="flex items-center gap-1 text-xs text-muted-foreground truncate">
-                                        <span>{conn.Region} {conn.Status}</span>
+                                        <span>{conn.Region} • {conn.Status}</span>
+                                        {conn.Metadata?.find(m => m.Key === "connectivity")?.Value === "unreachable" && (
+                                            <span className="text-destructive" title={t('unreachableTooltip')}>• {t('unreachable')}</span>
+                                        )}
                                     </div>
                                 </div>
                                 <CloudIcon className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -294,8 +281,8 @@ export const GcpConnectionPicker: FC<GcpConnectionPickerProps> = ({
                 </>
             )}
 
-            <GcpProviderModal
-                open={showModal}
+            <AzureProviderModal
+                open={isModalOpen}
                 onOpenChange={handleModalOpenChange}
             />
         </div>

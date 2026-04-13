@@ -330,6 +330,7 @@ type SSLStatus {
 # Supported cloud provider types
 enum CloudProviderType {
   AWS
+  Azure
   GCP
 }
 
@@ -407,6 +408,59 @@ type AWSRegion {
   Id: String!
   Description: String!
   Partition: String!
+}
+
+# =============================================================================
+# Azure Provider
+# =============================================================================
+
+type AzureProvider implements CloudProvider {
+  # Interface fields
+  Id: ID!
+  ProviderType: CloudProviderType!
+  Name: String!
+  Region: String!
+  Status: CloudProviderStatus!
+  LastDiscoveryAt: String
+  DiscoveredCount: Int!
+  Error: String
+  # Azure-specific fields
+  SubscriptionID: String!
+  TenantID: String
+  ResourceGroup: String
+  DiscoverPostgreSQL: Boolean!
+  DiscoverMySQL: Boolean!
+  DiscoverRedis: Boolean!
+  DiscoverCosmosDB: Boolean!
+}
+
+input AzureProviderInput {
+  Name: String!
+  SubscriptionID: String!
+  TenantID: String
+  ClientID: String
+  ClientSecret: String
+  AuthMethod: String
+  ResourceGroup: String
+  DiscoverPostgreSQL: Boolean
+  DiscoverMySQL: Boolean
+  DiscoverRedis: Boolean
+  DiscoverCosmosDB: Boolean
+}
+
+# Azure subscription discovered via the ARM API
+type AzureSubscription {
+  Id: String!
+  DisplayName: String!
+  State: String!
+  TenantID: String!
+}
+
+# Azure region with geography grouping
+type AzureRegion {
+  Id: String!
+  DisplayName: String!
+  Geography: String!
 }
 
 # =============================================================================
@@ -519,7 +573,15 @@ type Query {
   LocalAWSProfiles: [LocalAWSProfile!]!
   AWSRegions: [AWSRegion!]!
 
-  # GCP-specific helpers
+  # Azure-specific helpers
+  AzureProviders: [AzureProvider!]!
+  AzureProvider(id: ID!): AzureProvider
+  AzureSubscriptions: [AzureSubscription!]!
+  AzureRegions: [AzureRegion!]!
+
+  # GCP Provider Queries
+  GCPProviders: [GCPProvider!]!
+  GCPProvider(id: ID!): GCPProvider
   LocalGCPProjects: [LocalGCPProject!]!
   GCPRegions: [GCPRegion!]!
 }
@@ -572,12 +634,21 @@ type Mutation {
   AddGCPProvider(input: GCPProviderInput!): GCPProvider!
   UpdateGCPProvider(id: ID!, input: GCPProviderInput!): GCPProvider!
   TestGCPCredentials(input: GCPProviderInput!): CloudProviderStatus!
+  RefreshGCPProvider(id: ID!): GCPProvider!
   # Generic operations (work with any provider type)
   RemoveCloudProvider(id: ID!): StatusResponse!
   TestCloudProvider(id: ID!): CloudProviderStatus!
   RefreshCloudProvider(id: ID!): CloudProvider!
   # AWS-specific: Generate a short-lived IAM auth token for RDS database authentication
   GenerateRDSAuthToken(providerID: ID!, endpoint: String!, port: Int!, region: String!, username: String!): String!
+
+  # Azure provider-specific add/update (type-safe inputs)
+  AddAzureProvider(input: AzureProviderInput!): AzureProvider!
+  UpdateAzureProvider(id: ID!, input: AzureProviderInput!): AzureProvider!
+  TestAzureCredentials(input: AzureProviderInput!): CloudProviderStatus!
+  RefreshAzureProvider(id: ID!): AzureProvider!
+  # Azure-specific: Generate a short-lived Azure AD token for database authentication
+  GenerateAzureADToken(providerID: ID!, databaseType: String!): String!
   # GCP-specific: Generate an OAuth2 access token for Cloud SQL IAM database authentication
   GenerateCloudSQLIAMAuthToken(providerID: ID!, username: String!): String!
 }

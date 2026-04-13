@@ -1,0 +1,31 @@
+en_US:
+  title: Azure Accounts
+  description: Connect Azure subscriptions to auto-discover PostgreSQL, MySQL, Redis, and Cosmos DB instances.
+
+  noProviders: No Azure accounts configured
+  addFirstProvider: Add your first Azure account to discover databases
+
+  addProvider: Add Account
+  refresh: Refresh All
+  refreshResources: Refresh Resources
+  edit: Edit
+  remove: Remove
+
+  status.connected: Connected
+  status.discovering: Discovering
+  status.error: Error
+  status.disconnected: Disconnected
+
+  envDefined: Environment
+  resourcesDiscovered: "{count} resources"
+  resourcesDiscovered_one: "{count} resource"
+  lastDiscovery: "Last: {time}"
+
+  providerRemoved: "Removed {name}"
+  removeFailed: "Failed to remove: {error}"
+  refreshComplete: "Found {count} resources"
+  refreshComplete_one: "Found {count} resource"
+  refreshFailed: "Refresh failed: {error}"
+  unknownError: Unknown error
+
+  cannotRemoveEnv: Cannot remove environment-defined provider

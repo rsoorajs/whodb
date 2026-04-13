@@ -1,0 +1,58 @@
+en_US:
+  addProvider: Add Azure Account
+  editProvider: Edit Azure Account
+
+  detectedSubscriptions: Detected Subscriptions
+  clickToAutofill: Click a subscription to auto-fill the form
+
+  displayName: Display Name
+  namePlaceholder: e.g., Production Azure
+  subscriptionId: Subscription ID
+  subscriptionPlaceholder: e.g., 00000000-0000-0000-0000-000000000000
+
+  authMethod: Authentication Method
+  selectAuthMethod: Select method
+  authDefault: Default (Managed Identity / CLI)
+  authServicePrincipal: Service Principal
+  authMethodDesc: Default uses managed identity, Azure CLI, or environment credentials. Service Principal uses explicit client credentials.
+
+  tenantId: Tenant ID
+  tenantPlaceholder: e.g., 00000000-0000-0000-0000-000000000000
+  clientId: Client ID
+  clientIdPlaceholder: e.g., 00000000-0000-0000-0000-000000000000
+  clientSecret: Client Secret
+  clientSecretPlaceholder: Enter client secret
+
+  resourceGroup: Resource Group
+  resourceGroupPlaceholder: e.g., my-resource-group
+  resourceGroupDesc: Leave empty to discover across all resource groups in the subscription.
+
+  azureRegion: Azure Region
+  selectRegion: Select region
+
+  resourceDiscovery: Resource Discovery
+  postgresqlLabel: PostgreSQL
+  postgresqlDesc: Azure Database for PostgreSQL flexible servers
+  mysqlLabel: MySQL
+  mysqlDesc: Azure Database for MySQL flexible servers
+  redisLabel: Redis
+  redisDesc: Azure Cache for Redis instances
+  cosmosdbLabel: Cosmos DB
+  cosmosdbDesc: Azure Cosmos DB for MongoDB accounts
+
+  testConnection: Test Connection
+  testing: Testing...
+  connectionSuccessful: Connection successful
+  connectionFailed: Connection test failed
+  testFailed: "Test failed: {error}"
+  cancel: Cancel
+  save: Save
+  add: Add
+  saving: Saving...
+  providerAdded: Azure account added successfully
+  providerUpdated: Azure account updated successfully
+  operationFailed: "Operation failed: {error}"
+  unknownError: Unknown error occurred
+
+  nameRequired: Display name is required
+  subscriptionRequired: Subscription ID is required

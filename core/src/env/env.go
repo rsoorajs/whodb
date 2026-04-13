@@ -103,6 +103,9 @@ var PosthogHost = "https://us.i.posthog.com"
 // disabled by default for now until official release
 var IsAWSProviderEnabled = os.Getenv("WHODB_ENABLE_AWS_PROVIDER") == "true"
 
+// IsAzureProviderEnabled controls whether Azure provider functionality is available.
+var IsAzureProviderEnabled = os.Getenv("WHODB_ENABLE_AZURE_PROVIDER") == "true"
+
 // IsGCPProviderEnabled controls whether GCP provider functionality is available.
 var IsGCPProviderEnabled = os.Getenv("WHODB_ENABLE_GCP_PROVIDER") == "true"
 

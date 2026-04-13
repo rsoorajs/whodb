@@ -85,6 +85,61 @@ type AtomicWhereCondition struct {
 	Value      string `json:"Value"`
 }
 
+type AzureProvider struct {
+	ID                 string              `json:"Id"`
+	ProviderType       CloudProviderType   `json:"ProviderType"`
+	Name               string              `json:"Name"`
+	Region             string              `json:"Region"`
+	Status             CloudProviderStatus `json:"Status"`
+	LastDiscoveryAt    *string             `json:"LastDiscoveryAt,omitempty"`
+	DiscoveredCount    int                 `json:"DiscoveredCount"`
+	Error              *string             `json:"Error,omitempty"`
+	SubscriptionID     string              `json:"SubscriptionID"`
+	TenantID           *string             `json:"TenantID,omitempty"`
+	ResourceGroup      *string             `json:"ResourceGroup,omitempty"`
+	DiscoverPostgreSQL bool                `json:"DiscoverPostgreSQL"`
+	DiscoverMySQL      bool                `json:"DiscoverMySQL"`
+	DiscoverRedis      bool                `json:"DiscoverRedis"`
+	DiscoverCosmosDb   bool                `json:"DiscoverCosmosDB"`
+}
+
+func (AzureProvider) IsCloudProvider()                        {}
+func (this AzureProvider) GetID() string                      { return this.ID }
+func (this AzureProvider) GetProviderType() CloudProviderType { return this.ProviderType }
+func (this AzureProvider) GetName() string                    { return this.Name }
+func (this AzureProvider) GetRegion() string                  { return this.Region }
+func (this AzureProvider) GetStatus() CloudProviderStatus     { return this.Status }
+func (this AzureProvider) GetLastDiscoveryAt() *string        { return this.LastDiscoveryAt }
+func (this AzureProvider) GetDiscoveredCount() int            { return this.DiscoveredCount }
+func (this AzureProvider) GetError() *string                  { return this.Error }
+
+type AzureProviderInput struct {
+	Name               string  `json:"Name"`
+	SubscriptionID     string  `json:"SubscriptionID"`
+	TenantID           *string `json:"TenantID,omitempty"`
+	ClientID           *string `json:"ClientID,omitempty"`
+	ClientSecret       *string `json:"ClientSecret,omitempty"`
+	AuthMethod         *string `json:"AuthMethod,omitempty"`
+	ResourceGroup      *string `json:"ResourceGroup,omitempty"`
+	DiscoverPostgreSQL *bool   `json:"DiscoverPostgreSQL,omitempty"`
+	DiscoverMySQL      *bool   `json:"DiscoverMySQL,omitempty"`
+	DiscoverRedis      *bool   `json:"DiscoverRedis,omitempty"`
+	DiscoverCosmosDb   *bool   `json:"DiscoverCosmosDB,omitempty"`
+}
+
+type AzureRegion struct {
+	ID          string `json:"Id"`
+	DisplayName string `json:"DisplayName"`
+	Geography   string `json:"Geography"`
+}
+
+type AzureSubscription struct {
+	ID          string `json:"Id"`
+	DisplayName string `json:"DisplayName"`
+	State       string `json:"State"`
+	TenantID    string `json:"TenantID"`
+}
+
 type Capabilities struct {
 	SupportsScratchpad     bool `json:"supportsScratchpad"`
 	SupportsChat           bool `json:"supportsChat"`
@@ -487,18 +542,20 @@ func (e CloudProviderStatus) MarshalJSON() ([]byte, error) {
 type CloudProviderType string
 
 const (
-	CloudProviderTypeAWS CloudProviderType = "AWS"
-	CloudProviderTypeGCP CloudProviderType = "GCP"
+	CloudProviderTypeAWS   CloudProviderType = "AWS"
+	CloudProviderTypeAzure CloudProviderType = "Azure"
+	CloudProviderTypeGCP   CloudProviderType = "GCP"
 )
 
 var AllCloudProviderType = []CloudProviderType{
 	CloudProviderTypeAWS,
+	CloudProviderTypeAzure,
 	CloudProviderTypeGCP,
 }
 
 func (e CloudProviderType) IsValid() bool {
 	switch e {
-	case CloudProviderTypeAWS, CloudProviderTypeGCP:
+	case CloudProviderTypeAWS, CloudProviderTypeAzure, CloudProviderTypeGCP:
 		return true
 	}
 	return false
