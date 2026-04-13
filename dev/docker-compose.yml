@@ -285,7 +285,7 @@ services:
     networks:
       - db
     healthcheck:
-      test: ["CMD", "sh", "-c", "mysql -h 127.0.0.1 -P 4000 -u root -e 'SELECT 1' 2>/dev/null"]
+      test: ["CMD", "sh", "-c", "cat < /dev/tcp/127.0.0.1/4000"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -412,10 +412,6 @@ services:
       bash -c "
         bin/yugabyted start --daemon=false --advertise_address=0.0.0.0 --tserver_flags='ysql_enable_auth=true'
       "
-    environment:
-      YSQL_USER: user
-      YSQL_PASSWORD: password
-      YSQL_DB: test_db
     ports:
       - "5434:5433"
       - "7001:7000"
@@ -424,7 +420,7 @@ services:
     networks:
       - db
     healthcheck:
-      test: ["CMD-SHELL", "PGPASSWORD=password psql -h localhost -p 5433 -U user -d test_db -c 'SELECT 1' || exit 1"]
+      test: ["CMD-SHELL", "PGPASSWORD=yugabyte psql -h localhost -p 5433 -U yugabyte -c 'SELECT 1' || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 20
@@ -438,6 +434,9 @@ services:
       - ./sample-data/postgres/data.sql:/data.sql:ro
     entrypoint: >
       sh -c "
+        PGPASSWORD=yugabyte psql -h e2e_yugabytedb -p 5433 -U yugabyte -c \"CREATE DATABASE test_db;\" &&
+        PGPASSWORD=yugabyte psql -h e2e_yugabytedb -p 5433 -U yugabyte -c \"CREATE USER \\\"user\\\" WITH PASSWORD 'password';\" &&
+        PGPASSWORD=yugabyte psql -h e2e_yugabytedb -p 5433 -U yugabyte -d test_db -c \"GRANT ALL PRIVILEGES ON DATABASE test_db TO \\\"user\\\";\" &&
         PGPASSWORD=password psql -h e2e_yugabytedb -p 5433 -U user -d test_db -f /data.sql &&
         echo 'YugabyteDB data loaded'
       "
@@ -479,30 +478,30 @@ services:
       - db
 
   e2e_ferretdb_pg:
-    image: postgres:latest
+    image: ghcr.io/ferretdb/postgres-documentdb:17-0.107.0-ferretdb-2.7.0
     container_name: e2e_ferretdb_pg
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: ferretdb
+      POSTGRES_DB: postgres
     volumes:
-      - e2e_ferretdb_pg:/data/postgres
+      - e2e_ferretdb_pg:/var/lib/postgresql/data
     networks:
       - db
 
   e2e_ferretdb:
-    image: ferretdb/ferretdb:latest
+    image: ghcr.io/ferretdb/ferretdb:2.7.0
     container_name: e2e_ferretdb
     depends_on:
       - e2e_ferretdb_pg
     environment:
-      FERRETDB_POSTGRESQL_URL: postgres://user:password@e2e_ferretdb_pg:5432/ferretdb
+      FERRETDB_POSTGRESQL_URL: postgres://user:password@e2e_ferretdb_pg:5432/postgres
     ports:
       - "27020:27017"
     networks:
       - db
     healthcheck:
-      test: ["CMD-SHELL", "mongosh --port 27017 --eval 'db.runCommand({ping:1})' --quiet || exit 1"]
+      test: ["CMD", "/ferretdb", "ping"]
       interval: 10s
       timeout: 5s
       retries: 10
