@@ -103,6 +103,9 @@ var PosthogHost = "https://us.i.posthog.com"
 // disabled by default for now until official release
 var IsAWSProviderEnabled = os.Getenv("WHODB_ENABLE_AWS_PROVIDER") == "true"
 
+// IsGCPProviderEnabled controls whether GCP provider functionality is available.
+var IsGCPProviderEnabled = os.Getenv("WHODB_ENABLE_GCP_PROVIDER") == "true"
+
 // DisableCredentialForm controls whether the credential form is disabled.
 var DisableCredentialForm = os.Getenv("WHODB_DISABLE_CREDENTIAL_FORM") == "true"
 

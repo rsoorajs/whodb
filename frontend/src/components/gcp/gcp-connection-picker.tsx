@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { FC, useCallback, useEffect, useMemo } from "react";
+import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import {
     Badge,
     Button,
@@ -35,7 +35,7 @@ import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ProvidersActions, LocalCloudProvider, LocalDiscoveredConnection } from "../../store/providers";
 import { useTranslation } from "@/hooks/use-translation";
 import { Icons } from "../icons";
-import { AwsProviderModal } from "./aws-provider-modal";
+import { GcpProviderModal } from "./gcp-provider-modal";
 import { Tip } from "../tip";
 import {
     ArrowPathIcon,
@@ -47,40 +47,39 @@ import { ReactElement } from "react";
 import { buildConnectionPrefill, ConnectionPrefillData } from "@/utils/cloud-connection-prefill";
 import { getAppName } from "@/config/features";
 
-export type AwsConnectionPrefillData = ConnectionPrefillData;
+export type GcpConnectionPrefillData = ConnectionPrefillData;
 
-interface AwsConnectionPickerProps {
+interface GcpConnectionPickerProps {
     /** Called when user clicks a discovered connection - prefills the main login form */
-    onSelectConnection?: (data: AwsConnectionPrefillData) => void;
+    onSelectConnection?: (data: GcpConnectionPrefillData) => void;
 }
 
 /**
- * A picker component for AWS-discovered database connections.
- * Shows on the login page when AWS providers are configured.
+ * A picker component for GCP-discovered database connections.
+ * Shows on the login page when GCP providers are configured.
  * When a connection is clicked, it calls onSelectConnection to prefill the main login form.
  */
-export const AwsConnectionPicker: FC<AwsConnectionPickerProps> = ({
+export const GcpConnectionPicker: FC<GcpConnectionPickerProps> = ({
     onSelectConnection,
 }) => {
-    const { t } = useTranslation('components/aws-connection-picker');
+    const { t } = useTranslation('components/gcp-connection-picker');
     const appName = getAppName();
     const dispatch = useAppDispatch();
 
-    // Redux state — filter to AWS only
+    // Redux state
     const allProviders = useAppSelector(state => state.providers.cloudProviders);
-    const allConnections = useAppSelector(state => state.providers.discoveredConnections);
-    const isModalOpen = useAppSelector(state => state.providers.isProviderModalOpen);
-
-    const cloudProviders = useMemo(() =>
-        allProviders.filter(p => p.ProviderType === CloudProviderType.Aws),
+    const gcpProviders = useMemo(() =>
+        allProviders.filter(p => p.ProviderType === CloudProviderType.Gcp),
         [allProviders]
     );
-    const discoveredConnections = useMemo(() =>
-        allConnections.filter(c => c.ProviderType === CloudProviderType.Aws),
+    const allConnections = useAppSelector(state => state.providers.discoveredConnections);
+    const gcpConnections = useMemo(() =>
+        allConnections.filter(c => c.ProviderType === CloudProviderType.Gcp),
         [allConnections]
     );
+    const isModalOpen = useAppSelector(state => state.providers.isProviderModalOpen);
 
-    // GraphQL - these operations are on the auth allowlist, so no skip needed
+    // GraphQL
     const { data: providersData, loading: providersLoading, refetch: refetchProviders } = useGetCloudProvidersQuery();
     const { data: connectionsData, loading: connectionsLoading, refetch: refetchConnections } = useGetDiscoveredConnectionsQuery();
     const [refreshProvider, { loading: refreshLoading }] = useRefreshCloudProviderMutation();
@@ -98,19 +97,22 @@ export const AwsConnectionPicker: FC<AwsConnectionPickerProps> = ({
         }
     }, [connectionsData, dispatch]);
 
+    // Track whether we initiated the add modal
+    const [gcpAddMode, setGcpAddMode] = useState(false);
+    const editingProviderId = useAppSelector(state => state.providers.editingProviderId);
+
     const handleAddProvider = useCallback(() => {
+        setGcpAddMode(true);
         dispatch(ProvidersActions.openAddProviderModal());
     }, [dispatch]);
 
     const handleRefresh = useCallback(async () => {
-        // Refresh AWS providers only to trigger fresh discovery
         const providers = providersData?.CloudProviders ?? [];
-        const awsOnly = providers.filter(p => p.ProviderType === CloudProviderType.Aws);
+        const gcpOnly = providers.filter(p => p.ProviderType === CloudProviderType.Gcp);
         let hasErrors = false;
-        for (const provider of awsOnly) {
+        for (const provider of gcpOnly) {
             try {
                 const result = await refreshProvider({ variables: { id: provider.Id } });
-                // Check if there was a partial error (some services failed)
                 if (result.data?.RefreshCloudProvider?.Error) {
                     hasErrors = true;
                 }
@@ -119,7 +121,6 @@ export const AwsConnectionPicker: FC<AwsConnectionPickerProps> = ({
                 console.error(`Failed to refresh provider ${provider.Id}:`, error);
             }
         }
-        // Then refetch the updated data
         await refetchProviders();
         await refetchConnections();
 
@@ -130,7 +131,6 @@ export const AwsConnectionPicker: FC<AwsConnectionPickerProps> = ({
 
     /**
      * Build prefill data from a discovered connection and call the callback.
-     * Uses shared prefill rules that handle SSL/TLS settings for each database type.
      */
     const handleSelectConnection = useCallback((conn: LocalDiscoveredConnection) => {
         if (!onSelectConnection) return;
@@ -141,6 +141,7 @@ export const AwsConnectionPicker: FC<AwsConnectionPickerProps> = ({
 
     const handleModalOpenChange = useCallback((open: boolean) => {
         if (!open) {
+            setGcpAddMode(false);
             dispatch(ProvidersActions.closeProviderModal());
         }
     }, [dispatch]);
@@ -150,29 +151,31 @@ export const AwsConnectionPicker: FC<AwsConnectionPickerProps> = ({
     // Get database type icon
     const getDbIcon = useCallback((dbType: string): ReactElement | null => {
         const iconMap: Record<string, ReactElement> = Icons.Logos as Record<string, ReactElement>;
-        // Normalize type name (e.g., "Postgres" -> "Postgres", "MySQL" -> "MySql")
         return iconMap[dbType] ?? null;
     }, []);
 
-    // Don't render if no providers and no connections
-    if (cloudProviders.length === 0 && discoveredConnections.length === 0) {
+    // Show modal if we initiated add mode and no provider is being edited
+    const showModal = isModalOpen && gcpAddMode && !editingProviderId;
+
+    // Don't render if no GCP providers and no GCP connections
+    if (gcpProviders.length === 0 && gcpConnections.length === 0) {
         return (
             <div className="flex flex-col items-center gap-4 py-6">
                 <div className="flex items-center gap-2 text-muted-foreground">
                     <CloudIcon className="w-5 h-5" />
-                    <span className="text-sm">{t('connectAwsAccount')}</span>
+                    <span className="text-sm">{t('connectGcpAccount')}</span>
                 </div>
                 <Button
                     variant="outline"
                     size="sm"
                     onClick={handleAddProvider}
-                    data-testid="add-aws-provider-login"
+                    data-testid="add-gcp-provider-login"
                 >
                     <PlusIcon className="w-4 h-4 mr-1" />
-                    {t('addAwsAccount')}
+                    {t('addGcpAccount')}
                 </Button>
-                <AwsProviderModal
-                    open={isModalOpen}
+                <GcpProviderModal
+                    open={showModal}
                     onOpenChange={handleModalOpenChange}
                 />
             </div>
@@ -184,7 +187,7 @@ export const AwsConnectionPicker: FC<AwsConnectionPickerProps> = ({
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <CloudIcon className="w-5 h-5" />
-                    <Label className="font-medium">{t('awsConnections')}</Label>
+                    <Label className="font-medium">{t('gcpConnections')}</Label>
                     <Popover>
                         <PopoverTrigger asChild>
                             <button
@@ -203,16 +206,16 @@ export const AwsConnectionPicker: FC<AwsConnectionPickerProps> = ({
                                     <div className="space-y-1">
                                         <p className="font-medium text-foreground">{t('helpAuthMethods')}</p>
                                         <ul className="list-disc list-inside space-y-1 pl-1">
-                                            <li><span className="font-medium">{t('helpAuthDefault')}</span> – {t('helpAuthDefaultDesc')}</li>
-                                            <li><span className="font-medium">{t('helpAuthProfile')}</span> – {t('helpAuthProfileDesc')}</li>
+                                            <li><span className="font-medium">{t('helpAuthDefault')}</span> -- {t('helpAuthDefaultDesc')}</li>
+                                            <li><span className="font-medium">{t('helpAuthServiceAccount')}</span> -- {t('helpAuthServiceAccountDesc')}</li>
                                         </ul>
                                     </div>
                                     <div className="space-y-1">
                                         <p className="font-medium text-foreground">{t('helpServices')}</p>
                                         <ul className="list-disc list-inside space-y-1 pl-1">
-                                            <li><span className="font-medium">RDS</span> – {t('helpRdsDesc')}</li>
-                                            <li><span className="font-medium">ElastiCache</span> – {t('helpElasticacheDesc')}</li>
-                                            <li><span className="font-medium">DocumentDB</span> – {t('helpDocumentdbDesc')}</li>
+                                            <li><span className="font-medium">Cloud SQL</span> -- {t('helpCloudSqlDesc')}</li>
+                                            <li><span className="font-medium">AlloyDB</span> -- {t('helpAlloyDbDesc')}</li>
+                                            <li><span className="font-medium">Memorystore</span> -- {t('helpMemorystoreDesc')}</li>
                                         </ul>
                                     </div>
                                     <p className="pt-1 border-t">{t('helpCredentialNote', { appName })}</p>
@@ -248,7 +251,7 @@ export const AwsConnectionPicker: FC<AwsConnectionPickerProps> = ({
                 </div>
             </div>
 
-            {discoveredConnections.length === 0 ? (
+            {gcpConnections.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
                     {t('noDiscoveredConnections')}
                 </p>
@@ -258,12 +261,12 @@ export const AwsConnectionPicker: FC<AwsConnectionPickerProps> = ({
                         {t('clickToFillForm')}
                     </p>
                     <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto">
-                        {discoveredConnections.map((conn) => (
+                        {gcpConnections.map((conn) => (
                             <button
                                 key={conn.Id}
                                 onClick={() => handleSelectConnection(conn)}
                                 className="flex items-center gap-3 p-3 rounded-lg border text-left transition-colors border-border hover:border-brand/50 hover:bg-brand/5"
-                                data-testid={`aws-connection-${conn.Id}`}
+                                data-testid={`gcp-connection-${conn.Id}`}
                             >
                                 <div className="w-8 h-8 flex items-center justify-center">
                                     {getDbIcon(conn.DatabaseType)}
@@ -274,22 +277,9 @@ export const AwsConnectionPicker: FC<AwsConnectionPickerProps> = ({
                                         <Badge variant="outline" className="text-xs shrink-0">
                                             {conn.DatabaseType}
                                         </Badge>
-                                        {conn.Metadata?.find(m => m.Key === "endpointType")?.Value === "proxy" && (
-                                            <Badge variant="secondary" className="text-xs shrink-0">
-                                                {t('proxy')}
-                                            </Badge>
-                                        )}
-                                        {conn.Metadata?.find(m => m.Key === "endpointType")?.Value === "reader" && (
-                                            <Badge variant="secondary" className="text-xs shrink-0">
-                                                {t('readOnly')}
-                                            </Badge>
-                                        )}
                                     </div>
                                     <div className="flex items-center gap-1 text-xs text-muted-foreground truncate">
-                                        <span>{conn.Region} • {conn.Status}</span>
-                                        {conn.Metadata?.find(m => m.Key === "connectivity")?.Value === "unreachable" && (
-                                            <span className="text-destructive" title={t('unreachableTooltip')}>• {t('unreachable')}</span>
-                                        )}
+                                        <span>{conn.Region} {conn.Status}</span>
                                     </div>
                                 </div>
                                 <CloudIcon className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -299,8 +289,8 @@ export const AwsConnectionPicker: FC<AwsConnectionPickerProps> = ({
                 </>
             )}
 
-            <AwsProviderModal
-                open={isModalOpen}
+            <GcpProviderModal
+                open={showModal}
                 onOpenChange={handleModalOpenChange}
             />
         </div>

@@ -1,0 +1,53 @@
+en_US:
+  addProvider: Add GCP Account
+  editProvider: Edit GCP Account
+
+  detectedProjects: Detected GCP Projects
+  clickToAutofill: Click a project to auto-fill the form
+  defaultGcpName: Default GCP
+  gcpProjectName: "GCP ({name})"
+  projectSourceTooltip: "Found in {source}"
+  defaultProjectName: default
+
+  sourceGcloud: gcloud CLI
+  sourceEnvironment: Environment vars
+  sourceServiceAccount: Service account key
+
+  displayName: Display Name
+  namePlaceholder: e.g., Production GCP
+  gcpRegion: GCP Region
+  selectRegion: Select region
+
+  projectId: Project ID
+  projectIdPlaceholder: e.g., my-project-123
+  projectIdDesc: The GCP project to discover resources in
+
+  serviceAccountKeyPath: Service Account Key Path
+  serviceAccountKeyPlaceholder: e.g., /path/to/service-account.json
+  serviceAccountKeyDesc: Leave empty to use Application Default Credentials (ADC)
+
+  resourceDiscovery: Resource Discovery
+  cloudSqlLabel: Cloud SQL
+  cloudSqlDesc: PostgreSQL, MySQL instances
+  alloyDbLabel: AlloyDB
+  alloyDbDesc: PostgreSQL-compatible clusters
+  memorystoreLabel: Memorystore
+  memorystoreDesc: Redis instances
+
+  testConnection: Test Connection
+  testing: Testing...
+  connectionSuccessful: Connection successful
+  connectionFailed: Connection test failed
+  testFailed: "Test failed: {error}"
+  cancel: Cancel
+  save: Save
+  add: Add
+  saving: Saving...
+  providerAdded: GCP account added successfully
+  providerUpdated: GCP account updated successfully
+  operationFailed: "Operation failed: {error}"
+  unknownError: Unknown error occurred
+
+  nameRequired: Display name is required
+  regionRequired: Region is required
+  projectIdRequired: Project ID is required
