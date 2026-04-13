@@ -132,6 +132,41 @@ func stateToAWSProvider(state *settings.AWSProviderState) *model.AWSProvider {
 	}
 }
 
+// stateToGCPProvider converts settings.GCPProviderState to the GraphQL model.
+func stateToGCPProvider(state *settings.GCPProviderState) *model.GCPProvider {
+	var serviceAccountKeyPath *string
+	if state.Config.ServiceAccountKeyPath != "" {
+		serviceAccountKeyPath = &state.Config.ServiceAccountKeyPath
+	}
+
+	var lastDiscoveryAt *string
+	if state.LastDiscoveryAt != nil {
+		t := state.LastDiscoveryAt.Format("2006-01-02T15:04:05Z")
+		lastDiscoveryAt = &t
+	}
+
+	var errorStr *string
+	if state.Error != "" {
+		errorStr = &state.Error
+	}
+
+	return &model.GCPProvider{
+		ID:                    state.Config.ID,
+		ProviderType:          model.CloudProviderTypeGCP,
+		Name:                  state.Config.Name,
+		Region:                state.Config.Region,
+		ProjectID:             state.Config.ProjectID,
+		ServiceAccountKeyPath: serviceAccountKeyPath,
+		DiscoverCloudSQL:      state.Config.DiscoverCloudSQL,
+		DiscoverAlloyDb:       state.Config.DiscoverAlloyDB,
+		DiscoverMemorystore:   state.Config.DiscoverMemorystore,
+		Status:                mapCloudProviderStatus(state.Status),
+		LastDiscoveryAt:       lastDiscoveryAt,
+		DiscoveredCount:       state.DiscoveredCount,
+		Error:                 errorStr,
+	}
+}
+
 // mapCloudProviderStatus converts a status string to the GraphQL enum.
 func mapCloudProviderStatus(status string) model.CloudProviderStatus {
 	switch status {
@@ -153,6 +188,8 @@ func mapProviderTypeToModel(pt providers.ProviderType) model.CloudProviderType {
 		return model.CloudProviderTypeAWS
 	case providers.ProviderTypeAzure:
 		return model.CloudProviderTypeAzure
+	case providers.ProviderTypeGCP:
+		return model.CloudProviderTypeGCP
 	default:
 		return model.CloudProviderTypeAWS
 	}
@@ -208,13 +245,20 @@ func discoveredConnectionToModel(conn *providers.DiscoveredConnection) *model.Di
 		"service":           true,
 		"region":            true,
 		// Azure-specific metadata
-		"location":          true,
-		"resourceGroup":     true,
-		"sku":               true,
-		"version":           true,
-		"enableNonSslPort":  true,
-		"nonSslPort":        true,
-		"kind":              true,
+		"location":         true,
+		"resourceGroup":    true,
+		"sku":              true,
+		"version":          true,
+		"enableNonSslPort": true,
+		"nonSslPort":       true,
+		"kind":             true,
+		"connectionName":   true,
+		"databaseVersion":  true,
+		"tier":             true,
+		"instanceType":     true,
+		"clusterName":      true,
+		"redisVersion":     true,
+		"projectId":        true,
 	}
 
 	var metadata []*model.Record

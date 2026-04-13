@@ -9,6 +9,7 @@ enum DatabaseType {
   ClickHouse,
   DuckDB,
   Memcached,
+  TiDB,
 }
 
 scalar Upload
@@ -329,7 +330,7 @@ type SSLStatus {
 enum CloudProviderType {
   AWS
   Azure
-  # GCP - future
+  GCP
 }
 
 # Provider status (shared across all cloud providers)
@@ -462,6 +463,52 @@ type AzureRegion {
 }
 
 # =============================================================================
+# GCP Provider
+# =============================================================================
+
+type GCPProvider implements CloudProvider {
+  # Interface fields
+  Id: ID!
+  ProviderType: CloudProviderType!
+  Name: String!
+  Region: String!
+  Status: CloudProviderStatus!
+  LastDiscoveryAt: String
+  DiscoveredCount: Int!
+  Error: String
+  # GCP-specific fields
+  ProjectID: String!
+  ServiceAccountKeyPath: String
+  DiscoverCloudSQL: Boolean!
+  DiscoverAlloyDB: Boolean!
+  DiscoverMemorystore: Boolean!
+}
+
+input GCPProviderInput {
+  Name: String!
+  ProjectID: String!
+  Region: String!
+  ServiceAccountKeyPath: String
+  DiscoverCloudSQL: Boolean
+  DiscoverAlloyDB: Boolean
+  DiscoverMemorystore: Boolean
+}
+
+# Local GCP project discovered from gcloud config and environment variables
+type LocalGCPProject {
+  ProjectID: String!
+  Name: String!
+  Source: String!
+  IsDefault: Boolean!
+}
+
+# GCP region
+type GCPRegion {
+  Id: String!
+  Description: String!
+}
+
+# =============================================================================
 # Discovered Connections (Generic - works with any provider)
 # =============================================================================
 
@@ -516,8 +563,8 @@ type Query {
   DatabaseQuerySuggestions(schema: String!): [DatabaseQuerySuggestion!]!
 
   # Cloud Provider Queries (Generic)
-  CloudProviders: [AWSProvider!]!
-  CloudProvider(id: ID!): AWSProvider
+  CloudProviders: [CloudProvider!]!
+  CloudProvider(id: ID!): CloudProvider
   DiscoveredConnections: [DiscoveredConnection!]!
   ProviderConnections(providerID: ID!): [DiscoveredConnection!]!
 
@@ -525,11 +572,15 @@ type Query {
   LocalAWSProfiles: [LocalAWSProfile!]!
   AWSRegions: [AWSRegion!]!
 
-  # Azure Provider Queries
+  # Azure-specific helpers
   AzureProviders: [AzureProvider!]!
   AzureProvider(id: ID!): AzureProvider
   AzureSubscriptions: [AzureSubscription!]!
   AzureRegions: [AzureRegion!]!
+
+  # GCP-specific helpers
+  LocalGCPProjects: [LocalGCPProject!]!
+  GCPRegions: [GCPRegion!]!
 }
 
 input GenerateChatTitleInput {
@@ -572,23 +623,28 @@ type Mutation {
   GenerateChatTitle(input: GenerateChatTitleInput!): GenerateChatTitleResponse!
 
   # Cloud Provider Mutations
-  # Provider-specific add/update (type-safe inputs)
+  # AWS provider-specific add/update (type-safe inputs)
   AddAWSProvider(input: AWSProviderInput!): AWSProvider!
   UpdateAWSProvider(id: ID!, input: AWSProviderInput!): AWSProvider!
-  # Test AWS credentials without saving a provider
   TestAWSCredentials(input: AWSProviderInput!): CloudProviderStatus!
+  # GCP provider-specific add/update (type-safe inputs)
+  AddGCPProvider(input: GCPProviderInput!): GCPProvider!
+  UpdateGCPProvider(id: ID!, input: GCPProviderInput!): GCPProvider!
+  TestGCPCredentials(input: GCPProviderInput!): CloudProviderStatus!
   # Generic operations (work with any provider type)
   RemoveCloudProvider(id: ID!): StatusResponse!
   TestCloudProvider(id: ID!): CloudProviderStatus!
-  RefreshCloudProvider(id: ID!): AWSProvider!
-  # Generate a short-lived IAM auth token for RDS database authentication
+  RefreshCloudProvider(id: ID!): CloudProvider!
+  # AWS-specific: Generate a short-lived IAM auth token for RDS database authentication
   GenerateRDSAuthToken(providerID: ID!, endpoint: String!, port: Int!, region: String!, username: String!): String!
 
-  # Azure Provider Mutations
+  # Azure provider-specific add/update (type-safe inputs)
   AddAzureProvider(input: AzureProviderInput!): AzureProvider!
   UpdateAzureProvider(id: ID!, input: AzureProviderInput!): AzureProvider!
   TestAzureCredentials(input: AzureProviderInput!): CloudProviderStatus!
   RefreshAzureProvider(id: ID!): AzureProvider!
-  # Generate a short-lived Azure AD token for database authentication
+  # Azure-specific: Generate a short-lived Azure AD token for database authentication
   GenerateAzureADToken(providerID: ID!, databaseType: String!): String!
+  # GCP-specific: Generate an OAuth2 access token for Cloud SQL IAM database authentication
+  GenerateCloudSQLIAMAuthToken(providerID: ID!, username: String!): String!
 }

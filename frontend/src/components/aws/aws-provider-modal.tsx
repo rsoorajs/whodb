@@ -32,6 +32,7 @@ import {
 } from "@clidey/ux";
 import { SearchSelect } from "../ux";
 import {
+    AwsProvider,
     AwsProviderInput,
     CloudProviderStatus,
     LocalAwsProfile,
@@ -64,7 +65,9 @@ export const AwsProviderModal: FC<AwsProviderModalProps> = ({
     const cloudProviders = useAppSelector(state => state.providers.cloudProviders);
     const editingProvider = useMemo(() => {
         if (!editingProviderId) return null;
-        return cloudProviders.find(p => p.Id === editingProviderId) ?? null;
+        const found = cloudProviders.find(p => p.Id === editingProviderId);
+        if (!found || found.__typename !== 'AWSProvider') return null;
+        return found as AwsProvider;
     }, [editingProviderId, cloudProviders]);
 
     const isEditMode = editingProviderId !== null;

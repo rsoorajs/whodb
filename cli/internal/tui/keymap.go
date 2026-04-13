@@ -28,6 +28,19 @@ type GlobalKeys struct {
 	CycleTheme  key.Binding
 	CycleLayout key.Binding
 	Import      key.Binding
+	ReadOnly    key.Binding
+	CmdLog      key.Binding
+	ERDiagram   key.Binding
+	Profiles    key.Binding
+}
+
+// ProfilesKeys contains keybindings for the profiles view
+type ProfilesKeys struct {
+	Up     key.Binding
+	Down   key.Binding
+	Apply  key.Binding
+	Save   key.Binding
+	Delete key.Binding
 }
 
 // BrowserKeys contains keybindings for the browser view
@@ -53,6 +66,8 @@ type EditorKeys struct {
 	Clear        key.Binding
 	Format       key.Binding
 	OpenEditor   key.Binding
+	Bookmarks    key.Binding
+	Explain      key.Binding
 	NewTab       key.Binding
 	CloseTab     key.Binding
 	PrevTab      key.Binding
@@ -72,6 +87,7 @@ type ResultsKeys struct {
 	Export     key.Binding
 	PageSize   key.Binding
 	CustomSize key.Binding
+	ViewCell   key.Binding
 }
 
 // HistoryKeys contains keybindings for the history view
@@ -117,12 +133,14 @@ type ColumnsKeys struct {
 
 // WhereListKeys contains keybindings for the where view in list mode
 type WhereListKeys struct {
-	Up       key.Binding
-	Down     key.Binding
-	Add      key.Binding
-	EditCond key.Binding
-	Delete   key.Binding
-	Apply    key.Binding
+	Up          key.Binding
+	Down        key.Binding
+	Add         key.Binding
+	EditCond    key.Binding
+	Delete      key.Binding
+	Apply       key.Binding
+	NewGroup    key.Binding
+	ToggleLogic key.Binding
 }
 
 // WhereAddKeys contains keybindings for the where view in add mode
@@ -166,6 +184,24 @@ type FilterKeys struct {
 	ApplyFilter  key.Binding
 }
 
+// BookmarksKeys contains keybindings for the bookmarks view
+type BookmarksKeys struct {
+	Up     key.Binding
+	Down   key.Binding
+	Load   key.Binding
+	Save   key.Binding
+	Delete key.Binding
+}
+
+// ERDKeys contains keybindings for the ER diagram view
+type ERDKeys struct {
+	NextTable  key.Binding
+	PrevTable  key.Binding
+	ToggleZoom key.Binding
+	ScrollUp   key.Binding
+	ScrollDown key.Binding
+}
+
 // SchemaSelectKeys contains keybindings for schema selection (browser)
 type SchemaSelectKeys struct {
 	NavLeft      key.Binding
@@ -190,6 +226,9 @@ type Keymap struct {
 	ConnectionForm ConnectionFormKeys
 	Filter         FilterKeys
 	SchemaSelect   SchemaSelectKeys
+	Bookmarks      BookmarksKeys
+	ERD            ERDKeys
+	Profiles       ProfilesKeys
 }
 
 // Keys is the top-level keymap containing all keybindings
@@ -222,6 +261,22 @@ var Keys = Keymap{
 		Import: key.NewBinding(
 			key.WithKeys("ctrl+g"),
 			key.WithHelp("ctrl+g", "import"),
+		),
+		ReadOnly: key.NewBinding(
+			key.WithKeys("ctrl+y"),
+			key.WithHelp("ctrl+y", "read-only"),
+		),
+		CmdLog: key.NewBinding(
+			key.WithKeys("ctrl+d"),
+			key.WithHelp("ctrl+d", "command log"),
+		),
+		ERDiagram: key.NewBinding(
+			key.WithKeys("ctrl+k"),
+			key.WithHelp("ctrl+k", "ER diagram"),
+		),
+		Profiles: key.NewBinding(
+			key.WithKeys("ctrl+p"),
+			key.WithHelp("ctrl+p", "profiles"),
 		),
 	},
 	Browser: BrowserKeys{
@@ -295,6 +350,14 @@ var Keys = Keymap{
 			key.WithKeys("ctrl+o"),
 			key.WithHelp("ctrl+o", "open $EDITOR"),
 		),
+		Bookmarks: key.NewBinding(
+			key.WithKeys("ctrl+b"),
+			key.WithHelp("ctrl+b", "bookmarks"),
+		),
+		Explain: key.NewBinding(
+			key.WithKeys("ctrl+x"),
+			key.WithHelp("ctrl+x", "explain"),
+		),
 		NewTab: key.NewBinding(
 			key.WithKeys("ctrl+n"),
 			key.WithHelp("ctrl+n", "new tab"),
@@ -356,6 +419,10 @@ var Keys = Keymap{
 		CustomSize: key.NewBinding(
 			key.WithKeys("S"),
 			key.WithHelp("shift+s", "custom size"),
+		),
+		ViewCell: key.NewBinding(
+			key.WithKeys("z"),
+			key.WithHelp("z", "view cell"),
 		),
 	},
 	History: HistoryKeys{
@@ -477,7 +544,7 @@ var Keys = Keymap{
 		),
 		Add: key.NewBinding(
 			key.WithKeys("a"),
-			key.WithHelp("[a]", "add new"),
+			key.WithHelp("[a]", "add cond"),
 		),
 		EditCond: key.NewBinding(
 			key.WithKeys("ctrl+e"),
@@ -490,6 +557,14 @@ var Keys = Keymap{
 		Apply: key.NewBinding(
 			key.WithKeys("enter"),
 			key.WithHelp("enter", "apply"),
+		),
+		NewGroup: key.NewBinding(
+			key.WithKeys("g"),
+			key.WithHelp("[g]", "new group"),
+		),
+		ToggleLogic: key.NewBinding(
+			key.WithKeys("t"),
+			key.WithHelp("[t]", "toggle AND/OR"),
 		),
 	},
 	WhereAdd: WhereAddKeys{
@@ -535,11 +610,11 @@ var Keys = Keymap{
 	ConnectionList: ConnectionListKeys{
 		Up: key.NewBinding(
 			key.WithKeys("up", "k", "shift+tab"),
-			key.WithHelp("↑/k/shift+tab", "up"),
+			key.WithHelp("↑/k", "up"),
 		),
 		Down: key.NewBinding(
 			key.WithKeys("down", "j", "tab"),
-			key.WithHelp("↓/j/tab", "down"),
+			key.WithHelp("↓/j", "down"),
 		),
 		Connect: key.NewBinding(
 			key.WithKeys("enter"),
@@ -596,6 +671,72 @@ var Keys = Keymap{
 		SelectSchema: key.NewBinding(
 			key.WithKeys("enter"),
 			key.WithHelp("enter", "select schema"),
+		),
+	},
+	Bookmarks: BookmarksKeys{
+		Up: key.NewBinding(
+			key.WithKeys("up", "k"),
+			key.WithHelp("↑/k", "up"),
+		),
+		Down: key.NewBinding(
+			key.WithKeys("down", "j"),
+			key.WithHelp("↓/j", "down"),
+		),
+		Load: key.NewBinding(
+			key.WithKeys("enter"),
+			key.WithHelp("enter", "load"),
+		),
+		Save: key.NewBinding(
+			key.WithKeys("s"),
+			key.WithHelp("[s]", "save current"),
+		),
+		Delete: key.NewBinding(
+			key.WithKeys("d"),
+			key.WithHelp("[d]", "delete"),
+		),
+	},
+	ERD: ERDKeys{
+		NextTable: key.NewBinding(
+			key.WithKeys("tab"),
+			key.WithHelp("tab", "next table"),
+		),
+		PrevTable: key.NewBinding(
+			key.WithKeys("shift+tab"),
+			key.WithHelp("shift+tab", "prev table"),
+		),
+		ToggleZoom: key.NewBinding(
+			key.WithKeys("z"),
+			key.WithHelp("[z]", "toggle zoom"),
+		),
+		ScrollUp: key.NewBinding(
+			key.WithKeys("up", "k"),
+			key.WithHelp("↑/k", "scroll up"),
+		),
+		ScrollDown: key.NewBinding(
+			key.WithKeys("down", "j"),
+			key.WithHelp("↓/j", "scroll down"),
+		),
+	},
+	Profiles: ProfilesKeys{
+		Up: key.NewBinding(
+			key.WithKeys("up", "k"),
+			key.WithHelp("↑/k", "up"),
+		),
+		Down: key.NewBinding(
+			key.WithKeys("down", "j"),
+			key.WithHelp("↓/j", "down"),
+		),
+		Apply: key.NewBinding(
+			key.WithKeys("enter"),
+			key.WithHelp("enter", "apply"),
+		),
+		Save: key.NewBinding(
+			key.WithKeys("s"),
+			key.WithHelp("[s]", "save current"),
+		),
+		Delete: key.NewBinding(
+			key.WithKeys("d"),
+			key.WithHelp("[d]", "delete"),
 		),
 	},
 }

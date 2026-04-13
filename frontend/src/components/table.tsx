@@ -629,7 +629,7 @@ export const StorageUnitTable: FC<TableProps> = ({
         }
         
         // Set a new timeout for the single-click action
-        const timeout = setTimeout(() => {
+        const timeout = window.setTimeout(() => {
             const cell = paginatedRows[rowIndex][cellIndex];
             if (cell !== undefined && cell !== null) {
                 copyToClipboard(String(cell)).then(success => {

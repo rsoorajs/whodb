@@ -34,6 +34,7 @@ const (
 	SectionCLI     = "cli"
 	SectionAWS     = "aws"
 	SectionAzure   = "azure"
+	SectionGCP     = "gcp"
 	SectionDesktop = "desktop"
 )
 

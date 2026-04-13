@@ -68,6 +68,10 @@ import {
     isAwsConnection
 } from '../../components/aws';
 import {AzureConnectionPicker, isAzureConnection} from '../../components/azure';
+import {
+    GcpConnectionPicker,
+    GcpConnectionPrefillData,
+} from '../../components/gcp';
 import {isAwsHostname, isAzureHostname} from '../../utils/cloud-connection-prefill';
 import {SSL_KEYS, SSLConfig} from '../../components/ssl-config';
 
@@ -207,7 +211,7 @@ export const LoginForm: FC<LoginFormProps> = ({
     }, [isFirstLogin, FIRST_LOGIN_KEY]);
 
     const handleSubmit = useCallback(() => {
-        if (([DatabaseType.MySql, DatabaseType.Postgres].includes(databaseType.id as DatabaseType) && (hostName.length === 0 || database.length === 0 || username.length === 0))
+        if (([DatabaseType.MySql, DatabaseType.Postgres, DatabaseType.TiDb].includes(databaseType.id as DatabaseType) && (hostName.length === 0 || database.length === 0 || username.length === 0))
             || ((databaseType.id === DatabaseType.Sqlite3 || databaseType.id === DatabaseType.DuckDb) && database.length === 0)
             || ((databaseType.id === DatabaseType.MongoDb || databaseType.id === DatabaseType.Redis) && (hostName.length === 0))) {
             setIsAutoLoggingIn(false);
@@ -501,6 +505,38 @@ export const LoginForm: FC<LoginFormProps> = ({
                 }
 
                 // Focus username field after form updates
+                setTimeout(() => {
+                    usernameInputRef.current?.focus();
+                }, 50);
+            }, 0);
+        }
+    }, [databaseTypeItems, handleDatabaseTypeChange]);
+
+    /**
+     * Handle prefill from GCP connection picker.
+     * Same behavior as AWS prefill -- updates the main login form.
+     */
+    const handleGcpConnectionPrefill = useCallback((data: GcpConnectionPrefillData) => {
+        const dbType = databaseTypeItems.find(item =>
+            item.id.toLowerCase() === data.databaseType.toLowerCase()
+        );
+
+        if (dbType) {
+            handleDatabaseTypeChange(dbType);
+
+            setTimeout(() => {
+                if (data.hostname) {
+                    setHostName(data.hostname);
+                }
+
+                if (data.advanced && Object.keys(data.advanced).length > 0) {
+                    setAdvancedForm(prev => ({
+                        ...prev,
+                        ...data.advanced,
+                    }));
+                    setShowAdvanced(true);
+                }
+
                 setTimeout(() => {
                     usernameInputRef.current?.focus();
                 }, 50);
@@ -1110,7 +1146,10 @@ export const LoginForm: FC<LoginFormProps> = ({
                     <>
                         <Separator className="my-8" />
                         <AwsConnectionPicker onSelectConnection={handleAwsConnectionPrefill} />
+                        <Separator className="my-8" />
                         <AzureConnectionPicker onSelectConnection={handleAwsConnectionPrefill} />
+                        <Separator className="my-8" />
+                        <GcpConnectionPicker onSelectConnection={handleGcpConnectionPrefill} />
                     </>
                 )}
             </div>
