@@ -52,6 +52,7 @@ const (
 	ViewCmdLog
 	ViewExplain
 	ViewERD
+	ViewProfiles
 )
 
 type MainModel struct {
@@ -84,6 +85,7 @@ type MainModel struct {
 	cmdLogView     *CmdLogView
 	explainView    *ExplainView
 	erdView        *ERDView
+	profilesView   *ProfilesView
 
 	// panes maps each ViewMode to its Pane interface for polymorphic layout dispatch.
 	panes map[ViewMode]Pane
@@ -139,6 +141,7 @@ func NewMainModel() *MainModel {
 	m.cmdLogView = NewCmdLogView(m)
 	m.explainView = NewExplainView(m)
 	m.erdView = NewERDView(m)
+	m.profilesView = NewProfilesView(m)
 
 	m.panes = map[ViewMode]Pane{
 		ViewConnection: m.connectionView,
@@ -157,6 +160,7 @@ func NewMainModel() *MainModel {
 		ViewCmdLog:     m.cmdLogView,
 		ViewExplain:    m.explainView,
 		ViewERD:        m.erdView,
+		ViewProfiles:   m.profilesView,
 	}
 
 	return m
@@ -175,6 +179,27 @@ func NewMainModelWithConnection(conn *config.Connection) *MainModel {
 
 	m.mode = ViewBrowser
 	// Layout will be initialized on first WindowSizeMsg (width not known yet)
+	return m
+}
+
+// NewMainModelWithProfile creates a model that connects using the given
+// connection and applies the provided config (which already has profile
+// settings like theme, page size, and timeout applied).
+func NewMainModelWithProfile(conn *config.Connection, cfg *config.Config) *MainModel {
+	m := NewMainModel()
+	if m.err != nil {
+		return m
+	}
+
+	// Replace the default config with the profile-adjusted one
+	m.config = cfg
+
+	if err := m.dbManager.Connect(conn); err != nil {
+		m.err = err
+		return m
+	}
+
+	m.mode = ViewBrowser
 	return m
 }
 
@@ -262,6 +287,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.cmdLogView, _ = m.cmdLogView.Update(msg)
 		m.explainView, _ = m.explainView.Update(msg)
 		m.erdView, _ = m.erdView.Update(msg)
+		m.profilesView, _ = m.profilesView.Update(msg)
 
 		// Rebuild layout on resize if connected
 		if m.dbManager.GetCurrentConnection() != nil && m.layoutRoot == nil {
@@ -372,6 +398,15 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.erdView.loadERDData()
 			}
 
+		case "ctrl+p":
+			// Global shortcut: open Profiles from any view (including Connection)
+			// Skip when in Chat view (ctrl+p is used for message navigation there)
+			if m.mode != ViewProfiles && m.mode != ViewChat {
+				m.suspendLayout()
+				m.PushView(ViewProfiles)
+				return m, nil
+			}
+
 		case "ctrl+a":
 			// Global shortcut: open AI Chat from any view/pane
 			if m.dbManager.GetCurrentConnection() != nil && m.mode != ViewChat {
@@ -467,6 +502,8 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateExplainView(msg)
 	case ViewERD:
 		return m.updateERDView(msg)
+	case ViewProfiles:
+		return m.updateProfilesView(msg)
 	}
 
 	return m, nil
@@ -499,6 +536,12 @@ func (m *MainModel) updateERDView(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *MainModel) updateBookmarksView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.bookmarksView, cmd = m.bookmarksView.Update(msg)
+	return m, cmd
+}
+
+func (m *MainModel) updateProfilesView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	m.profilesView, cmd = m.profilesView.Update(msg)
 	return m, cmd
 }
 
@@ -566,6 +609,8 @@ func (m *MainModel) View() string {
 			content = m.explainView.View()
 		case ViewERD:
 			content = m.erdView.View()
+		case ViewProfiles:
+			content = m.profilesView.View()
 		}
 	}
 
@@ -683,6 +728,8 @@ func (m *MainModel) isHelpSafe() bool {
 	case ViewConnection:
 		// Connection is safe in list mode
 		return m.connectionView.mode == "list"
+	case ViewProfiles:
+		return !m.profilesView.naming
 	case ViewEditor:
 		// Editor always has text input
 		return false
@@ -932,6 +979,7 @@ func (m *MainModel) renderGlobalHelpBar() string {
 		Keys.Global.NextView,
 		Keys.Browser.History,
 		Keys.Browser.AIChat,
+		Keys.Global.Profiles,
 		Keys.Global.CmdLog,
 		Keys.Global.ERDiagram,
 		Keys.Global.Import,

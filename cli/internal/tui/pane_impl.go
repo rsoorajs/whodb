@@ -40,6 +40,7 @@ var (
 	_ Pane = (*CmdLogView)(nil)
 	_ Pane = (*ExplainView)(nil)
 	_ Pane = (*ERDView)(nil)
+	_ Pane = (*ProfilesView)(nil)
 )
 
 // ---------------------------------------------------------------------------
@@ -289,3 +290,15 @@ func (v *ERDView) SetCompact(bool) {}
 
 // HelpBindings returns the key bindings to display in the global help bar.
 func (v *ERDView) HelpBindings() []key.Binding { return nil }
+
+// ---------------------------------------------------------------------------
+// ProfilesView
+// ---------------------------------------------------------------------------
+
+func (v *ProfilesView) UpdatePane(msg tea.Msg) tea.Cmd  { _, cmd := v.Update(msg); return cmd }
+func (v *ProfilesView) SetDimensions(width, height int) { v.width = width; v.height = height }
+func (v *ProfilesView) Focusable() bool                 { return true }
+func (v *ProfilesView) OnFocus()                        {}
+func (v *ProfilesView) OnBlur()                         {}
+func (v *ProfilesView) SetCompact(bool)                 {}
+func (v *ProfilesView) HelpBindings() []key.Binding     { return nil }

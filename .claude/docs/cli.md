@@ -60,10 +60,14 @@ cli/
       bookmarks_view.go # Saved queries
       json_viewer.go   # JSON cell pretty-printer
       cmdlog_view.go   # Command log (transparency)
+      profiles_view.go # Connection profiles
+      where_view.go    # Nested WHERE builder (AND/OR groups)
     config/            # Configuration (JSON, keyring)
     database/          # DB manager (wraps core plugins)
-      manager.go       # Connection, query execution, caching
+      manager.go       # Connection, query execution, caching, query logging
       import.go        # CSV/Excel reading, type inference, batch import
+      chat_stream.go   # AI streaming via BAML (build-tagged !arm && !riscv64)
+      chat_stream_unsupported.go # Fallback for unsupported platforms
     docker/            # Docker container detection
       detect.go        # `docker ps` parsing, image-to-DB-type matching
     ssh/               # SSH tunnel support

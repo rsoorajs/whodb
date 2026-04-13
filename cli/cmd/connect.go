@@ -50,30 +50,34 @@ var connectCmd = &cobra.Command{
 	Long: `Connect to a database and start the interactive TUI.
 
 Usage modes:
-  1) Flags (non-form) path
-     Provide --type, --user, and --database (optionally --host, --port, --name).
-     - On a TTY, you will be prompted for the password with no echo.
-     - On non‑TTY (piped/CI), pass --password and pipe a single line on stdin.
-       Without --password, the command errors to avoid accidental stdin reads.
-     - If you pass --name, the connection (including password) is saved to
-       ~/.whodb-cli/config.yaml for later use (e.g. with 'query').
+  1) Flags path
+     Provide --type and --database (optionally --host, --port, --user, --name).
+     For databases that need a password, you'll be prompted on a TTY.
+     For non-TTY (piped/CI), pass --password and pipe on stdin.
+     If you pass --name, the connection is saved for later use.
 
-  2) TUI connection form
+  2) Docker auto-detection
+     Use --docker to detect running database containers and connect.
+
+  3) TUI connection form
      If required flags are missing, the interactive connection form opens.
-     Fill fields (including the masked password) and press Connect.
-     If you provide a Name, the connection is saved for reuse.
+     Docker containers appear automatically in the connection list.
 `,
 	Example: `
-  # Open connection form (interactive)
+  # Open connection form (interactive — shows saved + Docker connections)
   whodb-cli connect
 
-  # Flags path with TTY password prompt
-  whodb-cli connect --type postgres --host localhost --user alice --database app --name app-local
+  # Connect to PostgreSQL
+  whodb-cli connect --type postgres --host localhost --user alice --database app
 
-  # Non-interactive: read password from stdin (note the --password flag)
-  printf "%s\n" "$DB_PASS" | whodb-cli connect --type postgres --host localhost --user alice --database app --name app-local --password
+  # Connect to SQLite (no password needed)
+  whodb-cli connect --type sqlite3 --database ./app.db
 
-  # SQLite example (no password)
+  # Auto-detect Docker database containers
+  whodb-cli connect --docker
+
+  # Non-interactive: read password from stdin
+  printf "%s\n" "$DB_PASS" | whodb-cli connect --type postgres --host localhost --user alice --database app --password
   whodb-cli connect --type sqlite --host ./app.db --database ./app.db --name app-sqlite`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// --docker: detect running database containers and connect to the first match

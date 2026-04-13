@@ -75,6 +75,16 @@ type QueryConfig struct {
 	PreferredTimeoutSeconds int `json:"preferred_timeout_seconds,omitempty"`
 }
 
+// Profile bundles a connection name with display and query preferences
+// for quick switching.
+type Profile struct {
+	Name           string `json:"name"`
+	Connection     string `json:"connection"`
+	Theme          string `json:"theme,omitempty"`
+	PageSize       int    `json:"page_size,omitempty"`
+	TimeoutSeconds int    `json:"timeout_seconds,omitempty"`
+}
+
 // SavedQuery represents a bookmarked SQL query.
 type SavedQuery struct {
 	Name  string `json:"name"`
@@ -89,6 +99,7 @@ type CLISection struct {
 	AI           AIConfig      `json:"ai"`
 	Query        QueryConfig   `json:"query"`
 	SavedQueries []SavedQuery  `json:"saved_queries,omitempty"`
+	Profiles     []Profile     `json:"profiles,omitempty"`
 	ReadOnly     bool          `json:"read_only,omitempty"`
 }
 
@@ -378,4 +389,43 @@ func (c *Config) GetReadOnly() bool {
 // SetReadOnly enables or disables read-only mode.
 func (c *Config) SetReadOnly(readOnly bool) {
 	c.ReadOnly = readOnly
+}
+
+// AddProfile adds a profile. If a profile with the same name already
+// exists it is replaced.
+func (c *Config) AddProfile(profile Profile) {
+	for i, p := range c.Profiles {
+		if p.Name == profile.Name {
+			c.Profiles[i] = profile
+			return
+		}
+	}
+	c.Profiles = append(c.Profiles, profile)
+}
+
+// DeleteProfile removes a profile by name.
+// Returns true if a profile was found and removed.
+func (c *Config) DeleteProfile(name string) bool {
+	for i, p := range c.Profiles {
+		if p.Name == name {
+			c.Profiles = append(c.Profiles[:i], c.Profiles[i+1:]...)
+			return true
+		}
+	}
+	return false
+}
+
+// GetProfile returns the profile with the given name, or nil if not found.
+func (c *Config) GetProfile(name string) *Profile {
+	for _, p := range c.Profiles {
+		if p.Name == name {
+			return &p
+		}
+	}
+	return nil
+}
+
+// GetProfiles returns all saved profiles.
+func (c *Config) GetProfiles() []Profile {
+	return c.Profiles
 }
