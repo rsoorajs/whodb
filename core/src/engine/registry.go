@@ -20,6 +20,10 @@ package engine
 // The entry point's blank imports control which plugins are registered.
 var globalPlugins []*Plugin
 
+// pluginTypeAliases maps alias database types to their underlying plugin types.
+// Populated via RegisterPluginTypeAlias (e.g., by EE init code).
+var pluginTypeAliases = map[DatabaseType]DatabaseType{}
+
 // RegisterPlugin adds a plugin to the global registry.
 // Called from init() in each plugin package.
 func RegisterPlugin(p *Plugin) {
@@ -29,4 +33,11 @@ func RegisterPlugin(p *Plugin) {
 // RegisteredPlugins returns all plugins registered via RegisterPlugin.
 func RegisteredPlugins() []*Plugin {
 	return globalPlugins
+}
+
+// RegisterPluginTypeAlias registers a mapping from an alias database type to its
+// underlying plugin type. This allows extensions (e.g., EE) to add new database
+// types that resolve to existing plugins without modifying CE code.
+func RegisterPluginTypeAlias(alias DatabaseType, target DatabaseType) {
+	pluginTypeAliases[alias] = target
 }

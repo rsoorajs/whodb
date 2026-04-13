@@ -69,6 +69,41 @@ const ceLogos = {
       <rect width="48" height="48" rx="6" fill="#3C7A4A"/>
       <text x="24" y="30" textAnchor="middle" fontFamily="monospace" fontWeight="bold" fontSize="18" fill="#fff">M</text>
     </svg>,
+    Valkey: <svg className="w-6 h-6" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="48" height="48" rx="8" fill="#00A77E"/>
+      <path d="M24 10v10m0 0l-6 6m6-6l6 6M18 28v4a6 6 0 0012 0v-4" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+    </svg>,
+    Dragonfly: <svg className="w-6 h-6" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="48" height="48" rx="8" fill="#6C3FC5"/>
+      <path d="M24 12v24" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"/>
+      <path d="M24 20c-4-4-10-4-12-2s0 6 4 8m8-6c4-4 10-4 12-2s0 6-4 8" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+    </svg>,
+    OpenSearch: <svg className="w-6 h-6" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="48" height="48" rx="8" fill="#005EB8"/>
+      <circle cx="22" cy="22" r="9" stroke="#fff" strokeWidth="3" fill="none"/>
+      <path d="M29 29l8 8" stroke="#fff" strokeWidth="3" strokeLinecap="round"/>
+    </svg>,
+    StarRocks: <svg className="w-6 h-6" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="48" height="48" rx="8" fill="#0050CC"/>
+      <path d="M24 8l4.5 9.3 10.2 1.5-7.4 7.2 1.7 10.2L24 31.5l-9 4.7 1.7-10.2-7.4-7.2 10.2-1.5z" fill="#fff"/>
+    </svg>,
+    YugabyteDB: <svg className="w-6 h-6" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="48" height="48" rx="8" fill="#2B59C3"/>
+      <path d="M24 26v10M14 14l10 12M34 14L24 26" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+    </svg>,
+    QuestDB: <svg className="w-6 h-6" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="48" height="48" rx="8" fill="#6A0DAD"/>
+      <circle cx="24" cy="24" r="11" stroke="#fff" strokeWidth="3" fill="none"/>
+      <path d="M24 16v8l6 4" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+    </svg>,
+    FerretDB: <svg className="w-6 h-6" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="48" height="48" rx="8" fill="#E87500"/>
+      <path d="M16 16c0-4 3-6 8-6s8 2 8 6" stroke="#fff" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+      <ellipse cx="24" cy="26" rx="10" ry="12" fill="#fff"/>
+      <circle cx="20" cy="23" r="2" fill="#E87500"/>
+      <circle cx="28" cy="23" r="2" fill="#E87500"/>
+      <ellipse cx="24" cy="28" rx="3" ry="2" fill="#E87500"/>
+    </svg>,
     Anthropic: <svg className="w-6 h-6 bg-white" width="256px" height="176px" viewBox="0 0 256 176" version="1.1" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid">    <title>Anthropic</title>    <g fill="#181818">        <path d="M147.486878,0 C147.486878,0 217.568251,175.780074 217.568251,175.780074 C217.568251,175.780074 256,175.780074 256,175.780074 C256,175.780074 185.918621,0 185.918621,0 C185.918621,0 147.486878,0 147.486878,0 C147.486878,0 147.486878,0 147.486878,0 Z"></path>        <path d="M66.1828124,106.221191 C66.1828124,106.221191 90.1624677,44.4471185 90.1624677,44.4471185 C90.1624677,44.4471185 114.142128,106.221191 114.142128,106.221191 C114.142128,106.221191 66.1828124,106.221191 66.1828124,106.221191 C66.1828124,106.221191 66.1828124,106.221191 66.1828124,106.221191 Z M70.0705318,0 C70.0705318,0 0,175.780074 0,175.780074 C0,175.780074 39.179211,175.780074 39.179211,175.780074 C39.179211,175.780074 53.5097704,138.86606 53.5097704,138.86606 C53.5097704,138.86606 126.817544,138.86606 126.817544,138.86606 C126.817544,138.86606 141.145724,175.780074 141.145724,175.780074 C141.145724,175.780074 180.324935,175.780074 180.324935,175.780074 C180.324935,175.780074 110.254409,0 110.254409,0 C110.254409,0 70.0705318,0 70.0705318,0 C70.0705318,0 70.0705318,0 70.0705318,0 Z"></path>    </g></svg>,
 };
 
