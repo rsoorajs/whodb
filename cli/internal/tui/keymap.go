@@ -31,6 +31,17 @@ type GlobalKeys struct {
 	ReadOnly    key.Binding
 	CmdLog      key.Binding
 	ERDiagram   key.Binding
+	Audit       key.Binding
+	Profiles    key.Binding
+}
+
+// ProfilesKeys contains keybindings for the profiles view
+type ProfilesKeys struct {
+	Up     key.Binding
+	Down   key.Binding
+	Apply  key.Binding
+	Save   key.Binding
+	Delete key.Binding
 }
 
 // BrowserKeys contains keybindings for the browser view
@@ -123,12 +134,14 @@ type ColumnsKeys struct {
 
 // WhereListKeys contains keybindings for the where view in list mode
 type WhereListKeys struct {
-	Up       key.Binding
-	Down     key.Binding
-	Add      key.Binding
-	EditCond key.Binding
-	Delete   key.Binding
-	Apply    key.Binding
+	Up          key.Binding
+	Down        key.Binding
+	Add         key.Binding
+	EditCond    key.Binding
+	Delete      key.Binding
+	Apply       key.Binding
+	NewGroup    key.Binding
+	ToggleLogic key.Binding
 }
 
 // WhereAddKeys contains keybindings for the where view in add mode
@@ -181,6 +194,13 @@ type BookmarksKeys struct {
 	Delete key.Binding
 }
 
+// AuditKeys contains keybindings for the data quality audit view
+type AuditKeys struct {
+	Up        key.Binding
+	Down      key.Binding
+	DrillDown key.Binding
+}
+
 // ERDKeys contains keybindings for the ER diagram view
 type ERDKeys struct {
 	NextTable  key.Binding
@@ -215,7 +235,9 @@ type Keymap struct {
 	Filter         FilterKeys
 	SchemaSelect   SchemaSelectKeys
 	Bookmarks      BookmarksKeys
+	Audit          AuditKeys
 	ERD            ERDKeys
+	Profiles       ProfilesKeys
 }
 
 // Keys is the top-level keymap containing all keybindings
@@ -260,6 +282,14 @@ var Keys = Keymap{
 		ERDiagram: key.NewBinding(
 			key.WithKeys("ctrl+k"),
 			key.WithHelp("ctrl+k", "ER diagram"),
+		),
+		Audit: key.NewBinding(
+			key.WithKeys("ctrl+u"),
+			key.WithHelp("ctrl+u", "audit"),
+		),
+		Profiles: key.NewBinding(
+			key.WithKeys("ctrl+p"),
+			key.WithHelp("ctrl+p", "profiles"),
 		),
 	},
 	Browser: BrowserKeys{
@@ -527,7 +557,7 @@ var Keys = Keymap{
 		),
 		Add: key.NewBinding(
 			key.WithKeys("a"),
-			key.WithHelp("[a]", "add new"),
+			key.WithHelp("[a]", "add cond"),
 		),
 		EditCond: key.NewBinding(
 			key.WithKeys("ctrl+e"),
@@ -540,6 +570,14 @@ var Keys = Keymap{
 		Apply: key.NewBinding(
 			key.WithKeys("enter"),
 			key.WithHelp("enter", "apply"),
+		),
+		NewGroup: key.NewBinding(
+			key.WithKeys("g"),
+			key.WithHelp("[g]", "new group"),
+		),
+		ToggleLogic: key.NewBinding(
+			key.WithKeys("t"),
+			key.WithHelp("[t]", "toggle AND/OR"),
 		),
 	},
 	WhereAdd: WhereAddKeys{
@@ -585,11 +623,11 @@ var Keys = Keymap{
 	ConnectionList: ConnectionListKeys{
 		Up: key.NewBinding(
 			key.WithKeys("up", "k", "shift+tab"),
-			key.WithHelp("↑/k/shift+tab", "up"),
+			key.WithHelp("↑/k", "up"),
 		),
 		Down: key.NewBinding(
 			key.WithKeys("down", "j", "tab"),
-			key.WithHelp("↓/j/tab", "down"),
+			key.WithHelp("↓/j", "down"),
 		),
 		Connect: key.NewBinding(
 			key.WithKeys("enter"),
@@ -670,6 +708,20 @@ var Keys = Keymap{
 			key.WithHelp("[d]", "delete"),
 		),
 	},
+	Audit: AuditKeys{
+		Up: key.NewBinding(
+			key.WithKeys("up", "k"),
+			key.WithHelp("up/k", "prev issue"),
+		),
+		Down: key.NewBinding(
+			key.WithKeys("down", "j"),
+			key.WithHelp("down/j", "next issue"),
+		),
+		DrillDown: key.NewBinding(
+			key.WithKeys("enter"),
+			key.WithHelp("enter", "drill down"),
+		),
+	},
 	ERD: ERDKeys{
 		NextTable: key.NewBinding(
 			key.WithKeys("tab"),
@@ -690,6 +742,28 @@ var Keys = Keymap{
 		ScrollDown: key.NewBinding(
 			key.WithKeys("down", "j"),
 			key.WithHelp("↓/j", "scroll down"),
+		),
+	},
+	Profiles: ProfilesKeys{
+		Up: key.NewBinding(
+			key.WithKeys("up", "k"),
+			key.WithHelp("↑/k", "up"),
+		),
+		Down: key.NewBinding(
+			key.WithKeys("down", "j"),
+			key.WithHelp("↓/j", "down"),
+		),
+		Apply: key.NewBinding(
+			key.WithKeys("enter"),
+			key.WithHelp("enter", "apply"),
+		),
+		Save: key.NewBinding(
+			key.WithKeys("s"),
+			key.WithHelp("[s]", "save current"),
+		),
+		Delete: key.NewBinding(
+			key.WithKeys("d"),
+			key.WithHelp("[d]", "delete"),
 		),
 	},
 }

@@ -110,7 +110,8 @@ export enum CloudProviderStatus {
 }
 
 export enum CloudProviderType {
-  Aws = 'AWS'
+  Aws = 'AWS',
+  Gcp = 'GCP'
 }
 
 export type Column = {
@@ -152,6 +153,7 @@ export type DatabaseQuerySuggestion = {
 
 export enum DatabaseType {
   ClickHouse = 'ClickHouse',
+  CockroachDb = 'CockroachDB',
   DuckDb = 'DuckDB',
   ElasticSearch = 'ElasticSearch',
   MariaDb = 'MariaDB',
@@ -174,6 +176,39 @@ export type DiscoveredConnection = {
   ProviderType: CloudProviderType;
   Region?: Maybe<Scalars['String']['output']>;
   Status: ConnectionStatus;
+};
+
+export type GcpProvider = CloudProvider & {
+  __typename?: 'GCPProvider';
+  DiscoverAlloyDB: Scalars['Boolean']['output'];
+  DiscoverCloudSQL: Scalars['Boolean']['output'];
+  DiscoverMemorystore: Scalars['Boolean']['output'];
+  DiscoveredCount: Scalars['Int']['output'];
+  Error?: Maybe<Scalars['String']['output']>;
+  Id: Scalars['ID']['output'];
+  LastDiscoveryAt?: Maybe<Scalars['String']['output']>;
+  Name: Scalars['String']['output'];
+  ProjectID: Scalars['String']['output'];
+  ProviderType: CloudProviderType;
+  Region: Scalars['String']['output'];
+  ServiceAccountKeyPath?: Maybe<Scalars['String']['output']>;
+  Status: CloudProviderStatus;
+};
+
+export type GcpProviderInput = {
+  DiscoverAlloyDB?: InputMaybe<Scalars['Boolean']['input']>;
+  DiscoverCloudSQL?: InputMaybe<Scalars['Boolean']['input']>;
+  DiscoverMemorystore?: InputMaybe<Scalars['Boolean']['input']>;
+  Name: Scalars['String']['input'];
+  ProjectID: Scalars['String']['input'];
+  Region: Scalars['String']['input'];
+  ServiceAccountKeyPath?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GcpRegion = {
+  __typename?: 'GCPRegion';
+  Description: Scalars['String']['output'];
+  Id: Scalars['String']['output'];
 };
 
 export type GenerateChatTitleInput = {
@@ -291,6 +326,14 @@ export type LocalAwsProfile = {
   Source: Scalars['String']['output'];
 };
 
+export type LocalGcpProject = {
+  __typename?: 'LocalGCPProject';
+  IsDefault: Scalars['Boolean']['output'];
+  Name: Scalars['String']['output'];
+  ProjectID: Scalars['String']['output'];
+  Source: Scalars['String']['output'];
+};
+
 export type LoginCredentials = {
   Advanced?: InputMaybe<Array<RecordInput>>;
   Database: Scalars['String']['input'];
@@ -361,11 +404,13 @@ export type MockDataTableInfo = {
 export type Mutation = {
   __typename?: 'Mutation';
   AddAWSProvider: AwsProvider;
+  AddGCPProvider: GcpProvider;
   AddRow: StatusResponse;
   AddStorageUnit: StatusResponse;
   DeleteRow: StatusResponse;
   ExecuteConfirmedSQL: AiChatMessage;
   GenerateChatTitle: GenerateChatTitleResponse;
+  GenerateCloudSQLIAMAuthToken: Scalars['String']['output'];
   GenerateMockData: MockDataGenerationStatus;
   GenerateRDSAuthToken: Scalars['String']['output'];
   ImportPreview: ImportPreview;
@@ -374,11 +419,13 @@ export type Mutation = {
   Login: StatusResponse;
   LoginWithProfile: StatusResponse;
   Logout: StatusResponse;
-  RefreshCloudProvider: AwsProvider;
+  RefreshCloudProvider: CloudProvider;
   RemoveCloudProvider: StatusResponse;
   TestAWSCredentials: CloudProviderStatus;
   TestCloudProvider: CloudProviderStatus;
+  TestGCPCredentials: CloudProviderStatus;
   UpdateAWSProvider: AwsProvider;
+  UpdateGCPProvider: GcpProvider;
   UpdateSettings: StatusResponse;
   UpdateStorageUnit: StatusResponse;
 };
@@ -386,6 +433,11 @@ export type Mutation = {
 
 export type MutationAddAwsProviderArgs = {
   input: AwsProviderInput;
+};
+
+
+export type MutationAddGcpProviderArgs = {
+  input: GcpProviderInput;
 };
 
 
@@ -418,6 +470,12 @@ export type MutationExecuteConfirmedSqlArgs = {
 
 export type MutationGenerateChatTitleArgs = {
   input: GenerateChatTitleInput;
+};
+
+
+export type MutationGenerateCloudSqliamAuthTokenArgs = {
+  providerID: Scalars['ID']['input'];
+  username: Scalars['String']['input'];
 };
 
 
@@ -484,9 +542,20 @@ export type MutationTestCloudProviderArgs = {
 };
 
 
+export type MutationTestGcpCredentialsArgs = {
+  input: GcpProviderInput;
+};
+
+
 export type MutationUpdateAwsProviderArgs = {
   id: Scalars['ID']['input'];
   input: AwsProviderInput;
+};
+
+
+export type MutationUpdateGcpProviderArgs = {
+  id: Scalars['ID']['input'];
+  input: GcpProviderInput;
 };
 
 
@@ -513,17 +582,19 @@ export type Query = {
   AIProviders: Array<AiProvider>;
   AWSRegions: Array<AwsRegion>;
   AnalyzeMockDataDependencies: MockDataDependencyAnalysis;
-  CloudProvider?: Maybe<AwsProvider>;
-  CloudProviders: Array<AwsProvider>;
+  CloudProvider?: Maybe<CloudProvider>;
+  CloudProviders: Array<CloudProvider>;
   Columns: Array<Column>;
   ColumnsBatch: Array<StorageUnitColumns>;
   Database: Array<Scalars['String']['output']>;
   DatabaseMetadata?: Maybe<DatabaseMetadata>;
   DatabaseQuerySuggestions: Array<DatabaseQuerySuggestion>;
   DiscoveredConnections: Array<DiscoveredConnection>;
+  GCPRegions: Array<GcpRegion>;
   Graph: Array<GraphUnit>;
   Health: HealthStatus;
   LocalAWSProfiles: Array<LocalAwsProfile>;
+  LocalGCPProjects: Array<LocalGcpProject>;
   MockDataMaxRowCount: Scalars['Int']['output'];
   Profiles: Array<LoginProfile>;
   ProviderConnections: Array<DiscoveredConnection>;
@@ -918,14 +989,14 @@ export type RawExecuteQuery = { __typename?: 'Query', RawExecute: { __typename?:
 export type GetCloudProvidersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetCloudProvidersQuery = { __typename?: 'Query', CloudProviders: Array<{ __typename?: 'AWSProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, ProfileName?: string | null, DiscoverRDS: boolean, DiscoverElastiCache: boolean, DiscoverDocumentDB: boolean, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null }> };
+export type GetCloudProvidersQuery = { __typename?: 'Query', CloudProviders: Array<{ __typename?: 'AWSProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProfileName?: string | null, DiscoverRDS: boolean, DiscoverElastiCache: boolean, DiscoverDocumentDB: boolean } | { __typename?: 'GCPProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProjectID: string, ServiceAccountKeyPath?: string | null, DiscoverCloudSQL: boolean, DiscoverAlloyDB: boolean, DiscoverMemorystore: boolean }> };
 
 export type GetCloudProviderQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetCloudProviderQuery = { __typename?: 'Query', CloudProvider?: { __typename?: 'AWSProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, ProfileName?: string | null, DiscoverRDS: boolean, DiscoverElastiCache: boolean, DiscoverDocumentDB: boolean, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null } | null };
+export type GetCloudProviderQuery = { __typename?: 'Query', CloudProvider?: { __typename?: 'AWSProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProfileName?: string | null, DiscoverRDS: boolean, DiscoverElastiCache: boolean, DiscoverDocumentDB: boolean } | { __typename?: 'GCPProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProjectID: string, ServiceAccountKeyPath?: string | null, DiscoverCloudSQL: boolean, DiscoverAlloyDB: boolean, DiscoverMemorystore: boolean } | null };
 
 export type GetDiscoveredConnectionsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1001,7 +1072,47 @@ export type RefreshCloudProviderMutationVariables = Exact<{
 }>;
 
 
-export type RefreshCloudProviderMutation = { __typename?: 'Mutation', RefreshCloudProvider: { __typename?: 'AWSProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, ProfileName?: string | null, DiscoverRDS: boolean, DiscoverElastiCache: boolean, DiscoverDocumentDB: boolean, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null } };
+export type RefreshCloudProviderMutation = { __typename?: 'Mutation', RefreshCloudProvider: { __typename?: 'AWSProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProfileName?: string | null, DiscoverRDS: boolean, DiscoverElastiCache: boolean, DiscoverDocumentDB: boolean } | { __typename?: 'GCPProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProjectID: string, ServiceAccountKeyPath?: string | null, DiscoverCloudSQL: boolean, DiscoverAlloyDB: boolean, DiscoverMemorystore: boolean } };
+
+export type GetLocalGcpProjectsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetLocalGcpProjectsQuery = { __typename?: 'Query', LocalGCPProjects: Array<{ __typename?: 'LocalGCPProject', ProjectID: string, Name: string, Source: string, IsDefault: boolean }> };
+
+export type GetGcpRegionsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetGcpRegionsQuery = { __typename?: 'Query', GCPRegions: Array<{ __typename?: 'GCPRegion', Id: string, Description: string }> };
+
+export type AddGcpProviderMutationVariables = Exact<{
+  input: GcpProviderInput;
+}>;
+
+
+export type AddGcpProviderMutation = { __typename?: 'Mutation', AddGCPProvider: { __typename?: 'GCPProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProjectID: string, ServiceAccountKeyPath?: string | null, DiscoverCloudSQL: boolean, DiscoverAlloyDB: boolean, DiscoverMemorystore: boolean } };
+
+export type UpdateGcpProviderMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: GcpProviderInput;
+}>;
+
+
+export type UpdateGcpProviderMutation = { __typename?: 'Mutation', UpdateGCPProvider: { __typename?: 'GCPProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProjectID: string, ServiceAccountKeyPath?: string | null, DiscoverCloudSQL: boolean, DiscoverAlloyDB: boolean, DiscoverMemorystore: boolean } };
+
+export type TestGcpCredentialsMutationVariables = Exact<{
+  input: GcpProviderInput;
+}>;
+
+
+export type TestGcpCredentialsMutation = { __typename?: 'Mutation', TestGCPCredentials: CloudProviderStatus };
+
+export type GenerateCloudSqliamAuthTokenMutationVariables = Exact<{
+  providerID: Scalars['ID']['input'];
+  username: Scalars['String']['input'];
+}>;
+
+
+export type GenerateCloudSqliamAuthTokenMutation = { __typename?: 'Mutation', GenerateCloudSQLIAMAuthToken: string };
 
 export type SettingsConfigQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2241,18 +2352,35 @@ export type RawExecuteQueryResult = Apollo.QueryResult<RawExecuteQuery, RawExecu
 export const GetCloudProvidersDocument = gql`
     query GetCloudProviders {
   CloudProviders {
-    Id
-    ProviderType
-    Name
-    Region
-    ProfileName
-    DiscoverRDS
-    DiscoverElastiCache
-    DiscoverDocumentDB
-    Status
-    LastDiscoveryAt
-    DiscoveredCount
-    Error
+    ... on AWSProvider {
+      Id
+      ProviderType
+      Name
+      Region
+      Status
+      LastDiscoveryAt
+      DiscoveredCount
+      Error
+      ProfileName
+      DiscoverRDS
+      DiscoverElastiCache
+      DiscoverDocumentDB
+    }
+    ... on GCPProvider {
+      Id
+      ProviderType
+      Name
+      Region
+      Status
+      LastDiscoveryAt
+      DiscoveredCount
+      Error
+      ProjectID
+      ServiceAccountKeyPath
+      DiscoverCloudSQL
+      DiscoverAlloyDB
+      DiscoverMemorystore
+    }
   }
 }
     `;
@@ -2291,18 +2419,35 @@ export type GetCloudProvidersQueryResult = Apollo.QueryResult<GetCloudProvidersQ
 export const GetCloudProviderDocument = gql`
     query GetCloudProvider($id: ID!) {
   CloudProvider(id: $id) {
-    Id
-    ProviderType
-    Name
-    Region
-    ProfileName
-    DiscoverRDS
-    DiscoverElastiCache
-    DiscoverDocumentDB
-    Status
-    LastDiscoveryAt
-    DiscoveredCount
-    Error
+    ... on AWSProvider {
+      Id
+      ProviderType
+      Name
+      Region
+      Status
+      LastDiscoveryAt
+      DiscoveredCount
+      Error
+      ProfileName
+      DiscoverRDS
+      DiscoverElastiCache
+      DiscoverDocumentDB
+    }
+    ... on GCPProvider {
+      Id
+      ProviderType
+      Name
+      Region
+      Status
+      LastDiscoveryAt
+      DiscoveredCount
+      Error
+      ProjectID
+      ServiceAccountKeyPath
+      DiscoverCloudSQL
+      DiscoverAlloyDB
+      DiscoverMemorystore
+    }
   }
 }
     `;
@@ -2750,18 +2895,35 @@ export type GenerateRdsAuthTokenMutationOptions = Apollo.BaseMutationOptions<Gen
 export const RefreshCloudProviderDocument = gql`
     mutation RefreshCloudProvider($id: ID!) {
   RefreshCloudProvider(id: $id) {
-    Id
-    ProviderType
-    Name
-    Region
-    ProfileName
-    DiscoverRDS
-    DiscoverElastiCache
-    DiscoverDocumentDB
-    Status
-    LastDiscoveryAt
-    DiscoveredCount
-    Error
+    ... on AWSProvider {
+      Id
+      ProviderType
+      Name
+      Region
+      Status
+      LastDiscoveryAt
+      DiscoveredCount
+      Error
+      ProfileName
+      DiscoverRDS
+      DiscoverElastiCache
+      DiscoverDocumentDB
+    }
+    ... on GCPProvider {
+      Id
+      ProviderType
+      Name
+      Region
+      Status
+      LastDiscoveryAt
+      DiscoveredCount
+      Error
+      ProjectID
+      ServiceAccountKeyPath
+      DiscoverCloudSQL
+      DiscoverAlloyDB
+      DiscoverMemorystore
+    }
   }
 }
     `;
@@ -2791,6 +2953,242 @@ export function useRefreshCloudProviderMutation(baseOptions?: Apollo.MutationHoo
 export type RefreshCloudProviderMutationHookResult = ReturnType<typeof useRefreshCloudProviderMutation>;
 export type RefreshCloudProviderMutationResult = Apollo.MutationResult<RefreshCloudProviderMutation>;
 export type RefreshCloudProviderMutationOptions = Apollo.BaseMutationOptions<RefreshCloudProviderMutation, RefreshCloudProviderMutationVariables>;
+export const GetLocalGcpProjectsDocument = gql`
+    query GetLocalGCPProjects {
+  LocalGCPProjects {
+    ProjectID
+    Name
+    Source
+    IsDefault
+  }
+}
+    `;
+
+/**
+ * __useGetLocalGcpProjectsQuery__
+ *
+ * To run a query within a React component, call `useGetLocalGcpProjectsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetLocalGcpProjectsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetLocalGcpProjectsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetLocalGcpProjectsQuery(baseOptions?: Apollo.QueryHookOptions<GetLocalGcpProjectsQuery, GetLocalGcpProjectsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetLocalGcpProjectsQuery, GetLocalGcpProjectsQueryVariables>(GetLocalGcpProjectsDocument, options);
+      }
+export function useGetLocalGcpProjectsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetLocalGcpProjectsQuery, GetLocalGcpProjectsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetLocalGcpProjectsQuery, GetLocalGcpProjectsQueryVariables>(GetLocalGcpProjectsDocument, options);
+        }
+export function useGetLocalGcpProjectsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetLocalGcpProjectsQuery, GetLocalGcpProjectsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetLocalGcpProjectsQuery, GetLocalGcpProjectsQueryVariables>(GetLocalGcpProjectsDocument, options);
+        }
+export type GetLocalGcpProjectsQueryHookResult = ReturnType<typeof useGetLocalGcpProjectsQuery>;
+export type GetLocalGcpProjectsLazyQueryHookResult = ReturnType<typeof useGetLocalGcpProjectsLazyQuery>;
+export type GetLocalGcpProjectsSuspenseQueryHookResult = ReturnType<typeof useGetLocalGcpProjectsSuspenseQuery>;
+export type GetLocalGcpProjectsQueryResult = Apollo.QueryResult<GetLocalGcpProjectsQuery, GetLocalGcpProjectsQueryVariables>;
+export const GetGcpRegionsDocument = gql`
+    query GetGCPRegions {
+  GCPRegions {
+    Id
+    Description
+  }
+}
+    `;
+
+/**
+ * __useGetGcpRegionsQuery__
+ *
+ * To run a query within a React component, call `useGetGcpRegionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetGcpRegionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetGcpRegionsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetGcpRegionsQuery(baseOptions?: Apollo.QueryHookOptions<GetGcpRegionsQuery, GetGcpRegionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetGcpRegionsQuery, GetGcpRegionsQueryVariables>(GetGcpRegionsDocument, options);
+      }
+export function useGetGcpRegionsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetGcpRegionsQuery, GetGcpRegionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetGcpRegionsQuery, GetGcpRegionsQueryVariables>(GetGcpRegionsDocument, options);
+        }
+export function useGetGcpRegionsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetGcpRegionsQuery, GetGcpRegionsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetGcpRegionsQuery, GetGcpRegionsQueryVariables>(GetGcpRegionsDocument, options);
+        }
+export type GetGcpRegionsQueryHookResult = ReturnType<typeof useGetGcpRegionsQuery>;
+export type GetGcpRegionsLazyQueryHookResult = ReturnType<typeof useGetGcpRegionsLazyQuery>;
+export type GetGcpRegionsSuspenseQueryHookResult = ReturnType<typeof useGetGcpRegionsSuspenseQuery>;
+export type GetGcpRegionsQueryResult = Apollo.QueryResult<GetGcpRegionsQuery, GetGcpRegionsQueryVariables>;
+export const AddGcpProviderDocument = gql`
+    mutation AddGCPProvider($input: GCPProviderInput!) {
+  AddGCPProvider(input: $input) {
+    Id
+    ProviderType
+    Name
+    Region
+    Status
+    LastDiscoveryAt
+    DiscoveredCount
+    Error
+    ProjectID
+    ServiceAccountKeyPath
+    DiscoverCloudSQL
+    DiscoverAlloyDB
+    DiscoverMemorystore
+  }
+}
+    `;
+export type AddGcpProviderMutationFn = Apollo.MutationFunction<AddGcpProviderMutation, AddGcpProviderMutationVariables>;
+
+/**
+ * __useAddGcpProviderMutation__
+ *
+ * To run a mutation, you first call `useAddGcpProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAddGcpProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [addGcpProviderMutation, { data, loading, error }] = useAddGcpProviderMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useAddGcpProviderMutation(baseOptions?: Apollo.MutationHookOptions<AddGcpProviderMutation, AddGcpProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<AddGcpProviderMutation, AddGcpProviderMutationVariables>(AddGcpProviderDocument, options);
+      }
+export type AddGcpProviderMutationHookResult = ReturnType<typeof useAddGcpProviderMutation>;
+export type AddGcpProviderMutationResult = Apollo.MutationResult<AddGcpProviderMutation>;
+export type AddGcpProviderMutationOptions = Apollo.BaseMutationOptions<AddGcpProviderMutation, AddGcpProviderMutationVariables>;
+export const UpdateGcpProviderDocument = gql`
+    mutation UpdateGCPProvider($id: ID!, $input: GCPProviderInput!) {
+  UpdateGCPProvider(id: $id, input: $input) {
+    Id
+    ProviderType
+    Name
+    Region
+    Status
+    LastDiscoveryAt
+    DiscoveredCount
+    Error
+    ProjectID
+    ServiceAccountKeyPath
+    DiscoverCloudSQL
+    DiscoverAlloyDB
+    DiscoverMemorystore
+  }
+}
+    `;
+export type UpdateGcpProviderMutationFn = Apollo.MutationFunction<UpdateGcpProviderMutation, UpdateGcpProviderMutationVariables>;
+
+/**
+ * __useUpdateGcpProviderMutation__
+ *
+ * To run a mutation, you first call `useUpdateGcpProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateGcpProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateGcpProviderMutation, { data, loading, error }] = useUpdateGcpProviderMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateGcpProviderMutation(baseOptions?: Apollo.MutationHookOptions<UpdateGcpProviderMutation, UpdateGcpProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateGcpProviderMutation, UpdateGcpProviderMutationVariables>(UpdateGcpProviderDocument, options);
+      }
+export type UpdateGcpProviderMutationHookResult = ReturnType<typeof useUpdateGcpProviderMutation>;
+export type UpdateGcpProviderMutationResult = Apollo.MutationResult<UpdateGcpProviderMutation>;
+export type UpdateGcpProviderMutationOptions = Apollo.BaseMutationOptions<UpdateGcpProviderMutation, UpdateGcpProviderMutationVariables>;
+export const TestGcpCredentialsDocument = gql`
+    mutation TestGCPCredentials($input: GCPProviderInput!) {
+  TestGCPCredentials(input: $input)
+}
+    `;
+export type TestGcpCredentialsMutationFn = Apollo.MutationFunction<TestGcpCredentialsMutation, TestGcpCredentialsMutationVariables>;
+
+/**
+ * __useTestGcpCredentialsMutation__
+ *
+ * To run a mutation, you first call `useTestGcpCredentialsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useTestGcpCredentialsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [testGcpCredentialsMutation, { data, loading, error }] = useTestGcpCredentialsMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useTestGcpCredentialsMutation(baseOptions?: Apollo.MutationHookOptions<TestGcpCredentialsMutation, TestGcpCredentialsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<TestGcpCredentialsMutation, TestGcpCredentialsMutationVariables>(TestGcpCredentialsDocument, options);
+      }
+export type TestGcpCredentialsMutationHookResult = ReturnType<typeof useTestGcpCredentialsMutation>;
+export type TestGcpCredentialsMutationResult = Apollo.MutationResult<TestGcpCredentialsMutation>;
+export type TestGcpCredentialsMutationOptions = Apollo.BaseMutationOptions<TestGcpCredentialsMutation, TestGcpCredentialsMutationVariables>;
+export const GenerateCloudSqliamAuthTokenDocument = gql`
+    mutation GenerateCloudSQLIAMAuthToken($providerID: ID!, $username: String!) {
+  GenerateCloudSQLIAMAuthToken(providerID: $providerID, username: $username)
+}
+    `;
+export type GenerateCloudSqliamAuthTokenMutationFn = Apollo.MutationFunction<GenerateCloudSqliamAuthTokenMutation, GenerateCloudSqliamAuthTokenMutationVariables>;
+
+/**
+ * __useGenerateCloudSqliamAuthTokenMutation__
+ *
+ * To run a mutation, you first call `useGenerateCloudSqliamAuthTokenMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useGenerateCloudSqliamAuthTokenMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [generateCloudSqliamAuthTokenMutation, { data, loading, error }] = useGenerateCloudSqliamAuthTokenMutation({
+ *   variables: {
+ *      providerID: // value for 'providerID'
+ *      username: // value for 'username'
+ *   },
+ * });
+ */
+export function useGenerateCloudSqliamAuthTokenMutation(baseOptions?: Apollo.MutationHookOptions<GenerateCloudSqliamAuthTokenMutation, GenerateCloudSqliamAuthTokenMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<GenerateCloudSqliamAuthTokenMutation, GenerateCloudSqliamAuthTokenMutationVariables>(GenerateCloudSqliamAuthTokenDocument, options);
+      }
+export type GenerateCloudSqliamAuthTokenMutationHookResult = ReturnType<typeof useGenerateCloudSqliamAuthTokenMutation>;
+export type GenerateCloudSqliamAuthTokenMutationResult = Apollo.MutationResult<GenerateCloudSqliamAuthTokenMutation>;
+export type GenerateCloudSqliamAuthTokenMutationOptions = Apollo.BaseMutationOptions<GenerateCloudSqliamAuthTokenMutation, GenerateCloudSqliamAuthTokenMutationVariables>;
 export const SettingsConfigDocument = gql`
     query SettingsConfig {
   SettingsConfig {

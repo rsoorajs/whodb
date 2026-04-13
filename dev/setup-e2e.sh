@@ -53,6 +53,7 @@ get_docker_services() {
         redis)       echo "e2e_redis redis-init e2e_redis_ssl" ;;
         memcached)   echo "e2e_memcached memcached-init e2e_memcached_ssl" ;;
         elasticsearch) echo "e2e_elasticsearch elasticsearch-init e2e_elasticsearch_ssl" ;;
+        cockroachdb) echo "e2e_cockroachdb cockroachdb-init e2e_cockroachdb_ssl cockroachdb-ssl-init" ;;
         clickhouse)  echo "e2e_clickhouse e2e_clickhouse_ssl" ;;
         valkey)      echo "e2e_valkey valkey-init" ;;
         dragonfly)   echo "e2e_dragonfly dragonfly-init" ;;
@@ -75,6 +76,7 @@ get_db_port() {
         mariadb)     echo "3307" ;;
         mongodb)     echo "27017" ;;
         redis)       echo "6379" ;;
+        cockroachdb) echo "26257" ;;
         memcached)   echo "11211" ;;
         elasticsearch) echo "9200" ;;
         clickhouse)  echo "8123" ;;
@@ -93,6 +95,7 @@ get_db_wait_time() {
     local db=$1
     case $db in
         postgres|mysql|mysql8|mariadb) echo "90" ;;  # Heavy init scripts
+        cockroachdb)                    echo "60" ;;  # Single-node startup
         elasticsearch)                  echo "60" ;;  # Can be slow
         mongodb|clickhouse)             echo "30" ;;  # Light init
         redis|memcached|valkey|dragonfly) echo "20" ;;  # Very fast
@@ -113,6 +116,7 @@ get_ssl_port() {
         mariadb)       echo "3310" ;;
         mongodb)       echo "27018" ;;
         redis)         echo "6380" ;;
+        cockroachdb)   echo "26258" ;;
         memcached)     echo "11212" ;;
         clickhouse)    echo "9440" ;;
         elasticsearch) echo "9201" ;;
@@ -337,6 +341,8 @@ if [ "$SKIP_CE_DATABASES" = "false" ]; then
         PID_MARIA=$!
         wait_for_port "MongoDB" 27017 30 &
         PID_MONGO=$!
+        wait_for_port "CockroachDB" 26257 60 &
+        PID_CRDB=$!
         wait_for_port "ClickHouse" 8123 30 &
         PID_CH=$!
         wait_for_port "Redis" 6379 20 &
@@ -344,7 +350,7 @@ if [ "$SKIP_CE_DATABASES" = "false" ]; then
         wait_for_port "ElasticSearch" 9200 60 &
         PID_ES=$!
 
-        ALL_PIDS="$PID_PG $PID_MYSQL $PID_MYSQL8 $PID_MARIA $PID_MONGO $PID_CH $PID_REDIS $PID_ES"
+        ALL_PIDS="$PID_PG $PID_MYSQL $PID_MYSQL8 $PID_MARIA $PID_CRDB $PID_MONGO $PID_CH $PID_REDIS $PID_ES"
 
         # SSL container wait_for_port calls (only when running SSL tests)
         if needs_ssl; then
@@ -359,12 +365,14 @@ if [ "$SKIP_CE_DATABASES" = "false" ]; then
             PID_MONGO_SSL=$!
             wait_for_port "Redis-SSL" 6380 30 &
             PID_REDIS_SSL=$!
+            wait_for_port "CockroachDB-SSL" 26258 60 &
+            PID_CRDB_SSL=$!
             wait_for_port "ClickHouse-SSL" 9440 30 &
             PID_CH_SSL=$!
             wait_for_port "ElasticSearch-SSL" 9201 90 &
             PID_ES_SSL=$!
 
-            ALL_PIDS="$ALL_PIDS $PID_PG_SSL $PID_MYSQL_SSL $PID_MARIA_SSL $PID_MONGO_SSL $PID_REDIS_SSL $PID_CH_SSL $PID_ES_SSL"
+            ALL_PIDS="$ALL_PIDS $PID_PG_SSL $PID_MYSQL_SSL $PID_MARIA_SSL $PID_MONGO_SSL $PID_CRDB_SSL $PID_REDIS_SSL $PID_CH_SSL $PID_ES_SSL"
         fi
 
         # Wait for all background processes

@@ -412,6 +412,21 @@ func (m *Manager) Connect(conn *Connection) error {
 	return nil
 }
 
+// Ping checks whether a database connection is reachable without fully connecting.
+// It uses the plugin's IsAvailable method with a short timeout.
+func (m *Manager) Ping(conn *Connection) bool {
+	dbType := engine.DatabaseType(conn.Type)
+	plugin := m.engine.Choose(dbType)
+	if plugin == nil {
+		return false
+	}
+	credentials := m.buildCredentials(conn)
+	pluginConfig := engine.NewPluginConfig(credentials)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	return plugin.IsAvailable(ctx, pluginConfig)
+}
+
 func (m *Manager) Disconnect() error {
 	m.cache.Clear()
 	m.currentConnection = nil
@@ -1263,9 +1278,18 @@ func (m *Manager) GetAIModelsWithContext(ctx context.Context, providerID, modelT
 }
 
 type ChatMessage struct {
-	Type   string
-	Result *engine.GetRowsResult
-	Text   string
+	Type                 string
+	Result               *engine.GetRowsResult
+	Text                 string
+	RequiresConfirmation bool
+}
+
+// StreamChunk represents a chunk of a streaming AI chat response.
+type StreamChunk struct {
+	Text    string         // accumulated text so far
+	IsFinal bool           // is this the final response?
+	Final   []*ChatMessage // final messages (only when IsFinal=true)
+	Err     error
 }
 
 func (m *Manager) SendAIChat(providerID, modelType, token, schema, model, previousConversation, query string) ([]*ChatMessage, error) {
@@ -1312,9 +1336,10 @@ func (m *Manager) SendAIChat(providerID, modelType, token, schema, model, previo
 	chatMessages := []*ChatMessage{}
 	for _, msg := range messages {
 		chatMessages = append(chatMessages, &ChatMessage{
-			Type:   msg.Type,
-			Result: msg.Result,
-			Text:   msg.Text,
+			Type:                 msg.Type,
+			Result:               msg.Result,
+			Text:                 msg.Text,
+			RequiresConfirmation: msg.RequiresConfirmation,
 		})
 	}
 

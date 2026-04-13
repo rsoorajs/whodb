@@ -137,6 +137,47 @@ type DiscoveredConnection struct {
 	Metadata     []*Record         `json:"Metadata"`
 }
 
+type GCPProvider struct {
+	ID                    string              `json:"Id"`
+	ProviderType          CloudProviderType   `json:"ProviderType"`
+	Name                  string              `json:"Name"`
+	Region                string              `json:"Region"`
+	Status                CloudProviderStatus `json:"Status"`
+	LastDiscoveryAt       *string             `json:"LastDiscoveryAt,omitempty"`
+	DiscoveredCount       int                 `json:"DiscoveredCount"`
+	Error                 *string             `json:"Error,omitempty"`
+	ProjectID             string              `json:"ProjectID"`
+	ServiceAccountKeyPath *string             `json:"ServiceAccountKeyPath,omitempty"`
+	DiscoverCloudSQL      bool                `json:"DiscoverCloudSQL"`
+	DiscoverAlloyDb       bool                `json:"DiscoverAlloyDB"`
+	DiscoverMemorystore   bool                `json:"DiscoverMemorystore"`
+}
+
+func (GCPProvider) IsCloudProvider()                        {}
+func (this GCPProvider) GetID() string                      { return this.ID }
+func (this GCPProvider) GetProviderType() CloudProviderType { return this.ProviderType }
+func (this GCPProvider) GetName() string                    { return this.Name }
+func (this GCPProvider) GetRegion() string                  { return this.Region }
+func (this GCPProvider) GetStatus() CloudProviderStatus     { return this.Status }
+func (this GCPProvider) GetLastDiscoveryAt() *string        { return this.LastDiscoveryAt }
+func (this GCPProvider) GetDiscoveredCount() int            { return this.DiscoveredCount }
+func (this GCPProvider) GetError() *string                  { return this.Error }
+
+type GCPProviderInput struct {
+	Name                  string  `json:"Name"`
+	ProjectID             string  `json:"ProjectID"`
+	Region                string  `json:"Region"`
+	ServiceAccountKeyPath *string `json:"ServiceAccountKeyPath,omitempty"`
+	DiscoverCloudSQL      *bool   `json:"DiscoverCloudSQL,omitempty"`
+	DiscoverAlloyDb       *bool   `json:"DiscoverAlloyDB,omitempty"`
+	DiscoverMemorystore   *bool   `json:"DiscoverMemorystore,omitempty"`
+}
+
+type GCPRegion struct {
+	ID          string `json:"Id"`
+	Description string `json:"Description"`
+}
+
 type GenerateChatTitleInput struct {
 	Query      string  `json:"Query"`
 	ModelType  string  `json:"ModelType"`
@@ -223,6 +264,13 @@ type LocalAWSProfile struct {
 	Source    string  `json:"Source"`
 	AuthType  string  `json:"AuthType"`
 	IsDefault bool    `json:"IsDefault"`
+}
+
+type LocalGCPProject struct {
+	ProjectID string `json:"ProjectID"`
+	Name      string `json:"Name"`
+	Source    string `json:"Source"`
+	IsDefault bool   `json:"IsDefault"`
 }
 
 type LoginCredentials struct {
@@ -440,15 +488,17 @@ type CloudProviderType string
 
 const (
 	CloudProviderTypeAWS CloudProviderType = "AWS"
+	CloudProviderTypeGCP CloudProviderType = "GCP"
 )
 
 var AllCloudProviderType = []CloudProviderType{
 	CloudProviderTypeAWS,
+	CloudProviderTypeGCP,
 }
 
 func (e CloudProviderType) IsValid() bool {
 	switch e {
-	case CloudProviderTypeAWS:
+	case CloudProviderTypeAWS, CloudProviderTypeGCP:
 		return true
 	}
 	return false
@@ -562,6 +612,7 @@ const (
 	DatabaseTypeRedis         DatabaseType = "Redis"
 	DatabaseTypeElasticSearch DatabaseType = "ElasticSearch"
 	DatabaseTypeMariaDb       DatabaseType = "MariaDB"
+	DatabaseTypeCockroachDb   DatabaseType = "CockroachDB"
 	DatabaseTypeClickHouse    DatabaseType = "ClickHouse"
 	DatabaseTypeDuckDb        DatabaseType = "DuckDB"
 	DatabaseTypeMemcached     DatabaseType = "Memcached"
@@ -576,6 +627,7 @@ var AllDatabaseType = []DatabaseType{
 	DatabaseTypeRedis,
 	DatabaseTypeElasticSearch,
 	DatabaseTypeMariaDb,
+	DatabaseTypeCockroachDb,
 	DatabaseTypeClickHouse,
 	DatabaseTypeDuckDb,
 	DatabaseTypeMemcached,
@@ -584,7 +636,7 @@ var AllDatabaseType = []DatabaseType{
 
 func (e DatabaseType) IsValid() bool {
 	switch e {
-	case DatabaseTypePostgres, DatabaseTypeMySQL, DatabaseTypeSqlite3, DatabaseTypeMongoDb, DatabaseTypeRedis, DatabaseTypeElasticSearch, DatabaseTypeMariaDb, DatabaseTypeClickHouse, DatabaseTypeDuckDb, DatabaseTypeMemcached, DatabaseTypeTiDb:
+	case DatabaseTypePostgres, DatabaseTypeMySQL, DatabaseTypeSqlite3, DatabaseTypeMongoDb, DatabaseTypeRedis, DatabaseTypeElasticSearch, DatabaseTypeMariaDb, DatabaseTypeCockroachDb, DatabaseTypeClickHouse, DatabaseTypeDuckDb, DatabaseTypeMemcached, DatabaseTypeTiDb:
 		return true
 	}
 	return false

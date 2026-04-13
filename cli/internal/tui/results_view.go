@@ -691,8 +691,34 @@ func (v *ResultsView) countWhereConditions() int {
 	if v.whereCondition == nil {
 		return 0
 	}
-	if v.whereCondition.And != nil && v.whereCondition.And.Children != nil {
-		return len(v.whereCondition.And.Children)
+	return countAtomicConditions(v.whereCondition)
+}
+
+// countAtomicConditions recursively counts the number of leaf (atomic)
+// conditions in a WhereCondition tree.
+func countAtomicConditions(wc *model.WhereCondition) int {
+	if wc == nil {
+		return 0
+	}
+	switch wc.Type {
+	case model.WhereConditionTypeAtomic:
+		return 1
+	case model.WhereConditionTypeAnd:
+		if wc.And != nil {
+			n := 0
+			for _, c := range wc.And.Children {
+				n += countAtomicConditions(c)
+			}
+			return n
+		}
+	case model.WhereConditionTypeOr:
+		if wc.Or != nil {
+			n := 0
+			for _, c := range wc.Or.Children {
+				n += countAtomicConditions(c)
+			}
+			return n
+		}
 	}
 	return 0
 }

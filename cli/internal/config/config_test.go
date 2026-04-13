@@ -617,3 +617,128 @@ func TestSavedQueries_SaveAndLoad(t *testing.T) {
 		t.Errorf("Unexpected second query after reload: %+v", queries[1])
 	}
 }
+
+func TestAddProfile(t *testing.T) {
+	cfg := DefaultConfig()
+
+	p := Profile{Name: "dev", Connection: "my-db", Theme: "monokai", PageSize: 25, TimeoutSeconds: 60}
+	cfg.AddProfile(p)
+
+	profiles := cfg.GetProfiles()
+	if len(profiles) != 1 {
+		t.Fatalf("Expected 1 profile, got %d", len(profiles))
+	}
+	if profiles[0].Name != "dev" || profiles[0].Connection != "my-db" {
+		t.Errorf("Unexpected profile: %+v", profiles[0])
+	}
+}
+
+func TestAddProfile_Update(t *testing.T) {
+	cfg := DefaultConfig()
+
+	cfg.AddProfile(Profile{Name: "dev", Connection: "db1", Theme: "default"})
+	cfg.AddProfile(Profile{Name: "dev", Connection: "db2", Theme: "dracula"})
+
+	profiles := cfg.GetProfiles()
+	if len(profiles) != 1 {
+		t.Fatalf("Expected 1 profile after update, got %d", len(profiles))
+	}
+	if profiles[0].Connection != "db2" || profiles[0].Theme != "dracula" {
+		t.Errorf("Expected updated profile, got %+v", profiles[0])
+	}
+}
+
+func TestGetProfile(t *testing.T) {
+	cfg := DefaultConfig()
+
+	cfg.AddProfile(Profile{Name: "dev", Connection: "my-db"})
+
+	p := cfg.GetProfile("dev")
+	if p == nil {
+		t.Fatal("GetProfile returned nil for existing profile")
+	}
+	if p.Name != "dev" || p.Connection != "my-db" {
+		t.Errorf("Unexpected profile: %+v", p)
+	}
+}
+
+func TestGetProfile_NotFound(t *testing.T) {
+	cfg := DefaultConfig()
+
+	p := cfg.GetProfile("nonexistent")
+	if p != nil {
+		t.Errorf("Expected nil for nonexistent profile, got %+v", p)
+	}
+}
+
+func TestDeleteProfile(t *testing.T) {
+	cfg := DefaultConfig()
+
+	cfg.AddProfile(Profile{Name: "p1", Connection: "db1"})
+	cfg.AddProfile(Profile{Name: "p2", Connection: "db2"})
+
+	deleted := cfg.DeleteProfile("p1")
+	if !deleted {
+		t.Error("Expected DeleteProfile to return true")
+	}
+
+	profiles := cfg.GetProfiles()
+	if len(profiles) != 1 {
+		t.Fatalf("Expected 1 profile after deletion, got %d", len(profiles))
+	}
+	if profiles[0].Name != "p2" {
+		t.Errorf("Expected remaining profile 'p2', got '%s'", profiles[0].Name)
+	}
+}
+
+func TestDeleteProfile_NotFound(t *testing.T) {
+	cfg := DefaultConfig()
+
+	deleted := cfg.DeleteProfile("nonexistent")
+	if deleted {
+		t.Error("Expected DeleteProfile to return false for nonexistent profile")
+	}
+}
+
+func TestGetProfiles_Empty(t *testing.T) {
+	cfg := DefaultConfig()
+
+	profiles := cfg.GetProfiles()
+	if profiles != nil {
+		t.Errorf("Expected nil profiles from default config, got %v", profiles)
+	}
+}
+
+func TestProfiles_SaveAndLoad(t *testing.T) {
+	tempDir := t.TempDir()
+	origHome := os.Getenv("HOME")
+	os.Setenv("HOME", tempDir)
+	defer os.Setenv("HOME", origHome)
+
+	resetConfigDir()
+	defer resetConfigDir()
+
+	cfg := DefaultConfig()
+	cfg.AddProfile(Profile{Name: "staging", Connection: "staging-db", Theme: "nord", PageSize: 100, TimeoutSeconds: 120})
+	cfg.AddProfile(Profile{Name: "prod", Connection: "prod-db", Theme: "catppuccin"})
+
+	if err := cfg.Save(); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+
+	loaded, err := LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig failed: %v", err)
+	}
+
+	profiles := loaded.GetProfiles()
+	if len(profiles) != 2 {
+		t.Fatalf("Expected 2 profiles after reload, got %d", len(profiles))
+	}
+	if profiles[0].Name != "staging" || profiles[0].Theme != "nord" || profiles[0].PageSize != 100 {
+		t.Errorf("Unexpected first profile after reload: %+v", profiles[0])
+	}
+	if profiles[1].Name != "prod" || profiles[1].Connection != "prod-db" {
+		t.Errorf("Unexpected second profile after reload: %+v", profiles[1])
+	}
+}

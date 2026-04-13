@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { combineReducers, configureStore } from '@reduxjs/toolkit';
+import { combineReducers, configureStore, Reducer } from '@reduxjs/toolkit';
 import { persistReducer, persistStore, createTransform } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import { authReducers } from './auth';
@@ -152,7 +152,7 @@ const chatTransform = createTransform(
   { whitelist: ['houdini'] }
 );
 
-const persistedReducer = combineReducers({
+const ceReducerMap = {
   auth: persistReducer({ key: "auth", storage, }, authReducers),
   database: persistReducer({ key: "database", storage, }, databaseReducers),
   settings: persistReducer({ key: "settings", storage }, settingsReducers),
@@ -172,16 +172,30 @@ const persistedReducer = combineReducers({
   providers: persistReducer({ key: "providers", storage }, providersReducers),
   health: healthReducers, // Health status is not persisted (transient state)
   exploreConditions: persistReducer({ key: 'exploreConditions', storage }, exploreConditionsReducers),
-});
+};
+
+const eeReducerMap: Record<string, Reducer> = {};
+
+function buildRootReducer() {
+  return combineReducers({ ...ceReducerMap, ...eeReducerMap });
+}
 
 export const reduxStore = configureStore({
-  reducer: persistedReducer,
+  reducer: buildRootReducer(),
   middleware: (getDefaultMiddleware) => {
     return getDefaultMiddleware({
       serializableCheck: false,
     });
   },
 });
+
+/** Injects an additional reducer slice into the store. Called by EE at boot to add EE-specific state. */
+export function registerReducer(key: string, reducer: Reducer): void {
+  if (key in eeReducerMap) return;
+  eeReducerMap[key] = reducer;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  reduxStore.replaceReducer(buildRootReducer() as any);
+}
 
 export const reduxStorePersistor = persistStore(reduxStore);
 
