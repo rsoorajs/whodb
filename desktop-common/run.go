@@ -60,7 +60,7 @@ func RunApp(edition string, title string, assets embed.FS) error {
 	log.Infof("Running WhoDB Desktop %s Edition", strings.ToUpper(edition))
 
 	schema := graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}})
-	r := router.InitializeRouter(schema, nil, nil, assets)
+	r := router.InitializeRouter(schema, nil, nil, nil, assets)
 	app := NewApp(edition)
 
 	err := wails.Run(&options.App{
