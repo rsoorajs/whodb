@@ -24,6 +24,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/clidey/whodb/cli/internal/config"
+	"github.com/clidey/whodb/cli/internal/docker"
 	"github.com/clidey/whodb/cli/internal/tui"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -40,6 +41,7 @@ var (
 	schema            string
 	name              string
 	passwordFromStdin bool
+	useDocker         bool
 )
 
 var connectCmd = &cobra.Command{
@@ -48,37 +50,71 @@ var connectCmd = &cobra.Command{
 	Long: `Connect to a database and start the interactive TUI.
 
 Usage modes:
-  1) Flags (non-form) path
-     Provide --type, --user, and --database (optionally --host, --port, --name).
-     - On a TTY, you will be prompted for the password with no echo.
-     - On non‑TTY (piped/CI), pass --password and pipe a single line on stdin.
-       Without --password, the command errors to avoid accidental stdin reads.
-     - If you pass --name, the connection (including password) is saved to
-       ~/.whodb-cli/config.yaml for later use (e.g. with 'query').
+  1) Flags path
+     Provide --type and --database (optionally --host, --port, --user, --name).
+     For databases that need a password, you'll be prompted on a TTY.
+     For non-TTY (piped/CI), pass --password and pipe on stdin.
+     If you pass --name, the connection is saved for later use.
 
-  2) TUI connection form
+  2) Docker auto-detection
+     Use --docker to detect running database containers and connect.
+
+  3) TUI connection form
      If required flags are missing, the interactive connection form opens.
-     Fill fields (including the masked password) and press Connect.
-     If you provide a Name, the connection is saved for reuse.
+     Docker containers appear automatically in the connection list.
 `,
 	Example: `
-  # Open connection form (interactive)
+  # Open connection form (interactive — shows saved + Docker connections)
   whodb-cli connect
 
-  # Flags path with TTY password prompt
-  whodb-cli connect --type postgres --host localhost --user alice --database app --name app-local
+  # Connect to PostgreSQL
+  whodb-cli connect --type postgres --host localhost --user alice --database app
 
-  # Non-interactive: read password from stdin (note the --password flag)
-  printf "%s\n" "$DB_PASS" | whodb-cli connect --type postgres --host localhost --user alice --database app --name app-local --password
+  # Connect to SQLite (no password needed)
+  whodb-cli connect --type sqlite3 --database ./app.db
 
-  # SQLite example (no password)
+  # Auto-detect Docker database containers
+  whodb-cli connect --docker
+
+  # Non-interactive: read password from stdin
+  printf "%s\n" "$DB_PASS" | whodb-cli connect --type postgres --host localhost --user alice --database app --password
   whodb-cli connect --type sqlite --host ./app.db --database ./app.db --name app-sqlite`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// If all required parameters are provided, connect directly
-		if dbType != "" && username != "" && database != "" {
+		// --docker: detect running database containers and connect to the first match
+		if useDocker {
+			containers := docker.DetectContainers()
+			if len(containers) == 0 {
+				return fmt.Errorf("no running database containers detected (is Docker running?)")
+			}
+			c := containers[0]
+			fmt.Fprintf(os.Stderr, "Detected %d container(s); connecting to %s (%s on port %d)\n", len(containers), c.Name, c.Type, c.Port)
+			conn := config.Connection{
+				Type:     c.Type,
+				Host:     "localhost",
+				Port:     c.Port,
+				Database: database,
+			}
+			m := tui.NewMainModelWithConnection(&conn)
+			p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
+			if _, err := p.Run(); err != nil {
+				return fmt.Errorf("error running interactive mode: %w", err)
+			}
+			return nil
+		}
+
+		// If type and database are provided, connect directly.
+		// Username is optional for file-based databases (SQLite, DuckDB) and
+		// some NoSQL databases (Redis, MongoDB).
+		if dbType != "" && database != "" {
 			// Use defaults if not provided
 			if host == "" {
-				host = "localhost"
+				normalizedCheck := strings.ToLower(dbType)
+				if normalizedCheck == "sqlite3" || normalizedCheck == "sqlite" || normalizedCheck == "duckdb" {
+					// File-based databases use the database path as host
+					host = database
+				} else {
+					host = "localhost"
+				}
 			}
 			if port == 0 {
 				port = getDefaultPort(dbType)
@@ -89,26 +125,29 @@ Usage modes:
 			// Normalize database type to match plugin names
 			normalizedType := normalizeDBType(dbType)
 
-			// Secure password prompt when using flags interactively
+			// Secure password prompt — skip for databases that don't need credentials
 			var password string
-			if term.IsTerminal(int(os.Stdin.Fd())) {
-				fmt.Fprint(os.Stderr, "Password: ")
-				b, err := term.ReadPassword(int(os.Stdin.Fd()))
-				fmt.Fprintln(os.Stderr)
-				if err == nil {
-					password = string(b)
-				}
-			} else {
-				// Non-TTY: only read from stdin when --password is provided
-				if passwordFromStdin {
-					fi, _ := os.Stdin.Stat()
-					if (fi.Mode() & os.ModeCharDevice) == 0 {
-						r := bufio.NewReader(os.Stdin)
-						line, _ := r.ReadString('\n')
-						password = strings.Trim(line, "\r\n")
+			needsPassword := username != ""
+			if needsPassword {
+				if term.IsTerminal(int(os.Stdin.Fd())) {
+					fmt.Fprint(os.Stderr, "Password: ")
+					b, err := term.ReadPassword(int(os.Stdin.Fd()))
+					fmt.Fprintln(os.Stderr)
+					if err == nil {
+						password = string(b)
 					}
 				} else {
-					return fmt.Errorf("stdin is not a TTY. Use --password and pipe the password on stdin, or run interactively without piping")
+					// Non-TTY: only read from stdin when --password is provided
+					if passwordFromStdin {
+						fi, _ := os.Stdin.Stat()
+						if (fi.Mode() & os.ModeCharDevice) == 0 {
+							r := bufio.NewReader(os.Stdin)
+							line, _ := r.ReadString('\n')
+							password = strings.Trim(line, "\r\n")
+						}
+					} else {
+						return fmt.Errorf("stdin is not a TTY. Use --password and pipe the password on stdin, or run interactively without piping")
+					}
 				}
 			}
 
@@ -166,6 +205,8 @@ func normalizeDBType(dbType string) string {
 		return "MySQL"
 	case "mariadb":
 		return "MariaDB"
+	case "tidb":
+		return "TiDB"
 	case "mongodb":
 		return "MongoDB"
 	case "redis":
@@ -174,8 +215,10 @@ func normalizeDBType(dbType string) string {
 		return "ClickHouse"
 	case "elasticsearch":
 		return "ElasticSearch"
-	case "sqlite":
-		return "SQLite"
+	case "sqlite", "sqlite3":
+		return "Sqlite3"
+	case "duckdb":
+		return "DuckDB"
 	default:
 		return dbType
 	}
@@ -203,7 +246,7 @@ func getDefaultPort(dbType string) int {
 func init() {
 	rootCmd.AddCommand(connectCmd)
 
-	connectCmd.Flags().StringVar(&dbType, "type", "", "database type (postgres, mysql, sqlite, mongodb, redis, etc.)")
+	connectCmd.Flags().StringVar(&dbType, "type", "", "database type (postgres, mysql, sqlite, duckdb, mongodb, redis, etc.)")
 	connectCmd.Flags().StringVar(&host, "host", "", "database host")
 	connectCmd.Flags().IntVar(&port, "port", 0, "database port (default depends on database type)")
 	connectCmd.Flags().StringVar(&username, "user", "", "database username")
@@ -211,4 +254,5 @@ func init() {
 	connectCmd.Flags().StringVar(&schema, "schema", "", "preferred schema (PostgreSQL: schema name; MySQL: not needed; MongoDB: not applicable)")
 	connectCmd.Flags().StringVar(&name, "name", "", "connection name (save for later use)")
 	connectCmd.Flags().BoolVar(&passwordFromStdin, "password", false, "read password from stdin when not using a TTY")
+	connectCmd.Flags().BoolVar(&useDocker, "docker", false, "auto-detect running Docker database containers and connect to the first match")
 }

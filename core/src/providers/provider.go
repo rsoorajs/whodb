@@ -53,6 +53,9 @@ const (
 
 	// ProviderTypeAWS represents AWS-discovered connections.
 	ProviderTypeAWS ProviderType = "aws"
+
+	// ProviderTypeGCP represents GCP-discovered connections.
+	ProviderTypeGCP ProviderType = "gcp"
 )
 
 // ConnectionProvider discovers and builds credentials for database connections.

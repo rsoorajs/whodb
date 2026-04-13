@@ -19,13 +19,23 @@ package main
 import (
 	"os"
 
-	_ "github.com/clidey/whodb/cli/internal/baml"   // Must be first - downloads BAML library if needed
-	_ "github.com/clidey/whodb/core/src/bamlconfig" // Sets BAML_LOG before native library loads
+	_ "github.com/clidey/whodb/cli/internal/baml" // Must be first - downloads BAML library if needed
+	_ "github.com/clidey/whodb/core/src/bamlinit" // Sets BAML env vars before native library loads
 
 	"github.com/clidey/whodb/cli/cmd"
 	"github.com/clidey/whodb/cli/pkg/crash"
 	"github.com/clidey/whodb/core/src/log"
+
+	// Register database plugins (each init() calls engine.RegisterPlugin)
 	_ "github.com/clidey/whodb/core/src/plugins"
+	_ "github.com/clidey/whodb/core/src/plugins/clickhouse"
+	_ "github.com/clidey/whodb/core/src/plugins/elasticsearch"
+	_ "github.com/clidey/whodb/core/src/plugins/memcached"
+	_ "github.com/clidey/whodb/core/src/plugins/mongodb"
+	_ "github.com/clidey/whodb/core/src/plugins/mysql"
+	_ "github.com/clidey/whodb/core/src/plugins/postgres"
+	_ "github.com/clidey/whodb/core/src/plugins/redis"
+	_ "github.com/clidey/whodb/core/src/plugins/sqlite3"
 )
 
 func init() {

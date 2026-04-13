@@ -177,3 +177,7 @@ func NewCockroachDBPlugin() *engine.Plugin {
 	crdbPlugin.GormPluginFunctions = crdbPlugin
 	return &crdbPlugin.Plugin
 }
+
+func init() {
+	engine.RegisterPlugin(NewCockroachDBPlugin())
+}

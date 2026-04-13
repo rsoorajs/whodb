@@ -18,6 +18,11 @@ import {
     Button,
     cn,
     CommandItem,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -51,7 +56,7 @@ import {FC, ReactElement, useCallback, useEffect, useMemo, useRef, useState} fro
 import {useDispatch} from "react-redux";
 import {Link, useLocation, useNavigate} from "react-router-dom";
 import logoImage from "../../../public/images/logo.svg";
-import {extensions, getAppName, isEEMode} from "../../config/features";
+import {extensions, getAppName} from "../../config/features";
 import {InternalRoutes} from "../../config/routes";
 import {LoginForm} from "../../pages/auth/login";
 import {AuthActions, LocalLoginProfile} from "../../store/auth";
@@ -63,7 +68,7 @@ import {
     databaseSupportsScratchpad,
     databaseTypesThatUseDatabaseInsteadOfSchema
 } from "../../utils/database-features";
-import {isEEFeatureEnabled} from "../../utils/ee-loader";
+import {featureFlags} from "../../config/features";
 import {getDatabaseStorageUnitLabel, isNoSQL} from "../../utils/functions";
 import {isAwsHostname} from "../../utils/cloud-connection-prefill";
 import {
@@ -85,7 +90,7 @@ import {useProfileSwitch} from "@/hooks/use-profile-switch";
 function getProfileLabel(profile: LocalLoginProfile) {
     if (profile.Saved) return profile.Id;
     if (profile.Type === DatabaseType.Redis) return profile.Hostname;
-    if (profile.Type === DatabaseType.Sqlite3) return profile.Database;
+    if (profile.Type === DatabaseType.Sqlite3 || profile.Type === DatabaseType.DuckDb) return profile.Database;
     return `${profile.Hostname} [${profile.Username}]`;
 }
 
@@ -111,14 +116,18 @@ export const Sidebar: FC = () => {
         skip: current == null || !databaseSupportsDatabaseSwitching(current?.Type),
     });
     const { data: availableSchemas, loading: availableSchemasLoading, refetch: getSchemas } = useGetSchemaQuery({
-        onCompleted(data) {
-            if (current == null) return;
-            if (schema === "") {
-                dispatch(DatabaseActions.setSchema(data.Schema[0] ?? ""));
-            }
-        },
         skip: current == null || !databaseSupportsSchema(current?.Type),
     });
+
+    // Default schema selection: prefer Search Path from login config, fall back to first schema
+    useEffect(() => {
+        if (current == null || schema !== "" || !availableSchemas?.Schema?.length) return;
+        const searchPath = current.Advanced?.find(a => a.Key === "Search Path")?.Value;
+        const defaultSchema = (searchPath && availableSchemas.Schema.includes(searchPath))
+            ? searchPath
+            : availableSchemas.Schema[0] ?? "";
+        dispatch(DatabaseActions.setSchema(defaultSchema));
+    }, [current, schema, availableSchemas, dispatch]);
     const { data: updateInfo } = useGetUpdateInfoQuery();
     const { refetch: refetchSslStatus } = useGetSslStatusQuery({
         skip: current == null || sslStatus !== undefined,
@@ -130,6 +139,8 @@ export const Sidebar: FC = () => {
     });
     const navigate = useNavigate();
     const [showLoginCard, setShowLoginCard] = useState(false);
+    const [showProfileSwitchDialog, setShowProfileSwitchDialog] = useState(false);
+    const [logoutProfileId, setLogoutProfileId] = useState<string | null>(null);
     const { toggleSidebar, open } = useSidebar();
     const isInitialMount = useRef(true);
     const { switchProfile } = useProfileSwitch({
@@ -237,10 +248,53 @@ export const Sidebar: FC = () => {
         return routes;
     }, [current, t]);
 
-    // Logout logic
-    const handleLogout = useCallback(() => {
+    // Logout single profile — show dialog first, remove after switch
+    const handleLogoutProfile = useCallback(() => {
+        if (!current) return;
+        const remainingProfiles = profiles.filter(p => p.Id !== current.Id);
+        if (remainingProfiles.length === 0) {
+            navigate(InternalRoutes.Logout.path);
+            return;
+        }
+        setLogoutProfileId(current.Id);
+        setShowProfileSwitchDialog(true);
+    }, [current, profiles, navigate]);
+
+    // Logout all profiles
+    const handleLogoutAll = useCallback(() => {
         navigate(InternalRoutes.Logout.path);
     }, [navigate]);
+
+    // Profile switch dialog handlers
+    const handleDialogProfileSwitch = useCallback(async (profile: LocalLoginProfile) => {
+        setShowProfileSwitchDialog(false);
+        await switchProfile(profile);
+        if (logoutProfileId) {
+            dispatch(AuthActions.remove({ id: logoutProfileId }));
+            setLogoutProfileId(null);
+        }
+    }, [switchProfile, logoutProfileId, dispatch]);
+
+    const handleDialogAddProfile = useCallback(() => {
+        setShowProfileSwitchDialog(false);
+        // logoutProfileId stays set so onLoginSuccess can clean it up
+        setShowLoginCard(true);
+    }, []);
+
+    const handleLoginSuccess = useCallback(() => {
+        setShowLoginCard(false);
+        if (logoutProfileId) {
+            dispatch(AuthActions.remove({ id: logoutProfileId }));
+            setLogoutProfileId(null);
+        }
+    }, [logoutProfileId, dispatch]);
+
+    const handleProfileSwitchDialogChange = useCallback((open: boolean) => {
+        if (!open) {
+            setLogoutProfileId(null);
+        }
+        setShowProfileSwitchDialog(open);
+    }, []);
 
     // Add profile logic
     const handleAddProfile = useCallback(() => {
@@ -268,8 +322,8 @@ export const Sidebar: FC = () => {
         }
     }, []);
 
-    // Refetch databases, schemas, and SSL status when the current profile changes
-    // This ensures queries use the correct auth context after profile switch
+    // Refetch databases, schemas, and SSL status when the connection context changes
+    // (profile switch or database switch within the same profile)
     useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false;
@@ -287,7 +341,7 @@ export const Sidebar: FC = () => {
                 dispatch(AuthActions.setSSLStatus(data.SSLStatus));
             }
         });
-    }, [current?.Id]);
+    }, [current?.Id, current?.Database]);
 
     // Listen for menu event to open add profile form
     useEffect(() => {
@@ -322,7 +376,7 @@ export const Sidebar: FC = () => {
                         <div className={cn("flex items-center gap-sm mt-2", {
                             "hidden": !open,
                         })}>
-                            {extensions.Logo ?? (!isEEMode && <img src={logoImage} alt="clidey logo" className="w-auto h-8" />)}
+                            {extensions.Logo ?? <img src={logoImage} alt="clidey logo" className="w-auto h-8" />}
                             {open && <span className="text-3xl font-bold" data-testid="app-name">{getAppName()}</span>}
                         </div>
                         <SidebarTrigger className="px-0" />
@@ -430,7 +484,7 @@ export const Sidebar: FC = () => {
                                     "mx-0": !open,
                                 })} />
 
-                                {isEEFeatureEnabled('contactUsPage') && InternalRoutes.ContactUs && (
+                                {featureFlags.contactUsPage && InternalRoutes.ContactUs && (
                                     <SidebarMenuItem>
                                         <SidebarMenuButton asChild tooltip={t('contactUs')}>
                                             <Link
@@ -445,7 +499,7 @@ export const Sidebar: FC = () => {
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
                                 )}
-                                {isEEFeatureEnabled('settingsPage') && InternalRoutes.Settings && (
+                                {featureFlags.settingsPage && InternalRoutes.Settings && (
                                     <SidebarMenuItem>
                                         <SidebarMenuButton asChild tooltip={t('settings')}>
                                             <Link
@@ -465,7 +519,7 @@ export const Sidebar: FC = () => {
                                     <SidebarMenuItem className="flex justify-between items-center w-full">
                                         {/* Logout Profile button */}
                                         <SidebarMenuButton asChild tooltip={t('logOutProfile')}>
-                                            <div className="flex items-center gap-sm text-nowrap w-fit cursor-pointer" onClick={handleLogout}>
+                                            <div className="flex items-center gap-sm text-nowrap w-fit cursor-pointer" onClick={handleLogoutProfile}>
                                                 <ArrowLeftStartOnRectangleIcon className="w-4 h-4" />
                                                 {open && <span>{t('logOutProfile')}</span>}
                                             </div>
@@ -486,7 +540,7 @@ export const Sidebar: FC = () => {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent side="right" align="start">
                                                     <DropdownMenuItem
-                                                        onClick={handleLogout}
+                                                        onClick={handleLogoutAll}
                                                     >
                                                         <ArrowLeftStartOnRectangleIcon className="w-4 h-4" />
                                                         <span className="ml-2">{t('logoutAllProfiles')}</span>
@@ -522,9 +576,40 @@ export const Sidebar: FC = () => {
                     <VisuallyHidden>
                         <SheetTitle>{t('databaseLogin')}</SheetTitle>
                     </VisuallyHidden>
-                    <LoginForm advancedDirection="vertical" onLoginSuccess={() => setShowLoginCard(false)}/>
+                    <LoginForm advancedDirection="vertical" onLoginSuccess={handleLoginSuccess}/>
                 </SheetContent>
             </Sheet>
+            <Dialog open={showProfileSwitchDialog} onOpenChange={handleProfileSwitchDialogChange}>
+                <DialogContent className="max-w-sm" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+                    <DialogHeader>
+                        <DialogTitle>{t('switchProfileTitle')}</DialogTitle>
+                        <DialogDescription>{t('switchProfileDescription')}</DialogDescription>
+                    </DialogHeader>
+                    <div className="flex flex-col gap-1 mt-2">
+                        {profiles.filter(p => p.Id !== logoutProfileId).map(profile => (
+                            <button
+                                key={profile.Id}
+                                className="flex items-center gap-3 p-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-left w-full"
+                                onClick={() => handleDialogProfileSwitch(profile)}
+                            >
+                                <DatabaseIconWithBadge
+                                    icon={getProfileIcon(profile)}
+                                    showCloudBadge={isAwsConnection(profile.Id)}
+                                    size="sm"
+                                />
+                                <span className="text-sm font-medium truncate">{getProfileLabel(profile)}</span>
+                            </button>
+                        ))}
+                        <button
+                            className="flex items-center gap-3 p-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-left w-full text-green-500"
+                            onClick={handleDialogAddProfile}
+                        >
+                            <PlusCircleIcon className="w-4 h-4 stroke-green-500" />
+                            <span className="text-sm font-medium">{t('addAnotherProfile')}</span>
+                        </button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </nav>
     );
 };

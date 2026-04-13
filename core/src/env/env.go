@@ -26,7 +26,10 @@ import (
 )
 
 var IsDevelopment = os.Getenv("ENVIRONMENT") == "dev"
-var IsEnterpriseEdition = false // Set to true by EE build
+var IsEnterpriseEdition = false // Set at startup by the entry point
+
+// ActiveDatabases lists database type names available in this build (populated from registered plugins at startup).
+var ActiveDatabases []string
 
 // GetIsDesktopMode returns true if running in desktop mode.
 // This is a function (not a variable) so it reads the env var each time,
@@ -63,6 +66,10 @@ var OpenAIName = os.Getenv("WHODB_OPENAI_NAME")
 
 var OllamaName = os.Getenv("WHODB_OLLAMA_NAME")
 
+var LMStudioBaseURL = os.Getenv("WHODB_LMSTUDIO_BASE_URL")
+var LMStudioAPIKey = os.Getenv("WHODB_LMSTUDIO_API_KEY")
+var LMStudioName = os.Getenv("WHODB_LMSTUDIO_NAME")
+
 var AllowedOrigins = common.FilterList(strings.Split(os.Getenv("WHODB_ALLOWED_ORIGINS"), ","), func(item string) bool {
 	return item != ""
 })
@@ -96,8 +103,13 @@ var PosthogHost = "https://us.i.posthog.com"
 // disabled by default for now until official release
 var IsAWSProviderEnabled = os.Getenv("WHODB_ENABLE_AWS_PROVIDER") == "true"
 
+// IsGCPProviderEnabled controls whether GCP provider functionality is available.
+var IsGCPProviderEnabled = os.Getenv("WHODB_ENABLE_GCP_PROVIDER") == "true"
+
 // DisableCredentialForm controls whether the credential form is disabled.
 var DisableCredentialForm = os.Getenv("WHODB_DISABLE_CREDENTIAL_FORM") == "true"
+
+var BridgeURL = os.Getenv("WHODB_BRIDGE_URL")
 
 // MaxPageSize is the maximum number of rows that can be requested in a single
 // page via the Row resolver. Configurable via WHODB_MAX_PAGE_SIZE (default 10000).
@@ -126,7 +138,7 @@ type GenericProviderConfig struct {
 var GenericProviders []GenericProviderConfig
 
 // AddGenericProvider adds a generic provider to the GenericProviders list.
-// This is used by EE providers and other dynamic provider registration systems.
+// Used by dynamic provider registration.
 func AddGenericProvider(config GenericProviderConfig) {
 	GenericProviders = append(GenericProviders, config)
 }
@@ -138,33 +150,18 @@ type ResolvedCredentials struct {
 	Endpoint  string // Base URL
 }
 
+// GetOllamaEndpoint returns the resolved Ollama API endpoint, accounting for
+// WHODB_OLLAMA_HOST/PORT overrides and Docker/WSL2 environments.
 func GetOllamaEndpoint() string {
-	host, port := GetOllamaHost()
-	return fmt.Sprintf("http://%s:%s/api", host, port)
-}
-
-// GetOllamaHost returns the resolved Ollama host and port, accounting for
-// Docker/WSL2 environments and WHODB_OLLAMA_HOST/PORT overrides.
-func GetOllamaHost() (string, string) {
 	host := "localhost"
 	port := "11434"
-
-	if common.IsRunningInsideDocker() {
-		host = "host.docker.internal"
-	} else if common.IsRunningInsideWSL2() {
-		if wslHost := common.GetWSL2WindowsHost(); wslHost != "" {
-			host = wslHost
-		}
-	}
-
 	if OllamaHost != "" {
 		host = OllamaHost
 	}
 	if OllamaPort != "" {
 		port = OllamaPort
 	}
-
-	return host, port
+	return common.ResolveLocalURL(fmt.Sprintf("http://%s:%s/api", host, port))
 }
 
 func GetAnthropicEndpoint() string {
@@ -181,6 +178,16 @@ func GetOpenAIEndpoint() string {
 	return "https://api.openai.com/v1"
 }
 
+// GetLMStudioEndpoint returns the configured LM Studio base URL, or the
+// default localhost:1234 endpoint if no override is set. The result is
+// Docker/WSL2-aware so callers don't need to wrap it with ResolveLocalURL.
+func GetLMStudioEndpoint() string {
+	if LMStudioBaseURL != "" {
+		return common.ResolveLocalURL(LMStudioBaseURL)
+	}
+	return common.ResolveLocalURL("http://localhost:1234/v1")
+}
+
 func getMaxPageSize() int {
 	val := os.Getenv("WHODB_MAX_PAGE_SIZE")
 	if val == "" {
@@ -192,4 +199,3 @@ func getMaxPageSize() int {
 	}
 	return n
 }
-

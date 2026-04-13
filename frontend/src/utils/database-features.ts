@@ -50,7 +50,8 @@ export function databaseSupportsScratchpad(databaseType: DatabaseType | string |
     const databasesThatDontSupportScratchpad = [
         DatabaseType.MongoDb,
         DatabaseType.Redis,
-        DatabaseType.ElasticSearch
+        DatabaseType.ElasticSearch,
+        DatabaseType.Memcached,
     ];
     return !databasesThatDontSupportScratchpad.includes(databaseType as DatabaseType);
 }
@@ -84,6 +85,8 @@ export function databaseSupportsSchema(databaseType: DatabaseType | string | und
         DatabaseType.ClickHouse,
         DatabaseType.MySql,
         DatabaseType.MariaDb,
+        DatabaseType.Memcached,
+        DatabaseType.TiDb,
     ];
     return !databasesThatDontSupportSchema.includes(databaseType as DatabaseType);
 }
@@ -115,6 +118,7 @@ export function databaseSupportsDatabaseSwitching(databaseType: DatabaseType | s
         DatabaseType.Postgres,
         DatabaseType.MySql,
         DatabaseType.MariaDb,
+        DatabaseType.TiDb,
         DatabaseType.Redis,
     ];
     return databasesThatSupportDatabaseSwitching.includes(databaseType as DatabaseType);
@@ -150,7 +154,24 @@ export function databaseTypesThatUseDatabaseInsteadOfSchema(databaseType: Databa
         DatabaseType.ClickHouse,
         DatabaseType.MySql,
         DatabaseType.MariaDb,
+        DatabaseType.TiDb,
         DatabaseType.Redis,
     ];
     return databasesThatUseDatabaseInsteadOfSchema.includes(databaseType as DatabaseType);
+}
+
+/**
+ * Check if a database supports mock data generation.
+ */
+export function databaseSupportsMockData(databaseType: DatabaseType | string | undefined): boolean {
+    if (!databaseType) {
+        return false;
+    }
+
+    const databasesThatDontSupportMockData = [
+        DatabaseType.Redis,
+        DatabaseType.ElasticSearch,
+        DatabaseType.Memcached,
+    ];
+    return !databasesThatDontSupportMockData.includes(databaseType as DatabaseType);
 }

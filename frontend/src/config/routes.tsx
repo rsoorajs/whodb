@@ -18,11 +18,17 @@ import { FC, lazy, ReactNode, Suspense } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAppSelector } from "../store/hooks";
 import { LogoutPage } from "../pages/auth/logout";
-import { isEEFeatureEnabled, loadEEComponent } from "../utils/ee-loader";
+import { getComponent } from "./component-registry";
+import { featureFlags } from "./features";
 import { LoadingPage } from "../components/loading";
+import { getRegisteredRoutes } from "./route-registry";
+export { registerRoute } from "./route-registry";
 
-// Lazy load heavy components
-const LoginPage = lazy(() => import("../pages/auth/login").then(m => ({ default: m.LoginPage })));
+// Allow EE to override the login page via the component registry (e.g. for SSO).
+// Falls back to the CE database-credential login page when no override is registered.
+const LoginPage = getComponent('login-page')
+    ?? lazy(() => import("../pages/auth/login").then(m => ({ default: m.LoginPage })));
+
 const GraphPage = lazy(() => import("../pages/graph/graph").then(m => ({ default: m.GraphPage })));
 const ExploreStorageUnit = lazy(() => import("../pages/storage-unit/explore-storage-unit").then(m => ({ default: m.ExploreStorageUnit })));
 const StorageUnitPage = lazy(() => import("../pages/storage-unit/storage-unit").then(m => ({ default: m.StorageUnitPage })));
@@ -30,10 +36,7 @@ const RawExecutePage = lazy(() => import("../pages/raw-execute/raw-execute").the
 const ChatPage = lazy(() => import("../pages/chat/chat").then(m => ({ default: m.ChatPage })));
 const SettingsPage = lazy(() => import("../pages/settings/settings").then(m => ({ default: m.SettingsPage })));
 const ContactUsPage = lazy(() => import("../pages/contact-us/contact-us").then(m => ({ default: m.ContactUsPage })));
-const SQLAgentPage = isEEFeatureEnabled('sqlAgent') ? loadEEComponent(
-    () => import('@ee/pages/sql-agent/sql-agent').then(m => ({ default: m.SQLAgentPage })),
-    null
-) : null;
+const SQLAgentPage = getComponent('sql-agent') ?? null;
 
 // Wrapper component for lazy loaded routes
 const LazyRoute: FC<{ component: React.ComponentType<any> }> = ({ component: Component }) => (
@@ -92,14 +95,14 @@ export const InternalRoutes = {
         path: "/logout",
         component: <LogoutPage />,
     },
-    ...(isEEFeatureEnabled('settingsPage') ? {
+    ...(featureFlags.settingsPage ? {
         Settings: {
             name: "Settings",
             path: "/settings",
             component: <LazyRoute component={SettingsPage} />
         }
     } : {}),
-    ...(isEEFeatureEnabled('contactUsPage') ? {
+    ...(featureFlags.contactUsPage ? {
         ContactUs: {
             name: "Contact Us",
             path: "/contact-us",
@@ -130,5 +133,10 @@ export const getRoutes = (): IInternalRoute[] => {
         }
         currentRoutes.push(...Object.values((currentRoute)));
     }
-    return allRoutes;
+    const extra = getRegisteredRoutes().map(({ name, path, factory }) => ({
+        name,
+        path,
+        component: <LazyRoute component={lazy(factory)} />,
+    }));
+    return [...allRoutes, ...extra];
 }

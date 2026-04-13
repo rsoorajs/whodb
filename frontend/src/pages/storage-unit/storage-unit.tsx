@@ -39,6 +39,7 @@ import {
     VirtualizedTableBody
 } from '@clidey/ux';
 import {TypeSelector} from "../../components/type-selector";
+import {findTypeDefinition} from "../../utils/database-data-types";
 import {
     DatabaseType,
     RecordInput,
@@ -266,13 +267,14 @@ export const StorageUnitPage: FC = () => {
         },
     });
 
-    // Refetch storage units when profile changes (current?.Id changes means different server/credentials)
+    // Refetch storage units when the connection context changes (profile switch or database switch)
     const currentProfileId = current?.Id;
+    const currentDatabase = current?.Database;
     useEffect(() => {
         if (currentProfileId) {
             refetch();
         }
-    }, [currentProfileId, refetch]);
+    }, [currentProfileId, currentDatabase, refetch]);
 
     // Lazy-load columns for list view expanded detail
     useEffect(() => {
@@ -450,7 +452,7 @@ export const StorageUnitPage: FC = () => {
         <div className={cn("flex flex-wrap gap-4", {
             "hidden": view !== "card",
         })} data-testid="storage-unit-card-list">
-            <ExpandableCard className="overflow-visible min-w-[200px] max-w-[700px] h-full" icon={<PlusCircleIcon className="w-4 h-4" />} isExpanded={create} setExpanded={setCreate} tag={<Badge variant="destructive">{error}</Badge>}>
+            {current?.Type !== DatabaseType.Memcached && <ExpandableCard className="overflow-visible min-w-[200px] max-w-[700px] h-full" icon={<PlusCircleIcon className="w-4 h-4" />} isExpanded={create} setExpanded={setCreate} tag={<Badge variant="destructive">{error}</Badge>}>
                 <div className="flex flex-col grow h-full justify-between mt-2 gap-2" data-testid="create-storage-unit-card">
                     <h1 className="text-lg"><span className="prefix-create-storage-unit">{t('createTitle', { storageUnit: getDatabaseStorageUnitLabel(current?.Type, true) })}</span></h1>
                     <Button className="self-end" onClick={e => { e.stopPropagation(); handleCreate(); }} variant="secondary">
@@ -488,6 +490,17 @@ export const StorageUnitPage: FC = () => {
                                                 }}
                                             />
 
+                                            {(() => {
+                                                const typeDef = current?.Type && field.Value
+                                                    ? findTypeDefinition(field.Value, current.Type)
+                                                    : undefined;
+                                                return typeDef?.tableModel ? (
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {t('aggregateKeyHint')}
+                                                    </p>
+                                                ) : null;
+                                            })()}
+
                                             {showModifiers && (
                                                 <>
                                                     <Label>{t('modifiersLabel')}</Label>
@@ -520,7 +533,7 @@ export const StorageUnitPage: FC = () => {
                         <CheckCircleIcon className="w-4 h-4" /> {t('createButton')}
                     </Button>
                 </div>
-            </ExpandableCard>
+            </ExpandableCard>}
             {
                 data != null && data.StorageUnit.length > 0 && filterStorageUnits.map(unit => (
                     <StorageUnitCard key={unit.Name} unit={unit} schema={schema} />

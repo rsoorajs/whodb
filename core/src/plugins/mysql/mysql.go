@@ -207,6 +207,12 @@ func (p *MySQLPlugin) BuildSkipConflictClause(pkColumns []string) clause.OnConfl
 	}
 }
 
+func init() {
+	engine.RegisterPlugin(NewMySQLPlugin())
+	engine.RegisterPlugin(NewMyMariaDBPlugin())
+	engine.RegisterPlugin(NewTiDBPlugin())
+}
+
 func NewMySQLPlugin() *engine.Plugin {
 	mysqlPlugin := &MySQLPlugin{}
 	mysqlPlugin.Type = engine.DatabaseType_MySQL
@@ -221,4 +227,12 @@ func NewMyMariaDBPlugin() *engine.Plugin {
 	mysqlPlugin.PluginFunctions = mysqlPlugin
 	mysqlPlugin.GormPluginFunctions = mysqlPlugin
 	return &mysqlPlugin.Plugin
+}
+
+func NewTiDBPlugin() *engine.Plugin {
+	tidbPlugin := &MySQLPlugin{}
+	tidbPlugin.Type = engine.DatabaseType_TiDB
+	tidbPlugin.PluginFunctions = tidbPlugin
+	tidbPlugin.GormPluginFunctions = tidbPlugin
+	return &tidbPlugin.Plugin
 }

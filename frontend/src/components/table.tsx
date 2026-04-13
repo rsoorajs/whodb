@@ -111,16 +111,17 @@ import {Tip} from "./tip";
 import {formatShortcut} from "@/utils/platform";
 import {matchesShortcut, SHORTCUTS} from "@/utils/shortcuts";
 import {formatNumber, isNoSQL} from "@/utils/functions";
+import {databaseSupportsMockData} from "@/utils/database-features";
 
-// Dynamically load EE Export component
+
+// Dynamically load Export component
 // const EEExport = loadEEComponent(
-//     () => import('@ee/components/export').then(mod => ({ default: mod.Export })),
 //     null,
 // );
 
 const EEExport = null;
 
-// Dynamic Export component that uses EE version if available, otherwise CE version
+// Dynamic Export component
 const DynamicExport: FC<{
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -134,7 +135,7 @@ const DynamicExport: FC<{
     preselectedFormat?: 'csv' | 'excel' | 'ndjson';
     forceExportAll?: boolean;
 }> = (props) => {
-    // Use EE Export if available, otherwise fall back to CE Export
+    // Use registered Export if available, otherwise fall back to default
     const ExportComponent = EEExport || Export;
     return <ExportComponent {...props} />;
 };
@@ -377,7 +378,7 @@ export const StorageUnitTable: FC<TableProps> = ({
     const [mockDataOverwriteExisting, setMockDataOverwriteExisting] = useState("append");
     const [mockDataFkDensityRatio, setMockDataFkDensityRatio] = useState("20");
     const [showMockDataConfirmation, setShowMockDataConfirmation] = useState(false);
-    const isMockDataSupported = databaseType !== "Redis" && databaseType !== "ElasticSearch" && isMockDataGenerationAllowed;
+    const isMockDataSupported = databaseSupportsMockData(databaseType) && isMockDataGenerationAllowed;
     const isClickHouse = databaseType === "ClickHouse";
     const isImportSupported = !isNoSQL(databaseType ?? "");
     const { data: maxRowData } = useMockDataMaxRowCountQuery();
@@ -472,7 +473,7 @@ export const StorageUnitTable: FC<TableProps> = ({
     // Delete logic, adapted from explore-storage-unit.tsx
     const doDeleteRows = useCallback(async (indexesToDelete: number[]) => {
         let unableToDeleteAll = false;
-        toast.info(indexesToDelete.length === 1 ? t('deletingRow') : t('deletingRows'));
+        toast.info(t('deletingRows', { count: indexesToDelete.length }));
         for (const index of indexesToDelete) {
             const row = rows[index];
             if (!row) continue;
@@ -628,7 +629,7 @@ export const StorageUnitTable: FC<TableProps> = ({
         }
         
         // Set a new timeout for the single-click action
-        const timeout = setTimeout(() => {
+        const timeout = window.setTimeout(() => {
             const cell = paginatedRows[rowIndex][cellIndex];
             if (cell !== undefined && cell !== null) {
                 copyToClipboard(String(cell)).then(success => {
@@ -1897,18 +1898,16 @@ export const StorageUnitTable: FC<TableProps> = ({
             <AlertDialog open={pendingDeleteIndexes != null} onOpenChange={(open) => { if (!open) handleCancelDelete(); }}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t('deleteRowConfirmTitle')}</AlertDialogTitle>
+                        <AlertDialogTitle>{t('deleteRowConfirmTitle', { count: pendingDeleteIndexes?.length ?? 1 })}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            {pendingDeleteIndexes && pendingDeleteIndexes.length > 1
-                                ? t('deleteRowsConfirmDescription', { count: pendingDeleteIndexes.length })
-                                : t('deleteRowConfirmDescription')}
+                            {t('deleteRowConfirmDescription', { count: pendingDeleteIndexes?.length ?? 1 })}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel onClick={handleCancelDelete}>{t('cancel')}</AlertDialogCancel>
                         <AlertDialogAction asChild>
                             <Button variant="destructive" onClick={handleConfirmDelete}>
-                                {t('deleteRow')}
+                                {t('deleteRow', { count: pendingDeleteIndexes?.length ?? 1 })}
                             </Button>
                         </AlertDialogAction>
                     </AlertDialogFooter>

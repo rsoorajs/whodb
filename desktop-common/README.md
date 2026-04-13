@@ -4,9 +4,9 @@ This is the WhoDB desktop application built with [Wails](https://wails.io/), pro
 
 ## Prerequisites
 
-1. **Install Wails CLI:**
+1. **Install Wails CLI** (version is pinned in `desktop-common/go.mod`):
    ```bash
-   go install github.com/wailsapp/wails/v2/cmd/wails@2.11.0
+   make install-wails
    ```
 
 2. **Check dependencies:**
@@ -136,7 +136,7 @@ GOWORK=$PWD/../go.work.desktop-ce wails build -o whodb-ce
 
 # Enterprise Edition
 cd ee/desktop
-wails build -tags ee -o whodb-ee
+wails build -o whodb-ee
 ```
 
 ## Architecture
@@ -154,7 +154,6 @@ The desktop application:
 
 - **CE workspace** (`go.work.desktop-ce`):
   - `./core` - Core WhoDB functionality
-  - `./ee-stub` - EE stub for CE builds
   - `./desktop-ce` - CE desktop module
   - `./desktop-common` - Shared desktop code
 

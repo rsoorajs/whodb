@@ -22,6 +22,7 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/clidey/whodb/cli/internal/config"
 	"github.com/clidey/whodb/cli/internal/tui"
 	"github.com/clidey/whodb/cli/pkg/analytics"
 	"github.com/clidey/whodb/cli/pkg/styles"
@@ -36,25 +37,40 @@ var cfgFile string
 var rootCmd = &cobra.Command{
 	Use:   "whodb-cli",
 	Short: "WhoDB CLI - Interactive database management tool",
-	Long: `WhoDB CLI is an interactive, production-ready command-line interface for WhoDB with a Claude Code-like experience.
+	Long: `WhoDB CLI is an interactive, production-ready command-line interface for navigating SQL and NoSQL databases.
 
 Features:
-  - Interactive TUI with responsive design
-  - Multi-database support (PostgreSQL, MySQL, SQLite, MongoDB, Redis, etc.)
-  - Visual query builder with conditions and intellisense
-  - SQL editor with syntax highlighting
-  - Efficient data viewer with pagination
-  - Export capabilities (CSV, Excel)
-  - Query history with re-execution
-  - Session persistence`,
-	Run: func(cmd *cobra.Command, args []string) {
+  - Split-pane TUI layouts (Single, Explore, Query, Full) — Ctrl+L to cycle
+  - 8 color themes (Default, Monokai, Dracula, Nord, etc.) — Ctrl+T to cycle
+  - Multi-database support (PostgreSQL, MySQL, SQLite, MongoDB, Redis, ClickHouse, etc.)
+  - SQL editor with context-aware autocomplete, formatting (Ctrl+F), multi-tab buffers
+  - External editor support (Ctrl+O opens $EDITOR)
+  - ER diagram visualization (Ctrl+K)
+  - EXPLAIN query plan viewer (Ctrl+X)
+  - Data import/export (CSV, Excel) — Ctrl+G for import wizard
+  - AI chat with streaming responses (OpenAI, Anthropic, Ollama, LM Studio)
+  - SSH tunnel support for remote databases
+  - Docker container auto-detection
+  - Query bookmarks (Ctrl+B), history (Ctrl+H), command log (Ctrl+D)
+  - Nested WHERE builder with AND/OR grouping
+  - Connection profiles (Ctrl+P) — bundle connection + theme + settings
+  - Data quality audit with configurable thresholds (Ctrl+U)
+  - Read-only mode (Ctrl+Y)
+  - JSON cell viewer, fish-style history suggestions
+
+Press ? in any view for keyboard shortcuts.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		profileName := viper.GetString("profile")
+		if profileName != "" {
+			return runWithProfile(profileName)
+		}
 		// Start TUI directly
 		m := tui.NewMainModel()
 		p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
 		if _, err := p.Run(); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("error running interactive mode: %w", err)
 		}
+		return nil
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		if viper.GetBool("no-update-check") || version.Version == "dev" {
@@ -74,17 +90,58 @@ func Execute() {
 	}
 }
 
+// runWithProfile loads a named profile, applies its settings, and connects.
+func runWithProfile(name string) error {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("error loading config: %w", err)
+	}
+
+	profile := cfg.GetProfile(name)
+	if profile == nil {
+		return fmt.Errorf("profile %q not found", name)
+	}
+
+	conn, err := cfg.GetConnection(profile.Connection)
+	if err != nil {
+		return fmt.Errorf("profile %q references missing connection %q", name, profile.Connection)
+	}
+
+	// Apply display/query settings from the profile
+	if profile.Theme != "" {
+		if t := styles.GetThemeByName(profile.Theme); t != nil {
+			styles.SetTheme(t)
+			cfg.SetThemeName(profile.Theme)
+		}
+	}
+	if profile.PageSize > 0 {
+		cfg.SetPageSize(profile.PageSize)
+	}
+	if profile.TimeoutSeconds > 0 {
+		cfg.Query.TimeoutSeconds = profile.TimeoutSeconds
+	}
+
+	m := tui.NewMainModelWithProfile(conn, cfg)
+	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
+	if _, err := p.Run(); err != nil {
+		return fmt.Errorf("error running interactive mode: %w", err)
+	}
+	return nil
+}
+
 func init() {
 	cobra.OnInitialize(initConfig, initColorMode, initAnalytics)
 
 	// Disable Cobra's default completion command; we provide our own with install support
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 
+	rootCmd.PersistentFlags().String("profile", "", "load a named connection profile")
 	rootCmd.PersistentFlags().Bool("debug", false, "enable debug mode")
 	rootCmd.PersistentFlags().Bool("no-color", false, "disable colored output")
 	rootCmd.PersistentFlags().Bool("no-analytics", false, "disable anonymous usage analytics")
 	rootCmd.PersistentFlags().Bool("no-update-check", false, "disable update check notifications")
 
+	viper.BindPFlag("profile", rootCmd.PersistentFlags().Lookup("profile"))
 	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
 	viper.BindPFlag("no-color", rootCmd.PersistentFlags().Lookup("no-color"))
 	viper.BindPFlag("no-analytics", rootCmd.PersistentFlags().Lookup("no-analytics"))

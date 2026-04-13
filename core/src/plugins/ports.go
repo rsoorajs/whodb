@@ -31,9 +31,12 @@ var defaultDatabasePorts = map[engine.DatabaseType]string{
 	engine.DatabaseType_MongoDB:       "27017",
 	engine.DatabaseType_ElasticSearch: "9200", // HTTP port (Transport port is 9300)
 	engine.DatabaseType_Redis:         "6379",
+	engine.DatabaseType_DuckDB:        "0", // DuckDB is file-based, no port
+	engine.DatabaseType_Memcached:     "11211",
+	engine.DatabaseType_TiDB:          "4000",
 }
 
-// additionalPorts holds ports registered by external packages (e.g., enterprise edition)
+// additionalPorts holds ports registered by external packages
 var additionalPorts = make(map[engine.DatabaseType]string)
 
 // GetDefaultPort returns the default port for a database type

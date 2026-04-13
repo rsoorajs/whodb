@@ -1,34 +1,68 @@
 query GetCloudProviders {
   CloudProviders {
-    Id
-    ProviderType
-    Name
-    Region
-    ProfileName
-    DiscoverRDS
-    DiscoverElastiCache
-    DiscoverDocumentDB
-    Status
-    LastDiscoveryAt
-    DiscoveredCount
-    Error
+    ... on AWSProvider {
+      Id
+      ProviderType
+      Name
+      Region
+      Status
+      LastDiscoveryAt
+      DiscoveredCount
+      Error
+      ProfileName
+      DiscoverRDS
+      DiscoverElastiCache
+      DiscoverDocumentDB
+    }
+    ... on GCPProvider {
+      Id
+      ProviderType
+      Name
+      Region
+      Status
+      LastDiscoveryAt
+      DiscoveredCount
+      Error
+      ProjectID
+      ServiceAccountKeyPath
+      DiscoverCloudSQL
+      DiscoverAlloyDB
+      DiscoverMemorystore
+    }
   }
 }
 
 query GetCloudProvider($id: ID!) {
   CloudProvider(id: $id) {
-    Id
-    ProviderType
-    Name
-    Region
-    ProfileName
-    DiscoverRDS
-    DiscoverElastiCache
-    DiscoverDocumentDB
-    Status
-    LastDiscoveryAt
-    DiscoveredCount
-    Error
+    ... on AWSProvider {
+      Id
+      ProviderType
+      Name
+      Region
+      Status
+      LastDiscoveryAt
+      DiscoveredCount
+      Error
+      ProfileName
+      DiscoverRDS
+      DiscoverElastiCache
+      DiscoverDocumentDB
+    }
+    ... on GCPProvider {
+      Id
+      ProviderType
+      Name
+      Region
+      Status
+      LastDiscoveryAt
+      DiscoveredCount
+      Error
+      ProjectID
+      ServiceAccountKeyPath
+      DiscoverCloudSQL
+      DiscoverAlloyDB
+      DiscoverMemorystore
+    }
   }
 }
 
@@ -136,17 +170,34 @@ mutation GenerateRDSAuthToken($providerID: ID!, $endpoint: String!, $port: Int!,
 
 mutation RefreshCloudProvider($id: ID!) {
   RefreshCloudProvider(id: $id) {
-    Id
-    ProviderType
-    Name
-    Region
-    ProfileName
-    DiscoverRDS
-    DiscoverElastiCache
-    DiscoverDocumentDB
-    Status
-    LastDiscoveryAt
-    DiscoveredCount
-    Error
+    ... on AWSProvider {
+      Id
+      ProviderType
+      Name
+      Region
+      Status
+      LastDiscoveryAt
+      DiscoveredCount
+      Error
+      ProfileName
+      DiscoverRDS
+      DiscoverElastiCache
+      DiscoverDocumentDB
+    }
+    ... on GCPProvider {
+      Id
+      ProviderType
+      Name
+      Region
+      Status
+      LastDiscoveryAt
+      DiscoveredCount
+      Error
+      ProjectID
+      ServiceAccountKeyPath
+      DiscoverCloudSQL
+      DiscoverAlloyDB
+      DiscoverMemorystore
+    }
   }
 }

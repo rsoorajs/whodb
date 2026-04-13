@@ -25,8 +25,10 @@ import {
     useLoginWithProfileMutation,
     useSettingsConfigQuery
 } from '@graphql';
+import camelCase from "lodash/camelCase";
 import classNames from "classnames";
-import {FC, ReactElement, useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {FC, ReactElement, Suspense, useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {getComponent} from "../../config/component-registry";
 import {useNavigate, useSearchParams} from "react-router-dom";
 import logoImage from "../../../public/images/logo.svg";
 import {
@@ -45,7 +47,7 @@ import {Loading} from "../../components/loading";
 import {Container} from "../../components/page";
 import {updateProfileLastAccessed} from "../../components/profile-info-tooltip";
 import {baseDatabaseTypes, getDatabaseTypeDropdownItems, IDatabaseDropdownItem} from "../../config/database-types";
-import {extensions, featureFlags, getAppName, isEEMode, sources} from '../../config/features';
+import {extensions, featureFlags, getAppName, sources} from '../../config/features';
 import {InternalRoutes} from "../../config/routes";
 import {useDesktopFile} from '../../hooks/useDesktop';
 import {useTranslation} from '@/hooks/use-translation';
@@ -65,6 +67,10 @@ import {
     DatabaseIconWithBadge,
     isAwsConnection
 } from '../../components/aws';
+import {
+    GcpConnectionPicker,
+    GcpConnectionPrefillData,
+} from '../../components/gcp';
 import {isAwsHostname} from '../../utils/cloud-connection-prefill';
 import {SSL_KEYS, SSLConfig} from '../../components/ssl-config';
 
@@ -74,7 +80,7 @@ import {SSL_KEYS, SSLConfig} from '../../components/ssl-config';
  */
 const LOGIN_RESERVED_PARAMS = new Set([
     "type", "host", "username", "password", "database",
-    "port", "region",
+    "port", "region", "search_path",
     "login", "resource", "credentials",
 ]);
 
@@ -82,6 +88,7 @@ const LOGIN_RESERVED_PARAMS = new Set([
  * URL params that control UI behavior and should be preserved after login.
  */
 const LOGIN_UI_PARAMS = new Set(["locale", "mode", "theme", "os"]);
+
 
 /**
  * Generate a consistent ID for desktop credentials based on connection details.
@@ -173,6 +180,7 @@ export const LoginForm: FC<LoginFormProps> = ({
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string>();
+    const [missingDriver, setMissingDriver] = useState<string | null>(null);
     const [advancedForm, setAdvancedForm] = useState<Record<string, string>>(
         databaseType.extra ?? {}
     );
@@ -187,7 +195,7 @@ export const LoginForm: FC<LoginFormProps> = ({
         return searchParams.has("credentials") || searchParams.has("resource") || searchParams.has("login");
     });
 
-    const { isDesktop, selectSQLiteDatabase } = useDesktopFile();
+    const { isDesktop, selectDatabaseFile } = useDesktopFile();
 
     const loading = useMemo(() => {
         return loginLoading || loginWithProfileLoading || isAutoLoggingIn;
@@ -202,8 +210,8 @@ export const LoginForm: FC<LoginFormProps> = ({
     }, [isFirstLogin, FIRST_LOGIN_KEY]);
 
     const handleSubmit = useCallback(() => {
-        if (([DatabaseType.MySql, DatabaseType.Postgres].includes(databaseType.id as DatabaseType) && (hostName.length === 0 || database.length === 0 || username.length === 0))
-            || (databaseType.id === DatabaseType.Sqlite3 && database.length === 0)
+        if (([DatabaseType.MySql, DatabaseType.Postgres, DatabaseType.TiDb].includes(databaseType.id as DatabaseType) && (hostName.length === 0 || database.length === 0 || username.length === 0))
+            || ((databaseType.id === DatabaseType.Sqlite3 || databaseType.id === DatabaseType.DuckDb) && database.length === 0)
             || ((databaseType.id === DatabaseType.MongoDb || databaseType.id === DatabaseType.Redis) && (hostName.length === 0))) {
             setIsAutoLoggingIn(false);
             return setError(t('allFieldsRequired'));
@@ -264,6 +272,14 @@ export const LoginForm: FC<LoginFormProps> = ({
             },
             onError(error) {
                 setIsAutoLoggingIn(false);
+
+                // Check if a JDBC bridge driver needs to be installed
+                const driverMatch = error.message?.match(/driver_not_installed:(\w+)/);
+                if (driverMatch) {
+                    setMissingDriver(driverMatch[1]);
+                    return;
+                }
+
                 // Check if this is a network error (server down)
                 const isNetworkError = error.message?.toLowerCase().includes('network') ||
                                       error.message?.toLowerCase().includes('fetch') ||
@@ -423,13 +439,6 @@ export const LoginForm: FC<LoginFormProps> = ({
     }, [dispatch, loginWithProfile, navigate, profiles?.Profiles, onLoginSuccess, markFirstLoginComplete, t]);
 
     const handleDatabaseTypeChange = useCallback((item: IDatabaseDropdownItem) => {
-        if (item.id === DatabaseType.Sqlite3) {
-            getDatabases({
-                variables: {
-                    type: DatabaseType.Sqlite3,
-                },
-            });
-        }
         setHostName("");
         setUsername("");
         setPassword("");
@@ -437,11 +446,20 @@ export const LoginForm: FC<LoginFormProps> = ({
         setDatabaseType(item);
         setAdvancedForm(item.extra ?? {});
         setFormResetKey(k => k + 1);
-    }, [getDatabases]);
+    }, []);
 
     const handleAdvancedToggle = useCallback(() => {
         setShowAdvanced(a => !a);
     }, []);
+
+    // Fetch available databases for file-based types after the form re-mounts.
+    // This must be in useEffect (not in handleDatabaseTypeChange) because
+    // setFormResetKey causes a re-mount that resets the useLazyQuery hook state.
+    useEffect(() => {
+        if (databaseType.id === DatabaseType.Sqlite3 || databaseType.id === DatabaseType.DuckDb) {
+            getDatabases({ variables: { type: databaseType.id as DatabaseType } });
+        }
+    }, [databaseType.id, getDatabases, formResetKey]);
 
     const handleAdvancedForm = useCallback((key: string, value: string) => {
         setAdvancedForm(form => {
@@ -493,17 +511,49 @@ export const LoginForm: FC<LoginFormProps> = ({
         }
     }, [databaseTypeItems, handleDatabaseTypeChange]);
 
-    const handleBrowseSQLiteFile = useCallback(async () => {
+    /**
+     * Handle prefill from GCP connection picker.
+     * Same behavior as AWS prefill -- updates the main login form.
+     */
+    const handleGcpConnectionPrefill = useCallback((data: GcpConnectionPrefillData) => {
+        const dbType = databaseTypeItems.find(item =>
+            item.id.toLowerCase() === data.databaseType.toLowerCase()
+        );
+
+        if (dbType) {
+            handleDatabaseTypeChange(dbType);
+
+            setTimeout(() => {
+                if (data.hostname) {
+                    setHostName(data.hostname);
+                }
+
+                if (data.advanced && Object.keys(data.advanced).length > 0) {
+                    setAdvancedForm(prev => ({
+                        ...prev,
+                        ...data.advanced,
+                    }));
+                    setShowAdvanced(true);
+                }
+
+                setTimeout(() => {
+                    usernameInputRef.current?.focus();
+                }, 50);
+            }, 0);
+        }
+    }, [databaseTypeItems, handleDatabaseTypeChange]);
+
+    const handleBrowseDatabaseFile = useCallback(async () => {
         try {
-            const filePath = await selectSQLiteDatabase();
+            const filePath = await selectDatabaseFile(databaseType.id);
             if (filePath) {
                 setDatabase(filePath);
             }
         } catch (error) {
-            console.error('Failed to select SQLite database:', error);
+            console.error('Failed to select database file:', error);
             toast.error(t('failedToSelectDatabaseFile'));
         }
-    }, [selectSQLiteDatabase, t]);
+    }, [selectDatabaseFile, databaseType.id, t]);
 
     useEffect(() => {
         dispatch(DatabaseActions.setSchema(""));
@@ -559,7 +609,7 @@ export const LoginForm: FC<LoginFormProps> = ({
         }
     }, [searchParams, dispatch]);
 
-    // Load database types (including EE types) before allowing auto-login
+    // Load database types before allowing auto-login
     useEffect(() => {
         getDatabaseTypeDropdownItems({ cloudProvidersEnabled }).then(items => {
             setDatabaseTypeItems(items);
@@ -611,8 +661,8 @@ export const LoginForm: FC<LoginFormProps> = ({
             return;
         }
 
-        // Wait until EE database types have finished loading before processing auto-login.
-        // This ensures EE types (MSSQL, Oracle, DynamoDB) are available for type lookup.
+        // Wait until database types have finished loading before processing auto-login.
+        // This ensures all registered types are available for type lookup.
         if (!databaseTypesLoaded) {
             return;
         }
@@ -679,19 +729,21 @@ export const LoginForm: FC<LoginFormProps> = ({
             if (searchParams.has("password")) setPassword(searchParams.get("password")!);
             if (searchParams.has("database")) setDatabase(searchParams.get("database")!);
 
-            // Merge port/region into advancedForm (existing behavior preserved)
+            // Merge known URL params into advancedForm with their canonical key names
             const hasPort = searchParams.has("port");
             const hasRegion = searchParams.has("region");
-            if (hasPort || hasRegion) {
+            const hasSearchPath = searchParams.has("search_path");
+            if (hasPort || hasRegion || hasSearchPath) {
                 setAdvancedForm(prev => ({
                     ...prev,
                     ...(hasPort ? {'Port': searchParams.get("port")!} : {}),
                     ...(hasRegion ? {'Region': searchParams.get("region")!} : {}),
+                    ...(hasSearchPath ? {'Search Path': searchParams.get("search_path")!} : {}),
                 }));
             }
 
             // All other non-reserved params go into advanced form generically,
-            // supporting any database type including EE databases.
+            // supporting any registered database type.
             const advancedEntries: Record<string, string> = {};
             searchParams.forEach((value, key) => {
                 if (!LOGIN_RESERVED_PARAMS.has(key) && !LOGIN_UI_PARAMS.has(key)) {
@@ -796,7 +848,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                 setAdvancedForm={setAdvancedForm}
             />;
         }
-        if (databaseType.id === DatabaseType.Sqlite3) {
+        if (databaseType.id === DatabaseType.Sqlite3 || databaseType.id === DatabaseType.DuckDb) {
             return <div className="flex flex-col gap-lg w-full">
                 <div className="flex flex-col gap-xs w-full">
                     <Label htmlFor="sqlite-database">{t('database')}</Label>
@@ -813,7 +865,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                                 aria-describedby={error ? "login-error" : undefined}
                             />
                             <Button
-                                onClick={handleBrowseSQLiteFile}
+                                onClick={handleBrowseDatabaseFile}
                                 variant="outline"
                                 className="w-full"
                             >
@@ -873,29 +925,50 @@ export const LoginForm: FC<LoginFormProps> = ({
                     <Input id="login-database" value={database} onChange={(e) => setDatabase(e.target.value)} data-testid="database" placeholder={t('enterDatabase')} aria-required="true" aria-invalid={error ? "true" : undefined} aria-describedby={error ? "login-error" : undefined} />
                 </div>
             )}
+            { databaseType.fields?.searchPath && (
+                <div className="flex flex-col gap-sm w-full">
+                    <Label htmlFor="login-search-path">{t(`advancedFields.${camelCase('Search Path')}`)}</Label>
+                    <Input id="login-search-path" value={advancedForm['Search Path'] ?? ''} onChange={(e) => handleAdvancedForm('Search Path', e.target.value)} data-testid="search-path" placeholder={t('enterSearchPath')} />
+                </div>
+            )}
         </div>
-    }, [database, databaseType.id, databaseType.fields, databaseType.customFormRenderer, databasesLoading, foundDatabases?.Database, handleHostNameChange, hostName, password, username, isDesktop, handleBrowseSQLiteFile, advancedForm, formResetKey, t, error]);
+    }, [database, databaseType.id, databaseType.fields, databaseType.customFormRenderer, databasesLoading, foundDatabases?.Database, handleHostNameChange, hostName, password, username, isDesktop, handleBrowseDatabaseFile, advancedForm, formResetKey, t, error]);
 
     const loginWithCredentialsEnabled = useMemo(() => {
         if (databaseType.customFormRenderer) {
             return hostName.length > 0 || Object.keys(advancedForm).length > 0;
         }
-        if (databaseType.id === DatabaseType.Sqlite3) {
+        if (databaseType.id === DatabaseType.Sqlite3 || databaseType.id === DatabaseType.DuckDb) {
             return database.length > 0;
         }
         const redisCompatible = [DatabaseType.Redis, "ElastiCache"];
         const mongoCompatible = [DatabaseType.MongoDb, "DocumentDB"];
 
-        if (redisCompatible.includes(databaseType.id) || mongoCompatible.includes(databaseType.id) || (databaseType.id === DatabaseType.ElasticSearch)) {
+        if (redisCompatible.includes(databaseType.id) || mongoCompatible.includes(databaseType.id) || databaseType.id === DatabaseType.ElasticSearch || databaseType.id === DatabaseType.Memcached) {
             return hostName.length > 0;
         }
 
+        const fields = databaseType.fields;
+        if (fields) {
+            const hostnameOk = !fields.hostname || hostName.length > 0;
+            const usernameOk = !fields.username || username.length > 0;
+            const passwordOk = !fields.password || password.length > 0;
+            const databaseOk = !fields.database || database.length > 0;
+            return hostnameOk && usernameOk && passwordOk && databaseOk;
+        }
+
         return hostName.length > 0 && username.length > 0 && password.length > 0 && database.length > 0;
-    }, [databaseType.id, databaseType.customFormRenderer, hostName, username, password, database]);
+    }, [databaseType.id, databaseType.customFormRenderer, databaseType.fields, hostName, username, password, database, advancedForm]);
 
     const loginWithProfileEnabled = useMemo(() => {
         return selectedAvailableProfile != null;
     }, [selectedAvailableProfile]);
+
+    // Keys to exclude from the advanced section (SSL keys + fields promoted to the main form)
+    const excludedAdvancedKeys = useMemo(() => new Set<string>([
+        ...Object.values(SSL_KEYS),
+        'Search Path',
+    ]), []);
 
     // Always show loading during auto-login, regardless of mutation or profile loading state
     // Only show form if auto-login fails (isAutoLoggingIn set to false in error handlers)
@@ -931,7 +1004,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                 {!hideHeader && (
                     <header className="flex justify-between" data-testid="login-header">
                         <h1 className="flex items-center gap-xs text-xl">
-                            {extensions.Logo ?? (!isEEMode && <img src={logoImage} alt="WhoDB" className="w-auto h-8 mr-1"/>)}
+                            {extensions.Logo ?? <img src={logoImage} alt="WhoDB" className="w-auto h-8 mr-1"/>}
                             <span className="text-brand-foreground" data-testid="app-name">{getAppName()}</span>
                         </h1>
                         <span className="text-xl">{t('title')}</span>
@@ -996,10 +1069,10 @@ export const LoginForm: FC<LoginFormProps> = ({
                             "w-full": advancedDirection === "vertical",
                         })}>
                             {Object.entries(advancedForm)
-                                .filter(([key]) => !Object.values(SSL_KEYS).includes(key as any))
+                                .filter(([key]) => !excludedAdvancedKeys.has(key))
                                 .map(([key, value]) => (
                                 <div className="flex flex-col gap-sm" key={key}>
-                                    <Label htmlFor={`${key}-input`}>{key}</Label>
+                                    <Label htmlFor={`${key}-input`}>{t(`advancedFields.${camelCase(key)}`, key)}</Label>
                                     <Input
                                         id={`${key}-input`}
                                         value={value}
@@ -1023,7 +1096,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                 })}>
                     {!disableCredentialForm && <>
                     <Button className={classNames({
-                        "hidden": advancedForm == null || databaseType.id === DatabaseType.Sqlite3 || databaseType.customFormRenderer != null,
+                        "hidden": advancedForm == null || databaseType.id === DatabaseType.Sqlite3 || databaseType.id === DatabaseType.DuckDb || databaseType.customFormRenderer != null,
                     })} onClick={handleAdvancedToggle} data-testid="advanced-button" variant="secondary">
                         <AdjustmentsHorizontalIcon className="w-4 h-4" /> {showAdvanced ? t('lessAdvancedButton') : t('advancedButton')}
                     </Button>
@@ -1072,6 +1145,8 @@ export const LoginForm: FC<LoginFormProps> = ({
                     <>
                         <Separator className="my-8" />
                         <AwsConnectionPicker onSelectConnection={handleAwsConnectionPrefill} />
+                        <Separator className="my-8" />
+                        <GcpConnectionPicker onSelectConnection={handleGcpConnectionPrefill} />
                     </>
                 )}
             </div>
@@ -1160,6 +1235,22 @@ export const LoginForm: FC<LoginFormProps> = ({
                     </Card>
                 )
             }
+        {(() => {
+            const DriverInstallDialog = getComponent('driver-install-dialog') as React.LazyExoticComponent<FC<{driverName: string; onInstalled: () => void; onCancel: () => void}>> | undefined;
+            if (!DriverInstallDialog || !missingDriver) return null;
+            return (
+                <Suspense fallback={null}>
+                    <DriverInstallDialog
+                        driverName={missingDriver}
+                        onInstalled={() => {
+                            setMissingDriver(null);
+                            handleSubmit();
+                        }}
+                        onCancel={() => setMissingDriver(null)}
+                    />
+                </Suspense>
+            );
+        })()}
         </div>
     );
 };

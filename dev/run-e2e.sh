@@ -58,8 +58,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Default CE database configurations (can be overridden via env vars)
-DEFAULT_DATABASES="postgres mysql mysql8 mariadb sqlite mongodb redis elasticsearch cockroachdb clickhouse"
-DEFAULT_CATEGORIES="postgres:sql mysql:sql mysql8:sql mariadb:sql sqlite:sql mongodb:document redis:keyvalue elasticsearch:document cockroachdb:sql clickhouse:sql"
+DEFAULT_DATABASES="postgres mysql mysql8 mariadb sqlite duckdb mongodb redis elasticsearch cockroachdb clickhouse"
+DEFAULT_CATEGORIES="postgres:sql mysql:sql mysql8:sql mariadb:sql sqlite:sql duckdb:sql mongodb:document redis:keyvalue elasticsearch:document cockroachdb:sql clickhouse:sql memcached:cache"
 
 # Use env vars or defaults
 DATABASES_STR="${WHODB_DATABASES:-$DEFAULT_DATABASES}"
@@ -136,8 +136,8 @@ mkdir -p e2e/reports/test-results e2e/reports/blobs e2e/reports/html
 # Start frontend dev server
 echo "🌐 Starting frontend dev server..."
 BACKEND_PORT="${WHODB_BACKEND_PORT:-8080}"
-if [ -n "$VITE_EDITION" ]; then
-    VITE_BUILD_EDITION="$VITE_EDITION" VITE_BACKEND_PORT="$BACKEND_PORT" NODE_ENV=test pnpm exec vite --port 3000 --clearScreen false --logLevel error > e2e/logs/frontend.log 2>&1 &
+if [ "$VITE_EDITION" = "ee" ]; then
+    VITE_BACKEND_PORT="$BACKEND_PORT" NODE_ENV=test pnpm exec vite --config vite.ee.config.mts --port 3000 --clearScreen false --logLevel error > e2e/logs/frontend.log 2>&1 &
 else
     VITE_BACKEND_PORT="$BACKEND_PORT" NODE_ENV=test pnpm exec vite --port 3000 --clearScreen false --logLevel error > e2e/logs/frontend.log 2>&1 &
 fi

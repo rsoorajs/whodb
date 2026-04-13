@@ -88,6 +88,18 @@ type chatResponseMsg struct {
 	err      error
 }
 
+// chatStreamChunkMsg is sent for each streaming chunk during AI chat.
+type chatStreamChunkMsg struct {
+	text string // accumulated text so far
+}
+
+// chatStreamDoneMsg is sent when the AI chat stream completes.
+type chatStreamDoneMsg struct {
+	messages []*database.ChatMessage
+	query    string
+	err      error
+}
+
 // modelsLoadedMsg is sent when AI models are loaded
 type modelsLoadedMsg struct {
 	models []string
@@ -118,6 +130,21 @@ type schemaLoadedMsg struct {
 
 // statusMessageTimeoutMsg is sent to auto-dismiss transient status messages
 type statusMessageTimeoutMsg struct{}
+
+// themeChangedMsg is sent when the theme is switched via Ctrl+T
+type themeChangedMsg struct {
+	themeName string
+}
+
+// escConfirmTimeoutMsg resets the Esc-to-disconnect confirmation after a timeout.
+type escConfirmTimeoutMsg struct{}
+
+// explainResultMsg is sent when an EXPLAIN query completes.
+type explainResultMsg struct {
+	query string
+	plan  string
+	err   error
+}
 
 // tableWithColumns pairs a storage unit with its column metadata
 type tableWithColumns struct {

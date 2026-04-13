@@ -28,13 +28,14 @@ func init() {
 	providers.RegisterProvider(providers.NewOpenAIProvider())
 	providers.RegisterProvider(providers.NewAnthropicProvider())
 	providers.RegisterProvider(providers.NewOllamaProvider())
+	providers.RegisterProvider(providers.NewLMStudioProvider())
 
 	// Wire BAML config resolution to use the provider registry
 	bamlconfig.RegisterBAMLConfigResolver(providers.GetBAMLConfig)
 }
 
 // RegisterGenericProviders registers generic AI providers from environment configuration.
-// This is called by the env package after parsing generic provider configs and by EE providers.
+// Called after parsing generic provider configs.
 // It registers the provider with both the LLM provider system (for backend operations)
 // and the env.GenericProviders list (for frontend display).
 func RegisterGenericProviders(name string, providerId string, models []string, clientType string, baseURL string, apiKey string) {
@@ -60,6 +61,7 @@ const (
 	Ollama_LLMType    = providers.Ollama_LLMType
 	OpenAI_LLMType    = providers.OpenAI_LLMType
 	Anthropic_LLMType = providers.Anthropic_LLMType
+	LMStudio_LLMType  = providers.LMStudio_LLMType
 )
 
 type LLMClient struct {
@@ -77,6 +79,8 @@ func getEndpointForProvider(providerType LLMType) string {
 		return env.GetAnthropicEndpoint()
 	case Ollama_LLMType:
 		return env.GetOllamaEndpoint()
+	case LMStudio_LLMType:
+		return env.GetLMStudioEndpoint()
 	default:
 		// For generic providers, look up endpoint from environment configuration
 		for _, provider := range env.GenericProviders {

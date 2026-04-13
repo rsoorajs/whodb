@@ -1,0 +1,28 @@
+en_US:
+  title: GCP Accounts
+  description: Connect GCP accounts to auto-discover Cloud SQL, AlloyDB, and Memorystore instances.
+
+  noProviders: No GCP accounts configured
+  addFirstProvider: Add your first GCP account to discover databases
+
+  addProvider: Add Account
+  refresh: Refresh All
+  refreshResources: Refresh Resources
+  edit: Edit
+  remove: Remove
+
+  status.connected: Connected
+  status.discovering: Discovering
+  status.error: Error
+  status.disconnected: Disconnected
+
+  resourcesDiscovered: "{count} resources"
+  resourcesDiscovered_one: "{count} resource"
+  lastDiscovery: "Last: {time}"
+
+  providerRemoved: "Removed {name}"
+  removeFailed: "Failed to remove: {error}"
+  refreshComplete: "Found {count} resources"
+  refreshComplete_one: "Found {count} resource"
+  refreshFailed: "Refresh failed: {error}"
+  unknownError: Unknown error
