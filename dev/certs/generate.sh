@@ -145,7 +145,20 @@ chmod 644 "server/redis/redis.pem"
 generate_standard_certs "elasticsearch" "DNS.5 = e2e_elasticsearch_ssl"
 
 # CockroachDB - standard certs (uses same pgx driver as Postgres for SSL)
-generate_standard_certs "cockroachdb" "DNS.5 = e2e_cockroachdb_ssl"
+generate_standard_certs "cockroachdb" "DNS.5 = e2e_cockroachdb_ssl
+DNS.6 = node"
+
+# CockroachDB requires client cert CN to match the SQL username.
+# The client.root.crt file must have CN=root, not CN=cockroachdb_client.
+openssl req -new -key "client/cockroachdb/client-key.pem" \
+    -out "client/cockroachdb/client-req.pem" \
+    -subj "/C=US/ST=Test/L=Test/O=WhoDB-Test/CN=root"
+openssl x509 -req -in "client/cockroachdb/client-req.pem" \
+    -days 3650 \
+    -CA "ca/cockroachdb/ca.pem" \
+    -CAkey "ca/cockroachdb/ca-key.pem" \
+    -CAcreateserial \
+    -out "client/cockroachdb/client-cert.pem"
 
 # ClickHouse - standard certs
 generate_standard_certs "clickhouse" "DNS.5 = e2e_clickhouse_ssl"

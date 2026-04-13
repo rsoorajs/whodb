@@ -312,12 +312,14 @@ if [ "$SKIP_CE_DATABASES" = "false" ]; then
             PID_MONGO_SSL=$!
             wait_for_port "Redis-SSL" 6380 30 &
             PID_REDIS_SSL=$!
+            wait_for_port "CockroachDB-SSL" 26258 60 &
+            PID_CRDB_SSL=$!
             wait_for_port "ClickHouse-SSL" 9440 30 &
             PID_CH_SSL=$!
             wait_for_port "ElasticSearch-SSL" 9201 90 &
             PID_ES_SSL=$!
 
-            ALL_PIDS="$ALL_PIDS $PID_PG_SSL $PID_MYSQL_SSL $PID_MARIA_SSL $PID_MONGO_SSL $PID_REDIS_SSL $PID_CH_SSL $PID_ES_SSL"
+            ALL_PIDS="$ALL_PIDS $PID_PG_SSL $PID_MYSQL_SSL $PID_MARIA_SSL $PID_MONGO_SSL $PID_CRDB_SSL $PID_REDIS_SSL $PID_CH_SSL $PID_ES_SSL"
         fi
 
         # Wait for all background processes

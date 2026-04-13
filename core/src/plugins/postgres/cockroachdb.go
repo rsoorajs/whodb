@@ -76,7 +76,7 @@ func (p *CockroachDBPlugin) IsGeometryType(columnType string) bool {
 
 // GetSSLStatus determines SSL status for CockroachDB connections.
 // CockroachDB does not have pg_stat_ssl, so we query the session's ssl variable
-// (returns "on"/"off" as a string), then fall back to config-based detection.
+// via SHOW ssl (returns "on"/"off" as a string).
 func (p *CockroachDBPlugin) GetSSLStatus(config *engine.PluginConfig) (*engine.SSLStatus, error) {
 	if cached := plugins.GetCachedSSLStatus(config); cached != nil {
 		return cached, nil
@@ -89,18 +89,7 @@ func (p *CockroachDBPlugin) GetSSLStatus(config *engine.PluginConfig) (*engine.S
 
 		query := db.Raw("SHOW ssl").Scan(&result)
 		if query.Error != nil {
-			// Fall back to config-based detection
-			sslConfig := ssl.ParseSSLConfig(engine.DatabaseType(p.Type), config.Credentials.Advanced, config.Credentials.Hostname, config.Credentials.IsProfile)
-			if sslConfig != nil && sslConfig.IsEnabled() {
-				return &engine.SSLStatus{
-					IsEnabled: true,
-					Mode:      string(sslConfig.Mode),
-				}, nil
-			}
-			return &engine.SSLStatus{
-				IsEnabled: false,
-				Mode:      string(ssl.SSLModeDisabled),
-			}, nil
+			return nil, query.Error
 		}
 
 		if result.SSL != "on" {
@@ -134,6 +123,7 @@ var cockroachDBTypeDefinitions = []engine.TypeDefinition{
 	{ID: "SMALLINT", Label: "smallint", Category: engine.TypeCategoryNumeric},
 	{ID: "INTEGER", Label: "integer", Category: engine.TypeCategoryNumeric},
 	{ID: "BIGINT", Label: "bigint", Category: engine.TypeCategoryNumeric},
+	{ID: "SMALLSERIAL", Label: "smallserial", Category: engine.TypeCategoryNumeric},
 	{ID: "SERIAL", Label: "serial", Category: engine.TypeCategoryNumeric},
 	{ID: "BIGSERIAL", Label: "bigserial", Category: engine.TypeCategoryNumeric},
 	{ID: "DECIMAL", Label: "decimal", HasPrecision: true, DefaultPrecision: engine.IntPtr(10), Category: engine.TypeCategoryNumeric},
