@@ -58,7 +58,19 @@ type AppConfig struct {
 	Schema graphql.ExecutableSchema
 
 	// HTTPHandlers maps additional HTTP paths to handlers.
-	HTTPHandlers map[string]http.HandlerFunc
+	HTTPHandlers map[string]http.Handler
+
+	// Middlewares are additional HTTP middlewares injected before the GraphQL handler.
+	// EE uses this to inject authentication middleware.
+	Middlewares []func(http.Handler) http.Handler
+
+	// PublicPaths are HTTP paths that bypass auth.AuthMiddleware entirely.
+	// EE uses this to expose config/health endpoints before auth is required.
+	PublicPaths []string
+
+	// IsSetupMode indicates the platform has no organization yet and is in first-run setup.
+	// The frontend uses this to redirect to the setup wizard.
+	IsSetupMode bool
 }
 
 // Run starts the WhoDB server with the given configuration.
@@ -134,7 +146,7 @@ func Run(config AppConfig, staticFiles embed.FS) {
 		log.Warnf("Failed to initialize GCP providers from environment: %v", err)
 	}
 
-	r := router.InitializeRouter(config.Schema, config.HTTPHandlers, staticFiles)
+	r := router.InitializeRouter(config.Schema, config.HTTPHandlers, config.Middlewares, config.PublicPaths, staticFiles)
 
 	port := os.Getenv("PORT")
 	if port == "" {
