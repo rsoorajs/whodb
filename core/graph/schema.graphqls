@@ -11,6 +11,12 @@ enum DatabaseType {
   DuckDB,
   Memcached,
   TiDB,
+  Valkey,
+  Dragonfly,
+  OpenSearch,
+  YugabyteDB,
+  QuestDB,
+  FerretDB,
 }
 
 scalar Upload

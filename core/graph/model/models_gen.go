@@ -674,6 +674,12 @@ const (
 	DatabaseTypeDuckDb        DatabaseType = "DuckDB"
 	DatabaseTypeMemcached     DatabaseType = "Memcached"
 	DatabaseTypeTiDb          DatabaseType = "TiDB"
+	DatabaseTypeValkey        DatabaseType = "Valkey"
+	DatabaseTypeDragonfly     DatabaseType = "Dragonfly"
+	DatabaseTypeOpenSearch    DatabaseType = "OpenSearch"
+	DatabaseTypeYugabyteDb    DatabaseType = "YugabyteDB"
+	DatabaseTypeQuestDb       DatabaseType = "QuestDB"
+	DatabaseTypeFerretDb      DatabaseType = "FerretDB"
 )
 
 var AllDatabaseType = []DatabaseType{
@@ -689,11 +695,17 @@ var AllDatabaseType = []DatabaseType{
 	DatabaseTypeDuckDb,
 	DatabaseTypeMemcached,
 	DatabaseTypeTiDb,
+	DatabaseTypeValkey,
+	DatabaseTypeDragonfly,
+	DatabaseTypeOpenSearch,
+	DatabaseTypeYugabyteDb,
+	DatabaseTypeQuestDb,
+	DatabaseTypeFerretDb,
 }
 
 func (e DatabaseType) IsValid() bool {
 	switch e {
-	case DatabaseTypePostgres, DatabaseTypeMySQL, DatabaseTypeSqlite3, DatabaseTypeMongoDb, DatabaseTypeRedis, DatabaseTypeElasticSearch, DatabaseTypeMariaDb, DatabaseTypeCockroachDb, DatabaseTypeClickHouse, DatabaseTypeDuckDb, DatabaseTypeMemcached, DatabaseTypeTiDb:
+	case DatabaseTypePostgres, DatabaseTypeMySQL, DatabaseTypeSqlite3, DatabaseTypeMongoDb, DatabaseTypeRedis, DatabaseTypeElasticSearch, DatabaseTypeMariaDb, DatabaseTypeCockroachDb, DatabaseTypeClickHouse, DatabaseTypeDuckDb, DatabaseTypeMemcached, DatabaseTypeTiDb, DatabaseTypeValkey, DatabaseTypeDragonfly, DatabaseTypeOpenSearch, DatabaseTypeYugabyteDb, DatabaseTypeQuestDb, DatabaseTypeFerretDb:
 		return true
 	}
 	return false

@@ -15,6 +15,7 @@
  */
 
 import {ComponentType, ReactElement} from "react";
+import {DatabaseType} from "@graphql";
 import {Icons} from "../components/icons";
 import { getRegisteredDatabaseTypes } from './database-registry';
 
@@ -344,7 +345,7 @@ export const baseDatabaseTypes: IDatabaseDropdownItem[] = [
     },
     // CE aliases — wire-compatible databases that resolve to existing plugins
     {
-        id: "Valkey",
+        id: DatabaseType.Valkey,
         label: "Valkey",
         icon: Icons.Logos.Valkey,
         extra: {"Port": "6379"},
@@ -360,7 +361,7 @@ export const baseDatabaseTypes: IDatabaseDropdownItem[] = [
         sslModes: SSL_MODES_SIMPLE,
     },
     {
-        id: "Dragonfly",
+        id: DatabaseType.Dragonfly,
         label: "Dragonfly",
         icon: Icons.Logos.Dragonfly,
         extra: {"Port": "6379"},
@@ -376,7 +377,7 @@ export const baseDatabaseTypes: IDatabaseDropdownItem[] = [
         sslModes: SSL_MODES_SIMPLE,
     },
     {
-        id: "OpenSearch",
+        id: DatabaseType.OpenSearch,
         label: "OpenSearch",
         icon: Icons.Logos.OpenSearch,
         extra: {"Port": "9200"},
@@ -392,7 +393,7 @@ export const baseDatabaseTypes: IDatabaseDropdownItem[] = [
         sslModes: SSL_MODES_SIMPLE,
     },
     {
-        id: "YugabyteDB",
+        id: DatabaseType.YugabyteDb,
         label: "YugabyteDB",
         icon: Icons.Logos.YugabyteDB,
         extra: {"Port": "5433"},
@@ -410,7 +411,7 @@ export const baseDatabaseTypes: IDatabaseDropdownItem[] = [
         sslModes: SSL_MODES_STANDARD,
     },
     {
-        id: "QuestDB",
+        id: DatabaseType.QuestDb,
         label: "QuestDB",
         icon: Icons.Logos.QuestDB,
         extra: {"Port": "8812"},
@@ -428,7 +429,7 @@ export const baseDatabaseTypes: IDatabaseDropdownItem[] = [
         sslModes: SSL_MODES_STANDARD,
     },
     {
-        id: "FerretDB",
+        id: DatabaseType.FerretDb,
         label: "FerretDB",
         icon: Icons.Logos.FerretDB,
         extra: {"Port": "27017", "URL Params": "?", "DNS Enabled": "false"},

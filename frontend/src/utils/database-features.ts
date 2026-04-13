@@ -149,15 +149,18 @@ export function databaseTypesThatUseDatabaseInsteadOfSchema(databaseType: Databa
         return false;
     }
 
-    const databasesThatUseDatabaseInsteadOfSchema = [
+    const databasesThatUseDatabaseInsteadOfSchema: string[] = [
         DatabaseType.MongoDb,
         DatabaseType.ClickHouse,
         DatabaseType.MySql,
         DatabaseType.MariaDb,
         DatabaseType.TiDb,
         DatabaseType.Redis,
+        DatabaseType.FerretDb,
+        DatabaseType.Valkey,
+        DatabaseType.Dragonfly,
     ];
-    return databasesThatUseDatabaseInsteadOfSchema.includes(databaseType as DatabaseType);
+    return databasesThatUseDatabaseInsteadOfSchema.includes(databaseType);
 }
 
 /**

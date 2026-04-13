@@ -16,11 +16,14 @@
 
 import { LocalDiscoveredConnection } from "@/store/providers";
 
-/** Matches AWS managed database hostnames (RDS, ElastiCache, DocumentDB) */
+/** Matches AWS managed database hostnames (RDS, ElastiCache, DocumentDB, Redshift, Neptune, Timestream) */
 const AWS_HOSTNAME_PATTERNS = [
     /\.rds\.amazonaws\.com$/i,
     /\.cache\.amazonaws\.com$/i,
     /\.docdb\.amazonaws\.com$/i,
+    /\.redshift\.amazonaws\.com$/i,
+    /\.neptune\.amazonaws\.com$/i,
+    /\.timestream-influxdb\.\w+\.amazonaws\.com$/i,
 ];
 
 /** Checks if a hostname belongs to an AWS managed database service */
@@ -35,6 +38,8 @@ const AZURE_HOSTNAME_PATTERNS = [
     /\.mysql\.database\.azure\.com$/i,
     /\.redis\.cache\.windows\.net$/i,
     /\.mongo\.cosmos\.azure\.com$/i,
+    /\.redisenterprise\.cache\.azure\.net$/i,
+    /\.managedcassandra\.cosmos\.azure\.com$/i,
 ];
 
 /** Checks if a hostname belongs to an Azure managed database service */
@@ -43,11 +48,12 @@ export function isAzureHostname(hostname: string | undefined | null): boolean {
     return AZURE_HOSTNAME_PATTERNS.some(pattern => pattern.test(hostname));
 }
 
-/** Matches GCP managed database hostnames (Cloud SQL, AlloyDB, Memorystore) */
+/** Matches GCP managed database hostnames (Cloud SQL, AlloyDB, Memorystore, Firestore) */
 const GCP_HOSTNAME_PATTERNS = [
     /\.cloudsql\.goog$/i,
     /\.alloydb\.goog$/i,
     /\.memorystore\.goog$/i,
+    /\.firestore\.goog$/i,
 ];
 
 /** Checks if a hostname belongs to a GCP managed database service */

@@ -203,16 +203,22 @@ export type DatabaseQuerySuggestion = {
 export enum DatabaseType {
   ClickHouse = 'ClickHouse',
   CockroachDb = 'CockroachDB',
+  Dragonfly = 'Dragonfly',
   DuckDb = 'DuckDB',
   ElasticSearch = 'ElasticSearch',
+  FerretDb = 'FerretDB',
   MariaDb = 'MariaDB',
   Memcached = 'Memcached',
   MongoDb = 'MongoDB',
   MySql = 'MySQL',
+  OpenSearch = 'OpenSearch',
   Postgres = 'Postgres',
+  QuestDb = 'QuestDB',
   Redis = 'Redis',
   Sqlite3 = 'Sqlite3',
-  TiDb = 'TiDB'
+  TiDb = 'TiDB',
+  Valkey = 'Valkey',
+  YugabyteDb = 'YugabyteDB'
 }
 
 export type DiscoveredConnection = {

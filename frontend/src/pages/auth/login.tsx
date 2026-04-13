@@ -909,10 +909,10 @@ export const LoginForm: FC<LoginFormProps> = ({
         if (databaseType.id === DatabaseType.Sqlite3 || databaseType.id === DatabaseType.DuckDb) {
             return database.length > 0;
         }
-        const redisCompatible = [DatabaseType.Redis, "ElastiCache", "Valkey", "Dragonfly"];
-        const mongoCompatible = [DatabaseType.MongoDb, "DocumentDB", "FerretDB"];
+        const redisCompatible = [DatabaseType.Redis, "ElastiCache", DatabaseType.Valkey, DatabaseType.Dragonfly];
+        const mongoCompatible = [DatabaseType.MongoDb, "DocumentDB", DatabaseType.FerretDb];
 
-        if (redisCompatible.includes(databaseType.id) || mongoCompatible.includes(databaseType.id) || databaseType.id === DatabaseType.ElasticSearch || databaseType.id === "OpenSearch" || databaseType.id === DatabaseType.Memcached) {
+        if (redisCompatible.includes(databaseType.id) || mongoCompatible.includes(databaseType.id) || databaseType.id === DatabaseType.ElasticSearch || databaseType.id === DatabaseType.OpenSearch || databaseType.id === DatabaseType.Memcached) {
             return hostName.length > 0;
         }
 
