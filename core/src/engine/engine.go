@@ -40,6 +40,15 @@ const (
 	DatabaseType_TiDB          = "TiDB"
 	DatabaseType_ElastiCache   = "ElastiCache" // Uses Redis plugin for now
 	DatabaseType_DocumentDB    = "DocumentDB"  // Uses MongoDB plugin for now
+
+	// CE aliases — wire-compatible databases that resolve to existing plugins
+	DatabaseType_Valkey     = "Valkey"     // Redis-compatible (Linux Foundation fork)
+	DatabaseType_Dragonfly  = "Dragonfly"  // Redis-compatible
+	DatabaseType_OpenSearch = "OpenSearch" // ElasticSearch-compatible (AWS fork)
+	DatabaseType_StarRocks  = "StarRocks"  // MySQL-compatible (analytical)
+	DatabaseType_YugabyteDB = "YugabyteDB" // Postgres-compatible (distributed)
+	DatabaseType_QuestDB    = "QuestDB"    // Postgres-compatible (time-series)
+	DatabaseType_FerretDB   = "FerretDB"   // MongoDB-compatible (Postgres-backed)
 )
 
 // LoginProfileRetriever is a function that retrieves stored database credentials.
@@ -76,11 +85,20 @@ func (e *Engine) Choose(databaseType DatabaseType) *Plugin {
 // resolvePluginType maps display database types to their underlying plugin types.
 func resolvePluginType(dbType DatabaseType) DatabaseType {
 	switch dbType {
-	case DatabaseType_ElastiCache:
+	case DatabaseType_ElastiCache, DatabaseType_Valkey, DatabaseType_Dragonfly:
 		return DatabaseType_Redis
-	case DatabaseType_DocumentDB:
+	case DatabaseType_DocumentDB, DatabaseType_FerretDB:
 		return DatabaseType_MongoDB
+	case DatabaseType_OpenSearch:
+		return DatabaseType_ElasticSearch
+	case DatabaseType_StarRocks:
+		return DatabaseType_MySQL
+	case DatabaseType_YugabyteDB, DatabaseType_QuestDB:
+		return DatabaseType_Postgres
 	default:
+		if resolved, ok := pluginTypeAliases[dbType]; ok {
+			return resolved
+		}
 		return dbType
 	}
 }

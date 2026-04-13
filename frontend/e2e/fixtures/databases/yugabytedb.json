@@ -1,0 +1,141 @@
+{
+  "type": "YugabyteDB",
+  "category": "sql",
+  "dataTypesTable": "data_types",
+  "testTable": {
+    "name": "users",
+    "identifierField": "username",
+    "identifierColIndex": 1,
+    "idField": "id",
+    "firstId": "1",
+    "testValues": {
+      "original": "john_doe",
+      "modified": "john_doe1",
+      "rowIndex": 0
+    },
+    "searchTerm": "john",
+    "firstName": "john_doe",
+    "whereConditions": {
+      "testId1": "1",
+      "testId2": "2",
+      "testId3": "3",
+      "thirdColumn": "email",
+      "thirdValue": "jane@example.com",
+      "expectedValue": "admin_user"
+    },
+    "typeCastingTable": "test_casting"
+  },
+  "connection": {
+    "host": "localhost",
+    "port": 5434,
+    "user": "user",
+    "password": "password",
+    "database": "test_db",
+    "advanced": {}
+  },
+  "schema": "test_schema",
+  "mockData": {
+    "supportedTable": "products",
+    "tableWithFKs": "orders",
+    "fkRelationships": {
+      "orders": {
+        "parentTable": "users",
+        "fkColumn": "user_id",
+        "parentPkColumn": "id"
+      }
+    }
+  },
+  "whereOperators": {
+    "equals": "=",
+    "notEquals": "!=",
+    "greaterThan": ">",
+    "lessThan": "<",
+    "greaterOrEqual": ">=",
+    "lessOrEqual": "<="
+  },
+  "sidebar": {
+    "showsDatabaseDropdown": true,
+    "showsSchemaDropdown": true
+  },
+  "features": {
+    "graph": true,
+    "export": true,
+    "scratchpad": true,
+    "mockData": true,
+    "chat": true,
+    "whereConditions": true,
+    "queryHistory": true,
+    "pagination": true,
+    "documentEdit": true
+  },
+  "featureNotes": {
+    "chat": "YugabyteDB supports Postgres-compatible SQL features including AI chat"
+  },
+  "expectedTables": [
+    "data_types",
+    "order_items",
+    "order_summary",
+    "orders",
+    "payments",
+    "products",
+    "test_casting",
+    "users"
+  ],
+  "tables": {
+    "users": {
+      "columns": {
+        "id": "integer",
+        "username": "character varying(50)",
+        "email": "character varying(100)",
+        "password": "character varying(100)",
+        "created_at": "timestamp"
+      },
+      "expectedColumns": ["", "id", "username", "email", "password", "created_at"],
+      "testData": {
+        "initial": [
+          ["", "1", "john_doe", "john@example.com", "securepassword1"],
+          ["", "2", "jane_smith", "jane@example.com", "securepassword2"],
+          ["", "3", "admin_user", "admin@example.com", "adminpass"]
+        ],
+        "newRow": {
+          "id": "9999",
+          "username": "alice_wonder",
+          "email": "alice@example.com",
+          "password": "securepassword2",
+          "created_at": "2022-02-02"
+        }
+      },
+      "metadata": {
+        "type": "base table",
+        "hasSize": true,
+        "hasCount": false
+      }
+    }
+  },
+  "graph": {
+    "expectedNodes": {
+      "users": [],
+      "orders": ["users"],
+      "order_items": ["orders", "products"],
+      "products": [],
+      "payments": ["orders"],
+      "order_summary": []
+    }
+  },
+  "sql": {
+    "schemaPrefix": "test_schema.",
+    "selectAllUsers": "SELECT * FROM test_schema.users ORDER BY id;",
+    "selectUserById": "SELECT * FROM test_schema.users WHERE id=1;",
+    "updateUser": "UPDATE test_schema.users SET username='john_doe1' WHERE id=1",
+    "revertUser": "UPDATE test_schema.users SET username='john_doe' WHERE id=1",
+    "countUsers": "SELECT COUNT(*) as user_count FROM test_schema.users;",
+    "countColumn": "user_count",
+    "selectUsersFiltered": "SELECT username, email FROM test_schema.users WHERE id > 1;",
+    "invalidQuery": "SELECT * FROM test_schema.users1;",
+    "permissionDeniedQuery": "CREATE TABLE test_schema.users (id INT)",
+    "emptyResultQuery": "SELECT * FROM test_schema.users WHERE id = -99999",
+    "errorPatterns": {
+      "tableNotFound": "relation \"test_schema.users1\" does not exist"
+    }
+  }
+}

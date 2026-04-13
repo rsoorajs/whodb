@@ -284,6 +284,247 @@ services:
     networks:
       - db
 
+  # ===== Database alias containers =====
+
+  e2e_valkey:
+    image: valkey/valkey:latest
+    container_name: e2e_valkey
+    ports:
+      - "6382:6379"
+    volumes:
+      - e2e_valkey:/data
+    networks:
+      - db
+    command: valkey-server --requirepass password
+
+  valkey-init:
+    image: valkey/valkey:latest
+    depends_on:
+      - e2e_valkey
+    volumes:
+      - ./sample-data/redis/init.sh:/init.sh
+    environment:
+      REDIS_HOST: e2e_valkey
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: password
+    entrypoint: >
+      sh -c "
+        chmod +x /init.sh &&
+        /init.sh
+      "
+    networks:
+      - db
+
+  e2e_dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: e2e_dragonfly
+    ports:
+      - "6383:6379"
+    volumes:
+      - e2e_dragonfly:/data
+    networks:
+      - db
+    command: dragonfly --requirepass password
+
+  dragonfly-init:
+    image: redis:latest
+    depends_on:
+      - e2e_dragonfly
+    volumes:
+      - ./sample-data/redis/init.sh:/init.sh
+    environment:
+      REDIS_HOST: e2e_dragonfly
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: password
+    entrypoint: >
+      sh -c "
+        chmod +x /init.sh &&
+        /init.sh
+      "
+    networks:
+      - db
+
+  e2e_opensearch:
+    image: opensearchproject/opensearch:2
+    container_name: e2e_opensearch
+    environment:
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - bootstrap.memory_lock=true
+      - cluster.routing.allocation.disk.threshold_enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9202:9200"
+    volumes:
+      - e2e_opensearch:/usr/share/opensearch/data
+    networks:
+      - db
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  opensearch-init:
+    image: curlimages/curl:latest
+    depends_on:
+      e2e_opensearch:
+        condition: service_healthy
+    volumes:
+      - ./sample-data/opensearch/upload.sh:/upload.sh:ro
+    entrypoint: ["/bin/sh", "-c", "sh /upload.sh"]
+    networks:
+      - db
+
+  e2e_starrocks:
+    image: starrocks/allin1-ubuntu:latest
+    container_name: e2e_starrocks
+    ports:
+      - "9030:9030"
+      - "8030:8030"
+    volumes:
+      - e2e_starrocks:/data
+    networks:
+      - db
+    healthcheck:
+      test: ["CMD-SHELL", "mysql -h 127.0.0.1 -P 9030 -u root -e 'SELECT 1' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+
+  starrocks-init:
+    image: mysql:latest
+    depends_on:
+      e2e_starrocks:
+        condition: service_healthy
+    volumes:
+      - ./sample-data/starrocks/data.sql:/data.sql:ro
+    entrypoint: >
+      sh -c "
+        mysql -h e2e_starrocks -P 9030 -u root < /data.sql &&
+        echo 'StarRocks data loaded'
+      "
+    networks:
+      - db
+
+  e2e_yugabytedb:
+    image: yugabytedb/yugabyte:latest
+    container_name: e2e_yugabytedb
+    command: >
+      bash -c "
+        bin/yugabyted start --daemon=false --tserver_flags='ysql_enable_auth=true'
+      "
+    environment:
+      YSQL_USER: user
+      YSQL_PASSWORD: password
+      YSQL_DB: test_db
+    ports:
+      - "5434:5433"
+      - "7001:7000"
+    volumes:
+      - e2e_yugabytedb:/root/var
+    networks:
+      - db
+    healthcheck:
+      test: ["CMD-SHELL", "PGPASSWORD=password psql -h localhost -p 5433 -U user -d test_db -c 'SELECT 1' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+
+  yugabytedb-init:
+    image: postgres:latest
+    depends_on:
+      e2e_yugabytedb:
+        condition: service_healthy
+    volumes:
+      - ./sample-data/postgres/data.sql:/data.sql:ro
+    entrypoint: >
+      sh -c "
+        PGPASSWORD=password psql -h e2e_yugabytedb -p 5433 -U user -d test_db -f /data.sql &&
+        echo 'YugabyteDB data loaded'
+      "
+    networks:
+      - db
+
+  e2e_questdb:
+    image: questdb/questdb:latest
+    container_name: e2e_questdb
+    ports:
+      - "8812:8812"
+      - "9003:9000"
+    volumes:
+      - e2e_questdb:/var/lib/questdb
+    networks:
+      - db
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9000/exec?query=SELECT%201 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  questdb-init:
+    image: postgres:latest
+    depends_on:
+      e2e_questdb:
+        condition: service_healthy
+    volumes:
+      - ./sample-data/questdb/data.sql:/data.sql:ro
+    entrypoint: >
+      sh -c "
+        PGPASSWORD=quest psql -h e2e_questdb -p 8812 -U admin -d qdb -f /data.sql &&
+        echo 'QuestDB data loaded'
+      "
+    networks:
+      - db
+
+  e2e_ferretdb_pg:
+    image: postgres:latest
+    container_name: e2e_ferretdb_pg
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ferretdb
+    volumes:
+      - e2e_ferretdb_pg:/data/postgres
+    networks:
+      - db
+
+  e2e_ferretdb:
+    image: ferretdb/ferretdb:latest
+    container_name: e2e_ferretdb
+    depends_on:
+      - e2e_ferretdb_pg
+    environment:
+      FERRETDB_POSTGRESQL_URL: postgres://user:password@e2e_ferretdb_pg:5432/ferretdb
+    ports:
+      - "27020:27017"
+    networks:
+      - db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --port 27017 --eval 'db.runCommand({ping:1})' --quiet || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  ferretdb-init:
+    image: mongo:latest
+    depends_on:
+      e2e_ferretdb:
+        condition: service_healthy
+    volumes:
+      - ./sample-data/mongo/data.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    entrypoint: >
+      sh -c "
+        mongosh 'mongodb://user:password@e2e_ferretdb:27017/test_db?authSource=admin' /docker-entrypoint-initdb.d/mongo-init.js &&
+        echo 'FerretDB data loaded'
+      "
+    networks:
+      - db
+
   # SSL-enabled PostgreSQL for SSL E2E tests
   e2e_postgres_ssl:
     profiles: ["ssl"]
@@ -558,3 +799,10 @@ volumes:
   #  e2e_elasticsearch_922:
   e2e_tidb:
   e2e_mysql_842:
+  e2e_valkey:
+  e2e_dragonfly:
+  e2e_opensearch:
+  e2e_starrocks:
+  e2e_yugabytedb:
+  e2e_questdb:
+  e2e_ferretdb_pg:

@@ -53,6 +53,10 @@ export function isNoSQL(databaseType: string) {
         case DatabaseType.Redis:
         case DatabaseType.ElasticSearch:
         case DatabaseType.Memcached:
+        case "Valkey":
+        case "Dragonfly":
+        case "OpenSearch":
+        case "FerretDB":
             return true;
     }
     return false;
@@ -90,10 +94,14 @@ export function getDatabaseStorageUnitLabel(databaseType: string | undefined, si
 
     switch(databaseType) {
         case DatabaseType.ElasticSearch:
+        case "OpenSearch":
             return singular ? "Index" : "Indices";
         case DatabaseType.MongoDb:
+        case "FerretDB":
             return singular ? "Collection" : "Collections";
         case DatabaseType.Redis:
+        case "Valkey":
+        case "Dragonfly":
             return singular ? "Key" : "Keys";
         case DatabaseType.Memcached:
             return singular ? "Item" : "Items";
@@ -104,6 +112,9 @@ export function getDatabaseStorageUnitLabel(databaseType: string | undefined, si
         case DatabaseType.Sqlite3:
         case DatabaseType.DuckDb:
         case DatabaseType.ClickHouse:
+        case "StarRocks":
+        case "YugabyteDB":
+        case "QuestDB":
             return singular ? "Table" : "Tables";
     }
     return singular ? "Storage Unit" : "Storage Units";

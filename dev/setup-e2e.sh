@@ -54,6 +54,13 @@ get_docker_services() {
         memcached)   echo "e2e_memcached memcached-init e2e_memcached_ssl" ;;
         elasticsearch) echo "e2e_elasticsearch elasticsearch-init e2e_elasticsearch_ssl" ;;
         clickhouse)  echo "e2e_clickhouse e2e_clickhouse_ssl" ;;
+        valkey)      echo "e2e_valkey valkey-init" ;;
+        dragonfly)   echo "e2e_dragonfly dragonfly-init" ;;
+        opensearch)  echo "e2e_opensearch opensearch-init" ;;
+        starrocks)   echo "e2e_starrocks starrocks-init" ;;
+        yugabytedb)  echo "e2e_yugabytedb yugabytedb-init" ;;
+        questdb)     echo "e2e_questdb questdb-init" ;;
+        ferretdb)    echo "e2e_ferretdb_pg e2e_ferretdb ferretdb-init" ;;
         all)         echo "" ;;  # Empty means start all
         *)           echo "" ;;
     esac
@@ -71,6 +78,13 @@ get_db_port() {
         memcached)   echo "11211" ;;
         elasticsearch) echo "9200" ;;
         clickhouse)  echo "8123" ;;
+        valkey)      echo "6382" ;;
+        dragonfly)   echo "6383" ;;
+        opensearch)  echo "9202" ;;
+        starrocks)   echo "9030" ;;
+        yugabytedb)  echo "5434" ;;
+        questdb)     echo "8812" ;;
+        ferretdb)    echo "27020" ;;
         *)           echo "" ;;
     esac
 }
@@ -81,7 +95,12 @@ get_db_wait_time() {
         postgres|mysql|mysql8|mariadb) echo "90" ;;  # Heavy init scripts
         elasticsearch)                  echo "60" ;;  # Can be slow
         mongodb|clickhouse)             echo "30" ;;  # Light init
-        redis|memcached)                 echo "20" ;;  # Very fast
+        redis|memcached|valkey|dragonfly) echo "20" ;;  # Very fast
+        opensearch)                     echo "60" ;;  # Similar to ES
+        starrocks)                      echo "120" ;; # Heavy all-in-one image
+        yugabytedb)                     echo "90" ;;  # Distributed DB startup
+        questdb)                        echo "30" ;;  # Lightweight
+        ferretdb)                       echo "30" ;;  # Lightweight (depends on PG)
         *)                              echo "30" ;;
     esac
 }

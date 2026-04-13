@@ -74,16 +74,71 @@ func TestGetStorageUnitModel(t *testing.T) {
 
 func TestChooseResolvesDisplayTypesToUnderlyingPlugins(t *testing.T) {
 	engine := &Engine{}
+	postgres := &Plugin{Type: DatabaseType_Postgres}
+	mysql := &Plugin{Type: DatabaseType_MySQL}
 	mongo := &Plugin{Type: DatabaseType_MongoDB}
 	redis := &Plugin{Type: DatabaseType_Redis}
+	elastic := &Plugin{Type: DatabaseType_ElasticSearch}
+	engine.RegistryPlugin(postgres)
+	engine.RegistryPlugin(mysql)
 	engine.RegistryPlugin(mongo)
 	engine.RegistryPlugin(redis)
+	engine.RegistryPlugin(elastic)
 
-	if got := engine.Choose(DatabaseType_DocumentDB); got != mongo {
-		t.Fatalf("expected DocumentDB to resolve to MongoDB plugin")
+	tests := []struct {
+		alias  DatabaseType
+		expect *Plugin
+	}{
+		// Redis aliases
+		{DatabaseType_ElastiCache, redis},
+		{DatabaseType_Valkey, redis},
+		{DatabaseType_Dragonfly, redis},
+		// MongoDB aliases
+		{DatabaseType_DocumentDB, mongo},
+		{DatabaseType_FerretDB, mongo},
+		// ElasticSearch aliases
+		{DatabaseType_OpenSearch, elastic},
+		// MySQL aliases
+		{DatabaseType_StarRocks, mysql},
+		// Postgres aliases
+		{DatabaseType_YugabyteDB, postgres},
+		{DatabaseType_QuestDB, postgres},
 	}
-	if got := engine.Choose(DatabaseType_ElastiCache); got != redis {
-		t.Fatalf("expected ElastiCache to resolve to Redis plugin")
+
+	for _, tt := range tests {
+		t.Run(string(tt.alias), func(t *testing.T) {
+			if got := engine.Choose(tt.alias); got != tt.expect {
+				t.Fatalf("expected %s to resolve to %s plugin", tt.alias, tt.expect.Type)
+			}
+		})
+	}
+}
+
+func TestRegisterPluginTypeAlias(t *testing.T) {
+	// Clean up after the test
+	original := make(map[DatabaseType]DatabaseType)
+	for k, v := range pluginTypeAliases {
+		original[k] = v
+	}
+	defer func() {
+		pluginTypeAliases = original
+	}()
+
+	engine := &Engine{}
+	postgres := &Plugin{Type: DatabaseType_Postgres}
+	engine.RegistryPlugin(postgres)
+
+	customDB := DatabaseType("CustomDB")
+
+	// Before registration, CustomDB should not resolve
+	if got := engine.Choose(customDB); got != nil {
+		t.Fatalf("expected nil before alias registration, got %s", got.Type)
+	}
+
+	// Register alias and verify it resolves
+	RegisterPluginTypeAlias(customDB, DatabaseType_Postgres)
+	if got := engine.Choose(customDB); got != postgres {
+		t.Fatalf("expected CustomDB to resolve to Postgres after registration")
 	}
 }
 
