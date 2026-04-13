@@ -33,6 +33,7 @@ const configFileName = "config.json"
 const (
 	SectionCLI     = "cli"
 	SectionAWS     = "aws"
+	SectionGCP     = "gcp"
 	SectionDesktop = "desktop"
 )
 

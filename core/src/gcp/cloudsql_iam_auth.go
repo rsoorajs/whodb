@@ -1,0 +1,52 @@
+/*
+ * Copyright 2026 Clidey, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package gcp
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/clidey/whodb/core/src/log"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/option"
+)
+
+// GenerateCloudSQLIAMAuthToken generates an OAuth2 access token for Cloud SQL IAM
+// database authentication. The access token is used directly as the database password.
+//
+// See: https://cloud.google.com/sql/docs/mysql/iam-authentication
+func GenerateCloudSQLIAMAuthToken(ctx context.Context, opts []option.ClientOption, username string) (string, error) {
+	log.Infof("Cloud SQL IAM Auth: generating token for user=%s", username)
+
+	// Cloud SQL IAM auth requires the sqlservice.login scope
+	scopes := []string{"https://www.googleapis.com/auth/sqlservice.login"}
+
+	creds, err := google.FindDefaultCredentials(ctx, scopes...)
+	if err != nil {
+		log.Errorf("Cloud SQL IAM Auth: failed to find credentials: %v", err)
+		return "", fmt.Errorf("failed to find GCP credentials for Cloud SQL IAM auth: %w", err)
+	}
+
+	token, err := creds.TokenSource.Token()
+	if err != nil {
+		log.Errorf("Cloud SQL IAM Auth: failed to obtain token: %v", err)
+		return "", HandleGCPError(err)
+	}
+
+	log.Infof("Cloud SQL IAM Auth: token generated successfully for user=%s (token length=%d)", username, len(token.AccessToken))
+	return token.AccessToken, nil
+}

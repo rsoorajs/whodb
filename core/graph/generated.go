@@ -117,6 +117,27 @@ type ComplexityRoot struct {
 		Status       func(childComplexity int) int
 	}
 
+	GCPProvider struct {
+		DiscoverAlloyDb       func(childComplexity int) int
+		DiscoverCloudSQL      func(childComplexity int) int
+		DiscoverMemorystore   func(childComplexity int) int
+		DiscoveredCount       func(childComplexity int) int
+		Error                 func(childComplexity int) int
+		ID                    func(childComplexity int) int
+		LastDiscoveryAt       func(childComplexity int) int
+		Name                  func(childComplexity int) int
+		ProjectID             func(childComplexity int) int
+		ProviderType          func(childComplexity int) int
+		Region                func(childComplexity int) int
+		ServiceAccountKeyPath func(childComplexity int) int
+		Status                func(childComplexity int) int
+	}
+
+	GCPRegion struct {
+		Description func(childComplexity int) int
+		ID          func(childComplexity int) int
+	}
+
 	GenerateChatTitleResponse struct {
 		Title func(childComplexity int) int
 	}
@@ -168,6 +189,13 @@ type ComplexityRoot struct {
 		Source    func(childComplexity int) int
 	}
 
+	LocalGCPProject struct {
+		IsDefault func(childComplexity int) int
+		Name      func(childComplexity int) int
+		ProjectID func(childComplexity int) int
+		Source    func(childComplexity int) int
+	}
+
 	LoginProfile struct {
 		Alias                func(childComplexity int) int
 		Database             func(childComplexity int) int
@@ -206,27 +234,31 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddAWSProvider       func(childComplexity int, input model.AWSProviderInput) int
-		AddRow               func(childComplexity int, schema string, storageUnit string, values []*model.RecordInput) int
-		AddStorageUnit       func(childComplexity int, schema string, storageUnit string, fields []*model.RecordInput) int
-		DeleteRow            func(childComplexity int, schema string, storageUnit string, values []*model.RecordInput) int
-		ExecuteConfirmedSQL  func(childComplexity int, query string, operationType string) int
-		GenerateChatTitle    func(childComplexity int, input model.GenerateChatTitleInput) int
-		GenerateMockData     func(childComplexity int, input model.MockDataGenerationInput) int
-		GenerateRDSAuthToken func(childComplexity int, providerID string, endpoint string, port int, region string, username string) int
-		ImportPreview        func(childComplexity int, file graphql.Upload, options model.ImportFileOptions, schema *string, storageUnit *string, useHeaderMapping *bool) int
-		ImportSQL            func(childComplexity int, input model.ImportSQLInput) int
-		ImportTableFile      func(childComplexity int, input model.ImportFileInput) int
-		Login                func(childComplexity int, credentials model.LoginCredentials) int
-		LoginWithProfile     func(childComplexity int, profile model.LoginProfileInput) int
-		Logout               func(childComplexity int) int
-		RefreshCloudProvider func(childComplexity int, id string) int
-		RemoveCloudProvider  func(childComplexity int, id string) int
-		TestAWSCredentials   func(childComplexity int, input model.AWSProviderInput) int
-		TestCloudProvider    func(childComplexity int, id string) int
-		UpdateAWSProvider    func(childComplexity int, id string, input model.AWSProviderInput) int
-		UpdateSettings       func(childComplexity int, newSettings model.SettingsConfigInput) int
-		UpdateStorageUnit    func(childComplexity int, schema string, storageUnit string, values []*model.RecordInput, updatedColumns []string) int
+		AddAWSProvider               func(childComplexity int, input model.AWSProviderInput) int
+		AddGCPProvider               func(childComplexity int, input model.GCPProviderInput) int
+		AddRow                       func(childComplexity int, schema string, storageUnit string, values []*model.RecordInput) int
+		AddStorageUnit               func(childComplexity int, schema string, storageUnit string, fields []*model.RecordInput) int
+		DeleteRow                    func(childComplexity int, schema string, storageUnit string, values []*model.RecordInput) int
+		ExecuteConfirmedSQL          func(childComplexity int, query string, operationType string) int
+		GenerateChatTitle            func(childComplexity int, input model.GenerateChatTitleInput) int
+		GenerateCloudSQLIAMAuthToken func(childComplexity int, providerID string, username string) int
+		GenerateMockData             func(childComplexity int, input model.MockDataGenerationInput) int
+		GenerateRDSAuthToken         func(childComplexity int, providerID string, endpoint string, port int, region string, username string) int
+		ImportPreview                func(childComplexity int, file graphql.Upload, options model.ImportFileOptions, schema *string, storageUnit *string, useHeaderMapping *bool) int
+		ImportSQL                    func(childComplexity int, input model.ImportSQLInput) int
+		ImportTableFile              func(childComplexity int, input model.ImportFileInput) int
+		Login                        func(childComplexity int, credentials model.LoginCredentials) int
+		LoginWithProfile             func(childComplexity int, profile model.LoginProfileInput) int
+		Logout                       func(childComplexity int) int
+		RefreshCloudProvider         func(childComplexity int, id string) int
+		RemoveCloudProvider          func(childComplexity int, id string) int
+		TestAWSCredentials           func(childComplexity int, input model.AWSProviderInput) int
+		TestCloudProvider            func(childComplexity int, id string) int
+		TestGCPCredentials           func(childComplexity int, input model.GCPProviderInput) int
+		UpdateAWSProvider            func(childComplexity int, id string, input model.AWSProviderInput) int
+		UpdateGCPProvider            func(childComplexity int, id string, input model.GCPProviderInput) int
+		UpdateSettings               func(childComplexity int, newSettings model.SettingsConfigInput) int
+		UpdateStorageUnit            func(childComplexity int, schema string, storageUnit string, values []*model.RecordInput, updatedColumns []string) int
 	}
 
 	Query struct {
@@ -243,9 +275,11 @@ type ComplexityRoot struct {
 		DatabaseMetadata            func(childComplexity int) int
 		DatabaseQuerySuggestions    func(childComplexity int, schema string) int
 		DiscoveredConnections       func(childComplexity int) int
+		GCPRegions                  func(childComplexity int) int
 		Graph                       func(childComplexity int, schema string) int
 		Health                      func(childComplexity int) int
 		LocalAWSProfiles            func(childComplexity int) int
+		LocalGCPProjects            func(childComplexity int) int
 		MockDataMaxRowCount         func(childComplexity int) int
 		Profiles                    func(childComplexity int) int
 		ProviderConnections         func(childComplexity int, providerID string) int
@@ -336,10 +370,14 @@ type MutationResolver interface {
 	AddAWSProvider(ctx context.Context, input model.AWSProviderInput) (*model.AWSProvider, error)
 	UpdateAWSProvider(ctx context.Context, id string, input model.AWSProviderInput) (*model.AWSProvider, error)
 	TestAWSCredentials(ctx context.Context, input model.AWSProviderInput) (model.CloudProviderStatus, error)
+	AddGCPProvider(ctx context.Context, input model.GCPProviderInput) (*model.GCPProvider, error)
+	UpdateGCPProvider(ctx context.Context, id string, input model.GCPProviderInput) (*model.GCPProvider, error)
+	TestGCPCredentials(ctx context.Context, input model.GCPProviderInput) (model.CloudProviderStatus, error)
 	RemoveCloudProvider(ctx context.Context, id string) (*model.StatusResponse, error)
 	TestCloudProvider(ctx context.Context, id string) (model.CloudProviderStatus, error)
-	RefreshCloudProvider(ctx context.Context, id string) (*model.AWSProvider, error)
+	RefreshCloudProvider(ctx context.Context, id string) (model.CloudProvider, error)
 	GenerateRDSAuthToken(ctx context.Context, providerID string, endpoint string, port int, region string, username string) (string, error)
+	GenerateCloudSQLIAMAuthToken(ctx context.Context, providerID string, username string) (string, error)
 }
 type QueryResolver interface {
 	Version(ctx context.Context) (string, error)
@@ -363,12 +401,14 @@ type QueryResolver interface {
 	DatabaseMetadata(ctx context.Context) (*model.DatabaseMetadata, error)
 	SSLStatus(ctx context.Context) (*model.SSLStatus, error)
 	DatabaseQuerySuggestions(ctx context.Context, schema string) ([]*model.DatabaseQuerySuggestion, error)
-	CloudProviders(ctx context.Context) ([]*model.AWSProvider, error)
-	CloudProvider(ctx context.Context, id string) (*model.AWSProvider, error)
+	CloudProviders(ctx context.Context) ([]model.CloudProvider, error)
+	CloudProvider(ctx context.Context, id string) (model.CloudProvider, error)
 	DiscoveredConnections(ctx context.Context) ([]*model.DiscoveredConnection, error)
 	ProviderConnections(ctx context.Context, providerID string) ([]*model.DiscoveredConnection, error)
 	LocalAWSProfiles(ctx context.Context) ([]*model.LocalAWSProfile, error)
 	AWSRegions(ctx context.Context) ([]*model.AWSRegion, error)
+	LocalGCPProjects(ctx context.Context) ([]*model.LocalGCPProject, error)
+	GCPRegions(ctx context.Context) ([]*model.GCPRegion, error)
 }
 
 type executableSchema graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot]
@@ -718,6 +758,98 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.DiscoveredConnection.Status(childComplexity), true
 
+	case "GCPProvider.DiscoverAlloyDB":
+		if e.ComplexityRoot.GCPProvider.DiscoverAlloyDb == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GCPProvider.DiscoverAlloyDb(childComplexity), true
+	case "GCPProvider.DiscoverCloudSQL":
+		if e.ComplexityRoot.GCPProvider.DiscoverCloudSQL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GCPProvider.DiscoverCloudSQL(childComplexity), true
+	case "GCPProvider.DiscoverMemorystore":
+		if e.ComplexityRoot.GCPProvider.DiscoverMemorystore == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GCPProvider.DiscoverMemorystore(childComplexity), true
+	case "GCPProvider.DiscoveredCount":
+		if e.ComplexityRoot.GCPProvider.DiscoveredCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GCPProvider.DiscoveredCount(childComplexity), true
+	case "GCPProvider.Error":
+		if e.ComplexityRoot.GCPProvider.Error == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GCPProvider.Error(childComplexity), true
+	case "GCPProvider.Id":
+		if e.ComplexityRoot.GCPProvider.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GCPProvider.ID(childComplexity), true
+	case "GCPProvider.LastDiscoveryAt":
+		if e.ComplexityRoot.GCPProvider.LastDiscoveryAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GCPProvider.LastDiscoveryAt(childComplexity), true
+	case "GCPProvider.Name":
+		if e.ComplexityRoot.GCPProvider.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GCPProvider.Name(childComplexity), true
+	case "GCPProvider.ProjectID":
+		if e.ComplexityRoot.GCPProvider.ProjectID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GCPProvider.ProjectID(childComplexity), true
+	case "GCPProvider.ProviderType":
+		if e.ComplexityRoot.GCPProvider.ProviderType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GCPProvider.ProviderType(childComplexity), true
+	case "GCPProvider.Region":
+		if e.ComplexityRoot.GCPProvider.Region == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GCPProvider.Region(childComplexity), true
+	case "GCPProvider.ServiceAccountKeyPath":
+		if e.ComplexityRoot.GCPProvider.ServiceAccountKeyPath == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GCPProvider.ServiceAccountKeyPath(childComplexity), true
+	case "GCPProvider.Status":
+		if e.ComplexityRoot.GCPProvider.Status == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GCPProvider.Status(childComplexity), true
+
+	case "GCPRegion.Description":
+		if e.ComplexityRoot.GCPRegion.Description == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GCPRegion.Description(childComplexity), true
+	case "GCPRegion.Id":
+		if e.ComplexityRoot.GCPRegion.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GCPRegion.ID(childComplexity), true
+
 	case "GenerateChatTitleResponse.Title":
 		if e.ComplexityRoot.GenerateChatTitleResponse.Title == nil {
 			break
@@ -888,6 +1020,31 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.LocalAWSProfile.Source(childComplexity), true
 
+	case "LocalGCPProject.IsDefault":
+		if e.ComplexityRoot.LocalGCPProject.IsDefault == nil {
+			break
+		}
+
+		return e.ComplexityRoot.LocalGCPProject.IsDefault(childComplexity), true
+	case "LocalGCPProject.Name":
+		if e.ComplexityRoot.LocalGCPProject.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.LocalGCPProject.Name(childComplexity), true
+	case "LocalGCPProject.ProjectID":
+		if e.ComplexityRoot.LocalGCPProject.ProjectID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.LocalGCPProject.ProjectID(childComplexity), true
+	case "LocalGCPProject.Source":
+		if e.ComplexityRoot.LocalGCPProject.Source == nil {
+			break
+		}
+
+		return e.ComplexityRoot.LocalGCPProject.Source(childComplexity), true
+
 	case "LoginProfile.Alias":
 		if e.ComplexityRoot.LoginProfile.Alias == nil {
 			break
@@ -1036,6 +1193,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.AddAWSProvider(childComplexity, args["input"].(model.AWSProviderInput)), true
+	case "Mutation.AddGCPProvider":
+		if e.ComplexityRoot.Mutation.AddGCPProvider == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_AddGCPProvider_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.AddGCPProvider(childComplexity, args["input"].(model.GCPProviderInput)), true
 	case "Mutation.AddRow":
 		if e.ComplexityRoot.Mutation.AddRow == nil {
 			break
@@ -1091,6 +1259,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.GenerateChatTitle(childComplexity, args["input"].(model.GenerateChatTitleInput)), true
+	case "Mutation.GenerateCloudSQLIAMAuthToken":
+		if e.ComplexityRoot.Mutation.GenerateCloudSQLIAMAuthToken == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_GenerateCloudSQLIAMAuthToken_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.GenerateCloudSQLIAMAuthToken(childComplexity, args["providerID"].(string), args["username"].(string)), true
 	case "Mutation.GenerateMockData":
 		if e.ComplexityRoot.Mutation.GenerateMockData == nil {
 			break
@@ -1218,6 +1397,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.TestCloudProvider(childComplexity, args["id"].(string)), true
+	case "Mutation.TestGCPCredentials":
+		if e.ComplexityRoot.Mutation.TestGCPCredentials == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_TestGCPCredentials_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.TestGCPCredentials(childComplexity, args["input"].(model.GCPProviderInput)), true
 	case "Mutation.UpdateAWSProvider":
 		if e.ComplexityRoot.Mutation.UpdateAWSProvider == nil {
 			break
@@ -1229,6 +1419,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.UpdateAWSProvider(childComplexity, args["id"].(string), args["input"].(model.AWSProviderInput)), true
+	case "Mutation.UpdateGCPProvider":
+		if e.ComplexityRoot.Mutation.UpdateGCPProvider == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_UpdateGCPProvider_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateGCPProvider(childComplexity, args["id"].(string), args["input"].(model.GCPProviderInput)), true
 	case "Mutation.UpdateSettings":
 		if e.ComplexityRoot.Mutation.UpdateSettings == nil {
 			break
@@ -1370,6 +1571,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.DiscoveredConnections(childComplexity), true
+	case "Query.GCPRegions":
+		if e.ComplexityRoot.Query.GCPRegions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.GCPRegions(childComplexity), true
 	case "Query.Graph":
 		if e.ComplexityRoot.Query.Graph == nil {
 			break
@@ -1394,6 +1601,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.LocalAWSProfiles(childComplexity), true
+	case "Query.LocalGCPProjects":
+		if e.ComplexityRoot.Query.LocalGCPProjects == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.LocalGCPProjects(childComplexity), true
 	case "Query.MockDataMaxRowCount":
 		if e.ComplexityRoot.Query.MockDataMaxRowCount == nil {
 			break
@@ -1687,6 +1900,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputAWSProviderInput,
 		ec.unmarshalInputAtomicWhereCondition,
 		ec.unmarshalInputChatInput,
+		ec.unmarshalInputGCPProviderInput,
 		ec.unmarshalInputGenerateChatTitleInput,
 		ec.unmarshalInputImportColumnMapping,
 		ec.unmarshalInputImportFileInput,
@@ -1805,6 +2019,17 @@ func (ec *executionContext) field_Mutation_AddAWSProvider_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_AddGCPProvider_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNGCPProviderInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐGCPProviderInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_AddRow_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1892,6 +2117,22 @@ func (ec *executionContext) field_Mutation_GenerateChatTitle_args(ctx context.Co
 		return nil, err
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_GenerateCloudSQLIAMAuthToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "providerID", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["providerID"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "username", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["username"] = arg1
 	return args, nil
 }
 
@@ -2056,6 +2297,17 @@ func (ec *executionContext) field_Mutation_TestCloudProvider_args(ctx context.Co
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_TestGCPCredentials_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNGCPProviderInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐGCPProviderInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_UpdateAWSProvider_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2065,6 +2317,22 @@ func (ec *executionContext) field_Mutation_UpdateAWSProvider_args(ctx context.Co
 	}
 	args["id"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAWSProviderInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAWSProviderInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_UpdateGCPProvider_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNGCPProviderInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐGCPProviderInput)
 	if err != nil {
 		return nil, err
 	}
@@ -4017,6 +4285,441 @@ func (ec *executionContext) fieldContext_DiscoveredConnection_Metadata(_ context
 	return fc, nil
 }
 
+func (ec *executionContext) _GCPProvider_Id(ctx context.Context, field graphql.CollectedField, obj *model.GCPProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GCPProvider_Id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_GCPProvider_Id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GCPProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GCPProvider_ProviderType(ctx context.Context, field graphql.CollectedField, obj *model.GCPProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GCPProvider_ProviderType,
+		func(ctx context.Context) (any, error) {
+			return obj.ProviderType, nil
+		},
+		nil,
+		ec.marshalNCloudProviderType2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐCloudProviderType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_GCPProvider_ProviderType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GCPProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CloudProviderType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GCPProvider_Name(ctx context.Context, field graphql.CollectedField, obj *model.GCPProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GCPProvider_Name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_GCPProvider_Name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GCPProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GCPProvider_Region(ctx context.Context, field graphql.CollectedField, obj *model.GCPProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GCPProvider_Region,
+		func(ctx context.Context) (any, error) {
+			return obj.Region, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_GCPProvider_Region(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GCPProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GCPProvider_Status(ctx context.Context, field graphql.CollectedField, obj *model.GCPProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GCPProvider_Status,
+		func(ctx context.Context) (any, error) {
+			return obj.Status, nil
+		},
+		nil,
+		ec.marshalNCloudProviderStatus2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐCloudProviderStatus,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_GCPProvider_Status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GCPProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CloudProviderStatus does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GCPProvider_LastDiscoveryAt(ctx context.Context, field graphql.CollectedField, obj *model.GCPProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GCPProvider_LastDiscoveryAt,
+		func(ctx context.Context) (any, error) {
+			return obj.LastDiscoveryAt, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_GCPProvider_LastDiscoveryAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GCPProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GCPProvider_DiscoveredCount(ctx context.Context, field graphql.CollectedField, obj *model.GCPProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GCPProvider_DiscoveredCount,
+		func(ctx context.Context) (any, error) {
+			return obj.DiscoveredCount, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_GCPProvider_DiscoveredCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GCPProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GCPProvider_Error(ctx context.Context, field graphql.CollectedField, obj *model.GCPProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GCPProvider_Error,
+		func(ctx context.Context) (any, error) {
+			return obj.Error, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_GCPProvider_Error(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GCPProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GCPProvider_ProjectID(ctx context.Context, field graphql.CollectedField, obj *model.GCPProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GCPProvider_ProjectID,
+		func(ctx context.Context) (any, error) {
+			return obj.ProjectID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_GCPProvider_ProjectID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GCPProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GCPProvider_ServiceAccountKeyPath(ctx context.Context, field graphql.CollectedField, obj *model.GCPProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GCPProvider_ServiceAccountKeyPath,
+		func(ctx context.Context) (any, error) {
+			return obj.ServiceAccountKeyPath, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_GCPProvider_ServiceAccountKeyPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GCPProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GCPProvider_DiscoverCloudSQL(ctx context.Context, field graphql.CollectedField, obj *model.GCPProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GCPProvider_DiscoverCloudSQL,
+		func(ctx context.Context) (any, error) {
+			return obj.DiscoverCloudSQL, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_GCPProvider_DiscoverCloudSQL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GCPProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GCPProvider_DiscoverAlloyDB(ctx context.Context, field graphql.CollectedField, obj *model.GCPProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GCPProvider_DiscoverAlloyDB,
+		func(ctx context.Context) (any, error) {
+			return obj.DiscoverAlloyDb, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_GCPProvider_DiscoverAlloyDB(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GCPProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GCPProvider_DiscoverMemorystore(ctx context.Context, field graphql.CollectedField, obj *model.GCPProvider) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GCPProvider_DiscoverMemorystore,
+		func(ctx context.Context) (any, error) {
+			return obj.DiscoverMemorystore, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_GCPProvider_DiscoverMemorystore(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GCPProvider",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GCPRegion_Id(ctx context.Context, field graphql.CollectedField, obj *model.GCPRegion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GCPRegion_Id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_GCPRegion_Id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GCPRegion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _GCPRegion_Description(ctx context.Context, field graphql.CollectedField, obj *model.GCPRegion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_GCPRegion_Description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_GCPRegion_Description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GCPRegion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _GenerateChatTitleResponse_Title(ctx context.Context, field graphql.CollectedField, obj *model.GenerateChatTitleResponse) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4814,6 +5517,122 @@ func (ec *executionContext) _LocalAWSProfile_IsDefault(ctx context.Context, fiel
 func (ec *executionContext) fieldContext_LocalAWSProfile_IsDefault(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "LocalAWSProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LocalGCPProject_ProjectID(ctx context.Context, field graphql.CollectedField, obj *model.LocalGCPProject) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LocalGCPProject_ProjectID,
+		func(ctx context.Context) (any, error) {
+			return obj.ProjectID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LocalGCPProject_ProjectID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LocalGCPProject",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LocalGCPProject_Name(ctx context.Context, field graphql.CollectedField, obj *model.LocalGCPProject) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LocalGCPProject_Name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LocalGCPProject_Name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LocalGCPProject",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LocalGCPProject_Source(ctx context.Context, field graphql.CollectedField, obj *model.LocalGCPProject) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LocalGCPProject_Source,
+		func(ctx context.Context) (any, error) {
+			return obj.Source, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LocalGCPProject_Source(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LocalGCPProject",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _LocalGCPProject_IsDefault(ctx context.Context, field graphql.CollectedField, obj *model.LocalGCPProject) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_LocalGCPProject_IsDefault,
+		func(ctx context.Context) (any, error) {
+			return obj.IsDefault, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_LocalGCPProject_IsDefault(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "LocalGCPProject",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -6303,6 +7122,185 @@ func (ec *executionContext) fieldContext_Mutation_TestAWSCredentials(ctx context
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_AddGCPProvider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_AddGCPProvider,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().AddGCPProvider(ctx, fc.Args["input"].(model.GCPProviderInput))
+		},
+		nil,
+		ec.marshalNGCPProvider2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐGCPProvider,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_AddGCPProvider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Id":
+				return ec.fieldContext_GCPProvider_Id(ctx, field)
+			case "ProviderType":
+				return ec.fieldContext_GCPProvider_ProviderType(ctx, field)
+			case "Name":
+				return ec.fieldContext_GCPProvider_Name(ctx, field)
+			case "Region":
+				return ec.fieldContext_GCPProvider_Region(ctx, field)
+			case "Status":
+				return ec.fieldContext_GCPProvider_Status(ctx, field)
+			case "LastDiscoveryAt":
+				return ec.fieldContext_GCPProvider_LastDiscoveryAt(ctx, field)
+			case "DiscoveredCount":
+				return ec.fieldContext_GCPProvider_DiscoveredCount(ctx, field)
+			case "Error":
+				return ec.fieldContext_GCPProvider_Error(ctx, field)
+			case "ProjectID":
+				return ec.fieldContext_GCPProvider_ProjectID(ctx, field)
+			case "ServiceAccountKeyPath":
+				return ec.fieldContext_GCPProvider_ServiceAccountKeyPath(ctx, field)
+			case "DiscoverCloudSQL":
+				return ec.fieldContext_GCPProvider_DiscoverCloudSQL(ctx, field)
+			case "DiscoverAlloyDB":
+				return ec.fieldContext_GCPProvider_DiscoverAlloyDB(ctx, field)
+			case "DiscoverMemorystore":
+				return ec.fieldContext_GCPProvider_DiscoverMemorystore(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type GCPProvider", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_AddGCPProvider_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_UpdateGCPProvider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_UpdateGCPProvider,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().UpdateGCPProvider(ctx, fc.Args["id"].(string), fc.Args["input"].(model.GCPProviderInput))
+		},
+		nil,
+		ec.marshalNGCPProvider2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐGCPProvider,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_UpdateGCPProvider(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Id":
+				return ec.fieldContext_GCPProvider_Id(ctx, field)
+			case "ProviderType":
+				return ec.fieldContext_GCPProvider_ProviderType(ctx, field)
+			case "Name":
+				return ec.fieldContext_GCPProvider_Name(ctx, field)
+			case "Region":
+				return ec.fieldContext_GCPProvider_Region(ctx, field)
+			case "Status":
+				return ec.fieldContext_GCPProvider_Status(ctx, field)
+			case "LastDiscoveryAt":
+				return ec.fieldContext_GCPProvider_LastDiscoveryAt(ctx, field)
+			case "DiscoveredCount":
+				return ec.fieldContext_GCPProvider_DiscoveredCount(ctx, field)
+			case "Error":
+				return ec.fieldContext_GCPProvider_Error(ctx, field)
+			case "ProjectID":
+				return ec.fieldContext_GCPProvider_ProjectID(ctx, field)
+			case "ServiceAccountKeyPath":
+				return ec.fieldContext_GCPProvider_ServiceAccountKeyPath(ctx, field)
+			case "DiscoverCloudSQL":
+				return ec.fieldContext_GCPProvider_DiscoverCloudSQL(ctx, field)
+			case "DiscoverAlloyDB":
+				return ec.fieldContext_GCPProvider_DiscoverAlloyDB(ctx, field)
+			case "DiscoverMemorystore":
+				return ec.fieldContext_GCPProvider_DiscoverMemorystore(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type GCPProvider", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_UpdateGCPProvider_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_TestGCPCredentials(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_TestGCPCredentials,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().TestGCPCredentials(ctx, fc.Args["input"].(model.GCPProviderInput))
+		},
+		nil,
+		ec.marshalNCloudProviderStatus2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐCloudProviderStatus,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_TestGCPCredentials(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type CloudProviderStatus does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_TestGCPCredentials_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_RemoveCloudProvider(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -6400,7 +7398,7 @@ func (ec *executionContext) _Mutation_RefreshCloudProvider(ctx context.Context, 
 			return ec.Resolvers.Mutation().RefreshCloudProvider(ctx, fc.Args["id"].(string))
 		},
 		nil,
-		ec.marshalNAWSProvider2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAWSProvider,
+		ec.marshalNCloudProvider2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐCloudProvider,
 		true,
 		true,
 	)
@@ -6413,33 +7411,7 @@ func (ec *executionContext) fieldContext_Mutation_RefreshCloudProvider(ctx conte
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "Id":
-				return ec.fieldContext_AWSProvider_Id(ctx, field)
-			case "ProviderType":
-				return ec.fieldContext_AWSProvider_ProviderType(ctx, field)
-			case "Name":
-				return ec.fieldContext_AWSProvider_Name(ctx, field)
-			case "Region":
-				return ec.fieldContext_AWSProvider_Region(ctx, field)
-			case "Status":
-				return ec.fieldContext_AWSProvider_Status(ctx, field)
-			case "LastDiscoveryAt":
-				return ec.fieldContext_AWSProvider_LastDiscoveryAt(ctx, field)
-			case "DiscoveredCount":
-				return ec.fieldContext_AWSProvider_DiscoveredCount(ctx, field)
-			case "Error":
-				return ec.fieldContext_AWSProvider_Error(ctx, field)
-			case "ProfileName":
-				return ec.fieldContext_AWSProvider_ProfileName(ctx, field)
-			case "DiscoverRDS":
-				return ec.fieldContext_AWSProvider_DiscoverRDS(ctx, field)
-			case "DiscoverElastiCache":
-				return ec.fieldContext_AWSProvider_DiscoverElastiCache(ctx, field)
-			case "DiscoverDocumentDB":
-				return ec.fieldContext_AWSProvider_DiscoverDocumentDB(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type AWSProvider", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	defer func() {
@@ -6491,6 +7463,47 @@ func (ec *executionContext) fieldContext_Mutation_GenerateRDSAuthToken(ctx conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_GenerateRDSAuthToken_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_GenerateCloudSQLIAMAuthToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_GenerateCloudSQLIAMAuthToken,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().GenerateCloudSQLIAMAuthToken(ctx, fc.Args["providerID"].(string), fc.Args["username"].(string))
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_GenerateCloudSQLIAMAuthToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_GenerateCloudSQLIAMAuthToken_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -7410,7 +8423,7 @@ func (ec *executionContext) _Query_CloudProviders(ctx context.Context, field gra
 			return ec.Resolvers.Query().CloudProviders(ctx)
 		},
 		nil,
-		ec.marshalNAWSProvider2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAWSProviderᚄ,
+		ec.marshalNCloudProvider2ᚕgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐCloudProviderᚄ,
 		true,
 		true,
 	)
@@ -7423,33 +8436,7 @@ func (ec *executionContext) fieldContext_Query_CloudProviders(_ context.Context,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "Id":
-				return ec.fieldContext_AWSProvider_Id(ctx, field)
-			case "ProviderType":
-				return ec.fieldContext_AWSProvider_ProviderType(ctx, field)
-			case "Name":
-				return ec.fieldContext_AWSProvider_Name(ctx, field)
-			case "Region":
-				return ec.fieldContext_AWSProvider_Region(ctx, field)
-			case "Status":
-				return ec.fieldContext_AWSProvider_Status(ctx, field)
-			case "LastDiscoveryAt":
-				return ec.fieldContext_AWSProvider_LastDiscoveryAt(ctx, field)
-			case "DiscoveredCount":
-				return ec.fieldContext_AWSProvider_DiscoveredCount(ctx, field)
-			case "Error":
-				return ec.fieldContext_AWSProvider_Error(ctx, field)
-			case "ProfileName":
-				return ec.fieldContext_AWSProvider_ProfileName(ctx, field)
-			case "DiscoverRDS":
-				return ec.fieldContext_AWSProvider_DiscoverRDS(ctx, field)
-			case "DiscoverElastiCache":
-				return ec.fieldContext_AWSProvider_DiscoverElastiCache(ctx, field)
-			case "DiscoverDocumentDB":
-				return ec.fieldContext_AWSProvider_DiscoverDocumentDB(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type AWSProvider", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	return fc, nil
@@ -7466,7 +8453,7 @@ func (ec *executionContext) _Query_CloudProvider(ctx context.Context, field grap
 			return ec.Resolvers.Query().CloudProvider(ctx, fc.Args["id"].(string))
 		},
 		nil,
-		ec.marshalOAWSProvider2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAWSProvider,
+		ec.marshalOCloudProvider2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐCloudProvider,
 		true,
 		false,
 	)
@@ -7479,33 +8466,7 @@ func (ec *executionContext) fieldContext_Query_CloudProvider(ctx context.Context
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "Id":
-				return ec.fieldContext_AWSProvider_Id(ctx, field)
-			case "ProviderType":
-				return ec.fieldContext_AWSProvider_ProviderType(ctx, field)
-			case "Name":
-				return ec.fieldContext_AWSProvider_Name(ctx, field)
-			case "Region":
-				return ec.fieldContext_AWSProvider_Region(ctx, field)
-			case "Status":
-				return ec.fieldContext_AWSProvider_Status(ctx, field)
-			case "LastDiscoveryAt":
-				return ec.fieldContext_AWSProvider_LastDiscoveryAt(ctx, field)
-			case "DiscoveredCount":
-				return ec.fieldContext_AWSProvider_DiscoveredCount(ctx, field)
-			case "Error":
-				return ec.fieldContext_AWSProvider_Error(ctx, field)
-			case "ProfileName":
-				return ec.fieldContext_AWSProvider_ProfileName(ctx, field)
-			case "DiscoverRDS":
-				return ec.fieldContext_AWSProvider_DiscoverRDS(ctx, field)
-			case "DiscoverElastiCache":
-				return ec.fieldContext_AWSProvider_DiscoverElastiCache(ctx, field)
-			case "DiscoverDocumentDB":
-				return ec.fieldContext_AWSProvider_DiscoverDocumentDB(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type AWSProvider", field.Name)
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
 	}
 	defer func() {
@@ -7701,6 +8662,80 @@ func (ec *executionContext) fieldContext_Query_AWSRegions(_ context.Context, fie
 				return ec.fieldContext_AWSRegion_Partition(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AWSRegion", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_LocalGCPProjects(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_LocalGCPProjects,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().LocalGCPProjects(ctx)
+		},
+		nil,
+		ec.marshalNLocalGCPProject2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐLocalGCPProjectᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_LocalGCPProjects(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "ProjectID":
+				return ec.fieldContext_LocalGCPProject_ProjectID(ctx, field)
+			case "Name":
+				return ec.fieldContext_LocalGCPProject_Name(ctx, field)
+			case "Source":
+				return ec.fieldContext_LocalGCPProject_Source(ctx, field)
+			case "IsDefault":
+				return ec.fieldContext_LocalGCPProject_IsDefault(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type LocalGCPProject", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_GCPRegions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_GCPRegions,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().GCPRegions(ctx)
+		},
+		nil,
+		ec.marshalNGCPRegion2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐGCPRegionᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_GCPRegions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Id":
+				return ec.fieldContext_GCPRegion_Id(ctx, field)
+			case "Description":
+				return ec.fieldContext_GCPRegion_Description(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type GCPRegion", field.Name)
 		},
 	}
 	return fc, nil
@@ -10372,6 +11407,78 @@ func (ec *executionContext) unmarshalInputChatInput(ctx context.Context, obj any
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputGCPProviderInput(ctx context.Context, obj any) (model.GCPProviderInput, error) {
+	var it model.GCPProviderInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"Name", "ProjectID", "Region", "ServiceAccountKeyPath", "DiscoverCloudSQL", "DiscoverAlloyDB", "DiscoverMemorystore"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "Name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "ProjectID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ProjectID"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProjectID = data
+		case "Region":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Region"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Region = data
+		case "ServiceAccountKeyPath":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ServiceAccountKeyPath"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ServiceAccountKeyPath = data
+		case "DiscoverCloudSQL":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("DiscoverCloudSQL"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DiscoverCloudSQL = data
+		case "DiscoverAlloyDB":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("DiscoverAlloyDB"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DiscoverAlloyDb = data
+		case "DiscoverMemorystore":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("DiscoverMemorystore"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DiscoverMemorystore = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputGenerateChatTitleInput(ctx context.Context, obj any) (model.GenerateChatTitleInput, error) {
 	var it model.GenerateChatTitleInput
 	if obj == nil {
@@ -11022,6 +12129,13 @@ func (ec *executionContext) _CloudProvider(ctx context.Context, sel ast.Selectio
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
+	case model.GCPProvider:
+		return ec._GCPProvider(ctx, sel, &obj)
+	case *model.GCPProvider:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._GCPProvider(ctx, sel, obj)
 	case model.AWSProvider:
 		return ec._AWSProvider(ctx, sel, &obj)
 	case *model.AWSProvider:
@@ -11588,6 +12702,140 @@ func (ec *executionContext) _DiscoveredConnection(ctx context.Context, sel ast.S
 	return out
 }
 
+var gCPProviderImplementors = []string{"GCPProvider", "CloudProvider"}
+
+func (ec *executionContext) _GCPProvider(ctx context.Context, sel ast.SelectionSet, obj *model.GCPProvider) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, gCPProviderImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GCPProvider")
+		case "Id":
+			out.Values[i] = ec._GCPProvider_Id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ProviderType":
+			out.Values[i] = ec._GCPProvider_ProviderType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Name":
+			out.Values[i] = ec._GCPProvider_Name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Region":
+			out.Values[i] = ec._GCPProvider_Region(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Status":
+			out.Values[i] = ec._GCPProvider_Status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "LastDiscoveryAt":
+			out.Values[i] = ec._GCPProvider_LastDiscoveryAt(ctx, field, obj)
+		case "DiscoveredCount":
+			out.Values[i] = ec._GCPProvider_DiscoveredCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Error":
+			out.Values[i] = ec._GCPProvider_Error(ctx, field, obj)
+		case "ProjectID":
+			out.Values[i] = ec._GCPProvider_ProjectID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ServiceAccountKeyPath":
+			out.Values[i] = ec._GCPProvider_ServiceAccountKeyPath(ctx, field, obj)
+		case "DiscoverCloudSQL":
+			out.Values[i] = ec._GCPProvider_DiscoverCloudSQL(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "DiscoverAlloyDB":
+			out.Values[i] = ec._GCPProvider_DiscoverAlloyDB(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "DiscoverMemorystore":
+			out.Values[i] = ec._GCPProvider_DiscoverMemorystore(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var gCPRegionImplementors = []string{"GCPRegion"}
+
+func (ec *executionContext) _GCPRegion(ctx context.Context, sel ast.SelectionSet, obj *model.GCPRegion) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, gCPRegionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GCPRegion")
+		case "Id":
+			out.Values[i] = ec._GCPRegion_Id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Description":
+			out.Values[i] = ec._GCPRegion_Description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var generateChatTitleResponseImplementors = []string{"GenerateChatTitleResponse"}
 
 func (ec *executionContext) _GenerateChatTitleResponse(ctx context.Context, sel ast.SelectionSet, obj *model.GenerateChatTitleResponse) graphql.Marshaler {
@@ -11948,6 +13196,60 @@ func (ec *executionContext) _LocalAWSProfile(ctx context.Context, sel ast.Select
 			}
 		case "IsDefault":
 			out.Values[i] = ec._LocalAWSProfile_IsDefault(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var localGCPProjectImplementors = []string{"LocalGCPProject"}
+
+func (ec *executionContext) _LocalGCPProject(ctx context.Context, sel ast.SelectionSet, obj *model.LocalGCPProject) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, localGCPProjectImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("LocalGCPProject")
+		case "ProjectID":
+			out.Values[i] = ec._LocalGCPProject_ProjectID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Name":
+			out.Values[i] = ec._LocalGCPProject_Name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Source":
+			out.Values[i] = ec._LocalGCPProject_Source(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "IsDefault":
+			out.Values[i] = ec._LocalGCPProject_IsDefault(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -12377,6 +13679,27 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "AddGCPProvider":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_AddGCPProvider(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "UpdateGCPProvider":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_UpdateGCPProvider(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "TestGCPCredentials":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_TestGCPCredentials(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "RemoveCloudProvider":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_RemoveCloudProvider(ctx, field)
@@ -12401,6 +13724,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "GenerateRDSAuthToken":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_GenerateRDSAuthToken(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "GenerateCloudSQLIAMAuthToken":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_GenerateCloudSQLIAMAuthToken(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -13020,6 +14350,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_AWSRegions(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "LocalGCPProjects":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_LocalGCPProjects(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "GCPRegions":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_GCPRegions(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -13904,22 +15278,6 @@ func (ec *executionContext) marshalNAWSProvider2githubᚗcomᚋclideyᚋwhodbᚋ
 	return ec._AWSProvider(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNAWSProvider2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAWSProviderᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.AWSProvider) graphql.Marshaler {
-	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
-		fc := graphql.GetFieldContext(ctx)
-		fc.Result = &v[i]
-		return ec.marshalNAWSProvider2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAWSProvider(ctx, sel, v[i])
-	})
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
 func (ec *executionContext) marshalNAWSProvider2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAWSProvider(ctx context.Context, sel ast.SelectionSet, v *model.AWSProvider) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -13990,6 +15348,32 @@ func (ec *executionContext) marshalNCapabilities2ᚖgithubᚗcomᚋclideyᚋwhod
 func (ec *executionContext) unmarshalNChatInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐChatInput(ctx context.Context, v any) (model.ChatInput, error) {
 	res, err := ec.unmarshalInputChatInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCloudProvider2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐCloudProvider(ctx context.Context, sel ast.SelectionSet, v model.CloudProvider) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CloudProvider(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCloudProvider2ᚕgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐCloudProviderᚄ(ctx context.Context, sel ast.SelectionSet, v []model.CloudProvider) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNCloudProvider2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐCloudProvider(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNCloudProviderStatus2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐCloudProviderStatus(ctx context.Context, v any) (model.CloudProviderStatus, error) {
@@ -14108,6 +15492,51 @@ func (ec *executionContext) marshalNDiscoveredConnection2ᚖgithubᚗcomᚋclide
 		return graphql.Null
 	}
 	return ec._DiscoveredConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNGCPProvider2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐGCPProvider(ctx context.Context, sel ast.SelectionSet, v model.GCPProvider) graphql.Marshaler {
+	return ec._GCPProvider(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNGCPProvider2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐGCPProvider(ctx context.Context, sel ast.SelectionSet, v *model.GCPProvider) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GCPProvider(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNGCPProviderInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐGCPProviderInput(ctx context.Context, v any) (model.GCPProviderInput, error) {
+	res, err := ec.unmarshalInputGCPProviderInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNGCPRegion2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐGCPRegionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.GCPRegion) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNGCPRegion2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐGCPRegion(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNGCPRegion2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐGCPRegion(ctx context.Context, sel ast.SelectionSet, v *model.GCPRegion) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GCPRegion(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNGenerateChatTitleInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐGenerateChatTitleInput(ctx context.Context, v any) (model.GenerateChatTitleInput, error) {
@@ -14359,6 +15788,32 @@ func (ec *executionContext) marshalNLocalAWSProfile2ᚖgithubᚗcomᚋclideyᚋw
 		return graphql.Null
 	}
 	return ec._LocalAWSProfile(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNLocalGCPProject2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐLocalGCPProjectᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.LocalGCPProject) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNLocalGCPProject2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐLocalGCPProject(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNLocalGCPProject2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐLocalGCPProject(ctx context.Context, sel ast.SelectionSet, v *model.LocalGCPProject) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._LocalGCPProject(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNLoginCredentials2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐLoginCredentials(ctx context.Context, v any) (model.LoginCredentials, error) {
@@ -14939,13 +16394,6 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
-func (ec *executionContext) marshalOAWSProvider2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAWSProvider(ctx context.Context, sel ast.SelectionSet, v *model.AWSProvider) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._AWSProvider(ctx, sel, v)
-}
-
 func (ec *executionContext) unmarshalOAtomicWhereCondition2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAtomicWhereCondition(ctx context.Context, v any) (*model.AtomicWhereCondition, error) {
 	if v == nil {
 		return nil, nil
@@ -14982,6 +16430,13 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	_ = ctx
 	res := graphql.MarshalBoolean(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOCloudProvider2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐCloudProvider(ctx context.Context, sel ast.SelectionSet, v model.CloudProvider) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._CloudProvider(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalODatabaseMetadata2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐDatabaseMetadata(ctx context.Context, sel ast.SelectionSet, v *model.DatabaseMetadata) graphql.Marshaler {

@@ -124,6 +124,16 @@ func Run(config AppConfig, staticFiles embed.FS) {
 		log.Warnf("Failed to initialize AWS providers from environment: %v", err)
 	}
 
+	// Load persisted GCP providers from disk (if any)
+	if err := settings.LoadGCPProvidersFromFile(); err != nil {
+		log.Warnf("Failed to load persisted GCP providers: %v", err)
+	}
+
+	// Initialize GCP providers from environment variables (may add or override persisted)
+	if err := settings.InitGCPProvidersFromEnv(); err != nil {
+		log.Warnf("Failed to initialize GCP providers from environment: %v", err)
+	}
+
 	r := router.InitializeRouter(config.Schema, config.HTTPHandlers, staticFiles)
 
 	port := os.Getenv("PORT")
