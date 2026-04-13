@@ -17,6 +17,20 @@
 import {reduxStore} from '../store';
 import {getAnalyticsDistinctId} from '../config/posthog';
 
+/**
+ * Optional auth header provider registered by extensions (e.g. EE JWT-based auth).
+ * When set, it fully replaces the CE credential-based header logic.
+ */
+let authHeaderProvider: (() => string | null) | null = null;
+
+/**
+ * Registers an alternative auth header provider. Used by EE to send JWT tokens
+ * instead of CE's base64-encoded database credentials.
+ */
+export const registerAuthHeaderProvider = (fn: () => string | null): void => {
+    authHeaderProvider = fn;
+};
+
 const analyticsHeaderName = 'X-WhoDB-Analytics-Id';
 
 /**
@@ -47,6 +61,9 @@ export function isDesktopScheme(): boolean {
  * - Credentials are stored in localStorage via Redux persist
  */
 export function getAuthorizationHeader(): string | null {
+  if (authHeaderProvider) {
+    return authHeaderProvider();
+  }
   try {
     // @ts-ignore - auth state type not fully defined
     const authState = reduxStore.getState().auth;
