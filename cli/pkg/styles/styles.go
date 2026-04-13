@@ -130,6 +130,10 @@ var (
 			Foreground(Success).
 			Bold(true)
 
+	WarningStyle = lipgloss.NewStyle().
+			Foreground(Warning).
+			Bold(true)
+
 	MutedStyle = lipgloss.NewStyle().
 			Foreground(Muted)
 
@@ -393,3 +397,6 @@ func RenderErr(s string) string { return ErrorStyle.Render(s) }
 
 // RenderOk renders text in success style.
 func RenderOk(s string) string { return SuccessStyle.Render(s) }
+
+// RenderWarn renders text in warning style.
+func RenderWarn(s string) string { return WarningStyle.Render(s) }

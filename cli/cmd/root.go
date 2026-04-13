@@ -54,6 +54,7 @@ Features:
   - Query bookmarks (Ctrl+B), history (Ctrl+H), command log (Ctrl+D)
   - Nested WHERE builder with AND/OR grouping
   - Connection profiles (Ctrl+P) — bundle connection + theme + settings
+  - Data quality audit with configurable thresholds (Ctrl+U)
   - Read-only mode (Ctrl+Y)
   - JSON cell viewer, fish-style history suggestions
 
