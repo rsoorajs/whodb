@@ -296,7 +296,7 @@ export const AwsProviderModal: FC<AwsProviderModalProps> = ({
             <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto" data-testid="aws-provider-modal">
                 <DialogHeader>
                     <DialogTitle>
-                        {isEditMode ? t('editProvider') : t('addProvider')}
+                        {isEditMode ? t('editProvider') : t('addAwsAccount')}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -322,7 +322,7 @@ export const AwsProviderModal: FC<AwsProviderModalProps> = ({
                                         sso: 'authTypeSso',
                                         'assume-role': 'authTypeAssumeRole',
                                         static: 'authTypeStatic',
-                                        environment: 'authTypeEnvironment',
+                                        environment: 'envDefined',
                                     }[profile.AuthType ?? 'static'];
                                     const authTypeDisplay = authTypeKey ? t(authTypeKey) : undefined;
 
@@ -336,7 +336,7 @@ export const AwsProviderModal: FC<AwsProviderModalProps> = ({
                                                 "hover:border-brand hover:bg-brand/5",
                                                 "focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"
                                             )}
-                                            title={t('profileSourceTooltip', { source: sourceDisplay })}
+                                            title={t('foundInSource', { source: sourceDisplay })}
                                         >
                                             <span className="font-medium">
                                                 {profile.IsDefault ? t('defaultProfileName') : profile.Name}

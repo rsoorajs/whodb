@@ -119,9 +119,9 @@ export const Export: FC<IExportProps> = ({
         <>
             <Sheet open={open} onOpenChange={onOpenChange}>
                 <SheetContent side="right" className="max-w-md w-full p-8" data-testid="export-dialog">
-                    <SheetTitle className="flex items-center gap-2"><ShareIcon className="w-4 h-4" /> {t('title')}</SheetTitle>
+                    <SheetTitle className="flex items-center gap-2"><ShareIcon className="w-4 h-4" /> {t('exportData')}</SheetTitle>
                     <VisuallyHidden>
-                        <SheetTitle>{t('title')}</SheetTitle>
+                        <SheetTitle>{t('exportData')}</SheetTitle>
                     </VisuallyHidden>
                     <div className="flex flex-col gap-lg grow">
                         <div className="space-y-4 grow">
@@ -189,7 +189,7 @@ export const Export: FC<IExportProps> = ({
                                     {exportFormat === 'csv' ? (
                                         <>
                                             <li><p className="inline-block">{t('csvHeaders')}</p></li>
-                                            <li><p className="inline-block">{t('csvEncoding')}</p></li>
+                                            <li><p className="inline-block">{t('utf8Encoding')}</p></li>
                                             <li><p className="inline-block">{t('csvDelimiter')}</p></li>
                                         </>
                                     ) : exportFormat === 'excel' ? (
@@ -201,7 +201,7 @@ export const Export: FC<IExportProps> = ({
                                     ) : (
                                         <>
                                             <li><p className="inline-block">{t('jsonLineDelimited')}</p></li>
-                                            <li><p className="inline-block">{t('jsonEncoding')}</p></li>
+                                            <li><p className="inline-block">{t('utf8Encoding')}</p></li>
                                             <li><p className="inline-block">{t('jsonDetails')}</p></li>
                                         </>
                                     )}

@@ -805,7 +805,7 @@ export const ExploreStorageUnit: FC = () => {
                             />
                         ) : (
                             <div className="flex flex-col gap-2">
-                                <Label>{t('searchLabel')}</Label>
+                                <Label>{t('search')}</Label>
                                 <div className="relative">
                                     <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                                     <Input
@@ -834,7 +834,7 @@ export const ExploreStorageUnit: FC = () => {
                                     onValueChange={handlePageSizeChange}
                                 >
                                     <SelectTrigger className="w-32" data-testid="table-page-size">
-                                        <span>{isCustomPageSize ? t('customPageSize') : `${t('showPrefix')} ${pageSizeString}`}</span>
+                                        <span>{isCustomPageSize ? t('custom') : `${t('showPrefix')} ${pageSizeString}`}</span>
                                     </SelectTrigger>
                                     <SelectContent>
                                         {import.meta.env.VITE_E2E_TEST === "true" &&
@@ -891,7 +891,7 @@ export const ExploreStorageUnit: FC = () => {
                             )
                         )}
                         <Button className="ml-6 mt-[22px]" onClick={handleQuery} data-testid="submit-button">
-                            <CheckCircleIcon className="w-4 h-4" /> {t('queryButton')}
+                            <CheckCircleIcon className="w-4 h-4" /> {t('query')}
                         </Button>
                     </div>
                     <Button onClick={handleOpenScratchpad} data-testid="embedded-scratchpad-button" variant="secondary"
@@ -1029,7 +1029,7 @@ export const ExploreStorageUnit: FC = () => {
                 </Tip>
                 <DrawerHeader className="px-0">
                     <DrawerTitle className="flex justify-between items-center">
-                        <h2 className="text-lg font-semibold">{t('scratchpadTitle')}</h2>
+                        <h2 className="text-lg font-semibold">{t('scratchpad')}</h2>
                         <div className="flex gap-sm items-center">
                             <Button onClick={() => handleScratchpad()} data-testid="run-submit-button">
                                 <PlayIcon className="w-4 h-4" />

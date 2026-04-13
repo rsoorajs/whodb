@@ -33,7 +33,7 @@ export const ErrorState = ({ error }: ErrorStateProps) => {
         copyToClipboard(message).then(success => {
             if (success) {
                 setCopied(true);
-                toast.success(t('copySuccess'));
+                toast.success(t('copiedToClipboard'));
             }
         });
     };

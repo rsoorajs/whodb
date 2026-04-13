@@ -87,7 +87,7 @@ export const ServerDownOverlay = () => {
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                        <span>{t('serverDownRetrying')}</span>
+                        <span>{t('reconnecting')}</span>
                     </div>
                 </div>
             </div>
@@ -182,7 +182,7 @@ export const DatabaseDownOverlay = () => {
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground pl-9">
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                        <span>{t('databaseDownRetrying')}</span>
+                        <span>{t('reconnecting')}</span>
                     </div>
 
                     {hasOtherProfiles ? (

@@ -1,12 +1,10 @@
 en_US:
-  addProvider: Add GCP Account
   editProvider: Edit GCP Account
 
   detectedProjects: Detected GCP Projects
   clickToAutofill: Click a project to auto-fill the form
   defaultGcpName: Default GCP
   gcpProjectName: "GCP ({name})"
-  projectSourceTooltip: "Found in {source}"
   defaultProjectName: default
 
   sourceGcloud: gcloud CLI
@@ -26,9 +24,7 @@ en_US:
   cloudSqlLabel: Cloud SQL
   cloudSqlDesc: PostgreSQL, MySQL instances
   alloyDbLabel: AlloyDB
-  alloyDbDesc: PostgreSQL-compatible clusters
   memorystoreLabel: Memorystore
-  memorystoreDesc: Redis instances
 
   providerAdded: GCP account added successfully
   providerUpdated: GCP account updated successfully

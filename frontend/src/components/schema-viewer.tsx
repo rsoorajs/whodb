@@ -152,8 +152,8 @@ export const SchemaViewer: FC = () => {
                         <SearchInput
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            placeholder={t('searchPlaceholder')}
-                            aria-label={t('searchAriaLabel')}
+                            placeholder={t('searchTables')}
+                            aria-label={t('searchTables')}
                         />
                     </div>
                     <SidebarGroup>

@@ -1,6 +1,5 @@
 en_US:
   connectAwsAccount: Connect an AWS account to discover databases
-  addAwsAccount: Add AWS Account
   awsConnections: AWS Connections
   noDiscoveredConnections: No databases discovered. Add an AWS account to auto-discover RDS, ElastiCache, and DocumentDB instances.
   refreshPartialError: Some AWS services could not be discovered. Check IAM permissions.
@@ -16,13 +15,10 @@ en_US:
   helpAuthProfile: Profile
   helpAuthProfileDesc: uses a named profile from ~/.aws/credentials
   helpRdsDesc: PostgreSQL, MySQL, MariaDB
-  helpElasticacheDesc: Redis clusters
-  helpDocumentdbDesc: MongoDB-compatible clusters
   helpCredentialNote: "Note: {appName} discovers connection endpoints from AWS but cannot access database passwords. You'll need to enter credentials when connecting."
 
 ar_AE:
   connectAwsAccount: "قم بتوصيل حساب AWS لاكتشاف قواعد البيانات"
-  addAwsAccount: "أضف حساب AWS"
   awsConnections: "اتصالات AWS"
   noDiscoveredConnections: "لم يتم اكتشاف أي قواعد بيانات. أضف حساب AWS لاكتشاف مثيلات RDS وElastiCache وDocumentDB تلقائيًا."
   refreshPartialError: "تعذر اكتشاف بعض خدمات AWS. تحقق من أذونات IAM."
@@ -36,13 +32,10 @@ ar_AE:
   helpAuthProfile: "حساب تعريفي"
   helpAuthProfileDesc: "يستخدم ملف تعريف مسمى من ~/.aws/credentials"
   helpRdsDesc: "بوستجري إس كيو إل، ماي إس كيو إل، ماريا دي بي"
-  helpElasticacheDesc: "مجموعات ريديس"
-  helpDocumentdbDesc: "مجموعات متوافقة مع MongoDB"
   helpCredentialNote: "ملاحظة: يكتشف {appName} نقاط نهاية الاتصال من AWS ولكن لا يمكنه الوصول إلى كلمات مرور قاعدة البيانات. ستحتاج إلى إدخال بيانات الاعتماد عند الاتصال."
 
 de_DE:
   connectAwsAccount: "Verbinden Sie ein AWS-Konto, um Datenbanken zu entdecken"
-  addAwsAccount: "AWS-Konto hinzufügen"
   awsConnections: "AWS-Verbindungen"
   noDiscoveredConnections: "Keine Datenbanken entdeckt. Fügen Sie ein AWS-Konto hinzu, um RDS-, ElastiCache- und DocumentDB-Instanzen automatisch zu erkennen."
   refreshPartialError: "Einige AWS-Dienste konnten nicht erkannt werden. Überprüfen Sie die IAM-Berechtigungen."
@@ -56,13 +49,10 @@ de_DE:
   helpAuthProfile: "Profil"
   helpAuthProfileDesc: "verwendet ein benanntes Profil aus ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis-Cluster"
-  helpDocumentdbDesc: "MongoDB-kompatible Cluster"
   helpCredentialNote: "Hinweis: {appName} erkennt Verbindungsendpunkte von AWS, kann jedoch nicht auf Datenbankkennwörter zugreifen. Beim Herstellen der Verbindung müssen Sie Anmeldeinformationen eingeben."
 
 el_GR:
   connectAwsAccount: "Συνδέστε έναν λογαριασμό AWS για να ανακαλύψετε βάσεις δεδομένων"
-  addAwsAccount: "Προσθήκη λογαριασμού AWS"
   awsConnections: "Συνδέσεις AWS"
   noDiscoveredConnections: "Δεν ανακαλύφθηκαν βάσεις δεδομένων. Προσθέστε έναν λογαριασμό AWS για αυτόματη ανακάλυψη παρουσιών RDS, ElastiCache και DocumentDB."
   refreshPartialError: "Δεν ήταν δυνατή η ανακάλυψη ορισμένων υπηρεσιών AWS. Ελέγξτε τα δικαιώματα IAM."
@@ -76,13 +66,10 @@ el_GR:
   helpAuthProfile: "Προφίλ"
   helpAuthProfileDesc: "χρησιμοποιεί ένα επώνυμο προφίλ από ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Συστάδες Redis"
-  helpDocumentdbDesc: "Συμπλέγματα συμβατά με MongoDB"
   helpCredentialNote: "Σημείωση: Το {appName} ανακαλύπτει τελικά σημεία σύνδεσης από το AWS αλλά δεν μπορεί να έχει πρόσβαση σε κωδικούς πρόσβασης βάσης δεδομένων. Θα χρειαστεί να εισαγάγετε διαπιστευτήρια κατά τη σύνδεση."
 
 en_GB:
   connectAwsAccount: "Connect an AWS account to discover databases"
-  addAwsAccount: "Add AWS Account"
   awsConnections: "AWS Connections"
   noDiscoveredConnections: "No databases discovered. Add an AWS account to auto-discover RDS, ElastiCache, and DocumentDB instances."
   refreshPartialError: "Some AWS services could not be discovered. Check IAM permissions."
@@ -96,13 +83,10 @@ en_GB:
   helpAuthProfile: "Profile"
   helpAuthProfileDesc: "uses a named profile from ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis clusters"
-  helpDocumentdbDesc: "MongoDB-compatible clusters"
   helpCredentialNote: "Note: {appName} discovers connection endpoints from AWS but cannot access database passwords. You'll need to enter credentials when connecting."
 
 es_ES:
   connectAwsAccount: "Conecte una cuenta de AWS para descubrir bases de datos"
-  addAwsAccount: "Agregar cuenta de AWS"
   awsConnections: "Conexiones de AWS"
   noDiscoveredConnections: "No se descubrieron bases de datos. Agregue una cuenta de AWS para descubrir automáticamente instancias de RDS, ElastiCache y DocumentDB."
   refreshPartialError: "No se pudieron descubrir algunos servicios de AWS. Verifique los permisos de IAM."
@@ -116,13 +100,10 @@ es_ES:
   helpAuthProfile: "Perfil"
   helpAuthProfileDesc: "utiliza un perfil con nombre de ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Clústeres de Redis"
-  helpDocumentdbDesc: "Clústeres compatibles con MongoDB"
   helpCredentialNote: "Nota: {appName} descubre puntos finales de conexión de AWS pero no puede acceder a las contraseñas de la base de datos. Deberá ingresar las credenciales al conectarse."
 
 fi_FI:
   connectAwsAccount: "Yhdistä AWS-tili löytääksesi tietokantoja"
-  addAwsAccount: "Lisää AWS-tili"
   awsConnections: "AWS-yhteydet"
   noDiscoveredConnections: "Tietokantoja ei löytynyt. Lisää AWS-tili RDS-, ElastiCache- ja DocumentDB-esiintymien automaattiseen löytämiseen."
   refreshPartialError: "Joitakin AWS-palveluita ei voitu löytää. Tarkista IAM-oikeudet."
@@ -136,13 +117,10 @@ fi_FI:
   helpAuthProfile: "Profiili"
   helpAuthProfileDesc: "käyttää nimettyä profiilia osoitteesta ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis-klusterit"
-  helpDocumentdbDesc: "MongoDB-yhteensopivat klusterit"
   helpCredentialNote: "Huomautus: {appName} löytää yhteyden päätepisteet AWS:stä, mutta ei voi käyttää tietokannan salasanoja. Sinun on syötettävä tunnistetiedot muodostaessasi yhteyttä."
 
 fr_FR:
   connectAwsAccount: "Connectez un compte AWS pour découvrir des bases de données"
-  addAwsAccount: "Ajouter un compte AWS"
   awsConnections: "Connexions AWS"
   noDiscoveredConnections: "Aucune base de données découverte. Ajoutez un compte AWS pour découvrir automatiquement les instances RDS, ElastiCache et DocumentDB."
   refreshPartialError: "Certains services AWS n'ont pas pu être découverts. Vérifiez les autorisations IAM."
@@ -156,13 +134,10 @@ fr_FR:
   helpAuthProfile: "Profil"
   helpAuthProfileDesc: "utilise un profil nommé de ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Clusters Redis"
-  helpDocumentdbDesc: "Clusters compatibles MongoDB"
   helpCredentialNote: "Remarque : {appName} découvre les points de terminaison de connexion à partir d'AWS mais ne peut pas accéder aux mots de passe de la base de données. Vous devrez saisir vos informations d'identification lors de la connexion."
 
 it_IT:
   connectAwsAccount: "Connetti un account AWS per scoprire i database"
-  addAwsAccount: "Aggiungi un account AWS"
   awsConnections: "Connessioni AWS"
   noDiscoveredConnections: "Nessun database scoperto. Aggiungi un account AWS per individuare automaticamente le istanze RDS, ElastiCache e DocumentDB."
   refreshPartialError: "Impossibile individuare alcuni servizi AWS. Controlla le autorizzazioni IAM."
@@ -176,13 +151,10 @@ it_IT:
   helpAuthProfile: "Profilo"
   helpAuthProfileDesc: "utilizza un profilo denominato da ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Cluster Redis"
-  helpDocumentdbDesc: "Cluster compatibili con MongoDB"
   helpCredentialNote: "Nota: {appName} rileva gli endpoint di connessione da AWS ma non può accedere alle password del database. Dovrai inserire le credenziali durante la connessione."
 
 iw_IL:
   connectAwsAccount: "חבר חשבון AWS כדי לגלות מסדי נתונים"
-  addAwsAccount: "הוסף חשבון AWS"
   awsConnections: "חיבורי AWS"
   noDiscoveredConnections: "לא התגלו מסדי נתונים. הוסף חשבון AWS כדי לגלות אוטומטית מופעי RDS, ElastiCache ו-DocumentDB."
   refreshPartialError: "לא ניתן היה לגלות חלק משירותי AWS. בדוק את הרשאות IAM."
@@ -196,13 +168,10 @@ iw_IL:
   helpAuthProfile: "פּרוֹפִיל"
   helpAuthProfileDesc: "משתמש בפרופיל בעל שם מ-~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "אשכולות Redis"
-  helpDocumentdbDesc: "אשכולות תואמי MongoDB"
   helpCredentialNote: "הערה: {appName} מגלה נקודות קצה של חיבור מ-AWS אך אינו יכול לגשת לסיסמאות של מסד נתונים. יהיה עליך להזין אישורים בעת החיבור."
 
 ja_JP:
   connectAwsAccount: "AWS アカウントに接続してデータベースを検出する"
-  addAwsAccount: "AWSアカウントを追加"
   awsConnections: "AWS接続"
   noDiscoveredConnections: "データベースが見つかりませんでした。 RDS、ElastiCache、DocumentDB インスタンスを自動検出するには、AWS アカウントを追加します。"
   refreshPartialError: "一部の AWS サービスが検出できませんでした。 IAM権限を確認してください。"
@@ -216,13 +185,10 @@ ja_JP:
   helpAuthProfile: "プロフィール"
   helpAuthProfileDesc: "~/.aws/credentials の名前付きプロファイルを使用します"
   helpRdsDesc: "PostgreSQL、MySQL、MariaDB"
-  helpElasticacheDesc: "Redis クラスター"
-  helpDocumentdbDesc: "MongoDB 互換クラスター"
   helpCredentialNote: "注: {appName} は AWS から接続エンドポイントを検出しますが、データベースのパスワードにはアクセスできません。 接続時に資格情報を入力する必要があります。"
 
 ko_KR:
   connectAwsAccount: "AWS 계정을 연결하여 데이터베이스 검색"
-  addAwsAccount: "AWS 계정 추가"
   awsConnections: "AWS 연결"
   noDiscoveredConnections: "검색된 데이터베이스가 없습니다. RDS, ElastiCache 및 DocumentDB 인스턴스를 자동 검색하려면 AWS 계정을 추가하세요."
   refreshPartialError: "일부 AWS 서비스를 검색할 수 없습니다. IAM 권한을 확인하세요."
@@ -236,13 +202,10 @@ ko_KR:
   helpAuthProfile: "윤곽"
   helpAuthProfileDesc: "~/.aws/credentials의 명명된 프로필을 사용합니다."
   helpRdsDesc: "포스트그레SQL, MySQL, 마리아DB"
-  helpElasticacheDesc: "Redis 클러스터"
-  helpDocumentdbDesc: "MongoDB 호환 클러스터"
   helpCredentialNote: "참고: {appName}은 AWS에서 연결 엔드포인트를 검색하지만 데이터베이스 비밀번호에 액세스할 수 없습니다. 연결할 때 자격 증명을 입력해야 합니다."
 
 nl_NL:
   connectAwsAccount: "Verbind een AWS-account om databases te ontdekken"
-  addAwsAccount: "AWS-account toevoegen"
   awsConnections: "AWS-verbindingen"
   noDiscoveredConnections: "Geen databases ontdekt. Voeg een AWS-account toe om RDS-, ElastiCache- en DocumentDB-instanties automatisch te ontdekken."
   refreshPartialError: "Sommige AWS-services konden niet worden ontdekt. Controleer IAM-rechten."
@@ -256,13 +219,10 @@ nl_NL:
   helpAuthProfile: "Profiel"
   helpAuthProfileDesc: "gebruikt een benoemd profiel uit ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis-clusters"
-  helpDocumentdbDesc: "MongoDB-compatibele clusters"
   helpCredentialNote: "Opmerking: {appName} ontdekt verbindingseindpunten van AWS, maar heeft geen toegang tot databasewachtwoorden. U moet inloggegevens invoeren wanneer u verbinding maakt."
 
 pl_PL:
   connectAwsAccount: "Połącz konto AWS, aby odkrywać bazy danych"
-  addAwsAccount: "Dodaj konto AWS"
   awsConnections: "Połączenia AWS-a"
   noDiscoveredConnections: "Nie odkryto żadnych baz danych. Dodaj konto AWS, aby automatycznie wykrywać instancje RDS, ElastiCache i DocumentDB."
   refreshPartialError: "Nie udało się wykryć niektórych usług AWS. Sprawdź uprawnienia IAM."
@@ -276,13 +236,10 @@ pl_PL:
   helpAuthProfile: "Profil"
   helpAuthProfileDesc: "używa nazwanego profilu z ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Klastry Redisa"
-  helpDocumentdbDesc: "Klastry kompatybilne z MongoDB"
   helpCredentialNote: "Uwaga: {appName} wykrywa punkty końcowe połączenia z AWS, ale nie może uzyskać dostępu do haseł do bazy danych. Podczas łączenia będziesz musiał wprowadzić dane uwierzytelniające."
 
 pt_BR:
   connectAwsAccount: "Conecte uma conta AWS para descobrir bancos de dados"
-  addAwsAccount: "Adicionar conta AWS"
   awsConnections: "Conexões AWS"
   noDiscoveredConnections: "Nenhum banco de dados descoberto. Adicione uma conta da AWS para descobrir automaticamente instâncias RDS, ElastiCache e DocumentDB."
   refreshPartialError: "Alguns serviços da AWS não puderam ser descobertos. Verifique as permissões do IAM."
@@ -296,13 +253,10 @@ pt_BR:
   helpAuthProfile: "Perfil"
   helpAuthProfileDesc: "usa um perfil nomeado de ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Clusters Redis"
-  helpDocumentdbDesc: "Clusters compatíveis com MongoDB"
   helpCredentialNote: "Observação: {appName} descobre endpoints de conexão da AWS, mas não consegue acessar senhas de banco de dados. Você precisará inserir credenciais ao se conectar."
 
 ro_RO:
   connectAwsAccount: "Conectați un cont AWS pentru a descoperi baze de date"
-  addAwsAccount: "Adăugați un cont AWS"
   awsConnections: "Conexiuni AWS"
   noDiscoveredConnections: "Nu au fost descoperite baze de date. Adăugați un cont AWS pentru a descoperi automat instanțe RDS, ElastiCache și DocumentDB."
   refreshPartialError: "Unele servicii AWS nu au putut fi descoperite. Verificați permisiunile IAM."
@@ -316,13 +270,10 @@ ro_RO:
   helpAuthProfile: "Profil"
   helpAuthProfileDesc: "folosește un profil numit din ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "clustere Redis"
-  helpDocumentdbDesc: "Clustere compatibile cu MongoDB"
   helpCredentialNote: "Notă: {appName} descoperă punctele finale de conectare din AWS, dar nu poate accesa parolele bazei de date. Va trebui să introduceți acreditările atunci când vă conectați."
 
 ru_RU:
   connectAwsAccount: "Подключите учетную запись AWS для обнаружения баз данных"
-  addAwsAccount: "Добавить учетную запись AWS"
   awsConnections: "Подключения к AWS"
   noDiscoveredConnections: "Базы данных не обнаружены. Добавьте учетную запись AWS для автоматического обнаружения экземпляров RDS, ElastiCache и DocumentDB."
   refreshPartialError: "Некоторые сервисы AWS не удалось обнаружить. Проверьте разрешения IAM."
@@ -336,13 +287,10 @@ ru_RU:
   helpAuthProfile: "Профиль"
   helpAuthProfileDesc: "использует именованный профиль из ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB."
-  helpElasticacheDesc: "Кластеры Redis"
-  helpDocumentdbDesc: "MongoDB-совместимые кластеры"
   helpCredentialNote: "Примечание. {appName} обнаруживает конечные точки подключения от AWS, но не может получить доступ к паролям базы данных. При подключении вам потребуется ввести учетные данные."
 
 sk_SK:
   connectAwsAccount: "Pripojte účet AWS a objavte databázy"
-  addAwsAccount: "Pridajte účet AWS"
   awsConnections: "Pripojenia AWS"
   noDiscoveredConnections: "Nenašli sa žiadne databázy. Pridajte účet AWS na automatické objavovanie inštancií RDS, ElastiCache a DocumentDB."
   refreshPartialError: "Niektoré služby AWS sa nepodarilo objaviť. Skontrolujte povolenia IAM."
@@ -356,13 +304,10 @@ sk_SK:
   helpAuthProfile: "Profil"
   helpAuthProfileDesc: "používa pomenovaný profil z ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Klastre Redis"
-  helpDocumentdbDesc: "Klastre kompatibilné s MongoDB"
   helpCredentialNote: "Poznámka: {appName} zisťuje koncové body pripojenia z AWS, ale nemôže získať prístup k heslám databázy. Pri pripájaní budete musieť zadať poverenia."
 
 sv_SE:
   connectAwsAccount: "Anslut ett AWS-konto för att upptäcka databaser"
-  addAwsAccount: "Lägg till AWS-konto"
   awsConnections: "AWS-anslutningar"
   noDiscoveredConnections: "Inga databaser upptäcktes. Lägg till ett AWS-konto för att automatiskt upptäcka RDS-, ElastiCache- och DocumentDB-instanser."
   refreshPartialError: "Vissa AWS-tjänster kunde inte upptäckas. Kontrollera IAM-behörigheter."
@@ -376,13 +321,10 @@ sv_SE:
   helpAuthProfile: "Profil"
   helpAuthProfileDesc: "använder en namngiven profil från ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis kluster"
-  helpDocumentdbDesc: "MongoDB-kompatibla kluster"
   helpCredentialNote: "Obs: {appName} upptäcker anslutningsändpunkter från AWS men kan inte komma åt databaslösenord. Du måste ange autentiseringsuppgifter när du ansluter."
 
 zh_CN:
   connectAwsAccount: "连接 AWS 账户以发现数据库"
-  addAwsAccount: "添加 AWS 账户"
   awsConnections: "AWS 连接"
   noDiscoveredConnections: "未发现数据库。 添加 AWS 账户以自动发现 RDS、ElastiCache 和 DocumentDB 实例。"
   refreshPartialError: "无法发现某些 AWS 服务。 检查 IAM 权限。"
@@ -396,13 +338,10 @@ zh_CN:
   helpAuthProfile: "轮廓"
   helpAuthProfileDesc: "使用 ~/.aws/credentials 中的命名配置文件"
   helpRdsDesc: "PostgreSQL、MySQL、MariaDB"
-  helpElasticacheDesc: "Redis集群"
-  helpDocumentdbDesc: "MongoDB 兼容集群"
   helpCredentialNote: "注意：{appName} 发现来自 AWS 的连接终端节点，但无法访问数据库密码。 连接时您需要输入凭据。"
 
 zh_TW:
   connectAwsAccount: "連接 AWS 帳戶以發現資料庫"
-  addAwsAccount: "新增 AWS 帳戶"
   awsConnections: "AWS 連線"
   noDiscoveredConnections: "未發現資料庫。 新增 AWS 帳戶以自動發現 RDS、ElastiCache 和 DocumentDB 實例。"
   refreshPartialError: "無法發現某些 AWS 服務。 檢查 IAM 權限。"
@@ -416,13 +355,10 @@ zh_TW:
   helpAuthProfile: "輪廓"
   helpAuthProfileDesc: "使用 ~/.aws/credentials 中的命名設定檔"
   helpRdsDesc: "PostgreSQL、MySQL、MariaDB"
-  helpElasticacheDesc: "Redis集群"
-  helpDocumentdbDesc: "MongoDB 相容集群"
   helpCredentialNote: "注意：{appName} 發現來自 AWS 的連線終端節點，但無法存取資料庫密碼。 連線時您需要輸入憑證。"
 
 bg_BG:
   connectAwsAccount: "Свържете акаунт в AWS, за да откриете бази данни"
-  addAwsAccount: "Добавяне на AWS акаунт"
   awsConnections: "AWS връзки"
   noDiscoveredConnections: "Няма открити бази данни. Добавете AWS акаунт за автоматично откриване на RDS, ElastiCache и DocumentDB инстанции."
   refreshPartialError: "Някои AWS услуги не можаха да бъдат открити. Проверете разрешенията за IAM."
@@ -436,13 +372,10 @@ bg_BG:
   helpAuthProfile: "Профил"
   helpAuthProfileDesc: "използва именуван профил от ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis клъстери"
-  helpDocumentdbDesc: "Съвместими с MongoDB клъстери"
   helpCredentialNote: "Забележка: {appName} открива крайни точки на връзка от AWS, но не може да получи достъп до паролите на базата данни. Ще трябва да въведете идентификационни данни, когато се свързвате."
 
 bn_BD:
   connectAwsAccount: "ডাটাবেস আবিষ্কার করতে একটি AWS অ্যাকাউন্ট সংযুক্ত করুন"
-  addAwsAccount: "AWS অ্যাকাউন্ট যোগ করুন"
   awsConnections: "AWS সংযোগ"
   noDiscoveredConnections: "কোন ডাটাবেস আবিষ্কৃত. RDS, ElastiCache, এবং DocumentDB দৃষ্টান্তগুলি স্বয়ংক্রিয়ভাবে আবিষ্কার করতে একটি AWS অ্যাকাউন্ট যোগ করুন।"
   refreshPartialError: "কিছু AWS পরিষেবা আবিষ্কার করা যায়নি৷ IAM অনুমতি পরীক্ষা করুন."
@@ -456,13 +389,10 @@ bn_BD:
   helpAuthProfile: "প্রোফাইল"
   helpAuthProfileDesc: "~/.aws/credentials থেকে একটি নামযুক্ত প্রোফাইল ব্যবহার করে"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "রেডিস ক্লাস্টার"
-  helpDocumentdbDesc: "MongoDB-সামঞ্জস্যপূর্ণ ক্লাস্টার"
   helpCredentialNote: "দ্রষ্টব্য: {appName} AWS থেকে সংযোগের শেষ পয়েন্ট আবিষ্কার করে কিন্তু ডাটাবেস পাসওয়ার্ড অ্যাক্সেস করতে পারে না। সংযোগ করার সময় আপনাকে শংসাপত্রগুলি লিখতে হবে৷"
 
 ca_ES:
   connectAwsAccount: "Connecteu un compte d'AWS per descobrir bases de dades"
-  addAwsAccount: "Afegeix un compte d'AWS"
   awsConnections: "Connexions AWS"
   noDiscoveredConnections: "No s'han descobert bases de dades. Afegiu un compte d'AWS per descobrir automàticament instàncies RDS, ElastiCache i DocumentDB."
   refreshPartialError: "No s'han pogut descobrir alguns serveis d'AWS. Comproveu els permisos d'IAM."
@@ -476,13 +406,10 @@ ca_ES:
   helpAuthProfile: "Perfil"
   helpAuthProfileDesc: "utilitza un perfil amb nom de ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Clústers de Redis"
-  helpDocumentdbDesc: "Clústers compatibles amb MongoDB"
   helpCredentialNote: "Nota: {appName} descobreix els punts finals de connexió des d'AWS, però no pot accedir a les contrasenyes de la base de dades. Haureu d'introduir les credencials quan us connecteu."
 
 cs_CZ:
   connectAwsAccount: "Připojte účet AWS a zjistěte databáze"
-  addAwsAccount: "Přidat účet AWS"
   awsConnections: "Připojení AWS"
   noDiscoveredConnections: "Nebyly nalezeny žádné databáze. Přidejte účet AWS pro automatické zjišťování instancí RDS, ElastiCache a DocumentDB."
   refreshPartialError: "Některé služby AWS se nepodařilo objevit. Zkontrolujte oprávnění IAM."
@@ -496,13 +423,10 @@ cs_CZ:
   helpAuthProfile: "Profil"
   helpAuthProfileDesc: "používá pojmenovaný profil z ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Klastry Redis"
-  helpDocumentdbDesc: "Clustery kompatibilní s MongoDB"
   helpCredentialNote: "Poznámka: {appName} zjišťuje koncové body připojení z AWS, ale nemá přístup k heslům databáze. Při připojování budete muset zadat přihlašovací údaje."
 
 da_DK:
   connectAwsAccount: "Tilslut en AWS-konto for at finde databaser"
-  addAwsAccount: "Tilføj AWS-konto"
   awsConnections: "AWS-forbindelser"
   noDiscoveredConnections: "Ingen databaser fundet. Tilføj en AWS-konto for automatisk at opdage RDS-, ElastiCache- og DocumentDB-forekomster."
   refreshPartialError: "Nogle AWS-tjenester kunne ikke opdages. Tjek IAM-tilladelser."
@@ -516,13 +440,10 @@ da_DK:
   helpAuthProfile: "Profil"
   helpAuthProfileDesc: "bruger en navngivet profil fra ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis klynger"
-  helpDocumentdbDesc: "MongoDB-kompatible klynger"
   helpCredentialNote: "Bemærk: {appName} opdager forbindelsesendepunkter fra AWS, men kan ikke få adgang til databaseadgangskoder. Du skal indtaste legitimationsoplysninger, når du opretter forbindelse."
 
 fa_IR:
   connectAwsAccount: "یک حساب AWS را برای کشف پایگاه داده وصل کنید"
-  addAwsAccount: "اضافه کردن حساب AWS"
   awsConnections: "اتصالات AWS"
   noDiscoveredConnections: "هیچ پایگاه داده ای کشف نشد. یک حساب AWS برای کشف خودکار نمونه‌های RDS، ElastiCache و DocumentDB اضافه کنید."
   refreshPartialError: "برخی از خدمات AWS کشف نشدند. مجوزهای IAM را بررسی کنید."
@@ -536,13 +457,10 @@ fa_IR:
   helpAuthProfile: "نمایه"
   helpAuthProfileDesc: "از نمایه ای با نام از ~/.aws/credentials استفاده می کند"
   helpRdsDesc: "PostgreSQL، MySQL، MariaDB"
-  helpElasticacheDesc: "خوشه های ردیس"
-  helpDocumentdbDesc: "خوشه های سازگار با MongoDB"
   helpCredentialNote: "توجه: {appName} نقاط پایانی اتصال را از AWS کشف می‌کند اما نمی‌تواند به رمزهای عبور پایگاه داده دسترسی پیدا کند. هنگام اتصال باید اعتبارنامه را وارد کنید."
 
 hi_IN:
   connectAwsAccount: "डेटाबेस खोजने के लिए AWS खाता कनेक्ट करें"
-  addAwsAccount: "AWS खाता जोड़ें"
   awsConnections: "एडब्ल्यूएस कनेक्शन"
   noDiscoveredConnections: "कोई डेटाबेस नहीं मिला. RDS, ElastiCache और DocumentDB उदाहरणों को स्वतः खोजने के लिए एक AWS खाता जोड़ें।"
   refreshPartialError: "कुछ AWS सेवाएँ खोजी नहीं जा सकीं। IAM अनुमतियाँ जांचें."
@@ -556,13 +474,10 @@ hi_IN:
   helpAuthProfile: "प्रोफ़ाइल"
   helpAuthProfileDesc: "~/.aws/credentials से नामित प्रोफ़ाइल का उपयोग करता है"
   helpRdsDesc: "पोस्टग्रेएसक्यूएल, माईएसक्यूएल, मारियाडीबी"
-  helpElasticacheDesc: "रेडिस क्लस्टर"
-  helpDocumentdbDesc: "MongoDB-संगत क्लस्टर"
   helpCredentialNote: "ध्यान दें: {appName} AWS से कनेक्शन समापन बिंदु खोजता है लेकिन डेटाबेस पासवर्ड तक नहीं पहुंच सकता। कनेक्ट करते समय आपको क्रेडेंशियल दर्ज करना होगा।"
 
 hr_HR:
   connectAwsAccount: "Povežite AWS račun za otkrivanje baza podataka"
-  addAwsAccount: "Dodajte AWS račun"
   awsConnections: "AWS veze"
   noDiscoveredConnections: "Nije otkrivena nijedna baza podataka. Dodajte AWS račun za automatsko otkrivanje RDS, ElastiCache i DocumentDB instanci."
   refreshPartialError: "Neke AWS usluge nisu mogle biti otkrivene. Provjerite dopuštenja za IAM."
@@ -576,13 +491,10 @@ hr_HR:
   helpAuthProfile: "Profil"
   helpAuthProfileDesc: "koristi imenovani profil iz ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis klasteri"
-  helpDocumentdbDesc: "Klasteri kompatibilni s MongoDB-om"
   helpCredentialNote: "Napomena: {appName} otkriva krajnje točke veze iz AWS-a, ali ne može pristupiti lozinkama baze podataka. Prilikom povezivanja morat ćete unijeti vjerodajnice."
 
 hu_HU:
   connectAwsAccount: "Csatlakoztasson egy AWS-fiókot az adatbázisok felfedezéséhez"
-  addAwsAccount: "Adjon hozzá AWS-fiókot"
   awsConnections: "AWS kapcsolatok"
   noDiscoveredConnections: "Nem találtunk adatbázist. Adjon hozzá egy AWS-fiókot az RDS, ElastiCache és DocumentDB példányok automatikus felfedezéséhez."
   refreshPartialError: "Egyes AWS-szolgáltatásokat nem sikerült felfedezni. Ellenőrizze az IAM engedélyeket."
@@ -596,13 +508,10 @@ hu_HU:
   helpAuthProfile: "Profil"
   helpAuthProfileDesc: "a ~/.aws/credentials nevű profilt használja"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis klaszterek"
-  helpDocumentdbDesc: "MongoDB-kompatibilis fürtök"
   helpCredentialNote: "Megjegyzés: {appName} kapcsolati végpontokat talál az AWS-ből, de nem fér hozzá az adatbázis jelszavaihoz. Csatlakozáskor meg kell adnia a hitelesítő adatokat."
 
 id_ID:
   connectAwsAccount: "Hubungkan akun AWS untuk menemukan database"
-  addAwsAccount: "Tambahkan Akun AWS"
   awsConnections: "Koneksi AWS"
   noDiscoveredConnections: "Tidak ada database yang ditemukan. Tambahkan akun AWS untuk menemukan instans RDS, ElastiCache, dan DocumentDB secara otomatis."
   refreshPartialError: "Beberapa layanan AWS tidak dapat ditemukan. Periksa izin IAM."
@@ -616,13 +525,10 @@ id_ID:
   helpAuthProfile: "Profil"
   helpAuthProfileDesc: "menggunakan profil bernama dari ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Cluster Redis"
-  helpDocumentdbDesc: "Cluster yang kompatibel dengan MongoDB"
   helpCredentialNote: "Catatan: {appName} menemukan titik akhir koneksi dari AWS tetapi tidak dapat mengakses kata sandi basis data. Anda harus memasukkan kredensial saat menghubungkan."
 
 ms_MY:
   connectAwsAccount: "Sambungkan akaun AWS untuk menemui pangkalan data"
-  addAwsAccount: "Tambah Akaun AWS"
   awsConnections: "Sambungan AWS"
   noDiscoveredConnections: "Tiada pangkalan data ditemui. Tambahkan akaun AWS untuk mencari auto RDS, ElastiCache dan kejadian DocumentDB."
   refreshPartialError: "Sesetengah perkhidmatan AWS tidak dapat ditemui. Semak kebenaran IAM."
@@ -636,13 +542,10 @@ ms_MY:
   helpAuthProfile: "Profil"
   helpAuthProfileDesc: "menggunakan profil bernama daripada ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Kelompok Redis"
-  helpDocumentdbDesc: "Kelompok serasi MongoDB"
   helpCredentialNote: "Nota: {appName} menemui titik akhir sambungan daripada AWS tetapi tidak boleh mengakses kata laluan pangkalan data. Anda perlu memasukkan bukti kelayakan semasa menyambung."
 
 nb_NO:
   connectAwsAccount: "Koble til en AWS-konto for å oppdage databaser"
-  addAwsAccount: "Legg til AWS-konto"
   awsConnections: "AWS-tilkoblinger"
   noDiscoveredConnections: "Ingen databaser oppdaget. Legg til en AWS-konto for å automatisk oppdage RDS-, ElastiCache- og DocumentDB-forekomster."
   refreshPartialError: "Noen AWS-tjenester kunne ikke oppdages. Sjekk IAM-tillatelser."
@@ -656,13 +559,10 @@ nb_NO:
   helpAuthProfile: "Profil"
   helpAuthProfileDesc: "bruker en navngitt profil fra ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis klynger"
-  helpDocumentdbDesc: "MongoDB-kompatible klynger"
   helpCredentialNote: "Merk: {appName} oppdager tilkoblingsendepunkter fra AWS, men kan ikke få tilgang til databasepassord. Du må oppgi legitimasjon når du kobler til."
 
 sw_KE:
   connectAwsAccount: "Unganisha akaunti ya AWS ili kugundua hifadhidata"
-  addAwsAccount: "Ongeza Akaunti ya AWS"
   awsConnections: "Viunganisho vya AWS"
   noDiscoveredConnections: "Hakuna hifadhidata iliyogunduliwa. Ongeza akaunti ya AWS ili kugundua kiotomatiki matukio ya RDS, ElastiCache na DocumentDB."
   refreshPartialError: "Baadhi ya huduma za AWS hazikuweza kugunduliwa. Angalia ruhusa za IAM."
@@ -676,13 +576,10 @@ sw_KE:
   helpAuthProfile: "Wasifu"
   helpAuthProfileDesc: "hutumia wasifu uliopewa jina kutoka ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis makundi"
-  helpDocumentdbDesc: "Vikundi vinavyooana na MongoDB"
   helpCredentialNote: "Kumbuka: {appName} hugundua miisho ya muunganisho kutoka kwa AWS lakini haiwezi kufikia manenosiri ya hifadhidata. Utahitaji kuingiza kitambulisho unapounganisha."
 
 ta_IN:
   connectAwsAccount: "தரவுத்தளங்களைக் கண்டறிய AWS கணக்கை இணைக்கவும்"
-  addAwsAccount: "AWS கணக்கைச் சேர்க்கவும்"
   awsConnections: "AWS இணைப்புகள்"
   noDiscoveredConnections: "தரவுத்தளங்கள் எதுவும் கண்டறியப்படவில்லை. RDS, ElastiCache மற்றும் DocumentDB நிகழ்வுகளைத் தானாகக் கண்டறிய AWS கணக்கைச் சேர்க்கவும்."
   refreshPartialError: "சில AWS சேவைகளைக் கண்டறிய முடியவில்லை. IAM அனுமதிகளைச் சரிபார்க்கவும்."
@@ -696,13 +593,10 @@ ta_IN:
   helpAuthProfile: "சுயவிவரம்"
   helpAuthProfileDesc: "~/.aws/credentials இலிருந்து பெயரிடப்பட்ட சுயவிவரத்தைப் பயன்படுத்துகிறது"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "ரெடிஸ் கிளஸ்டர்கள்"
-  helpDocumentdbDesc: "மோங்கோடிபி-இணக்கமான கிளஸ்டர்கள்"
   helpCredentialNote: "குறிப்பு: {appName} AWS இலிருந்து இணைப்பு இறுதிப்புள்ளிகளைக் கண்டறிந்தாலும் தரவுத்தள கடவுச்சொற்களை அணுக முடியாது. இணைக்கும்போது நற்சான்றிதழ்களை உள்ளிட வேண்டும்."
 
 th_TH:
   connectAwsAccount: "เชื่อมต่อบัญชี AWS เพื่อค้นหาฐานข้อมูล"
-  addAwsAccount: "เพิ่มบัญชี AWS"
   awsConnections: "การเชื่อมต่อ AWS"
   noDiscoveredConnections: "ไม่พบฐานข้อมูล เพิ่มบัญชี AWS เพื่อค้นหาอินสแตนซ์ RDS, ElastiCache และ DocumentDB โดยอัตโนมัติ"
   refreshPartialError: "ไม่พบบริการ AWS บางอย่าง ตรวจสอบสิทธิ์ IAM"
@@ -716,13 +610,10 @@ th_TH:
   helpAuthProfile: "ประวัติโดยย่อ"
   helpAuthProfileDesc: "ใช้โปรไฟล์ที่มีชื่อจาก ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "คลัสเตอร์ Redis"
-  helpDocumentdbDesc: "คลัสเตอร์ที่เข้ากันได้กับ MongoDB"
   helpCredentialNote: "หมายเหตุ: {appName} ค้นพบจุดสิ้นสุดการเชื่อมต่อจาก AWS แต่ไม่สามารถเข้าถึงรหัสผ่านฐานข้อมูลได้ คุณจะต้องป้อนข้อมูลรับรองเมื่อทำการเชื่อมต่อ"
 
 tr_TR:
   connectAwsAccount: "Veritabanlarını keşfetmek için bir AWS hesabı bağlayın"
-  addAwsAccount: "AWS Hesabı Ekle"
   awsConnections: "AWS Bağlantıları"
   noDiscoveredConnections: "Hiçbir veri tabanı keşfedilmedi. RDS, ElastiCache ve DocumentDB bulut sunucularını otomatik olarak keşfetmek için bir AWS hesabı ekleyin."
   refreshPartialError: "Bazı AWS hizmetleri bulunamadı. IAM izinlerini kontrol edin."
@@ -736,13 +627,10 @@ tr_TR:
   helpAuthProfile: "Profil"
   helpAuthProfileDesc: "~/.aws/credentials adresinden adlandırılmış bir profil kullanıyor"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis kümeleri"
-  helpDocumentdbDesc: "MongoDB uyumlu kümeler"
   helpCredentialNote: "Not: {appName}, AWS'deki bağlantı uç noktalarını keşfeder ancak veritabanı şifrelerine erişemez. Bağlanırken kimlik bilgilerini girmeniz gerekecektir."
 
 uk_UA:
   connectAwsAccount: "Підключіть обліковий запис AWS, щоб знаходити бази даних"
-  addAwsAccount: "Додайте обліковий запис AWS"
   awsConnections: "Підключення AWS"
   noDiscoveredConnections: "Бази даних не виявлено. Додайте обліковий запис AWS для автоматичного виявлення примірників RDS, ElastiCache і DocumentDB."
   refreshPartialError: "Деякі служби AWS не вдалося виявити. Перевірте дозволи IAM."
@@ -756,13 +644,10 @@ uk_UA:
   helpAuthProfile: "Профіль"
   helpAuthProfileDesc: "використовує іменований профіль із ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Кластери Redis"
-  helpDocumentdbDesc: "MongoDB-сумісні кластери"
   helpCredentialNote: "Примітка: {appName} виявляє кінцеві точки підключення з AWS, але не може отримати доступ до паролів бази даних. Під час підключення вам потрібно буде ввести облікові дані."
 
 ur_PK:
   connectAwsAccount: "ڈیٹا بیس کو دریافت کرنے کے لیے AWS اکاؤنٹ کو جوڑیں۔"
-  addAwsAccount: "AWS اکاؤنٹ شامل کریں۔"
   awsConnections: "AWS کنکشنز"
   noDiscoveredConnections: "کوئی ڈیٹا بیس دریافت نہیں ہوا۔ RDS، ElastiCache، اور DocumentDB مثالوں کو خود بخود دریافت کرنے کے لیے AWS اکاؤنٹ شامل کریں۔"
   refreshPartialError: "کچھ AWS سروسز کو دریافت نہیں کیا جا سکا۔ IAM کی اجازتیں چیک کریں۔"
@@ -776,13 +661,10 @@ ur_PK:
   helpAuthProfile: "پروفائل"
   helpAuthProfileDesc: "~/.aws/credentials سے ایک نامزد پروفائل استعمال کرتا ہے۔"
   helpRdsDesc: "پوسٹگری ایس کیو ایل، مائی ایس کیو ایل، ماریا ڈی بی"
-  helpElasticacheDesc: "ریڈیس کلسٹرز"
-  helpDocumentdbDesc: "MongoDB سے مطابقت رکھنے والے کلسٹرز"
   helpCredentialNote: "نوٹ: {appName} AWS سے کنکشن اینڈ پوائنٹس دریافت کرتا ہے لیکن ڈیٹا بیس پاس ورڈ تک رسائی حاصل نہیں کرسکتا۔ منسلک کرتے وقت آپ کو اسناد درج کرنے کی ضرورت ہوگی۔"
 
 vi_VN:
   connectAwsAccount: "Kết nối tài khoản AWS để khám phá cơ sở dữ liệu"
-  addAwsAccount: "Thêm tài khoản AWS"
   awsConnections: "Kết nối AWS"
   noDiscoveredConnections: "Không có cơ sở dữ liệu được phát hiện. Thêm tài khoản AWS để tự động khám phá các phiên bản RDS, ElastiCache và DocumentDB."
   refreshPartialError: "Không thể phát hiện một số dịch vụ AWS. Kiểm tra quyền IAM."
@@ -796,13 +678,10 @@ vi_VN:
   helpAuthProfile: "Hồ sơ"
   helpAuthProfileDesc: "sử dụng hồ sơ được đặt tên từ ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Cụm Redis"
-  helpDocumentdbDesc: "Các cụm tương thích với MongoDB"
   helpCredentialNote: "Lưu ý: {appName} phát hiện điểm cuối kết nối từ AWS nhưng không thể truy cập mật khẩu cơ sở dữ liệu. Bạn sẽ cần nhập thông tin đăng nhập khi kết nối."
 
 af_ZA:
   connectAwsAccount: "Koppel 'n AWS-rekening om databasisse te ontdek"
-  addAwsAccount: "Voeg AWS-rekening by"
   awsConnections: "AWS-verbindings"
   noDiscoveredConnections: "Geen databasisse ontdek nie. Voeg 'n AWS-rekening by om RDS-, ElastiCache- en DocumentDB-gevalle outomaties te ontdek."
   refreshPartialError: "Sommige AWS-dienste kon nie ontdek word nie. Gaan IAM-toestemmings na."
@@ -816,13 +695,10 @@ af_ZA:
   helpAuthProfile: "Profiel"
   helpAuthProfileDesc: "gebruik 'n benoemde profiel van ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis trosse"
-  helpDocumentdbDesc: "MongoDB-versoenbare trosse"
   helpCredentialNote: "Let wel: {appName} ontdek verbindingseindpunte van AWS, maar kan nie toegang tot databasiswagwoorde kry nie. Jy sal geloofsbriewe moet invoer wanneer jy koppel."
 
 am_ET:
   connectAwsAccount: "የውሂብ ጎታዎችን ለማግኘት የAWS መለያ ያገናኙ"
-  addAwsAccount: "የAWS መለያ ያክሉ"
   awsConnections: "AWS ግንኙነቶች"
   noDiscoveredConnections: "ምንም የውሂብ ጎታዎች አልተገኙም። RDS፣ ElastiCache እና DocumentDB ምሳሌዎችን በራስ-ሰር ለማግኘት የAWS መለያ ያክሉ።"
   refreshPartialError: "አንዳንድ የAWS አገልግሎቶች ሊገኙ አልቻሉም። የIAM ፈቃዶችን ያረጋግጡ።"
@@ -836,13 +712,10 @@ am_ET:
   helpAuthProfile: "መገለጫ"
   helpAuthProfileDesc: "ከ ~/.aws/credentials የተሰየመ መገለጫ ይጠቀማል"
   helpRdsDesc: "PostgreSQL፣ MySQL፣ MariaDB"
-  helpElasticacheDesc: "Redis ዘለላዎች"
-  helpDocumentdbDesc: "MongoDB-ተኳሃኝ ዘለላዎች"
   helpCredentialNote: "ማስታወሻ፡ {appName} የግንኙነት የመጨረሻ ነጥቦችን ከAWS ያገኛል ነገርግን የውሂብ ጎታ የይለፍ ቃሎችን ማግኘት አይችልም። ሲገናኙ ምስክርነቶችን ማስገባት ያስፈልግዎታል።"
 
 az_AZ:
   connectAwsAccount: "Verilənlər bazalarını kəşf etmək üçün AWS hesabını birləşdirin"
-  addAwsAccount: "AWS Hesabı əlavə edin"
   awsConnections: "AWS Əlaqələri"
   noDiscoveredConnections: "Heç bir verilənlər bazası aşkar edilmədi. RDS, ElastiCache və DocumentDB nümunələrini avtomatik kəşf etmək üçün AWS hesabı əlavə edin."
   refreshPartialError: "Bəzi AWS xidmətləri aşkar edilə bilmədi. IAM icazələrini yoxlayın."
@@ -856,13 +729,10 @@ az_AZ:
   helpAuthProfile: "Profil"
   helpAuthProfileDesc: "~/.aws/credentials adlı profildən istifadə edir"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis klasterləri"
-  helpDocumentdbDesc: "MongoDB uyğun klasterlər"
   helpCredentialNote: "Qeyd: {appName} AWS-dən əlaqənin son nöqtələrini aşkar edir, lakin verilənlər bazası parollarına daxil ola bilmir. Qoşularkən etimadnamələri daxil etməlisiniz."
 
 et_EE:
   connectAwsAccount: "Andmebaaside avastamiseks ühendage AWS-i konto"
-  addAwsAccount: "Lisage AWS-i konto"
   awsConnections: "AWS ühendused"
   noDiscoveredConnections: "Andmebaase ei leitud. RDS-i, ElastiCache'i ja DocumentDB-i eksemplaride automaatseks avastamiseks lisage AWS-i konto."
   refreshPartialError: "Mõnda AWS-i teenust ei õnnestunud avastada. Kontrollige IAM-i õigusi."
@@ -876,13 +746,10 @@ et_EE:
   helpAuthProfile: "Profiil"
   helpAuthProfileDesc: "kasutab nimelist profiili saidilt ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redise klastrid"
-  helpDocumentdbDesc: "MongoDB-ga ühilduvad klastrid"
   helpCredentialNote: "Märkus. {appName} avastab AWS-ist ühenduse lõpp-punktid, kuid ei pääse juurde andmebaasi paroolidele. Ühenduse loomisel peate sisestama mandaadid."
 
 gu_IN:
   connectAwsAccount: "ડેટાબેસેસ શોધવા માટે AWS એકાઉન્ટને કનેક્ટ કરો"
-  addAwsAccount: "AWS એકાઉન્ટ ઉમેરો"
   awsConnections: "AWS જોડાણો"
   noDiscoveredConnections: "કોઈ ડેટાબેઝ મળ્યા નથી. RDS, ElastiCache અને DocumentDB ઉદાહરણોને સ્વતઃ-શોધવા માટે AWS એકાઉન્ટ ઉમેરો."
   refreshPartialError: "કેટલીક AWS સેવાઓ શોધી શકાઈ નથી. IAM પરવાનગીઓ તપાસો."
@@ -896,13 +763,10 @@ gu_IN:
   helpAuthProfile: "પ્રોફાઇલ"
   helpAuthProfileDesc: "~/.aws/credentials માંથી નામવાળી પ્રોફાઇલનો ઉપયોગ કરે છે"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "રેડિસ ક્લસ્ટરો"
-  helpDocumentdbDesc: "મોંગોડીબી-સુસંગત ક્લસ્ટરો"
   helpCredentialNote: "નોંધ: {appName} AWS માંથી કનેક્શન એન્ડપોઇન્ટ શોધે છે પરંતુ ડેટાબેઝ પાસવર્ડ્સ ઍક્સેસ કરી શકતા નથી. કનેક્ટ કરતી વખતે તમારે ઓળખપત્ર દાખલ કરવાની જરૂર પડશે."
 
 ha_NG:
   connectAwsAccount: "Haɗa asusun AWS don gano bayanan bayanai"
-  addAwsAccount: "Ƙara AWS Account"
   awsConnections: "AWS Connections"
   noDiscoveredConnections: "Babu bayanan da aka gano. Ƙara asusun AWS don ganowa ta atomatik RDS, ElastiCache, da misalin DocumentDB."
   refreshPartialError: "Ba a iya gano wasu ayyukan AWS ba. Duba izinin IAM."
@@ -916,13 +780,10 @@ ha_NG:
   helpAuthProfile: "Bayanan martaba"
   helpAuthProfileDesc: "yana amfani da bayanin martaba mai suna daga ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis gungu"
-  helpDocumentdbDesc: "MongoDB-gungu masu jituwa"
   helpCredentialNote: "Lura: {appName} yana gano ƙarshen haɗin kai daga AWS amma ba zai iya samun damar bayanan kalmomin shiga ba. Kuna buƙatar shigar da takaddun shaida lokacin haɗawa."
 
 ka_GE:
   connectAwsAccount: "დააკავშირეთ AWS ანგარიში მონაცემთა ბაზების აღმოსაჩენად"
-  addAwsAccount: "დაამატეთ AWS ანგარიში"
   awsConnections: "AWS კავშირები"
   noDiscoveredConnections: "მონაცემთა ბაზა არ არის აღმოჩენილი. დაამატეთ AWS ანგარიში RDS, ElastiCache და DocumentDB ინსტანციების ავტომატური აღმოჩენისთვის."
   refreshPartialError: "ზოგიერთი AWS სერვისის აღმოჩენა ვერ მოხერხდა. შეამოწმეთ IAM ნებართვები."
@@ -936,13 +797,10 @@ ka_GE:
   helpAuthProfile: "პროფილი"
   helpAuthProfileDesc: "იყენებს დასახელებულ პროფილს ~/.aws/credentials-დან"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "რედის მტევანი"
-  helpDocumentdbDesc: "MongoDB-თან თავსებადი კლასტერები"
   helpCredentialNote: "შენიშვნა: {appName} აღმოაჩენს კავშირის ბოლო წერტილებს AWS-დან, მაგრამ ვერ წვდება მონაცემთა ბაზის პაროლებს. დაკავშირებისას თქვენ უნდა შეიყვანოთ რწმუნებათა სიგელები."
 
 km_KH:
   connectAwsAccount: "ភ្ជាប់គណនី AWS ដើម្បីស្វែងរកមូលដ្ឋានទិន្នន័យ"
-  addAwsAccount: "បន្ថែមគណនី AWS"
   awsConnections: "ការតភ្ជាប់ AWS"
   noDiscoveredConnections: "គ្មានមូលដ្ឋានទិន្នន័យត្រូវបានរកឃើញទេ។ បន្ថែមគណនី AWS ដើម្បីស្វែងរកដោយស្វ័យប្រវត្តិ RDS, ElastiCache និង DocumentDB instances ។"
   refreshPartialError: "សេវាកម្ម AWS មួយចំនួនមិនអាចត្រូវបានរកឃើញទេ។ ពិនិត្យការអនុញ្ញាត IAM ។"
@@ -956,13 +814,10 @@ km_KH:
   helpAuthProfile: "ប្រវត្តិរូប"
   helpAuthProfileDesc: "ប្រើទម្រង់ដែលមានឈ្មោះពី ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "ចង្កោម Redis"
-  helpDocumentdbDesc: "ចង្កោមដែលឆបគ្នាជាមួយ MongoDB"
   helpCredentialNote: "ចំណាំ៖ {appName} រកឃើញចំណុចបញ្ចប់នៃការតភ្ជាប់ពី AWS ប៉ុន្តែមិនអាចចូលប្រើពាក្យសម្ងាត់មូលដ្ឋានទិន្នន័យបានទេ។ អ្នកនឹងត្រូវបញ្ចូលព័ត៌មានសម្ងាត់នៅពេលភ្ជាប់។"
 
 kn_IN:
   connectAwsAccount: "ಡೇಟಾಬೇಸ್‌ಗಳನ್ನು ಅನ್ವೇಷಿಸಲು AWS ಖಾತೆಯನ್ನು ಸಂಪರ್ಕಿಸಿ"
-  addAwsAccount: "AWS ಖಾತೆಯನ್ನು ಸೇರಿಸಿ"
   awsConnections: "AWS ಸಂಪರ್ಕಗಳು"
   noDiscoveredConnections: "ಯಾವುದೇ ಡೇಟಾಬೇಸ್ ಪತ್ತೆಯಾಗಿಲ್ಲ. RDS, ElastiCache ಮತ್ತು DocumentDB ನಿದರ್ಶನಗಳನ್ನು ಸ್ವಯಂ ಅನ್ವೇಷಿಸಲು AWS ಖಾತೆಯನ್ನು ಸೇರಿಸಿ."
   refreshPartialError: "ಕೆಲವು AWS ಸೇವೆಗಳನ್ನು ಕಂಡುಹಿಡಿಯಲಾಗಲಿಲ್ಲ. IAM ಅನುಮತಿಗಳನ್ನು ಪರಿಶೀಲಿಸಿ."
@@ -976,13 +831,10 @@ kn_IN:
   helpAuthProfile: "ಪ್ರೊಫೈಲ್"
   helpAuthProfileDesc: "~/.aws/credentials ನಿಂದ ಹೆಸರಿನ ಪ್ರೊಫೈಲ್ ಅನ್ನು ಬಳಸುತ್ತದೆ"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "ರೆಡಿಸ್ ಕ್ಲಸ್ಟರ್‌ಗಳು"
-  helpDocumentdbDesc: "ಮೊಂಗೋಡಿಬಿ-ಹೊಂದಾಣಿಕೆಯ ಕ್ಲಸ್ಟರ್‌ಗಳು"
   helpCredentialNote: "ಗಮನಿಸಿ: {appName} AWS ನಿಂದ ಸಂಪರ್ಕದ ಅಂತಿಮ ಬಿಂದುಗಳನ್ನು ಕಂಡುಹಿಡಿದಿದೆ ಆದರೆ ಡೇಟಾಬೇಸ್ ಪಾಸ್‌ವರ್ಡ್‌ಗಳನ್ನು ಪ್ರವೇಶಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ. ಸಂಪರ್ಕಿಸುವಾಗ ನೀವು ರುಜುವಾತುಗಳನ್ನು ನಮೂದಿಸಬೇಕಾಗುತ್ತದೆ."
 
 lt_LT:
   connectAwsAccount: "Prijunkite AWS paskyrą, kad rastumėte duomenų bazes"
-  addAwsAccount: "Pridėti AWS paskyrą"
   awsConnections: "AWS jungtys"
   noDiscoveredConnections: "Nerasta jokių duomenų bazių. Pridėkite AWS paskyrą, kad automatiškai atrastumėte RDS, ElastiCache ir DocumentDB egzempliorius."
   refreshPartialError: "Kai kurių AWS paslaugų nepavyko aptikti. Patikrinkite IAM leidimus."
@@ -996,13 +848,10 @@ lt_LT:
   helpAuthProfile: "Profilis"
   helpAuthProfileDesc: "naudoja pavadintą profilį iš ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis klasteriai"
-  helpDocumentdbDesc: "Su MongoDB suderinami klasteriai"
   helpCredentialNote: "Pastaba: {appName} aptinka ryšio galinius taškus iš AWS, bet negali pasiekti duomenų bazės slaptažodžių. Prisijungdami turėsite įvesti kredencialus."
 
 lv_LV:
   connectAwsAccount: "Pievienojiet AWS kontu, lai atklātu datu bāzes"
-  addAwsAccount: "Pievienojiet AWS kontu"
   awsConnections: "AWS savienojumi"
   noDiscoveredConnections: "Nav atklāta neviena datubāze. Pievienojiet AWS kontu, lai automātiski atklātu RDS, ElastiCache un DocumentDB gadījumus."
   refreshPartialError: "Dažus AWS pakalpojumus nevarēja atklāt. Pārbaudiet IAM atļaujas."
@@ -1016,13 +865,10 @@ lv_LV:
   helpAuthProfile: "Profils"
   helpAuthProfileDesc: "izmanto nosauktu profilu no ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis kopas"
-  helpDocumentdbDesc: "Ar MongoDB saderīgas kopas"
   helpCredentialNote: "Piezīme: {appName} atklāj savienojuma galapunktus no AWS, bet nevar piekļūt datu bāzes parolēm. Veidojot savienojumu, jums būs jāievada akreditācijas dati."
 
 ml_IN:
   connectAwsAccount: "ഡാറ്റാബേസുകൾ കണ്ടെത്തുന്നതിന് ഒരു AWS അക്കൗണ്ട് ബന്ധിപ്പിക്കുക"
-  addAwsAccount: "AWS അക്കൗണ്ട് ചേർക്കുക"
   awsConnections: "AWS കണക്ഷനുകൾ"
   noDiscoveredConnections: "ഡാറ്റാബേസുകളൊന്നും കണ്ടെത്തിയില്ല. RDS, ElastiCache, DocumentDB എന്നിവ സ്വയമേവ കണ്ടെത്തുന്നതിന് ഒരു AWS അക്കൗണ്ട് ചേർക്കുക."
   refreshPartialError: "ചില AWS സേവനങ്ങൾ കണ്ടെത്താനായില്ല. IAM അനുമതികൾ പരിശോധിക്കുക."
@@ -1036,13 +882,10 @@ ml_IN:
   helpAuthProfile: "പ്രൊഫൈൽ"
   helpAuthProfileDesc: "~/.aws/credentials-ൽ നിന്ന് പേരിട്ടിരിക്കുന്ന ഒരു പ്രൊഫൈൽ ഉപയോഗിക്കുന്നു"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "റെഡിസ് ക്ലസ്റ്ററുകൾ"
-  helpDocumentdbDesc: "മോംഗോഡിബി-അനുയോജ്യമായ ക്ലസ്റ്ററുകൾ"
   helpCredentialNote: "ശ്രദ്ധിക്കുക: {appName} AWS-ൽ നിന്ന് കണക്ഷൻ എൻഡ്‌പോയിൻ്റുകൾ കണ്ടെത്തുന്നു, പക്ഷേ ഡാറ്റാബേസ് പാസ്‌വേഡുകൾ ആക്‌സസ് ചെയ്യാൻ കഴിയില്ല. കണക്റ്റുചെയ്യുമ്പോൾ നിങ്ങൾ ക്രെഡൻഷ്യലുകൾ നൽകേണ്ടതുണ്ട്."
 
 mr_IN:
   connectAwsAccount: "डेटाबेस शोधण्यासाठी AWS खाते कनेक्ट करा"
-  addAwsAccount: "AWS खाते जोडा"
   awsConnections: "AWS कनेक्शन"
   noDiscoveredConnections: "कोणताही डेटाबेस सापडला नाही. RDS, ElastiCache आणि DocumentDB उदाहरणे स्वयं-शोधण्यासाठी AWS खाते जोडा."
   refreshPartialError: "काही AWS सेवा शोधल्या जाऊ शकल्या नाहीत. IAM परवानग्या तपासा."
@@ -1056,13 +899,10 @@ mr_IN:
   helpAuthProfile: "प्रोफाइल"
   helpAuthProfileDesc: "~/.aws/credentials वरून नामांकित प्रोफाइल वापरते"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "रेडिस क्लस्टर्स"
-  helpDocumentdbDesc: "MongoDB-सुसंगत क्लस्टर्स"
   helpCredentialNote: "टीप: {appName} AWS वरून कनेक्शन एंडपॉइंट शोधते परंतु डेटाबेस पासवर्डमध्ये प्रवेश करू शकत नाही. कनेक्ट करताना तुम्हाला क्रेडेन्शियल एंटर करावे लागतील."
 
 ne_NP:
   connectAwsAccount: "डाटाबेसहरू पत्ता लगाउन AWS खाता जडान गर्नुहोस्"
-  addAwsAccount: "AWS खाता थप्नुहोस्"
   awsConnections: "AWS जडानहरू"
   noDiscoveredConnections: "कुनै डाटाबेस फेला परेन। RDS, ElastiCache, र DocumentDB उदाहरणहरू स्वत: पत्ता लगाउन AWS खाता थप्नुहोस्।"
   refreshPartialError: "केही AWS सेवाहरू पत्ता लगाउन सकिएन। IAM अनुमतिहरू जाँच गर्नुहोस्।"
@@ -1076,13 +916,10 @@ ne_NP:
   helpAuthProfile: "प्रोफाइल"
   helpAuthProfileDesc: "~/.aws/credentials बाट नामित प्रोफाइल प्रयोग गर्दछ"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis क्लस्टरहरू"
-  helpDocumentdbDesc: "MongoDB-कम्प्याटिबल क्लस्टरहरू"
   helpCredentialNote: "नोट: {appName} AWS बाट जडान अन्त्य बिन्दुहरू पत्ता लगाउँदछ तर डाटाबेस पासवर्डहरू पहुँच गर्न सक्दैन। जडान गर्दा तपाईंले प्रमाणहरू प्रविष्ट गर्न आवश्यक हुनेछ।"
 
 pa_IN:
   connectAwsAccount: "ਡੇਟਾਬੇਸ ਖੋਜਣ ਲਈ ਇੱਕ AWS ਖਾਤੇ ਨੂੰ ਕਨੈਕਟ ਕਰੋ"
-  addAwsAccount: "AWS ਖਾਤਾ ਸ਼ਾਮਲ ਕਰੋ"
   awsConnections: "AWS ਕਨੈਕਸ਼ਨ"
   noDiscoveredConnections: "ਕੋਈ ਡਾਟਾਬੇਸ ਨਹੀਂ ਲੱਭਿਆ। RDS, ElastiCache, ਅਤੇ DocumentDB ਉਦਾਹਰਨਾਂ ਨੂੰ ਆਟੋ-ਡਿਸਕਵਰ ਕਰਨ ਲਈ ਇੱਕ AWS ਖਾਤਾ ਸ਼ਾਮਲ ਕਰੋ।"
   refreshPartialError: "ਕੁਝ AWS ਸੇਵਾਵਾਂ ਖੋਜੀਆਂ ਨਹੀਂ ਜਾ ਸਕੀਆਂ। IAM ਅਨੁਮਤੀਆਂ ਦੀ ਜਾਂਚ ਕਰੋ।"
@@ -1096,13 +933,10 @@ pa_IN:
   helpAuthProfile: "ਪ੍ਰੋਫਾਈਲ"
   helpAuthProfileDesc: "~/.aws/credentials ਤੋਂ ਇੱਕ ਨਾਮਿਤ ਪ੍ਰੋਫਾਈਲ ਦੀ ਵਰਤੋਂ ਕਰਦਾ ਹੈ"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis ਕਲੱਸਟਰ"
-  helpDocumentdbDesc: "ਮੋਂਗੋਡੀਬੀ-ਅਨੁਕੂਲ ਕਲੱਸਟਰ"
   helpCredentialNote: "ਨੋਟ: {appName} AWS ਤੋਂ ਕਨੈਕਸ਼ਨ ਅੰਤਮ ਬਿੰਦੂ ਖੋਜਦਾ ਹੈ ਪਰ ਡੇਟਾਬੇਸ ਪਾਸਵਰਡ ਤੱਕ ਪਹੁੰਚ ਨਹੀਂ ਕਰ ਸਕਦਾ ਹੈ। ਕਨੈਕਟ ਕਰਦੇ ਸਮੇਂ ਤੁਹਾਨੂੰ ਪ੍ਰਮਾਣ ਪੱਤਰ ਦਾਖਲ ਕਰਨ ਦੀ ਲੋੜ ਪਵੇਗੀ।"
 
 si_LK:
   connectAwsAccount: "දත්ත සමුදායන් සොයා ගැනීමට AWS ගිණුමක් සම්බන්ධ කරන්න"
-  addAwsAccount: "AWS ගිණුම එක් කරන්න"
   awsConnections: "AWS සම්බන්ධතා"
   noDiscoveredConnections: "දත්ත සමුදායන් සොයා ගෙන නොමැත. RDS, ElastiCache, සහ DocumentDB අවස්ථා ස්වයංක්‍රීයව සොයා ගැනීමට AWS ගිණුමක් එක් කරන්න."
   refreshPartialError: "සමහර AWS සේවා සොයා ගැනීමට නොහැකි විය. IAM අවසර පරීක්ෂා කරන්න."
@@ -1116,13 +950,10 @@ si_LK:
   helpAuthProfile: "පැතිකඩ"
   helpAuthProfileDesc: "~/.aws/credentials වෙතින් නම් කරන ලද පැතිකඩක් භාවිතා කරයි"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "රෙඩිස් පොකුරු"
-  helpDocumentdbDesc: "MongoDB-අනුකූල පොකුරු"
   helpCredentialNote: "සටහන: {appName} AWS වෙතින් සම්බන්ධතා අන්ත ලක්ෂ්‍ය සොයා ගන්නා නමුත් දත්ත සමුදා මුරපද වෙත ප්‍රවේශ විය නොහැක. සම්බන්ධ වන විට ඔබට අක්තපත්‍ර ඇතුළත් කිරීමට අවශ්‍ය වනු ඇත."
 
 sl_SI:
   connectAwsAccount: "Povežite račun AWS, da odkrijete zbirke podatkov"
-  addAwsAccount: "Dodajte račun AWS"
   awsConnections: "Povezave AWS"
   noDiscoveredConnections: "Ni odkritih baz podatkov. Dodajte račun AWS za samodejno odkrivanje instanc RDS, ElastiCache in DocumentDB."
   refreshPartialError: "Nekaterih storitev AWS ni bilo mogoče odkriti. Preverite dovoljenja IAM."
@@ -1136,13 +967,10 @@ sl_SI:
   helpAuthProfile: "Profil"
   helpAuthProfileDesc: "uporablja imenovani profil iz ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Grozdi Redis"
-  helpDocumentdbDesc: "Grozdi, združljivi z MongoDB"
   helpCredentialNote: "Opomba: {appName} odkrije končne točke povezave iz AWS, vendar ne more dostopati do gesel baze podatkov. Pri povezovanju boste morali vnesti poverilnice."
 
 sr_RS:
   connectAwsAccount: "Повежите АВС налог да бисте открили базе података"
-  addAwsAccount: "Додајте АВС налог"
   awsConnections: "АВС Цоннецтионс"
   noDiscoveredConnections: "Није откривена ниједна база података. Додајте АВС налог да бисте аутоматски открили РДС, ЕластиЦацхе и ДоцументДБ инстанце."
   refreshPartialError: "Неке АВС услуге нису могле бити откривене. Проверите ИАМ дозволе."
@@ -1156,13 +984,10 @@ sr_RS:
   helpAuthProfile: "Профиле"
   helpAuthProfileDesc: "користи именовани профил из ~/.авс/цредентиалс"
   helpRdsDesc: "ПостгреСКЛ, МиСКЛ, МариаДБ"
-  helpElasticacheDesc: "Редис кластери"
-  helpDocumentdbDesc: "МонгоДБ компатибилни кластери"
   helpCredentialNote: "Напомена: {appName} открива крајње тачке везе са АВС-а, али не може да приступи лозинкама базе података. Мораћете да унесете акредитиве приликом повезивања."
 
 te_IN:
   connectAwsAccount: "డేటాబేస్‌లను కనుగొనడానికి AWS ఖాతాను కనెక్ట్ చేయండి"
-  addAwsAccount: "AWS ఖాతాను జోడించండి"
   awsConnections: "AWS కనెక్షన్లు"
   noDiscoveredConnections: "డేటాబేస్‌లు ఏవీ కనుగొనబడలేదు. RDS, ElastiCache మరియు DocumentDB దృష్టాంతాలను ఆటో-డిస్కవర్ చేయడానికి AWS ఖాతాను జోడించండి."
   refreshPartialError: "కొన్ని AWS సేవలు కనుగొనబడలేదు. IAM అనుమతులను తనిఖీ చేయండి."
@@ -1176,13 +1001,10 @@ te_IN:
   helpAuthProfile: "ప్రొఫైల్"
   helpAuthProfileDesc: "~/.aws/credentials నుండి పేరున్న ప్రొఫైల్‌ని ఉపయోగిస్తుంది"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "రెడిస్ క్లస్టర్లు"
-  helpDocumentdbDesc: "మొంగోడిబి-అనుకూల క్లస్టర్‌లు"
   helpCredentialNote: "గమనిక: {appName} AWS నుండి కనెక్షన్ ఎండ్ పాయింట్‌లను కనుగొంటుంది కానీ డేటాబేస్ పాస్‌వర్డ్‌లను యాక్సెస్ చేయదు. కనెక్ట్ చేస్తున్నప్పుడు మీరు ఆధారాలను నమోదు చేయాలి."
 
 tl_PH:
   connectAwsAccount: "Ikonekta ang isang AWS account upang tumuklas ng mga database"
-  addAwsAccount: "Magdagdag ng AWS Account"
   awsConnections: "Mga Koneksyon sa AWS"
   noDiscoveredConnections: "Walang natuklasang database. Magdagdag ng AWS account upang awtomatikong matuklasan ang mga instance ng RDS, ElastiCache, at DocumentDB."
   refreshPartialError: "Ang ilang mga serbisyo ng AWS ay hindi matuklasan. Suriin ang mga pahintulot ng IAM."
@@ -1196,13 +1018,10 @@ tl_PH:
   helpAuthProfile: "Profile"
   helpAuthProfileDesc: "gumagamit ng pinangalanang profile mula sa ~/.aws/credentials"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Mga kumpol ng Redis"
-  helpDocumentdbDesc: "Mga kumpol na katugma sa MongoDB"
   helpCredentialNote: "Tandaan: Natuklasan ng {appName} ang mga endpoint ng koneksyon mula sa AWS ngunit hindi ma-access ang mga password ng database. Kakailanganin mong maglagay ng mga kredensyal kapag kumokonekta."
 
 uz_UZ:
   connectAwsAccount: "Ma'lumotlar bazalarini kashf qilish uchun AWS hisobini ulang"
-  addAwsAccount: "AWS hisobini qo'shing"
   awsConnections: "AWS ulanishlari"
   noDiscoveredConnections: "Hech qanday ma'lumotlar bazalari topilmadi. RDS, ElastiCache va DocumentDB nusxalarini avtomatik aniqlash uchun AWS hisobini qo'shing."
   refreshPartialError: "Ayrim AWS xizmatlarini topib boʻlmadi. IAM ruxsatnomalarini tekshiring."
@@ -1216,13 +1035,10 @@ uz_UZ:
   helpAuthProfile: "Profil"
   helpAuthProfileDesc: "~/.aws/credentials dan nomlangan profildan foydalanadi"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Redis klasterlari"
-  helpDocumentdbDesc: "MongoDB-ga mos klasterlar"
   helpCredentialNote: "Eslatma: {appName} AWS’dan ulanish so‘nggi nuqtalarini aniqlaydi, lekin ma’lumotlar bazasi parollariga kira olmaydi. Ulanishda hisob ma'lumotlarini kiritishingiz kerak bo'ladi."
 
 yo_NG:
   connectAwsAccount: "So akọọlẹ AWS kan lati ṣawari awọn apoti isura infomesonu"
-  addAwsAccount: "Fi AWS Account"
   awsConnections: "AWS Awọn isopọ"
   noDiscoveredConnections: "Ko si awọn ibi ipamọ data ti a ṣe awari. Ṣafikun akọọlẹ AWS kan si iwari adaṣe-ara RDS, ElastiCache, ati awọn apẹẹrẹ DocumentDB."
   refreshPartialError: "Diẹ ninu awọn iṣẹ AWS ko le ṣe awari. Ṣayẹwo awọn igbanilaaye IAM."
@@ -1236,6 +1052,4 @@ yo_NG:
   helpAuthProfile: "Profaili"
   helpAuthProfileDesc: "nlo profaili ti a npè ni lati ~ / .aws/awọn iwe eri"
   helpRdsDesc: "PostgreSQL, MySQL, MariaDB"
-  helpElasticacheDesc: "Awọn iṣupọ Redis"
-  helpDocumentdbDesc: "MongoDB-ibaramu iṣupọ"
   helpCredentialNote: "Akiyesi: {appName} ṣe awari awọn aaye ipari asopọ lati AWS ṣugbọn ko le wọle si awọn ọrọ igbaniwọle aaye data. Iwọ yoo nilo lati tẹ awọn iwe-ẹri sii nigbati o ba sopọ."

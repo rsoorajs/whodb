@@ -1,5 +1,4 @@
 en_US:
-  title: Query
   copyCode: Copy Code
   queryHistory: Query History
   addCell: Add a New Cell
@@ -26,7 +25,6 @@ en_US:
   confirmExecutionDescription: This query will modify your database. This action cannot be undone.
 
 ar_AE:
-  title: "استفسار"
   copyCode: "نسخ الرمز"
   queryHistory: "تاريخ الاستعلام"
   addCell: "إضافة خلية جديدة"
@@ -53,7 +51,6 @@ ar_AE:
   confirmExecutionDescription: "سيقوم هذا الاستعلام بتعديل قاعدة البيانات الخاصة بك. لا يمكن التراجع عن هذا الإجراء."
 
 de_DE:
-  title: "Abfrage"
   copyCode: "Code kopieren"
   queryHistory: "Abfrageverlauf"
   addCell: "Fügen Sie eine neue Zelle hinzu"
@@ -80,7 +77,6 @@ de_DE:
   confirmExecutionDescription: "Diese Abfrage ändert Ihre Datenbank. Diese Aktion kann nicht rückgängig gemacht werden."
 
 el_GR:
-  title: "Ερώτηση"
   copyCode: "Αντιγραφή Κωδικού"
   queryHistory: "Ιστορικό ερωτημάτων"
   addCell: "Προσθήκη νέου κελιού"
@@ -107,7 +103,6 @@ el_GR:
   confirmExecutionDescription: "Αυτό το ερώτημα θα τροποποιήσει τη βάση δεδομένων σας. Αυτή η ενέργεια δεν μπορεί να αναιρεθεί."
 
 en_GB:
-  title: "Query"
   copyCode: "Copy Code"
   queryHistory: "Query History"
   addCell: "Add a New Cell"
@@ -134,7 +129,6 @@ en_GB:
   confirmExecutionDescription: "This query will modify your database. This action cannot be undone."
 
 es_ES:
-  title: "Consulta"
   copyCode: "Copiar código"
   queryHistory: "Historial de consultas"
   addCell: "Agregar una nueva celda"
@@ -161,7 +155,6 @@ es_ES:
   confirmExecutionDescription: "Esta consulta modificará su base de datos. Esta acción no se puede deshacer."
 
 fi_FI:
-  title: "Kysely"
   copyCode: "Kopioi koodi"
   queryHistory: "Kyselyhistoria"
   addCell: "Lisää uusi solu"
@@ -188,7 +181,6 @@ fi_FI:
   confirmExecutionDescription: "Tämä kysely muuttaa tietokantaasi. Tätä toimintoa ei voi kumota."
 
 fr_FR:
-  title: "Requête"
   copyCode: "Copier le code"
   queryHistory: "Historique des requêtes"
   addCell: "Ajouter une nouvelle cellule"
@@ -215,7 +207,6 @@ fr_FR:
   confirmExecutionDescription: "Cette requête modifiera votre base de données. Cette action ne peut pas être annulée."
 
 it_IT:
-  title: "Domanda"
   copyCode: "Copia codice"
   queryHistory: "Cronologia delle query"
   addCell: "Aggiungi una nuova cella"
@@ -242,7 +233,6 @@ it_IT:
   confirmExecutionDescription: "Questa query modificherà il tuo database. Questa azione non può essere annullata."
 
 iw_IL:
-  title: "שְׁאֵלָה"
   copyCode: "העתק קוד"
   queryHistory: "היסטוריית שאילתות"
   addCell: "הוסף תא חדש"
@@ -269,7 +259,6 @@ iw_IL:
   confirmExecutionDescription: "שאילתה זו תשנה את מסד הנתונים שלך. לא ניתן לבטל פעולה זו."
 
 ja_JP:
-  title: "クエリ"
   copyCode: "コードをコピーする"
   queryHistory: "クエリ履歴"
   addCell: "新しいセルを追加する"
@@ -296,7 +285,6 @@ ja_JP:
   confirmExecutionDescription: "このクエリはデータベースを変更します。 この操作は元に戻すことができません。"
 
 ko_KR:
-  title: "질문"
   copyCode: "코드 복사"
   queryHistory: "쿼리 기록"
   addCell: "새 셀 추가"
@@ -323,7 +311,6 @@ ko_KR:
   confirmExecutionDescription: "이 쿼리는 데이터베이스를 수정합니다. 이 작업은 취소할 수 없습니다."
 
 nl_NL:
-  title: "Vraag"
   copyCode: "Kopieer code"
   queryHistory: "Zoekgeschiedenis"
   addCell: "Voeg een nieuwe cel toe"
@@ -350,7 +337,6 @@ nl_NL:
   confirmExecutionDescription: "Deze zoekopdracht zal uw database wijzigen. Deze actie kan niet ongedaan worden gemaakt."
 
 pl_PL:
-  title: "Zapytanie"
   copyCode: "Skopiuj kod"
   queryHistory: "Historia zapytań"
   addCell: "Dodaj nową komórkę"
@@ -377,7 +363,6 @@ pl_PL:
   confirmExecutionDescription: "To zapytanie zmodyfikuje Twoją bazę danych. Tej akcji nie można cofnąć."
 
 pt_BR:
-  title: "Consulta"
   copyCode: "Copiar código"
   queryHistory: "Histórico de consultas"
   addCell: "Adicionar uma nova célula"
@@ -404,7 +389,6 @@ pt_BR:
   confirmExecutionDescription: "Esta consulta modificará seu banco de dados. Esta ação não pode ser desfeita."
 
 ro_RO:
-  title: "Interogare"
   copyCode: "Copiați codul"
   queryHistory: "Istoricul interogărilor"
   addCell: "Adăugați o celulă nouă"
@@ -431,7 +415,6 @@ ro_RO:
   confirmExecutionDescription: "Această interogare va modifica baza de date. Această acțiune nu poate fi anulată."
 
 ru_RU:
-  title: "Запрос"
   copyCode: "Копировать код"
   queryHistory: "История запросов"
   addCell: "Добавить новую ячейку"
@@ -458,7 +441,6 @@ ru_RU:
   confirmExecutionDescription: "Этот запрос изменит вашу базу данных. Это действие невозможно отменить."
 
 sk_SK:
-  title: "Dopyt"
   copyCode: "Kopírovať kód"
   queryHistory: "História dopytov"
   addCell: "Pridať novú bunku"
@@ -485,7 +467,6 @@ sk_SK:
   confirmExecutionDescription: "Tento dotaz upraví vašu databázu. Túto akciu nie je možné vrátiť späť."
 
 sv_SE:
-  title: "Fråga"
   copyCode: "Kopiera kod"
   queryHistory: "Frågehistorik"
   addCell: "Lägg till en ny cell"
@@ -512,7 +493,6 @@ sv_SE:
   confirmExecutionDescription: "Denna fråga kommer att ändra din databas. Denna åtgärd kan inte ångras."
 
 zh_CN:
-  title: "询问"
   copyCode: "复制代码"
   queryHistory: "查询历史记录"
   addCell: "添加新单元格"
@@ -539,7 +519,6 @@ zh_CN:
   confirmExecutionDescription: "此查询将修改您的数据库。 此操作无法撤消。"
 
 zh_TW:
-  title: "詢問"
   copyCode: "複製程式碼"
   queryHistory: "查詢歷史記錄"
   addCell: "新增單元格"
@@ -566,7 +545,6 @@ zh_TW:
   confirmExecutionDescription: "此查詢將修改您的資料庫。 此操作無法撤銷。"
 
 bg_BG:
-  title: "Запитване"
   copyCode: "Копиране на код"
   queryHistory: "История на заявките"
   addCell: "Добавяне на нова клетка"
@@ -593,7 +571,6 @@ bg_BG:
   confirmExecutionDescription: "Тази заявка ще промени вашата база данни. Това действие не може да бъде отменено."
 
 bn_BD:
-  title: "প্রশ্ন"
   copyCode: "কোড কপি করুন"
   queryHistory: "ক্যোয়ারী ইতিহাস"
   addCell: "একটি নতুন সেল যোগ করুন"
@@ -620,7 +597,6 @@ bn_BD:
   confirmExecutionDescription: "এই প্রশ্নটি আপনার ডাটাবেস পরিবর্তন করবে। এই ক্রিয়াটি পূর্বাবস্থায় ফেরানো যাবে না৷"
 
 ca_ES:
-  title: "Consulta"
   copyCode: "Copia el codi"
   queryHistory: "Historial de consultes"
   addCell: "Afegeix una nova cel·la"
@@ -647,7 +623,6 @@ ca_ES:
   confirmExecutionDescription: "Aquesta consulta modificarà la vostra base de dades. Aquesta acció no es pot desfer."
 
 cs_CZ:
-  title: "Dotaz"
   copyCode: "Kopírovat kód"
   queryHistory: "Historie dotazů"
   addCell: "Přidat novou buňku"
@@ -674,7 +649,6 @@ cs_CZ:
   confirmExecutionDescription: "Tento dotaz upraví vaši databázi. Tuto akci nelze vrátit zpět."
 
 da_DK:
-  title: "Forespørgsel"
   copyCode: "Kopiér kode"
   queryHistory: "Forespørgselshistorik"
   addCell: "Tilføj en ny celle"
@@ -701,7 +675,6 @@ da_DK:
   confirmExecutionDescription: "Denne forespørgsel vil ændre din database. Denne handling kan ikke fortrydes."
 
 fa_IR:
-  title: "پرس و جو"
   copyCode: "کد را کپی کنید"
   queryHistory: "تاریخچه پرس و جو"
   addCell: "یک سلول جدید اضافه کنید"
@@ -728,7 +701,6 @@ fa_IR:
   confirmExecutionDescription: "این پرس و جو پایگاه داده شما را تغییر می دهد. این عمل قابل لغو نیست."
 
 hi_IN:
-  title: "सवाल"
   copyCode: "कोड कॉपी करें"
   queryHistory: "क्वेरी इतिहास"
   addCell: "एक नया सेल जोड़ें"
@@ -755,7 +727,6 @@ hi_IN:
   confirmExecutionDescription: "यह क्वेरी आपके डेटाबेस को संशोधित करेगी. इस एक्शन को वापस नहीं किया जा सकता।"
 
 hr_HR:
-  title: "Upit"
   copyCode: "Kopiraj kod"
   queryHistory: "Povijest upita"
   addCell: "Dodajte novu ćeliju"
@@ -782,7 +753,6 @@ hr_HR:
   confirmExecutionDescription: "Ovaj će upit izmijeniti vašu bazu podataka. Ova se radnja ne može poništiti."
 
 hu_HU:
-  title: "Lekérdezés"
   copyCode: "Kód másolása"
   queryHistory: "Lekérdezési előzmények"
   addCell: "Új cella hozzáadása"
@@ -809,7 +779,6 @@ hu_HU:
   confirmExecutionDescription: "Ez a lekérdezés módosítja az adatbázist. Ez a művelet nem vonható vissza."
 
 id_ID:
-  title: "Pertanyaan"
   copyCode: "Salin Kode"
   queryHistory: "Riwayat Kueri"
   addCell: "Tambahkan Sel Baru"
@@ -836,7 +805,6 @@ id_ID:
   confirmExecutionDescription: "Kueri ini akan mengubah database Anda. Tindakan ini tidak dapat dibatalkan."
 
 ms_MY:
-  title: "Pertanyaan"
   copyCode: "Salin Kod"
   queryHistory: "Sejarah Pertanyaan"
   addCell: "Tambah Sel Baharu"
@@ -863,7 +831,6 @@ ms_MY:
   confirmExecutionDescription: "Pertanyaan ini akan mengubah suai pangkalan data anda. Tindakan ini tidak boleh dibuat asal."
 
 nb_NO:
-  title: "Spørsmål"
   copyCode: "Kopier kode"
   queryHistory: "Spørringshistorikk"
   addCell: "Legg til en ny celle"
@@ -890,7 +857,6 @@ nb_NO:
   confirmExecutionDescription: "Denne spørringen vil endre databasen din. Denne handlingen kan ikke angres."
 
 sw_KE:
-  title: "Hoja"
   copyCode: "Nakili Kanuni"
   queryHistory: "Historia ya Maswali"
   addCell: "Ongeza Kisanduku Kipya"
@@ -917,7 +883,6 @@ sw_KE:
   confirmExecutionDescription: "Hoja hii itarekebisha hifadhidata yako. Kitendo hiki hakiwezi kutenduliwa."
 
 ta_IN:
-  title: "வினவு"
   copyCode: "நகல் குறியீடு"
   queryHistory: "வினவல் வரலாறு"
   addCell: "புதிய கலத்தைச் சேர்க்கவும்"
@@ -944,7 +909,6 @@ ta_IN:
   confirmExecutionDescription: "இந்த வினவல் உங்கள் தரவுத்தளத்தை மாற்றும். இந்தச் செயலைச் செயல்தவிர்க்க முடியாது."
 
 th_TH:
-  title: "แบบสอบถาม"
   copyCode: "คัดลอกรหัส"
   queryHistory: "ประวัติการค้นหา"
   addCell: "เพิ่มเซลล์ใหม่"
@@ -971,7 +935,6 @@ th_TH:
   confirmExecutionDescription: "แบบสอบถามนี้จะแก้ไขฐานข้อมูลของคุณ การดำเนินการนี้ไม่สามารถยกเลิกได้"
 
 tr_TR:
-  title: "Sorgu"
   copyCode: "Kodu Kopyala"
   queryHistory: "Sorgu Geçmişi"
   addCell: "Yeni Hücre Ekle"
@@ -998,7 +961,6 @@ tr_TR:
   confirmExecutionDescription: "Bu sorgu veritabanınızı değiştirecek. Bu eylem geri alınamaz."
 
 uk_UA:
-  title: "Запит"
   copyCode: "Копіювати код"
   queryHistory: "Історія запитів"
   addCell: "Додайте нову комірку"
@@ -1025,7 +987,6 @@ uk_UA:
   confirmExecutionDescription: "Цей запит змінить вашу базу даних. Цю дію не можна скасувати."
 
 ur_PK:
-  title: "استفسار"
   copyCode: "کوڈ کاپی کریں۔"
   queryHistory: "استفسار کی تاریخ"
   addCell: "ایک نیا سیل شامل کریں۔"
@@ -1052,7 +1013,6 @@ ur_PK:
   confirmExecutionDescription: "یہ استفسار آپ کے ڈیٹا بیس میں ترمیم کرے گا۔ اس کارروائی کو کالعدم نہیں کیا جا سکتا۔"
 
 vi_VN:
-  title: "Truy vấn"
   copyCode: "Sao chép mã"
   queryHistory: "Lịch sử truy vấn"
   addCell: "Thêm một ô mới"
@@ -1079,7 +1039,6 @@ vi_VN:
   confirmExecutionDescription: "Truy vấn này sẽ sửa đổi cơ sở dữ liệu của bạn. Không thể hoàn tác hành động này."
 
 af_ZA:
-  title: "Navraag"
   copyCode: "Kopieer kode"
   queryHistory: "Navrae Geskiedenis"
   addCell: "Voeg 'n nuwe sel by"
@@ -1106,7 +1065,6 @@ af_ZA:
   confirmExecutionDescription: "Hierdie navraag sal jou databasis wysig. Hierdie handeling kan nie ontdoen word nie."
 
 am_ET:
-  title: "መጠይቅ"
   copyCode: "ኮድ ቅዳ"
   queryHistory: "የጥያቄ ታሪክ"
   addCell: "አዲስ ሕዋስ ጨምር"
@@ -1133,7 +1091,6 @@ am_ET:
   confirmExecutionDescription: "ይህ መጠይቅ የውሂብ ጎታህን ይለውጠዋል። ይህ እርምጃ ሊቀለበስ አይችልም።"
 
 az_AZ:
-  title: "Sorğu"
   copyCode: "Kodu kopyalayın"
   queryHistory: "Sorğu Tarixçəsi"
   addCell: "Yeni Hüceyrə əlavə edin"
@@ -1160,7 +1117,6 @@ az_AZ:
   confirmExecutionDescription: "Bu sorğu verilənlər bazanızı dəyişdirəcək. Bu əməliyyat geri qaytarıla bilməz."
 
 et_EE:
-  title: "Päring"
   copyCode: "Kopeeri kood"
   queryHistory: "Päringu ajalugu"
   addCell: "Lisage uus lahter"
@@ -1187,7 +1143,6 @@ et_EE:
   confirmExecutionDescription: "See päring muudab teie andmebaasi. Seda toimingut ei saa tagasi võtta."
 
 gu_IN:
-  title: "પ્રશ્ન"
   copyCode: "કોડ કૉપિ કરો"
   queryHistory: "ક્વેરી ઇતિહાસ"
   addCell: "એક નવો સેલ ઉમેરો"
@@ -1214,7 +1169,6 @@ gu_IN:
   confirmExecutionDescription: "આ ક્વેરી તમારા ડેટાબેઝમાં ફેરફાર કરશે. આ ક્રિયા પૂર્વવત્ કરી શકાતી નથી."
 
 ha_NG:
-  title: "Tambaya"
   copyCode: "Kwafi Code"
   queryHistory: "Tarihin Tambaya"
   addCell: "Ƙara Sabon Cell"
@@ -1241,7 +1195,6 @@ ha_NG:
   confirmExecutionDescription: "Wannan tambayar za ta canza bayananku. Ba za a iya soke wannan aikin ba."
 
 ka_GE:
-  title: "შეკითხვა"
   copyCode: "დააკოპირეთ კოდი"
   queryHistory: "შეკითხვის ისტორია"
   addCell: "დაამატეთ ახალი უჯრედი"
@@ -1268,7 +1221,6 @@ ka_GE:
   confirmExecutionDescription: "ეს შეკითხვა შეცვლის თქვენს მონაცემთა ბაზას. ამ მოქმედების გაუქმება შეუძლებელია."
 
 km_KH:
-  title: "សំណួរ"
   copyCode: "ចម្លងកូដ"
   queryHistory: "ប្រវត្តិសំណួរ"
   addCell: "បន្ថែមក្រឡាថ្មី។"
@@ -1295,7 +1247,6 @@ km_KH:
   confirmExecutionDescription: "សំណួរនេះនឹងកែប្រែមូលដ្ឋានទិន្នន័យរបស់អ្នក។ សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។"
 
 kn_IN:
-  title: "ಪ್ರಶ್ನೆ"
   copyCode: "ಕೋಡ್ ನಕಲಿಸಿ"
   queryHistory: "ಪ್ರಶ್ನೆ ಇತಿಹಾಸ"
   addCell: "ಹೊಸ ಕೋಶವನ್ನು ಸೇರಿಸಿ"
@@ -1322,7 +1273,6 @@ kn_IN:
   confirmExecutionDescription: "ಈ ಪ್ರಶ್ನೆಯು ನಿಮ್ಮ ಡೇಟಾಬೇಸ್ ಅನ್ನು ಮಾರ್ಪಡಿಸುತ್ತದೆ. ಈ ಕ್ರಿಯೆಯನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗುವುದಿಲ್ಲ."
 
 lt_LT:
-  title: "Užklausa"
   copyCode: "Kopijuoti kodą"
   queryHistory: "Užklausų istorija"
   addCell: "Pridėti naują langelį"
@@ -1349,7 +1299,6 @@ lt_LT:
   confirmExecutionDescription: "Ši užklausa pakeis jūsų duomenų bazę. Šio veiksmo anuliuoti negalima."
 
 lv_LV:
-  title: "Vaicājums"
   copyCode: "Kopēt kodu"
   queryHistory: "Vaicājumu vēsture"
   addCell: "Pievienojiet jaunu šūnu"
@@ -1376,7 +1325,6 @@ lv_LV:
   confirmExecutionDescription: "Šis vaicājums mainīs jūsu datu bāzi. Šo darbību nevar atsaukt."
 
 ml_IN:
-  title: "ചോദ്യം"
   copyCode: "കോഡ് പകർത്തുക"
   queryHistory: "അന്വേഷണ ചരിത്രം"
   addCell: "ഒരു പുതിയ സെൽ ചേർക്കുക"
@@ -1403,7 +1351,6 @@ ml_IN:
   confirmExecutionDescription: "ഈ ചോദ്യം നിങ്ങളുടെ ഡാറ്റാബേസിൽ മാറ്റം വരുത്തും. ഈ പ്രവർത്തനം പഴയപടിയാക്കാനാകില്ല."
 
 mr_IN:
-  title: "क्वेरी"
   copyCode: "कोड कॉपी करा"
   queryHistory: "क्वेरी इतिहास"
   addCell: "नवीन सेल जोडा"
@@ -1430,7 +1377,6 @@ mr_IN:
   confirmExecutionDescription: "ही क्वेरी तुमच्या डेटाबेसमध्ये बदल करेल. ही क्रिया पूर्ववत केली जाऊ शकत नाही."
 
 ne_NP:
-  title: "प्रश्न"
   copyCode: "कोड प्रतिलिपि गर्नुहोस्"
   queryHistory: "क्वेरी इतिहास"
   addCell: "नयाँ सेल थप्नुहोस्"
@@ -1457,7 +1403,6 @@ ne_NP:
   confirmExecutionDescription: "यो क्वेरीले तपाईको डाटाबेस परिमार्जन गर्नेछ। यो कार्य अन्डू गर्न सकिँदैन।"
 
 pa_IN:
-  title: "ਪੁੱਛਗਿੱਛ"
   copyCode: "ਕੋਡ ਕਾਪੀ ਕਰੋ"
   queryHistory: "ਪੁੱਛਗਿੱਛ ਇਤਿਹਾਸ"
   addCell: "ਇੱਕ ਨਵਾਂ ਸੈੱਲ ਸ਼ਾਮਲ ਕਰੋ"
@@ -1484,7 +1429,6 @@ pa_IN:
   confirmExecutionDescription: "ਇਹ ਪੁੱਛਗਿੱਛ ਤੁਹਾਡੇ ਡੇਟਾਬੇਸ ਨੂੰ ਸੰਸ਼ੋਧਿਤ ਕਰੇਗੀ। ਇਸ ਕਾਰਵਾਈ ਨੂੰ ਅਣਕੀਤਾ ਨਹੀਂ ਕੀਤਾ ਜਾ ਸਕਦਾ।"
 
 si_LK:
-  title: "විමසුම"
   copyCode: "කේතය පිටපත් කරන්න"
   queryHistory: "විමසුම් ඉතිහාසය"
   addCell: "නව සෛලයක් එක් කරන්න"
@@ -1511,7 +1455,6 @@ si_LK:
   confirmExecutionDescription: "මෙම විමසුම ඔබගේ දත්ත සමුදාය වෙනස් කරනු ඇත. මෙම ක්‍රියාව පසුගමනය කළ නොහැක."
 
 sl_SI:
-  title: "Poizvedba"
   copyCode: "Kopiraj kodo"
   queryHistory: "Zgodovina poizvedb"
   addCell: "Dodajte novo celico"
@@ -1538,7 +1481,6 @@ sl_SI:
   confirmExecutionDescription: "Ta poizvedba bo spremenila vašo bazo podatkov. Tega dejanja ni mogoče razveljaviti."
 
 sr_RS:
-  title: "Упит"
   copyCode: "Копирај код"
   queryHistory: "Куери Хистори"
   addCell: "Додајте нову ћелију"
@@ -1565,7 +1507,6 @@ sr_RS:
   confirmExecutionDescription: "Овај упит ће модификовати вашу базу података. Ова радња се не може опозвати."
 
 te_IN:
-  title: "ప్రశ్న"
   copyCode: "కాపీ కోడ్"
   queryHistory: "ప్రశ్న చరిత్ర"
   addCell: "కొత్త సెల్‌ను జోడించండి"
@@ -1592,7 +1533,6 @@ te_IN:
   confirmExecutionDescription: "ఈ ప్రశ్న మీ డేటాబేస్‌ను మారుస్తుంది. ఈ చర్య రద్దు చేయబడదు."
 
 tl_PH:
-  title: "Tanong"
   copyCode: "Kopyahin ang Code"
   queryHistory: "Kasaysayan ng Query"
   addCell: "Magdagdag ng Bagong Cell"
@@ -1619,7 +1559,6 @@ tl_PH:
   confirmExecutionDescription: "Babaguhin ng query na ito ang iyong database. Ang pagkilos na ito ay hindi maaaring i-undo."
 
 uz_UZ:
-  title: "So'rov"
   copyCode: "Kodni nusxalash"
   queryHistory: "So'rovlar tarixi"
   addCell: "Yangi hujayra qo'shing"
@@ -1646,7 +1585,6 @@ uz_UZ:
   confirmExecutionDescription: "Ushbu so'rov ma'lumotlar bazasini o'zgartiradi. Bu amalni ortga qaytarib bo‘lmaydi."
 
 yo_NG:
-  title: "Ibeere"
   copyCode: "Da koodu"
   queryHistory: "Itan ibeere"
   addCell: "Fi Cell Tuntun kan kun"

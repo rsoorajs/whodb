@@ -248,7 +248,7 @@ export const AzureProviderModal: FC<AzureProviderModalProps> = ({
 
     const authMethodOptions = useMemo(() => [
         { value: "Default", label: t('authDefault') },
-        { value: "ServicePrincipal", label: t('authServicePrincipal') },
+        { value: "ServicePrincipal", label: t('servicePrincipal') },
     ], [t]);
 
     const regionOptions = useMemo(() => {
@@ -270,7 +270,7 @@ export const AzureProviderModal: FC<AzureProviderModalProps> = ({
             <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto" data-testid="azure-provider-modal">
                 <DialogHeader>
                     <DialogTitle>
-                        {isEditMode ? t('editProvider') : t('addProvider')}
+                        {isEditMode ? t('editProvider') : t('addAzureAccount')}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -327,7 +327,7 @@ export const AzureProviderModal: FC<AzureProviderModalProps> = ({
                             id="subscription-id"
                             value={subscriptionId}
                             onChange={(e) => setSubscriptionId(e.target.value)}
-                            placeholder={t('subscriptionPlaceholder')}
+                            placeholder={t('uuidPlaceholder')}
                             data-testid="subscription-id"
                         />
                     </div>
@@ -357,7 +357,7 @@ export const AzureProviderModal: FC<AzureProviderModalProps> = ({
                                     id="tenant-id"
                                     value={tenantId}
                                     onChange={(e) => setTenantId(e.target.value)}
-                                    placeholder={t('tenantPlaceholder')}
+                                    placeholder={t('uuidPlaceholder')}
                                     data-testid="tenant-id"
                                 />
                             </div>
@@ -367,7 +367,7 @@ export const AzureProviderModal: FC<AzureProviderModalProps> = ({
                                     id="client-id"
                                     value={clientId}
                                     onChange={(e) => setClientId(e.target.value)}
-                                    placeholder={t('clientIdPlaceholder')}
+                                    placeholder={t('uuidPlaceholder')}
                                     data-testid="client-id"
                                 />
                             </div>

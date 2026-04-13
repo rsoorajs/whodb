@@ -301,7 +301,7 @@ export const LoginForm: FC<LoginFormProps> = ({
     const handleLoginWithProfileSubmit = useCallback((overrideProfileId?: string) => {
         const profileId = overrideProfileId ?? selectedAvailableProfile;
         if (profileId == null) {
-            return setError(t('selectProfileRequired'));
+            return setError(t('selectProfile'));
         }
         setError(undefined);
 
@@ -1070,7 +1070,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                     </Button>
                     {advancedDirection === "horizontal" && (
                         <Button onClick={handleSubmit} data-testid="login-button" variant={loginWithCredentialsEnabled ? "default" : "secondary"} disabled={!loginWithCredentialsEnabled}>
-                            <CheckCircleIcon className="w-4 h-4" /> {t('loginButton')}
+                            <CheckCircleIcon className="w-4 h-4" /> {t('title')}
                         </Button>
                     )}
                     </>}
@@ -1081,7 +1081,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                     })}>
                         {!disableCredentialForm && <>
                         <Button onClick={handleSubmit} data-testid="login-button" variant={loginWithCredentialsEnabled ? "default" : "secondary"} disabled={!loginWithCredentialsEnabled}>
-                            <CheckCircleIcon className="w-4 h-4" /> {t('loginButton')}
+                            <CheckCircleIcon className="w-4 h-4" /> {t('title')}
                         </Button>
                         </>}
                     </div>
@@ -1104,7 +1104,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                                 rightIcon={<ChevronDownIcon className="w-4 h-4"/>}
                             />
                             <Button onClick={() => handleLoginWithProfileSubmit()} data-testid="login-with-profile-button" variant={loginWithProfileEnabled ? "default" : "secondary"} disabled={!loginWithProfileEnabled}>
-                                <CheckCircleIcon className="w-4 h-4" /> {t('loginButton')}
+                                <CheckCircleIcon className="w-4 h-4" /> {t('title')}
                             </Button>
                         </div>
                     </>

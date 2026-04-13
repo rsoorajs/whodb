@@ -1,433 +1,371 @@
 en_US:
   title: Schema
-  columns: Columns
   indexes: Indexes
   relationships: Relationships
   noResults: No tables found
 
 ar_AE:
   title: "مخطط"
-  columns: "أعمدة"
   indexes: "الفهارس"
   relationships: "العلاقات"
   noResults: "لم يتم العثور على جداول"
 
 de_DE:
   title: "Schema"
-  columns: "Spalten"
   indexes: "Indizes"
   relationships: "Beziehungen"
   noResults: "Keine Tische gefunden"
 
 el_GR:
   title: "Σχήμα"
-  columns: "Στήλες"
   indexes: "Ευρετήρια"
   relationships: "Σχέσεις"
   noResults: "Δεν βρέθηκαν πίνακες"
 
 en_GB:
   title: "Schema"
-  columns: "Columns"
   indexes: "Indexes"
   relationships: "Relationships"
   noResults: "No tables found"
 
 es_ES:
   title: "Esquema"
-  columns: "columnas"
   indexes: "Índices"
   relationships: "Relaciones"
   noResults: "No se encontraron tablas"
 
 fi_FI:
   title: "Kaavio"
-  columns: "Sarakkeet"
   indexes: "Indeksit"
   relationships: "Suhteet"
   noResults: "Pöytiä ei löytynyt"
 
 fr_FR:
   title: "Schéma"
-  columns: "Colonnes"
   indexes: "Index"
   relationships: "Relations"
   noResults: "Aucune table trouvée"
 
 it_IT:
   title: "Schema"
-  columns: "Colonne"
   indexes: "Indici"
   relationships: "Relazioni"
   noResults: "Nessuna tabella trovata"
 
 iw_IL:
   title: "סכֵימָה"
-  columns: "עמודות"
   indexes: "אינדקסים"
   relationships: "מערכות יחסים"
   noResults: "לא נמצאו טבלאות"
 
 ja_JP:
   title: "スキーマ"
-  columns: "コラム"
   indexes: "インデックス"
   relationships: "人間関係"
   noResults: "テーブルが見つかりません"
 
 ko_KR:
   title: "개요"
-  columns: "열"
   indexes: "인덱스"
   relationships: "관계"
   noResults: "테이블을 찾을 수 없습니다."
 
 nl_NL:
   title: "Schema"
-  columns: "Kolommen"
   indexes: "Indexen"
   relationships: "Relaties"
   noResults: "Geen tabellen gevonden"
 
 pl_PL:
   title: "Schemat"
-  columns: "Kolumny"
   indexes: "Indeksy"
   relationships: "Relacje"
   noResults: "Nie znaleziono żadnych tabel"
 
 pt_BR:
   title: "Esquema"
-  columns: "Colunas"
   indexes: "Índices"
   relationships: "Relacionamentos"
   noResults: "Nenhuma tabela encontrada"
 
 ro_RO:
   title: "Schemă"
-  columns: "Coloane"
   indexes: "Indici"
   relationships: "Relații"
   noResults: "Nu s-au găsit tabele"
 
 ru_RU:
   title: "Схема"
-  columns: "Столбцы"
   indexes: "Индексы"
   relationships: "Отношения"
   noResults: "Таблицы не найдены"
 
 sk_SK:
   title: "Schéma"
-  columns: "Stĺpce"
   indexes: "Indexy"
   relationships: "Vzťahy"
   noResults: "Nenašli sa žiadne tabuľky"
 
 sv_SE:
   title: "Schema"
-  columns: "Kolumner"
   indexes: "Index"
   relationships: "Relationer"
   noResults: "Inga tabeller hittades"
 
 zh_CN:
   title: "模式"
-  columns: "专栏"
   indexes: "索引"
   relationships: "人际关系"
   noResults: "没有找到桌子"
 
 zh_TW:
   title: "模式"
-  columns: "專欄"
   indexes: "索引"
   relationships: "人際關係"
   noResults: "沒有找到桌子"
 
 bg_BG:
   title: "Схема"
-  columns: "Колони"
   indexes: "Индекси"
   relationships: "Връзки"
   noResults: "Няма намерени маси"
 
 bn_BD:
   title: "স্কিমা"
-  columns: "কলাম"
   indexes: "সূচক"
   relationships: "সম্পর্ক"
   noResults: "কোন টেবিল পাওয়া যায়নি"
 
 ca_ES:
   title: "Esquema"
-  columns: "Columnes"
   indexes: "Índexs"
   relationships: "Relacions"
   noResults: "No s'han trobat taules"
 
 cs_CZ:
   title: "Schéma"
-  columns: "Sloupce"
   indexes: "Indexy"
   relationships: "Vztahy"
   noResults: "Nebyly nalezeny žádné tabulky"
 
 da_DK:
   title: "Skema"
-  columns: "Kolonner"
   indexes: "Indekser"
   relationships: "Relationer"
   noResults: "Ingen tabeller fundet"
 
 fa_IR:
   title: "طرحواره"
-  columns: "ستون ها"
   indexes: "شاخص ها"
   relationships: "روابط"
   noResults: "هیچ جدولی پیدا نشد"
 
 hi_IN:
   title: "योजना"
-  columns: "कॉलम"
   indexes: "इंडेक्स"
   relationships: "रिश्ते"
   noResults: "कोई टेबल नहीं मिली"
 
 hr_HR:
   title: "Shema"
-  columns: "Stupci"
   indexes: "Indeksi"
   relationships: "Odnosi"
   noResults: "Nije pronađen nijedan stol"
 
 hu_HU:
   title: "Séma"
-  columns: "Oszlopok"
   indexes: "Indexek"
   relationships: "Kapcsolatok"
   noResults: "Nem található táblázat"
 
 id_ID:
   title: "Skema"
-  columns: "Kolom"
   indexes: "Indeks"
   relationships: "Hubungan"
   noResults: "Tidak ada tabel yang ditemukan"
 
 ms_MY:
   title: "Skema"
-  columns: "Lajur"
   indexes: "Indeks"
   relationships: "Perhubungan"
   noResults: "Tiada jadual ditemui"
 
 nb_NO:
   title: "Skjema"
-  columns: "Kolonner"
   indexes: "Indekser"
   relationships: "Relasjoner"
   noResults: "Ingen tabeller funnet"
 
 sw_KE:
   title: "Schema"
-  columns: "Safu"
   indexes: "Fahirisi"
   relationships: "Mahusiano"
   noResults: "Hakuna majedwali yaliyopatikana"
 
 ta_IN:
   title: "திட்டம்"
-  columns: "நெடுவரிசைகள்"
   indexes: "குறியீடுகள்"
   relationships: "உறவுகள்"
   noResults: "அட்டவணைகள் இல்லை"
 
 th_TH:
   title: "สคีมา"
-  columns: "คอลัมน์"
   indexes: "ดัชนี"
   relationships: "ความสัมพันธ์"
   noResults: "ไม่พบตาราง"
 
 tr_TR:
   title: "Şema"
-  columns: "Sütunlar"
   indexes: "Dizinler"
   relationships: "İlişkiler"
   noResults: "Tablo bulunamadı"
 
 uk_UA:
   title: "Схема"
-  columns: "Стовпці"
   indexes: "Індекси"
   relationships: "стосунки"
   noResults: "Столики не знайдено"
 
 ur_PK:
   title: "سکیما"
-  columns: "کالم"
   indexes: "اشاریہ جات"
   relationships: "رشتے"
   noResults: "کوئی میزیں نہیں ملیں۔"
 
 vi_VN:
   title: "Lược đồ"
-  columns: "Cột"
   indexes: "Chỉ mục"
   relationships: "Mối quan hệ"
   noResults: "Không tìm thấy bảng nào"
 
 af_ZA:
   title: "Skema"
-  columns: "Kolomme"
   indexes: "Indekse"
   relationships: "Verhoudings"
   noResults: "Geen tabelle gevind nie"
 
 am_ET:
   title: "እቅድ"
-  columns: "አምዶች"
   indexes: "ኢንዴክሶች"
   relationships: "ግንኙነቶች"
   noResults: "ምንም ጠረጴዛዎች አልተገኙም።"
 
 az_AZ:
   title: "Sxem"
-  columns: "Sütunlar"
   indexes: "İndekslər"
   relationships: "Əlaqələr"
   noResults: "Cədvəl tapılmadı"
 
 et_EE:
   title: "Skeem"
-  columns: "Veerud"
   indexes: "Indeksid"
   relationships: "Suhted"
   noResults: "Tabeleid ei leitud"
 
 gu_IN:
   title: "સ્કીમા"
-  columns: "કૉલમ"
   indexes: "અનુક્રમણિકાઓ"
   relationships: "સંબંધો"
   noResults: "કોઈ કોષ્ટકો મળ્યાં નથી"
 
 ha_NG:
   title: "Tsarin tsari"
-  columns: "ginshiƙai"
   indexes: "Fihirisa"
   relationships: "Dangantaka"
   noResults: "Ba a sami teburi ba"
 
 ka_GE:
   title: "სქემა"
-  columns: "სვეტები"
   indexes: "ინდექსები"
   relationships: "ურთიერთობები"
   noResults: "ცხრილები ვერ მოიძებნა"
 
 km_KH:
   title: "គ្រោងការណ៍"
-  columns: "ជួរឈរ"
   indexes: "សន្ទស្សន៍"
   relationships: "ទំនាក់ទំនង"
   noResults: "រកមិនឃើញតារាងទេ។"
 
 kn_IN:
   title: "ಸ್ಕೀಮಾ"
-  columns: "ಕಾಲಮ್ಗಳು"
   indexes: "ಸೂಚ್ಯಂಕಗಳು"
   relationships: "ಸಂಬಂಧಗಳು"
   noResults: "ಯಾವುದೇ ಕೋಷ್ಟಕಗಳು ಕಂಡುಬಂದಿಲ್ಲ"
 
 lt_LT:
   title: "Schema"
-  columns: "Stulpeliai"
   indexes: "Indeksai"
   relationships: "Santykiai"
   noResults: "Lentelių nerasta"
 
 lv_LV:
   title: "Shēma"
-  columns: "Kolonnas"
   indexes: "Indeksi"
   relationships: "Attiecības"
   noResults: "Nav atrasta neviena tabula"
 
 ml_IN:
   title: "സ്കീമ"
-  columns: "നിരകൾ"
   indexes: "സൂചികകൾ"
   relationships: "ബന്ധങ്ങൾ"
   noResults: "പട്ടികകളൊന്നും കണ്ടെത്തിയില്ല"
 
 mr_IN:
   title: "स्कीमा"
-  columns: "स्तंभ"
   indexes: "निर्देशांक"
   relationships: "नातेसंबंध"
   noResults: "कोणतेही टेबल आढळले नाहीत"
 
 ne_NP:
   title: "योजना"
-  columns: "स्तम्भहरू"
   indexes: "अनुक्रमणिकाहरू"
   relationships: "सम्बन्धहरू"
   noResults: "कुनै तालिका भेटिएन"
 
 pa_IN:
   title: "ਸਕੀਮਾ"
-  columns: "ਕਾਲਮ"
   indexes: "ਸੂਚਕਾਂਕ"
   relationships: "ਰਿਸ਼ਤੇ"
   noResults: "ਕੋਈ ਟੇਬਲ ਨਹੀਂ ਮਿਲੇ"
 
 si_LK:
   title: "යෝජනා ක්රමය"
-  columns: "තීරු"
   indexes: "දර්ශක"
   relationships: "සබඳතා"
   noResults: "වගු හමු නොවීය"
 
 sl_SI:
   title: "Shema"
-  columns: "Stolpci"
   indexes: "Indeksi"
   relationships: "Odnosi"
   noResults: "Ni miz"
 
 sr_RS:
   title: "Шема"
-  columns: "Колумне"
   indexes: "Индекси"
   relationships: "Односи"
   noResults: "Нема пронађених табела"
 
 te_IN:
   title: "స్కీమా"
-  columns: "నిలువు వరుసలు"
   indexes: "సూచికలు"
   relationships: "సంబంధాలు"
   noResults: "పట్టికలు ఏవీ కనుగొనబడలేదు"
 
 tl_PH:
   title: "Schema"
-  columns: "Mga hanay"
   indexes: "Mga index"
   relationships: "Mga relasyon"
   noResults: "Walang nakitang mga talahanayan"
 
 uz_UZ:
   title: "Sxema"
-  columns: "Ustunlar"
   indexes: "Indekslar"
   relationships: "Aloqalar"
   noResults: "Hech qanday jadval topilmadi"
 
 yo_NG:
   title: "Eto"
-  columns: "Awọn ọwọn"
   indexes: "Awọn atọka"
   relationships: "Awọn ibatan"
   noResults: "Ko si awọn tabili ti a rii"

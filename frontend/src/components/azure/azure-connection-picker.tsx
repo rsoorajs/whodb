@@ -195,16 +195,16 @@ export const AzureConnectionPicker: FC<AzureConnectionPickerProps> = ({
                                         <p className="font-medium text-foreground">{t('helpAuthMethods')}</p>
                                         <ul className="list-disc list-inside space-y-1 pl-1">
                                             <li><span className="font-medium">{t('helpAuthDefault')}</span> – {t('helpAuthDefaultDesc')}</li>
-                                            <li><span className="font-medium">{t('helpAuthSP')}</span> – {t('helpAuthSPDesc')}</li>
+                                            <li><span className="font-medium">{t('servicePrincipal')}</span> – {t('helpAuthSPDesc')}</li>
                                         </ul>
                                     </div>
                                     <div className="space-y-1">
                                         <p className="font-medium text-foreground">{t('helpServices')}</p>
                                         <ul className="list-disc list-inside space-y-1 pl-1">
-                                            <li><span className="font-medium">PostgreSQL</span> – {t('helpPostgresDesc')}</li>
-                                            <li><span className="font-medium">MySQL</span> – {t('helpMysqlDesc')}</li>
-                                            <li><span className="font-medium">Redis</span> – {t('helpRedisDesc')}</li>
-                                            <li><span className="font-medium">Cosmos DB</span> – {t('helpCosmosdbDesc')}</li>
+                                            <li><span className="font-medium">PostgreSQL</span> – {t('postgresqlDesc')}</li>
+                                            <li><span className="font-medium">MySQL</span> – {t('mysqlDesc')}</li>
+                                            <li><span className="font-medium">Redis</span> – {t('redisDesc')}</li>
+                                            <li><span className="font-medium">Cosmos DB</span> – {t('cosmosdbDesc')}</li>
                                         </ul>
                                     </div>
                                     <p className="pt-1 border-t">{t('helpCredentialNote', { appName })}</p>

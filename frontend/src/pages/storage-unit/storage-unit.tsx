@@ -204,7 +204,7 @@ const StorageUnitCard: FC<{ unit: StorageUnit, schema: string }> = ({ unit, sche
                     )}
                     {!columnsLoading && columns && columns.length > 0 && (
                         <div className="mt-8">
-                            <h3 className="text-xs font-semibold uppercase text-muted-foreground">{t('columnsTitle')}</h3>
+                            <h3 className="text-xs font-semibold uppercase text-muted-foreground">{t('columns')}</h3>
                             <StackList>
                                 {columns.map(col => {
                                     const isForeignKey = col.IsForeignKey;
@@ -515,7 +515,7 @@ export const StorageUnitPage: FC = () => {
                                             {
                                                 fields.length > 1 &&
                                                 <Button variant="destructive" onClick={() => handleRemove(index)} data-testid="remove-field-button" className="w-full mt-1">
-                                                    <XCircleIcon className="w-4 h-4"/> <span>{t('removeField')}</span>
+                                                    <XCircleIcon className="w-4 h-4"/> <span>{t('remove')}</span>
                                                 </Button>
                                             }
                                             {index !== fields.length - 1 && <Separator className="mt-2" />}
@@ -530,7 +530,7 @@ export const StorageUnitPage: FC = () => {
                     </div>
                     <div className="flex grow" />
                     <Button onClick={handleSubmit} data-testid="submit-button" className="w-full">
-                        <CheckCircleIcon className="w-4 h-4" /> {t('createButton')}
+                        <CheckCircleIcon className="w-4 h-4" /> {t('create')}
                     </Button>
                 </div>
             </ExpandableCard>}
@@ -551,7 +551,7 @@ export const StorageUnitPage: FC = () => {
                         {sharedAttributeKeys.map(key => (
                             <TableHead key={key}>{key}</TableHead>
                         ))}
-                        <TableHead>{t('actionsColumn')}</TableHead>
+                        <TableHead>{t('actions')}</TableHead>
                     </TableHeadRow>
                 </TableHeader>
                 <VirtualizedTableBody
@@ -621,7 +621,7 @@ export const StorageUnitPage: FC = () => {
                                     {expandedUnitColumnsLoading && <Loading hideText={true} />}
                                     {!expandedUnitColumnsLoading && columns && columns.length > 0 && (
                                         <div>
-                                            <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-2">{t('columnsTitle')}</h3>
+                                            <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-2">{t('columns')}</h3>
                                             <StackList>
                                                 {columns.map((col: any) => {
                                                     const isForeignKey = col.IsForeignKey;

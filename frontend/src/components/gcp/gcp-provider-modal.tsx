@@ -254,7 +254,7 @@ export const GcpProviderModal: FC<GcpProviderModalProps> = ({
             <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto" data-testid="gcp-provider-modal">
                 <DialogHeader>
                     <DialogTitle>
-                        {isEditMode ? t('editProvider') : t('addProvider')}
+                        {isEditMode ? t('editProvider') : t('addGcpAccount')}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -285,7 +285,7 @@ export const GcpProviderModal: FC<GcpProviderModalProps> = ({
                                                 "hover:border-brand hover:bg-brand/5",
                                                 "focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"
                                             )}
-                                            title={t('projectSourceTooltip', { source: sourceDisplay })}
+                                            title={t('foundInSource', { source: sourceDisplay })}
                                         >
                                             <span className="font-medium">
                                                 {project.IsDefault ? t('defaultProjectName') : project.Name}

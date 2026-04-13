@@ -17,7 +17,6 @@ en_US:
   conditionCount_one: "{count} Condition"
   tenPlusConditions: 10+ Conditions
   moreConditions: +{count} more
-  addAnother: Add Condition
   addToPage: Add to Page
 
 ar_AE:
@@ -39,7 +38,6 @@ ar_AE:
   conditionCount_one: "{count} الحالة"
   tenPlusConditions: "10+ الشروط"
   moreConditions: "+{count} المزيد"
-  addAnother: "إضافة شرط"
   addToPage: "أضف إلى الصفحة"
 
 de_DE:
@@ -61,7 +59,6 @@ de_DE:
   conditionCount_one: "{count} Bedingung"
   tenPlusConditions: "10+ Bedingungen"
   moreConditions: "+{count} mehr"
-  addAnother: "Bedingung hinzufügen"
   addToPage: "Zur Seite hinzufügen"
 
 el_GR:
@@ -83,7 +80,6 @@ el_GR:
   conditionCount_one: "{count} Κατάσταση"
   tenPlusConditions: "10+ Προϋποθέσεις"
   moreConditions: "+{count} ακόμη"
-  addAnother: "Προσθήκη συνθήκης"
   addToPage: "Προσθήκη στη Σελίδα"
 
 en_GB:
@@ -105,7 +101,6 @@ en_GB:
   conditionCount_one: "{count} Condition"
   tenPlusConditions: "10+ Conditions"
   moreConditions: "+{count} more"
-  addAnother: "Add Condition"
   addToPage: "Add to Page"
 
 es_ES:
@@ -127,7 +122,6 @@ es_ES:
   conditionCount_one: "{count} Condición"
   tenPlusConditions: "Más de 10 condiciones"
   moreConditions: "+{count} más"
-  addAnother: "Agregar condición"
   addToPage: "Agregar a la página"
 
 fi_FI:
@@ -149,7 +143,6 @@ fi_FI:
   conditionCount_one: "{count} Kunto"
   tenPlusConditions: "10+ ehtoja"
   moreConditions: "+{count} lisää"
-  addAnother: "Lisää kunto"
   addToPage: "Lisää sivulle"
 
 fr_FR:
@@ -171,7 +164,6 @@ fr_FR:
   conditionCount_one: "{count} État"
   tenPlusConditions: "10+ conditions"
   moreConditions: "+{count} plus"
-  addAnother: "Ajouter une condition"
   addToPage: "Ajouter à la page"
 
 it_IT:
@@ -193,7 +185,6 @@ it_IT:
   conditionCount_one: "{count} Condizione"
   tenPlusConditions: "10+ condizioni"
   moreConditions: "+{count} altro"
-  addAnother: "Aggiungi condizione"
   addToPage: "Aggiungi alla pagina"
 
 iw_IL:
@@ -215,7 +206,6 @@ iw_IL:
   conditionCount_one: "{count} מצב"
   tenPlusConditions: "10+ תנאים"
   moreConditions: "+{count} נוספים"
-  addAnother: "הוסף מצב"
   addToPage: "הוסף לדף"
 
 ja_JP:
@@ -237,7 +227,6 @@ ja_JP:
   conditionCount_one: "{count} 状態"
   tenPlusConditions: "10以上の条件"
   moreConditions: "+{count} 詳細"
-  addAnother: "条件の追加"
   addToPage: "ページに追加"
 
 ko_KR:
@@ -259,7 +248,6 @@ ko_KR:
   conditionCount_one: "{count} 조건"
   tenPlusConditions: "10개 이상의 조건"
   moreConditions: "+{count} 더보기"
-  addAnother: "조건 추가"
   addToPage: "페이지에 추가"
 
 nl_NL:
@@ -281,7 +269,6 @@ nl_NL:
   conditionCount_one: "{count} Conditie"
   tenPlusConditions: "10+ voorwaarden"
   moreConditions: "+{count} meer"
-  addAnother: "Voorwaarde toevoegen"
   addToPage: "Toevoegen aan pagina"
 
 pl_PL:
@@ -303,7 +290,6 @@ pl_PL:
   conditionCount_one: "{count} Warunek"
   tenPlusConditions: "Ponad 10 warunków"
   moreConditions: "+{count} więcej"
-  addAnother: "Dodaj warunek"
   addToPage: "Dodaj do strony"
 
 pt_BR:
@@ -325,7 +311,6 @@ pt_BR:
   conditionCount_one: "{count} Condição"
   tenPlusConditions: "Mais de 10 condições"
   moreConditions: "+{count} mais"
-  addAnother: "Adicionar condição"
   addToPage: "Adicionar à página"
 
 ro_RO:
@@ -347,7 +332,6 @@ ro_RO:
   conditionCount_one: "{count} Condiție"
   tenPlusConditions: "10+ condiții"
   moreConditions: "+{count} mai multe"
-  addAnother: "Adăugați o condiție"
   addToPage: "Adăugați la pagină"
 
 ru_RU:
@@ -369,7 +353,6 @@ ru_RU:
   conditionCount_one: "{count} Условие"
   tenPlusConditions: "10+ условий"
   moreConditions: "+{count} ещё"
-  addAnother: "Добавить условие"
   addToPage: "Добавить на страницу"
 
 sk_SK:
@@ -391,7 +374,6 @@ sk_SK:
   conditionCount_one: "{count} Stav"
   tenPlusConditions: "10+ podmienok"
   moreConditions: "+{count} ďalšie"
-  addAnother: "Pridať podmienku"
   addToPage: "Pridať na stránku"
 
 sv_SE:
@@ -413,7 +395,6 @@ sv_SE:
   conditionCount_one: "{count} Skick"
   tenPlusConditions: "10+ villkor"
   moreConditions: "+{count} till"
-  addAnother: "Lägg till skick"
   addToPage: "Lägg till på sidan"
 
 zh_CN:
@@ -435,7 +416,6 @@ zh_CN:
   conditionCount_one: "{count} 条件"
   tenPlusConditions: "10+条件"
   moreConditions: "+{count}更多"
-  addAnother: "添加条件"
   addToPage: "添加到页面"
 
 zh_TW:
@@ -457,7 +437,6 @@ zh_TW:
   conditionCount_one: "{count} 條件"
   tenPlusConditions: "10+條件"
   moreConditions: "+{count}更多"
-  addAnother: "新增條件"
   addToPage: "新增到頁面"
 
 bg_BG:
@@ -479,7 +458,6 @@ bg_BG:
   conditionCount_one: "{count} Състояние"
   tenPlusConditions: "10+ условия"
   moreConditions: "+{count} още"
-  addAnother: "Добавяне на условие"
   addToPage: "Добавяне към страницата"
 
 bn_BD:
@@ -501,7 +479,6 @@ bn_BD:
   conditionCount_one: "{count} শর্ত"
   tenPlusConditions: "10+ শর্ত"
   moreConditions: "+{count} আরও"
-  addAnother: "শর্ত যোগ করুন"
   addToPage: "পৃষ্ঠায় যোগ করুন"
 
 ca_ES:
@@ -523,7 +500,6 @@ ca_ES:
   conditionCount_one: "{count} Condició"
   tenPlusConditions: "Més de 10 condicions"
   moreConditions: "+{count} més"
-  addAnother: "Afegeix una condició"
   addToPage: "Afegeix a la pàgina"
 
 cs_CZ:
@@ -545,7 +521,6 @@ cs_CZ:
   conditionCount_one: "{count} Stav"
   tenPlusConditions: "10+ podmínek"
   moreConditions: "+{count} další"
-  addAnother: "Přidat podmínku"
   addToPage: "Přidat na stránku"
 
 da_DK:
@@ -567,7 +542,6 @@ da_DK:
   conditionCount_one: "{count} Stand"
   tenPlusConditions: "10+ betingelser"
   moreConditions: "+{count} mere"
-  addAnother: "Tilføj tilstand"
   addToPage: "Tilføj til side"
 
 fa_IR:
@@ -589,7 +563,6 @@ fa_IR:
   conditionCount_one: "{count} وضعیت"
   tenPlusConditions: "10+ شرایط"
   moreConditions: "+{count} بیشتر"
-  addAnother: "اضافه کردن شرط"
   addToPage: "افزودن به صفحه"
 
 hi_IN:
@@ -611,7 +584,6 @@ hi_IN:
   conditionCount_one: "{count} शर्त"
   tenPlusConditions: "10+ शर्तें"
   moreConditions: "+{count} और अधिक"
-  addAnother: "शर्त जोड़ें"
   addToPage: "पेज में जोड़ें"
 
 hr_HR:
@@ -633,7 +605,6 @@ hr_HR:
   conditionCount_one: "{count} Stanje"
   tenPlusConditions: "10+ uvjeta"
   moreConditions: "+{count} više"
-  addAnother: "Dodaj uvjet"
   addToPage: "Dodaj na stranicu"
 
 hu_HU:
@@ -655,7 +626,6 @@ hu_HU:
   conditionCount_one: "{count} Állapot"
   tenPlusConditions: "10+ feltételek"
   moreConditions: "+{count} még"
-  addAnother: "Feltétel hozzáadása"
   addToPage: "Hozzáadás az oldalhoz"
 
 id_ID:
@@ -677,7 +647,6 @@ id_ID:
   conditionCount_one: "{count} Kondisi"
   tenPlusConditions: "10+ Ketentuan"
   moreConditions: "+{count} lagi"
-  addAnother: "Tambahkan Kondisi"
   addToPage: "Tambahkan ke Halaman"
 
 ms_MY:
@@ -699,7 +668,6 @@ ms_MY:
   conditionCount_one: "{count} Keadaan"
   tenPlusConditions: "10+ Syarat"
   moreConditions: "+{count} lagi"
-  addAnother: "Tambah Syarat"
   addToPage: "Tambahkan pada Halaman"
 
 nb_NO:
@@ -721,7 +689,6 @@ nb_NO:
   conditionCount_one: "{count} Tilstand"
   tenPlusConditions: "10+ betingelser"
   moreConditions: "+{count} til"
-  addAnother: "Legg til tilstand"
   addToPage: "Legg til side"
 
 sw_KE:
@@ -743,7 +710,6 @@ sw_KE:
   conditionCount_one: "{count} Hali"
   tenPlusConditions: "10+ Masharti"
   moreConditions: "+{count} zaidi"
-  addAnother: "Ongeza Hali"
   addToPage: "Ongeza kwenye Ukurasa"
 
 ta_IN:
@@ -765,7 +731,6 @@ ta_IN:
   conditionCount_one: "{count} நிபந்தனை"
   tenPlusConditions: "10+ நிபந்தனைகள்"
   moreConditions: "+{count} மேலும்"
-  addAnother: "நிபந்தனையைச் சேர்க்கவும்"
   addToPage: "பக்கத்தில் சேர்க்கவும்"
 
 th_TH:
@@ -787,7 +752,6 @@ th_TH:
   conditionCount_one: "{count} สภาพ"
   tenPlusConditions: "10+ เงื่อนไข"
   moreConditions: "+{count} เพิ่มเติม"
-  addAnother: "เพิ่มเงื่อนไข"
   addToPage: "เพิ่มไปที่เพจ"
 
 tr_TR:
@@ -809,7 +773,6 @@ tr_TR:
   conditionCount_one: "{count} Koşul"
   tenPlusConditions: "10+ Koşul"
   moreConditions: "+{count} daha fazla"
-  addAnother: "Koşul Ekle"
   addToPage: "Sayfaya Ekle"
 
 uk_UA:
@@ -831,7 +794,6 @@ uk_UA:
   conditionCount_one: "{count} Стан"
   tenPlusConditions: "10+ Умов"
   moreConditions: "+{count} більше"
-  addAnother: "Додати умову"
   addToPage: "Додати на сторінку"
 
 ur_PK:
@@ -853,7 +815,6 @@ ur_PK:
   conditionCount_one: "{count} حالت"
   tenPlusConditions: "10+ شرائط"
   moreConditions: "+{count} مزید"
-  addAnother: "شرط شامل کریں۔"
   addToPage: "صفحہ میں شامل کریں۔"
 
 vi_VN:
@@ -875,7 +836,6 @@ vi_VN:
   conditionCount_one: "{count} Tình trạng"
   tenPlusConditions: "Hơn 10 điều kiện"
   moreConditions: "+{count} thêm"
-  addAnother: "Thêm điều kiện"
   addToPage: "Thêm vào trang"
 
 af_ZA:
@@ -897,7 +857,6 @@ af_ZA:
   conditionCount_one: "{count} Toestand"
   tenPlusConditions: "10+ voorwaardes"
   moreConditions: "+{count} meer"
-  addAnother: "Voeg toestand by"
   addToPage: "Voeg by bladsy"
 
 am_ET:
@@ -919,7 +878,6 @@ am_ET:
   conditionCount_one: "{count} ሁኔታ"
   tenPlusConditions: "10+ ሁኔታዎች"
   moreConditions: "+{count} ተጨማሪ"
-  addAnother: "ሁኔታን ይጨምሩ"
   addToPage: "ወደ ገጽ ያክሉ"
 
 az_AZ:
@@ -941,7 +899,6 @@ az_AZ:
   conditionCount_one: "{count} Vəziyyət"
   tenPlusConditions: "10+ Şərtlər"
   moreConditions: "+{count} daha çox"
-  addAnother: "Şərt əlavə edin"
   addToPage: "Səhifəyə əlavə et"
 
 et_EE:
@@ -963,7 +920,6 @@ et_EE:
   conditionCount_one: "{count} Seisukord"
   tenPlusConditions: "10+ tingimusi"
   moreConditions: "+ {count} veel"
-  addAnother: "Lisa tingimus"
   addToPage: "Lisa lehele"
 
 gu_IN:
@@ -985,7 +941,6 @@ gu_IN:
   conditionCount_one: "{count} શરત"
   tenPlusConditions: "10+ શરતો"
   moreConditions: "+{count} વધુ"
-  addAnother: "શરત ઉમેરો"
   addToPage: "પૃષ્ઠમાં ઉમેરો"
 
 ha_NG:
@@ -1007,7 +962,6 @@ ha_NG:
   conditionCount_one: "{count} Hali"
   tenPlusConditions: "Sharuɗɗa 10+"
   moreConditions: "+{count} ƙari"
-  addAnother: "Ƙara Sharadi"
   addToPage: "Ƙara zuwa Shafi"
 
 ka_GE:
@@ -1029,7 +983,6 @@ ka_GE:
   conditionCount_one: "{count} მდგომარეობა"
   tenPlusConditions: "10+ პირობები"
   moreConditions: "+{count} მეტი"
-  addAnother: "მდგომარეობის დამატება"
   addToPage: "გვერდზე დამატება"
 
 km_KH:
@@ -1051,7 +1004,6 @@ km_KH:
   conditionCount_one: "{count} លក្ខខណ្ឌ"
   tenPlusConditions: "10+ លក្ខខណ្ឌ"
   moreConditions: "+{count} ច្រើនទៀត"
-  addAnother: "បន្ថែមលក្ខខណ្ឌ"
   addToPage: "បន្ថែមទៅទំព័រ"
 
 kn_IN:
@@ -1073,7 +1025,6 @@ kn_IN:
   conditionCount_one: "{count} ಸ್ಥಿತಿ"
   tenPlusConditions: "10+ ಷರತ್ತುಗಳು"
   moreConditions: "+{count} ಇನ್ನಷ್ಟು"
-  addAnother: "ಷರತ್ತು ಸೇರಿಸಿ"
   addToPage: "ಪುಟಕ್ಕೆ ಸೇರಿಸಿ"
 
 lt_LT:
@@ -1095,7 +1046,6 @@ lt_LT:
   conditionCount_one: "{count} Būklė"
   tenPlusConditions: "10+ sąlygų"
   moreConditions: "+ {count} daugiau"
-  addAnother: "Pridėti sąlygą"
   addToPage: "Pridėti į puslapį"
 
 lv_LV:
@@ -1117,7 +1067,6 @@ lv_LV:
   conditionCount_one: "{count} Stāvoklis"
   tenPlusConditions: "10+ nosacījumi"
   moreConditions: "+ {count} vēl"
-  addAnother: "Pievienot nosacījumu"
   addToPage: "Pievienot lapai"
 
 ml_IN:
@@ -1139,7 +1088,6 @@ ml_IN:
   conditionCount_one: "{count} അവസ്ഥ"
   tenPlusConditions: "10+ വ്യവസ്ഥകൾ"
   moreConditions: "+{count} കൂടുതൽ"
-  addAnother: "വ്യവസ്ഥ ചേർക്കുക"
   addToPage: "പേജിലേക്ക് ചേർക്കുക"
 
 mr_IN:
@@ -1161,7 +1109,6 @@ mr_IN:
   conditionCount_one: "{count} स्थिती"
   tenPlusConditions: "10+ अटी"
   moreConditions: "+{count} अधिक"
-  addAnother: "अट जोडा"
   addToPage: "पृष्ठावर जोडा"
 
 ne_NP:
@@ -1183,7 +1130,6 @@ ne_NP:
   conditionCount_one: "{count} अवस्था"
   tenPlusConditions: "१०+ सर्तहरू"
   moreConditions: "+{count} थप"
-  addAnother: "सर्त थप्नुहोस्"
   addToPage: "पृष्ठमा थप्नुहोस्"
 
 pa_IN:
@@ -1205,7 +1151,6 @@ pa_IN:
   conditionCount_one: "{count} ਹਾਲਤ"
   tenPlusConditions: "10+ ਸ਼ਰਤਾਂ"
   moreConditions: "+{count} ਹੋਰ"
-  addAnother: "ਸ਼ਰਤ ਜੋੜੋ"
   addToPage: "ਪੰਨੇ ਵਿੱਚ ਸ਼ਾਮਲ ਕਰੋ"
 
 si_LK:
@@ -1227,7 +1172,6 @@ si_LK:
   conditionCount_one: "{count} තත්ත්වය"
   tenPlusConditions: "10+ කොන්දේසි"
   moreConditions: "+{count} තවත්"
-  addAnother: "කොන්දේසි එකතු කරන්න"
   addToPage: "පිටුවට එක් කරන්න"
 
 sl_SI:
@@ -1249,7 +1193,6 @@ sl_SI:
   conditionCount_one: "{count} Pogoj"
   tenPlusConditions: "10+ pogojev"
   moreConditions: "+{count} več"
-  addAnother: "Dodaj pogoj"
   addToPage: "Dodaj na stran"
 
 sr_RS:
@@ -1271,7 +1214,6 @@ sr_RS:
   conditionCount_one: "{count} Стање"
   tenPlusConditions: "10+ услова"
   moreConditions: "+{count} још"
-  addAnother: "Додај услов"
   addToPage: "Додај на страницу"
 
 te_IN:
@@ -1293,7 +1235,6 @@ te_IN:
   conditionCount_one: "{count} పరిస్థితి"
   tenPlusConditions: "10+ షరతులు"
   moreConditions: "+{count} మరిన్ని"
-  addAnother: "షరతు జోడించండి"
   addToPage: "పేజీకి జోడించండి"
 
 tl_PH:
@@ -1315,7 +1256,6 @@ tl_PH:
   conditionCount_one: "{count} Kundisyon"
   tenPlusConditions: "10+ Kundisyon"
   moreConditions: "+{count} higit pa"
-  addAnother: "Magdagdag ng Kundisyon"
   addToPage: "Idagdag sa Pahina"
 
 uz_UZ:
@@ -1337,7 +1277,6 @@ uz_UZ:
   conditionCount_one: "{count} Vaziyat"
   tenPlusConditions: "10+ shartlar"
   moreConditions: "yana {count}"
-  addAnother: "Shart qo'shish"
   addToPage: "Sahifaga qo'shish"
 
 yo_NG:
@@ -1359,5 +1298,4 @@ yo_NG:
   conditionCount_one: "{count} Ipo"
   tenPlusConditions: "10+ Awọn ipo"
   moreConditions: "+{count} diẹ sii"
-  addAnother: "Fi Ipo sii"
   addToPage: "Fi si Oju-iwe"

@@ -1650,7 +1650,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                             data-testid="import-button"
                         >
                             <ArrowUpCircleIcon className="w-4 h-4" />
-                            {t('importData')}
+                            {t('importAction')}
                         </Button>
                     )}
                     <Button
@@ -1671,7 +1671,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                     }
                 }}>
                     <SheetContent side="right" className="w-[400px] max-w-full p-8 flex flex-col" data-testid="edit-row-dialog">
-                        <SheetTitle>{t('editRowTitle')}</SheetTitle>
+                        <SheetTitle>{t('editRow')}</SheetTitle>
                         <div className="flex-1 overflow-y-auto mt-4">
                             <div className="flex flex-col gap-lg pr-2">
                                 {editRow &&
@@ -1735,7 +1735,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                 }}>
                 <SheetContent side="right" className="p-8" data-testid="mock-data-sheet">
                     <div className="flex flex-col gap-lg h-full">
-                        <SheetTitle className="flex items-center gap-2"><CalculatorIcon className="w-4 h-4" /> {t('mockDataTitle')}</SheetTitle>
+                        <SheetTitle className="flex items-center gap-2"><CalculatorIcon className="w-4 h-4" /> {t('mockData')}</SheetTitle>
                         {!showMockDataConfirmation ? (
                             <div className="space-y-4">
                                 <Label>{t('numberOfRows', { max: maxRowCount })}</Label>

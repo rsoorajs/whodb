@@ -1,5 +1,4 @@
 en_US:
-  title: Chat
   placeholder: Type Your Message Here...
   emptyStateTitle: What Can I Help You With?
   noModelTitle: No Model Available
@@ -14,7 +13,6 @@ en_US:
   failedToExecuteSQL: Failed to Execute SQL. Try Again.
   actionExecuted: Action Executed
   noDataReturned: No Data Was Returned.
-  dialogTitle: Move to Scratchpad
   dialogDescription: Choose which scratchpad page to add this query to.
   selectPageLabel: Select a Page
   selectPagePlaceholder: Choose a Page...
@@ -96,7 +94,6 @@ en_US:
   example27: Show a report of all policy violations in the last quarter
 
 ar_AE:
-  title: "محادثة"
   placeholder: "اكتب رسالتك هنا..."
   emptyStateTitle: "ما الذي يمكنني مساعدتك به؟"
   noModelTitle: "لا يوجد نموذج متاح"
@@ -111,7 +108,6 @@ ar_AE:
   failedToExecuteSQL: "فشل في تنفيذ SQL. حاول ثانية."
   actionExecuted: "تم تنفيذ الإجراء"
   noDataReturned: "لم يتم إرجاع أية بيانات."
-  dialogTitle: "الانتقال إلى المسودة"
   dialogDescription: "اختر صفحة لوحة المسودة التي تريد إضافة هذا الاستعلام إليها."
   selectPageLabel: "حدد صفحة"
   selectPagePlaceholder: "اختر صفحة..."
@@ -193,7 +189,6 @@ ar_AE:
   example27: "عرض تقرير بجميع انتهاكات السياسة في الربع الأخير"
 
 de_DE:
-  title: "Chatten"
   placeholder: "Geben Sie hier Ihre Nachricht ein..."
   emptyStateTitle: "Wobei kann ich Ihnen helfen?"
   noModelTitle: "Kein Modell verfügbar"
@@ -208,7 +203,6 @@ de_DE:
   failedToExecuteSQL: "SQL konnte nicht ausgeführt werden. Versuchen Sie es erneut."
   actionExecuted: "Aktion ausgeführt"
   noDataReturned: "Es wurden keine Daten zurückgegeben."
-  dialogTitle: "Wechseln Sie zum Scratchpad"
   dialogDescription: "Wählen Sie aus, zu welcher Scratchpad-Seite diese Abfrage hinzugefügt werden soll."
   selectPageLabel: "Wählen Sie eine Seite aus"
   selectPagePlaceholder: "Wählen Sie eine Seite..."
@@ -290,7 +284,6 @@ de_DE:
   example27: "Zeigen Sie einen Bericht aller Richtlinienverstöße im letzten Quartal an"
 
 el_GR:
-  title: "Κουβέντα"
   placeholder: "Πληκτρολογήστε το μήνυμά σας εδώ..."
   emptyStateTitle: "Σε τι μπορώ να σας βοηθήσω;"
   noModelTitle: "Δεν υπάρχει διαθέσιμο μοντέλο"
@@ -305,7 +298,6 @@ el_GR:
   failedToExecuteSQL: "Απέτυχε η εκτέλεση της SQL. Δοκιμάστε ξανά."
   actionExecuted: "Εκτελέστηκε ενέργεια"
   noDataReturned: "Δεν επιστράφηκαν δεδομένα."
-  dialogTitle: "Μετακίνηση στο Scratchpad"
   dialogDescription: "Επιλέξτε σε ποια σελίδα scratchpad θα προσθέσετε αυτό το ερώτημα."
   selectPageLabel: "Επιλέξτε μια Σελίδα"
   selectPagePlaceholder: "Επιλέξτε σελίδα..."
@@ -387,7 +379,6 @@ el_GR:
   example27: "Εμφάνιση αναφοράς όλων των παραβιάσεων πολιτικής το τελευταίο τρίμηνο"
 
 en_GB:
-  title: "Chat"
   placeholder: "Type Your Message Here..."
   emptyStateTitle: "What Can I Help You With?"
   noModelTitle: "No Model Available"
@@ -402,7 +393,6 @@ en_GB:
   failedToExecuteSQL: "Failed to Execute SQL. Try Again."
   actionExecuted: "Action Executed"
   noDataReturned: "No Data Was Returned."
-  dialogTitle: "Move to Scratchpad"
   dialogDescription: "Choose which scratchpad page to add this query to."
   selectPageLabel: "Select a Page"
   selectPagePlaceholder: "Choose a Page..."
@@ -484,7 +474,6 @@ en_GB:
   example27: "Show a report of all policy violations in the last quarter"
 
 es_ES:
-  title: "Charlar"
   placeholder: "Escriba su mensaje aquí..."
   emptyStateTitle: "¿En qué puedo ayudarte?"
   noModelTitle: "Ningún modelo disponible"
@@ -499,7 +488,6 @@ es_ES:
   failedToExecuteSQL: "No se pudo ejecutar SQL. Intentar otra vez."
   actionExecuted: "Acción ejecutada"
   noDataReturned: "No se devolvieron datos."
-  dialogTitle: "Mover al bloc de notas"
   dialogDescription: "Choose which scratchpad page to add this query to."
   selectPageLabel: "Seleccione una página"
   selectPagePlaceholder: "Elige una página..."
@@ -581,7 +569,6 @@ es_ES:
   example27: "Mostrar un informe de todas las infracciones de políticas en el último trimestre"
 
 fi_FI:
-  title: "Chat"
   placeholder: "Kirjoita viestisi tähän..."
   emptyStateTitle: "Missä voin auttaa sinua?"
   noModelTitle: "Mallia ei ole saatavilla"
@@ -596,7 +583,6 @@ fi_FI:
   failedToExecuteSQL: "SQL:n suorittaminen epäonnistui. Yritä uudelleen."
   actionExecuted: "Toimenpide suoritettu"
   noDataReturned: "Tietoja ei palautettu."
-  dialogTitle: "Siirry Scratchpadiin"
   dialogDescription: "Valitse, mille sivulle haluat lisätä tämän kyselyn."
   selectPageLabel: "Valitse sivu"
   selectPagePlaceholder: "Valitse sivu..."
@@ -678,7 +664,6 @@ fi_FI:
   example27: "Näytä raportti kaikista viimeisen vuosineljänneksen sääntörikkomuksista"
 
 fr_FR:
-  title: "Chatte"
   placeholder: "Tapez votre message ici..."
   emptyStateTitle: "En quoi puis-je vous aider ?"
   noModelTitle: "Aucun modèle disponible"
@@ -693,7 +678,6 @@ fr_FR:
   failedToExecuteSQL: "Échec de l'exécution de SQL. Essayer à nouveau."
   actionExecuted: "Action exécutée"
   noDataReturned: "Aucune donnée n'a été renvoyée."
-  dialogTitle: "Déplacer vers le Bloc-notes"
   dialogDescription: "Choisissez à quelle page du bloc-notes ajouter cette requête."
   selectPageLabel: "Sélectionnez une page"
   selectPagePlaceholder: "Choisissez une page..."
@@ -775,7 +759,6 @@ fr_FR:
   example27: "Afficher un rapport sur toutes les violations des règles au cours du dernier trimestre"
 
 it_IT:
-  title: "Chiacchierata"
   placeholder: "Scrivi qui il tuo messaggio..."
   emptyStateTitle: "In cosa posso aiutarti?"
   noModelTitle: "Nessun modello disponibile"
@@ -790,7 +773,6 @@ it_IT:
   failedToExecuteSQL: "Impossibile eseguire SQL. Riprova."
   actionExecuted: "Azione eseguita"
   noDataReturned: "Nessun dato è stato restituito."
-  dialogTitle: "Passa a Scratchpad"
   dialogDescription: "Scegli a quale pagina degli appunti aggiungere questa query."
   selectPageLabel: "Seleziona una pagina"
   selectPagePlaceholder: "Scegli una pagina..."
@@ -872,7 +854,6 @@ it_IT:
   example27: "Mostra un rapporto su tutte le violazioni delle norme nell'ultimo trimestre"
 
 iw_IL:
-  title: "לְשׂוֹחֵחַ"
   placeholder: "הקלד את הודעתך כאן..."
   emptyStateTitle: "במה אוכל לעזור לך?"
   noModelTitle: "אין דגם זמין"
@@ -887,7 +868,6 @@ iw_IL:
   failedToExecuteSQL: "נכשל בביצוע SQL. נסה שוב."
   actionExecuted: "הפעולה בוצעה"
   noDataReturned: "לא הוחזרו נתונים."
-  dialogTitle: "עבור ל-Sratchpad"
   dialogDescription: "בחר לאיזה דף פנקס רישומים להוסיף שאילתה זו."
   selectPageLabel: "בחר עמוד"
   selectPagePlaceholder: "בחר עמוד..."
@@ -969,7 +949,6 @@ iw_IL:
   example27: "הצג דוח של כל הפרות המדיניות ברבעון האחרון"
 
 ja_JP:
-  title: "チャット"
   placeholder: "ここにメッセージを入力してください..."
   emptyStateTitle: "何をお手伝いできますか?"
   noModelTitle: "利用可能なモデルがありません"
@@ -984,7 +963,6 @@ ja_JP:
   failedToExecuteSQL: "SQLの実行に失敗しました。 もう一度やり直してください。"
   actionExecuted: "アクションが実行されました"
   noDataReturned: "データは返されませんでした。"
-  dialogTitle: "スクラッチパッドに移動"
   dialogDescription: "このクエリを追加するスクラッチパッド ページを選択します。"
   selectPageLabel: "ページを選択してください"
   selectPagePlaceholder: "ページを選択してください..."
@@ -1066,7 +1044,6 @@ ja_JP:
   example27: "前四半期のすべてのポリシー違反のレポートを表示します"
 
 ko_KR:
-  title: "채팅"
   placeholder: "여기에 메시지를 입력하세요..."
   emptyStateTitle: "무엇을 도와드릴까요?"
   noModelTitle: "사용 가능한 모델 없음"
@@ -1081,7 +1058,6 @@ ko_KR:
   failedToExecuteSQL: "SQL을 실행하지 못했습니다. 다시 시도해 보세요."
   actionExecuted: "실행된 작업"
   noDataReturned: "데이터가 반환되지 않았습니다."
-  dialogTitle: "스크래치패드로 이동"
   dialogDescription: "이 쿼리를 추가할 스크래치패드 페이지를 선택하세요."
   selectPageLabel: "페이지 선택"
   selectPagePlaceholder: "페이지를 선택하세요..."
@@ -1163,7 +1139,6 @@ ko_KR:
   example27: "지난 분기의 모든 정책 위반에 대한 보고서 표시"
 
 nl_NL:
-  title: "Chatten"
   placeholder: "Typ hier uw bericht..."
   emptyStateTitle: "Waarmee kan ik u helpen?"
   noModelTitle: "Geen model beschikbaar"
@@ -1178,7 +1153,6 @@ nl_NL:
   failedToExecuteSQL: "Kan SQL niet uitvoeren. Probeer het opnieuw."
   actionExecuted: "Actie uitgevoerd"
   noDataReturned: "Er zijn geen gegevens geretourneerd."
-  dialogTitle: "Ga naar Kladblok"
   dialogDescription: "Kies aan welke kladblokpagina u deze zoekopdracht wilt toevoegen."
   selectPageLabel: "Selecteer een pagina"
   selectPagePlaceholder: "Kies een pagina..."
@@ -1260,7 +1234,6 @@ nl_NL:
   example27: "Toon een rapport van alle beleidsschendingen in het afgelopen kwartaal"
 
 pl_PL:
-  title: "Pogawędzić"
   placeholder: "Wpisz tutaj swoją wiadomość..."
   emptyStateTitle: "W czym mogę Ci pomóc?"
   noModelTitle: "Brak dostępnego modelu"
@@ -1275,7 +1248,6 @@ pl_PL:
   failedToExecuteSQL: "Nie udało się wykonać SQL. Spróbuj ponownie."
   actionExecuted: "Akcja wykonana"
   noDataReturned: "Żadne dane nie zostały zwrócone."
-  dialogTitle: "Przejdź do Scratchpada"
   dialogDescription: "Wybierz stronę notatnika, do której chcesz dodać to zapytanie."
   selectPageLabel: "Wybierz stronę"
   selectPagePlaceholder: "Wybierz stronę..."
@@ -1357,7 +1329,6 @@ pl_PL:
   example27: "Pokaż raport wszystkich naruszeń zasad w ostatnim kwartale"
 
 pt_BR:
-  title: "Bater papo"
   placeholder: "Digite sua mensagem aqui..."
   emptyStateTitle: "Em que posso ajudá-lo?"
   noModelTitle: "Nenhum modelo disponível"
@@ -1372,7 +1343,6 @@ pt_BR:
   failedToExecuteSQL: "Falha ao executar SQL. Tente novamente."
   actionExecuted: "Ação executada"
   noDataReturned: "Nenhum dado foi retornado."
-  dialogTitle: "Mover para o Bloco de Notas"
   dialogDescription: "Escolha em qual página do scratchpad adicionar esta consulta."
   selectPageLabel: "Selecione uma página"
   selectPagePlaceholder: "Escolha uma página..."
@@ -1454,7 +1424,6 @@ pt_BR:
   example27: "Mostrar um relatório de todas as violações da política no último trimestre"
 
 ro_RO:
-  title: "Chat"
   placeholder: "Introduceți mesajul dvs. aici..."
   emptyStateTitle: "Cu ce ​​te pot ajuta?"
   noModelTitle: "Niciun model disponibil"
@@ -1469,7 +1438,6 @@ ro_RO:
   failedToExecuteSQL: "Executarea SQL a eșuat. Încearcă din nou."
   actionExecuted: "Acțiune executată"
   noDataReturned: "Nu au fost returnate date."
-  dialogTitle: "Mutați la Scratchpad"
   dialogDescription: "Alegeți la ce pagină scratchpad să adăugați această interogare."
   selectPageLabel: "Selectați o pagină"
   selectPagePlaceholder: "Alegeți o pagină..."
@@ -1551,7 +1519,6 @@ ro_RO:
   example27: "Afișați un raport cu toate încălcările politicii din ultimul trimestru"
 
 ru_RU:
-  title: "Чат"
   placeholder: "Введите здесь свое сообщение..."
   emptyStateTitle: "Чем я могу вам помочь?"
   noModelTitle: "Нет доступных моделей"
@@ -1566,7 +1533,6 @@ ru_RU:
   failedToExecuteSQL: "Не удалось выполнить SQL. Попробуйте еще раз."
   actionExecuted: "Действие выполнено"
   noDataReturned: "Никакие данные не были возвращены."
-  dialogTitle: "Переместить в Электронный блокнот"
   dialogDescription: "Выберите, на какую страницу блокнота добавить этот запрос."
   selectPageLabel: "Выберите страницу"
   selectPagePlaceholder: "Выберите страницу..."
@@ -1648,7 +1614,6 @@ ru_RU:
   example27: "Показать отчет обо всех нарушениях правил за последний квартал."
 
 sk_SK:
-  title: "Chat"
   placeholder: "Sem napíšte svoju správu..."
   emptyStateTitle: "S čím vám môžem pomôcť?"
   noModelTitle: "Nie je k dispozícii žiadny model"
@@ -1663,7 +1628,6 @@ sk_SK:
   failedToExecuteSQL: "Nepodarilo sa spustiť SQL. Skúste znova."
   actionExecuted: "Akcia vykonaná"
   noDataReturned: "Neboli vrátené žiadne údaje."
-  dialogTitle: "Presuňte sa do aplikácie Scratchpad"
   dialogDescription: "Vyberte, na ktorú stránku zápisníka chcete pridať tento dopyt."
   selectPageLabel: "Vyberte stránku"
   selectPagePlaceholder: "Vyberte stránku..."
@@ -1745,7 +1709,6 @@ sk_SK:
   example27: "Zobrazte správu o všetkých porušeniach pravidiel za posledný štvrťrok"
 
 sv_SE:
-  title: "Chatta"
   placeholder: "Skriv ditt meddelande här..."
   emptyStateTitle: "Vad kan jag hjälpa dig med?"
   noModelTitle: "Ingen modell tillgänglig"
@@ -1760,7 +1723,6 @@ sv_SE:
   failedToExecuteSQL: "Det gick inte att köra SQL. Försök igen."
   actionExecuted: "Åtgärd utförd"
   noDataReturned: "Inga data returnerades."
-  dialogTitle: "Flytta till Scratchpad"
   dialogDescription: "Välj vilken sida du vill lägga till den här frågan på."
   selectPageLabel: "Välj en sida"
   selectPagePlaceholder: "Välj en sida..."
@@ -1842,7 +1804,6 @@ sv_SE:
   example27: "Visa en rapport över alla policyöverträdelser under det senaste kvartalet"
 
 zh_CN:
-  title: "聊天"
   placeholder: "在此输入您的消息..."
   emptyStateTitle: "我能为您提供什么帮助？"
   noModelTitle: "无可用型号"
@@ -1857,7 +1818,6 @@ zh_CN:
   failedToExecuteSQL: "执行SQL失败。 再试一次。"
   actionExecuted: "已执行的操作"
   noDataReturned: "没有返回任何数据。"
-  dialogTitle: "移至便签本"
   dialogDescription: "选择要添加此查询的暂存器页面。"
   selectPageLabel: "选择一个页面"
   selectPagePlaceholder: "选择一个页面..."
@@ -1939,7 +1899,6 @@ zh_CN:
   example27: "显示上季度所有政策违规行为的报告"
 
 zh_TW:
-  title: "聊天"
   placeholder: "在此輸入您的訊息..."
   emptyStateTitle: "我能為您提供什麼協助？"
   noModelTitle: "無可用型號"
@@ -1954,7 +1913,6 @@ zh_TW:
   failedToExecuteSQL: "執行SQL失敗。 再試一次。"
   actionExecuted: "已執行的操作"
   noDataReturned: "沒有回傳任何數據。"
-  dialogTitle: "移至便條本"
   dialogDescription: "選擇要新增此查詢的暫存器頁面。"
   selectPageLabel: "選擇一個頁面"
   selectPagePlaceholder: "選擇一個頁面..."
@@ -2036,7 +1994,6 @@ zh_TW:
   example27: "顯示上季所有政策違規行為的報告"
 
 bg_BG:
-  title: "Чат"
   placeholder: "Въведете вашето съобщение тук..."
   emptyStateTitle: "С какво мога да ви помогна?"
   noModelTitle: "Няма наличен модел"
@@ -2051,7 +2008,6 @@ bg_BG:
   failedToExecuteSQL: "Неуспешно изпълнение на SQL. Опитайте отново."
   actionExecuted: "Действието е изпълнено"
   noDataReturned: "Не са върнати данни."
-  dialogTitle: "Преминете към Scratchpad"
   dialogDescription: "Изберете към коя страница в scratchpad да добавите тази заявка."
   selectPageLabel: "Изберете страница"
   selectPagePlaceholder: "Изберете страница..."
@@ -2133,7 +2089,6 @@ bg_BG:
   example27: "Показване на отчет за всички нарушения на правилата през последното тримесечие"
 
 bn_BD:
-  title: "চ্যাট"
   placeholder: "এখানে আপনার বার্তা টাইপ করুন..."
   emptyStateTitle: "আমি আপনাকে কি সাহায্য করতে পারি?"
   noModelTitle: "কোন মডেল উপলব্ধ নেই"
@@ -2148,7 +2103,6 @@ bn_BD:
   failedToExecuteSQL: "SQL এক্সিকিউট করতে ব্যর্থ হয়েছে। আবার চেষ্টা করুন."
   actionExecuted: "কর্ম সম্পাদিত"
   noDataReturned: "কোনো ডেটা ফেরত দেওয়া হয়নি।"
-  dialogTitle: "স্ক্র্যাচপ্যাডে যান"
   dialogDescription: "এই ক্যোয়ারীটি কোন স্ক্র্যাচপ্যাড পৃষ্ঠাতে যোগ করতে হবে তা বেছে নিন।"
   selectPageLabel: "একটি পৃষ্ঠা নির্বাচন করুন"
   selectPagePlaceholder: "একটি পৃষ্ঠা চয়ন করুন..."
@@ -2230,7 +2184,6 @@ bn_BD:
   example27: "গত ত্রৈমাসিকে সমস্ত নীতি লঙ্ঘনের রিপোর্ট দেখান৷"
 
 ca_ES:
-  title: "Xatejar"
   placeholder: "Escriu el teu missatge aquí..."
   emptyStateTitle: "En què et puc ajudar?"
   noModelTitle: "No hi ha cap model disponible"
@@ -2245,7 +2198,6 @@ ca_ES:
   failedToExecuteSQL: "No s'ha pogut executar SQL. Torna-ho a provar."
   actionExecuted: "Acció executada"
   noDataReturned: "No s'ha retornat cap dada."
-  dialogTitle: "Mou a Scratchpad"
   dialogDescription: "Trieu a quina pàgina de bloc de notes afegir aquesta consulta."
   selectPageLabel: "Seleccioneu una pàgina"
   selectPagePlaceholder: "Tria una pàgina..."
@@ -2327,7 +2279,6 @@ ca_ES:
   example27: "Mostra un informe de totes les infraccions de les polítiques durant l'últim trimestre"
 
 cs_CZ:
-  title: "Povídání"
   placeholder: "Sem napište svou zprávu..."
   emptyStateTitle: "S čím vám mohu pomoci?"
   noModelTitle: "Není k dispozici žádný model"
@@ -2342,7 +2293,6 @@ cs_CZ:
   failedToExecuteSQL: "Spuštění SQL se nezdařilo. Zkuste to znovu."
   actionExecuted: "Akce provedena"
   noDataReturned: "Nebyla vrácena žádná data."
-  dialogTitle: "Přesunout do Zápisníku"
   dialogDescription: "Vyberte, na kterou stránku zápisníku chcete přidat tento dotaz."
   selectPageLabel: "Vyberte stránku"
   selectPagePlaceholder: "Vyberte stránku..."
@@ -2424,7 +2374,6 @@ cs_CZ:
   example27: "Zobrazit zprávu o všech porušeních zásad za poslední čtvrtletí"
 
 da_DK:
-  title: "Snak"
   placeholder: "Skriv din besked her..."
   emptyStateTitle: "Hvad kan jeg hjælpe dig med?"
   noModelTitle: "Ingen model tilgængelig"
@@ -2439,7 +2388,6 @@ da_DK:
   failedToExecuteSQL: "Kunne ikke udføre SQL. Prøv igen."
   actionExecuted: "Handling udført"
   noDataReturned: "Ingen data blev returneret."
-  dialogTitle: "Flyt til Scratchpad"
   dialogDescription: "Vælg, hvilken kladdeside denne forespørgsel skal føjes til."
   selectPageLabel: "Vælg en side"
   selectPagePlaceholder: "Vælg en side..."
@@ -2521,7 +2469,6 @@ da_DK:
   example27: "Vis en rapport over alle politikovertrædelser i det sidste kvartal"
 
 fa_IR:
-  title: "چت کنید"
   placeholder: "پیام خود را اینجا تایپ کنید..."
   emptyStateTitle: "با چه چیزی می توانم به شما کمک کنم؟"
   noModelTitle: "مدل موجود نیست"
@@ -2536,7 +2483,6 @@ fa_IR:
   failedToExecuteSQL: "SQL اجرا نشد. دوباره امتحان کنید."
   actionExecuted: "اقدام اجرا شد"
   noDataReturned: "هیچ داده ای برگردانده نشد"
-  dialogTitle: "به Scratchpad بروید"
   dialogDescription: "انتخاب کنید به کدام صفحه scratchpad این عبارت را اضافه کنید."
   selectPageLabel: "یک صفحه را انتخاب کنید"
   selectPagePlaceholder: "انتخاب صفحه..."
@@ -2618,7 +2564,6 @@ fa_IR:
   example27: "گزارشی از تمام تخلفات خط‌مشی در سه ماهه گذشته نشان دهید"
 
 hi_IN:
-  title: "बात करना"
   placeholder: "यहाँ आपके संदेश लिखें..."
   emptyStateTitle: "मैं किस चीज़ में आपकी मदद करूं?"
   noModelTitle: "कोई मॉडल उपलब्ध नहीं"
@@ -2633,7 +2578,6 @@ hi_IN:
   failedToExecuteSQL: "SQL निष्पादित करने में विफल. पुनः प्रयास करें।"
   actionExecuted: "कार्यवाही निष्पादित"
   noDataReturned: "कोई डेटा वापस नहीं किया गया."
-  dialogTitle: "स्क्रैचपैड पर जाएँ"
   dialogDescription: "चुनें कि इस क्वेरी को किस स्क्रैचपैड पेज पर जोड़ना है।"
   selectPageLabel: "एक पेज चुनें"
   selectPagePlaceholder: "एक पेज चुनें..."
@@ -2715,7 +2659,6 @@ hi_IN:
   example27: "पिछली तिमाही में सभी नीति उल्लंघनों की रिपोर्ट दिखाएँ"
 
 hr_HR:
-  title: "Razgovor"
   placeholder: "Ovdje upišite svoju poruku..."
   emptyStateTitle: "Što vam mogu pomoći?"
   noModelTitle: "Nijedan model nije dostupan"
@@ -2730,7 +2673,6 @@ hr_HR:
   failedToExecuteSQL: "Izvršenje SQL-a nije uspjelo. Pokušajte ponovno."
   actionExecuted: "Radnja izvršena"
   noDataReturned: "Podaci nisu vraćeni."
-  dialogTitle: "Prijeđite na Scratchpad"
   dialogDescription: "Odaberite na koju stranicu za natuknice želite dodati ovaj upit."
   selectPageLabel: "Odaberite stranicu"
   selectPagePlaceholder: "Odaberite stranicu..."
@@ -2812,7 +2754,6 @@ hr_HR:
   example27: "Prikaži izvješće o svim kršenjima pravila u zadnjem kvartalu"
 
 hu_HU:
-  title: "Csevegés"
   placeholder: "Írja be üzenetét ide..."
   emptyStateTitle: "Miben segíthetek?"
   noModelTitle: "Nincs elérhető modell"
@@ -2827,7 +2768,6 @@ hu_HU:
   failedToExecuteSQL: "Nem sikerült végrehajtani az SQL-t. Próbáld újra."
   actionExecuted: "Akció végrehajtva"
   noDataReturned: "Nem küldtek vissza adatokat."
-  dialogTitle: "Ugrás a Firkálótömbre"
   dialogDescription: "Válassza ki, hogy melyik firkálólap oldalhoz szeretné hozzáadni ezt a lekérdezést."
   selectPageLabel: "Válasszon egy oldalt"
   selectPagePlaceholder: "Válassz egy oldalt..."
@@ -2909,7 +2849,6 @@ hu_HU:
   example27: "Jelentés megjelenítése az összes irányelvsértésről az elmúlt negyedévben"
 
 id_ID:
-  title: "Mengobrol"
   placeholder: "Ketik Pesan Anda Disini..."
   emptyStateTitle: "Apa yang Dapat Saya Bantu?"
   noModelTitle: "Tidak Ada Model yang Tersedia"
@@ -2924,7 +2863,6 @@ id_ID:
   failedToExecuteSQL: "Gagal Menjalankan SQL. Coba Lagi."
   actionExecuted: "Tindakan Dieksekusi"
   noDataReturned: "Tidak Ada Data yang Dikembalikan."
-  dialogTitle: "Pindah ke Scratchpad"
   dialogDescription: "Pilih halaman scratchpad mana yang akan ditambahkan kueri ini."
   selectPageLabel: "Pilih Halaman"
   selectPagePlaceholder: "Pilih Halaman..."
@@ -3006,7 +2944,6 @@ id_ID:
   example27: "Tampilkan laporan semua pelanggaran kebijakan pada kuartal terakhir"
 
 ms_MY:
-  title: "Sembang"
   placeholder: "Taip Mesej Anda Di Sini..."
   emptyStateTitle: "Apa yang Boleh Saya Bantu Anda?"
   noModelTitle: "Tiada Model Tersedia"
@@ -3021,7 +2958,6 @@ ms_MY:
   failedToExecuteSQL: "Gagal Melaksanakan SQL. Cuba Lagi."
   actionExecuted: "Tindakan Dilaksanakan"
   noDataReturned: "Tiada Data Dikembalikan."
-  dialogTitle: "Beralih ke Pad Conteng"
   dialogDescription: "Pilih halaman pad conteng untuk menambah pertanyaan ini."
   selectPageLabel: "Pilih Halaman"
   selectPagePlaceholder: "Pilih Halaman..."
@@ -3103,7 +3039,6 @@ ms_MY:
   example27: "Tunjukkan laporan semua pelanggaran dasar pada suku terakhir"
 
 nb_NO:
-  title: "Chat"
   placeholder: "Skriv inn meldingen din her..."
   emptyStateTitle: "Hva kan jeg hjelpe deg med?"
   noModelTitle: "Ingen modell tilgjengelig"
@@ -3118,7 +3053,6 @@ nb_NO:
   failedToExecuteSQL: "Kunne ikke kjøre SQL. Prøv igjen."
   actionExecuted: "Handling utført"
   noDataReturned: "Ingen data ble returnert."
-  dialogTitle: "Flytt til Scratchpad"
   dialogDescription: "Velg hvilken skrapeloddside du vil legge til denne spørringen på."
   selectPageLabel: "Velg en side"
   selectPagePlaceholder: "Velg en side..."
@@ -3200,7 +3134,6 @@ nb_NO:
   example27: "Vis en rapport over alle brudd på retningslinjene i det siste kvartalet"
 
 sw_KE:
-  title: "Soga"
   placeholder: "Andika Ujumbe wako Hapa..."
   emptyStateTitle: "Nikusaidie Nini?"
   noModelTitle: "Hakuna Modeli Inayopatikana"
@@ -3215,7 +3148,6 @@ sw_KE:
   failedToExecuteSQL: "Imeshindwa Kutekeleza SQL. Jaribu Tena."
   actionExecuted: "Kitendo Kimetekelezwa"
   noDataReturned: "Hakuna Data Iliyorejeshwa."
-  dialogTitle: "Hamisha hadi kwenye Scratchpad"
   dialogDescription: "Chagua ukurasa gani wa padi ya kuandikia ili kuongeza swali hili."
   selectPageLabel: "Chagua Ukurasa"
   selectPagePlaceholder: "Chagua Ukurasa..."
@@ -3297,7 +3229,6 @@ sw_KE:
   example27: "Onyesha ripoti ya ukiukaji wote wa sera katika robo ya mwisho"
 
 ta_IN:
-  title: "அரட்டை"
   placeholder: "உங்கள் செய்தியை இங்கே தட்டச்சு செய்யவும்..."
   emptyStateTitle: "நான் உங்களுக்கு என்ன உதவ முடியும்?"
   noModelTitle: "எந்த மாதிரியும் கிடைக்கவில்லை"
@@ -3312,7 +3243,6 @@ ta_IN:
   failedToExecuteSQL: "SQL ஐ இயக்குவதில் தோல்வி. மீண்டும் முயற்சிக்கவும்."
   actionExecuted: "செயல் நிறைவேற்றப்பட்டது"
   noDataReturned: "தரவு எதுவும் திரும்பப் பெறப்படவில்லை."
-  dialogTitle: "ஸ்க்ராட்ச்பேடிற்கு நகர்த்தவும்"
   dialogDescription: "இந்த வினவலை எந்த ஸ்கிராட்ச்பேட் பக்கத்தில் சேர்க்க வேண்டும் என்பதை தேர்வு செய்யவும்."
   selectPageLabel: "ஒரு பக்கத்தைத் தேர்ந்தெடுக்கவும்"
   selectPagePlaceholder: "ஒரு பக்கத்தைத் தேர்வுசெய்க..."
@@ -3394,7 +3324,6 @@ ta_IN:
   example27: "கடந்த காலாண்டில் நடந்த அனைத்து கொள்கை மீறல்களின் அறிக்கையையும் காட்டு"
 
 th_TH:
-  title: "แชท"
   placeholder: "พิมพ์ข้อความของคุณที่นี่..."
   emptyStateTitle: "ฉันสามารถช่วยอะไรคุณได้?"
   noModelTitle: "ไม่มีรุ่นที่มีจำหน่าย"
@@ -3409,7 +3338,6 @@ th_TH:
   failedToExecuteSQL: "ล้มเหลวในการดำเนินการ SQL ลองอีกครั้ง"
   actionExecuted: "ดำเนินการแล้ว"
   noDataReturned: "ไม่มีการส่งคืนข้อมูล"
-  dialogTitle: "ย้ายไปที่ Scratchpad"
   dialogDescription: "เลือกหน้า Scratchpad ที่จะเพิ่มคำค้นหานี้"
   selectPageLabel: "เลือกเพจ"
   selectPagePlaceholder: "เลือกเพจ..."
@@ -3491,7 +3419,6 @@ th_TH:
   example27: "แสดงรายงานการละเมิดนโยบายทั้งหมดในไตรมาสสุดท้าย"
 
 tr_TR:
-  title: "Sohbet"
   placeholder: "Mesajınızı Buraya Yazın..."
   emptyStateTitle: "Size Ne Konuda Yardımcı Olabilirim?"
   noModelTitle: "Mevcut Model Yok"
@@ -3506,7 +3433,6 @@ tr_TR:
   failedToExecuteSQL: "SQL yürütülemedi. Tekrar deneyin."
   actionExecuted: "İşlem Gerçekleştirildi"
   noDataReturned: "Hiçbir Veri Döndürülmedi."
-  dialogTitle: "Scratchpad'e taşı"
   dialogDescription: "Bu sorgunun hangi karalama defteri sayfasına ekleneceğini seçin."
   selectPageLabel: "Bir Sayfa Seçin"
   selectPagePlaceholder: "Bir Sayfa Seçin..."
@@ -3588,7 +3514,6 @@ tr_TR:
   example27: "Son çeyrekteki tüm politika ihlallerinin raporunu göster"
 
 uk_UA:
-  title: "Чат"
   placeholder: "Введіть своє повідомлення тут..."
   emptyStateTitle: "Чим я можу вам допомогти?"
   noModelTitle: "Немає доступних моделей"
@@ -3603,7 +3528,6 @@ uk_UA:
   failedToExecuteSQL: "Не вдалося виконати SQL. Спробуйте знову."
   actionExecuted: "Дія виконана"
   noDataReturned: "Дані не повернуто."
-  dialogTitle: "Перейти до Scratchpad"
   dialogDescription: "Виберіть, до якої сторінки блокнота додати цей запит."
   selectPageLabel: "Виберіть сторінку"
   selectPagePlaceholder: "Виберіть сторінку..."
@@ -3685,7 +3609,6 @@ uk_UA:
   example27: "Показати звіт про всі порушення політики за останній квартал"
 
 ur_PK:
-  title: "گپ شپ"
   placeholder: "اپنا پیغام یہاں ٹائپ کریں..."
   emptyStateTitle: "میں آپ کی کیا مدد کر سکتا ہوں؟"
   noModelTitle: "کوئی ماڈل دستیاب نہیں ہے۔"
@@ -3700,7 +3623,6 @@ ur_PK:
   failedToExecuteSQL: "ایس کیو ایل پر عمل درآمد کرنے میں ناکام۔ دوبارہ کوشش کریں۔"
   actionExecuted: "کارروائی عمل میں لائی گئی۔"
   noDataReturned: "کوئی ڈیٹا واپس نہیں کیا گیا۔"
-  dialogTitle: "سکریچ پیڈ پر جائیں۔"
   dialogDescription: "اس استفسار کو شامل کرنے کے لیے کون سا سکریچ پیڈ صفحہ منتخب کریں۔"
   selectPageLabel: "ایک صفحہ منتخب کریں۔"
   selectPagePlaceholder: "ایک صفحہ منتخب کریں..."
@@ -3782,7 +3704,6 @@ ur_PK:
   example27: "پچھلی سہ ماہی میں پالیسی کی تمام خلاف ورزیوں کی رپورٹ دکھائیں۔"
 
 vi_VN:
-  title: "Trò chuyện"
   placeholder: "Nhập tin nhắn của bạn ở đây..."
   emptyStateTitle: "Tôi có thể giúp gì cho bạn?"
   noModelTitle: "Không có mẫu nào"
@@ -3797,7 +3718,6 @@ vi_VN:
   failedToExecuteSQL: "Không thể thực thi SQL. Hãy thử lại."
   actionExecuted: "Hành động đã thực hiện"
   noDataReturned: "Không có dữ liệu nào được trả lại."
-  dialogTitle: "Di chuyển tới Scratchpad"
   dialogDescription: "Chọn trang Scratchpad để thêm truy vấn này vào."
   selectPageLabel: "Chọn một trang"
   selectPagePlaceholder: "Chọn một trang..."
@@ -3879,7 +3799,6 @@ vi_VN:
   example27: "Hiển thị báo cáo về tất cả các vi phạm chính sách trong quý vừa qua"
 
 af_ZA:
-  title: "Gesels"
   placeholder: "Tik jou boodskap hier..."
   emptyStateTitle: "Waarmee kan ek jou help?"
   noModelTitle: "Geen model beskikbaar nie"
@@ -3894,7 +3813,6 @@ af_ZA:
   failedToExecuteSQL: "Kon nie SQL uitvoer nie. Probeer weer."
   actionExecuted: "Aksie uitgevoer"
   noDataReturned: "Geen data is teruggestuur nie."
-  dialogTitle: "Skuif na Scratchpad"
   dialogDescription: "Kies watter kladblokbladsy om hierdie navraag by te voeg."
   selectPageLabel: "Kies 'n bladsy"
   selectPagePlaceholder: "Kies 'n bladsy..."
@@ -3976,7 +3894,6 @@ af_ZA:
   example27: "Wys 'n verslag van alle beleidsoortredings in die afgelope kwartaal"
 
 am_ET:
-  title: "ተወያይ"
   placeholder: "መልእክትህን እዚህ ፃፍ..."
   emptyStateTitle: "በምን ልረዳህ እችላለሁ?"
   noModelTitle: "ምንም ሞዴል የለም።"
@@ -3991,7 +3908,6 @@ am_ET:
   failedToExecuteSQL: "SQL ን ማስኬድ አልተሳካም። እንደገና ይሞክሩ።"
   actionExecuted: "እርምጃ ተፈፅሟል"
   noDataReturned: "ምንም ውሂብ አልተመለሰም።"
-  dialogTitle: "ወደ Scratchpad ውሰድ"
   dialogDescription: "ይህንን መጠይቅ ለማከል የትኛውን የጭረት ሰሌዳ ገፅ ይምረጡ።"
   selectPageLabel: "ገጽ ይምረጡ"
   selectPagePlaceholder: "ገጽ ምረጥ..."
@@ -4073,7 +3989,6 @@ am_ET:
   example27: "ባለፈው ሩብ ዓመት ውስጥ የሁሉም የመመሪያ ጥሰቶች ሪፖርት አሳይ"
 
 az_AZ:
-  title: "Söhbət"
   placeholder: "Mesajınızı Bura Yazın..."
   emptyStateTitle: "Mən sizə nə ilə kömək edə bilərəm?"
   noModelTitle: "Model yoxdur"
@@ -4088,7 +4003,6 @@ az_AZ:
   failedToExecuteSQL: "SQL-i icra etmək alınmadı. Yenidən cəhd edin."
   actionExecuted: "Fəaliyyət icra edildi"
   noDataReturned: "Heç bir Məlumat Qaytarılmadı."
-  dialogTitle: "Scratchpad-ə keçin"
   dialogDescription: "Bu sorğunun hansı skript səhifəsinə əlavə olunacağını seçin."
   selectPageLabel: "Səhifə seçin"
   selectPagePlaceholder: "Səhifə seçin..."
@@ -4170,7 +4084,6 @@ az_AZ:
   example27: "Son rübdə bütün siyasət pozuntularının hesabatını göstərin"
 
 et_EE:
-  title: "Vestlus"
   placeholder: "Sisestage oma sõnum siia..."
   emptyStateTitle: "Millega saan teid aidata?"
   noModelTitle: "Mudel pole saadaval"
@@ -4185,7 +4098,6 @@ et_EE:
   failedToExecuteSQL: "SQL-i käivitamine ebaõnnestus. Proovige uuesti."
   actionExecuted: "Toiming teostatud"
   noDataReturned: "Andmeid ei tagastatud."
-  dialogTitle: "Liikuge märkmikusse"
   dialogDescription: "Valige, millisele märkmikulehele see päring lisada."
   selectPageLabel: "Valige leht"
   selectPagePlaceholder: "Valige leht..."
@@ -4267,7 +4179,6 @@ et_EE:
   example27: "Kuvage aruanne kõigi viimase kvartali eeskirjade rikkumiste kohta"
 
 gu_IN:
-  title: "ચેટ"
   placeholder: "તમારો સંદેશ અહીં લખો..."
   emptyStateTitle: "હું તમને શું મદદ કરી શકું?"
   noModelTitle: "કોઈ મોડલ ઉપલબ્ધ નથી"
@@ -4282,7 +4193,6 @@ gu_IN:
   failedToExecuteSQL: "SQL ચલાવવામાં નિષ્ફળ. ફરી પ્રયાસ કરો."
   actionExecuted: "ક્રિયા ચલાવવામાં આવી"
   noDataReturned: "કોઈ ડેટા પરત કરવામાં આવ્યો ન હતો."
-  dialogTitle: "સ્ક્રેચપેડ પર ખસેડો"
   dialogDescription: "આ ક્વેરી ઉમેરવા માટે કયા સ્ક્રેચપેડ પૃષ્ઠને પસંદ કરો."
   selectPageLabel: "એક પૃષ્ઠ પસંદ કરો"
   selectPagePlaceholder: "એક પૃષ્ઠ પસંદ કરો..."
@@ -4364,7 +4274,6 @@ gu_IN:
   example27: "છેલ્લા ક્વાર્ટરમાં તમામ નીતિ ઉલ્લંઘનોનો અહેવાલ બતાવો"
 
 ha_NG:
-  title: "Taɗi"
   placeholder: "Buga Saƙonku Anan..."
   emptyStateTitle: "Me Zan Iya Taimaka Maka?"
   noModelTitle: "Babu Samfuran da Yake samuwa"
@@ -4379,7 +4288,6 @@ ha_NG:
   failedToExecuteSQL: "An kasa aiwatar da SQL. Gwada kuma."
   actionExecuted: "An Kammala Mataki"
   noDataReturned: "Ba a Dawo da Bayanai ba."
-  dialogTitle: "Matsar zuwa Scratchpad"
   dialogDescription: "Zaɓi wane shafin scratchpad don ƙara wannan tambayar."
   selectPageLabel: "Zaɓi Shafi"
   selectPagePlaceholder: "Zaɓi Shafi..."
@@ -4461,7 +4369,6 @@ ha_NG:
   example27: "Nuna rahoton duk take hakki a cikin kwata na ƙarshe"
 
 ka_GE:
-  title: "ჩატი"
   placeholder: "ჩაწერეთ თქვენი შეტყობინება აქ..."
   emptyStateTitle: "რით შემიძლია დაგეხმაროთ?"
   noModelTitle: "მოდელი არ არის ხელმისაწვდომი"
@@ -4476,7 +4383,6 @@ ka_GE:
   failedToExecuteSQL: "SQL-ის შესრულება ვერ მოხერხდა. სცადეთ ისევ."
   actionExecuted: "მოქმედება შესრულებულია"
   noDataReturned: "მონაცემები არ დაბრუნებულა."
-  dialogTitle: "გადადით Scratchpad-ზე"
   dialogDescription: "აირჩიეთ scratchpad-ის რომელ გვერდს დაამატოთ ეს მოთხოვნა."
   selectPageLabel: "აირჩიეთ გვერდი"
   selectPagePlaceholder: "აირჩიეთ გვერდი..."
@@ -4558,7 +4464,6 @@ ka_GE:
   example27: "აჩვენეთ ანგარიში ყველა პოლიტიკის დარღვევის შესახებ ბოლო კვარტალში"
 
 km_KH:
-  title: "ជជែក"
   placeholder: "វាយបញ្ចូលសាររបស់អ្នកនៅទីនេះ..."
   emptyStateTitle: "តើខ្ញុំអាចជួយអ្នកជាមួយអ្វី?"
   noModelTitle: "មិនមានម៉ូដែលដែលអាចប្រើបានទេ។"
@@ -4573,7 +4478,6 @@ km_KH:
   failedToExecuteSQL: "បរាជ័យក្នុងការប្រតិបត្តិ SQL ។ ព្យាយាមម្តងទៀត។"
   actionExecuted: "សកម្មភាពត្រូវបានប្រតិបត្តិ"
   noDataReturned: "គ្មានទិន្នន័យត្រូវបានប្រគល់មកវិញទេ។"
-  dialogTitle: "ផ្លាស់ទីទៅ Scratchpad"
   dialogDescription: "ជ្រើសរើសទំព័រ scratchpad ណាមួយដើម្បីបន្ថែមសំណួរនេះទៅ។"
   selectPageLabel: "ជ្រើសរើសទំព័រមួយ។"
   selectPagePlaceholder: "ជ្រើសរើសទំព័រ..."
@@ -4655,7 +4559,6 @@ km_KH:
   example27: "បង្ហាញរបាយការណ៍នៃការបំពានគោលការណ៍ទាំងអស់នៅក្នុងត្រីមាសចុងក្រោយ"
 
 kn_IN:
-  title: "ಚಾಟ್ ಮಾಡಿ"
   placeholder: "ನಿಮ್ಮ ಸಂದೇಶವನ್ನು ಇಲ್ಲಿ ಟೈಪ್ ಮಾಡಿ..."
   emptyStateTitle: "ನಾನು ನಿಮಗೆ ಏನು ಸಹಾಯ ಮಾಡಬಹುದು?"
   noModelTitle: "ಯಾವುದೇ ಮಾದರಿ ಲಭ್ಯವಿಲ್ಲ"
@@ -4670,7 +4573,6 @@ kn_IN:
   failedToExecuteSQL: "SQL ಅನ್ನು ಕಾರ್ಯಗತಗೊಳಿಸಲು ವಿಫಲವಾಗಿದೆ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
   actionExecuted: "ಕಾರ್ಯಗತಗೊಳಿಸಲಾಗಿದೆ"
   noDataReturned: "ಯಾವುದೇ ಡೇಟಾವನ್ನು ಹಿಂತಿರುಗಿಸಲಾಗಿಲ್ಲ."
-  dialogTitle: "ಸ್ಕ್ರ್ಯಾಚ್‌ಪ್ಯಾಡ್‌ಗೆ ಸರಿಸಿ"
   dialogDescription: "ಈ ಪ್ರಶ್ನೆಯನ್ನು ಯಾವ ಸ್ಕ್ರ್ಯಾಚ್‌ಪ್ಯಾಡ್ ಪುಟಕ್ಕೆ ಸೇರಿಸಬೇಕೆಂದು ಆಯ್ಕೆಮಾಡಿ."
   selectPageLabel: "ಒಂದು ಪುಟವನ್ನು ಆಯ್ಕೆಮಾಡಿ"
   selectPagePlaceholder: "ಪುಟವನ್ನು ಆಯ್ಕೆಮಾಡಿ..."
@@ -4752,7 +4654,6 @@ kn_IN:
   example27: "ಕಳೆದ ತ್ರೈಮಾಸಿಕದಲ್ಲಿ ಎಲ್ಲಾ ನೀತಿ ಉಲ್ಲಂಘನೆಗಳ ವರದಿಯನ್ನು ತೋರಿಸಿ"
 
 lt_LT:
-  title: "Pokalbis"
   placeholder: "Įveskite savo žinutę čia..."
   emptyStateTitle: "Kuo galiu tau padėti?"
   noModelTitle: "Nėra modelio"
@@ -4767,7 +4668,6 @@ lt_LT:
   failedToExecuteSQL: "Nepavyko vykdyti SQL. Bandyk dar kartą."
   actionExecuted: "Veiksmas atliktas"
   noDataReturned: "Jokie duomenys nebuvo grąžinti."
-  dialogTitle: "Perkelkite į bloknotą"
   dialogDescription: "Pasirinkite, prie kurio bloknoto puslapio pridėti šią užklausą."
   selectPageLabel: "Pasirinkite puslapį"
   selectPagePlaceholder: "Pasirinkite puslapį..."
@@ -4849,7 +4749,6 @@ lt_LT:
   example27: "Rodyti visų politikos pažeidimų ataskaitą per pastarąjį ketvirtį"
 
 lv_LV:
-  title: "Tērzēšana"
   placeholder: "Ierakstiet savu ziņojumu šeit..."
   emptyStateTitle: "Ar ko es varu jums palīdzēt?"
   noModelTitle: "Nav pieejams neviens modelis"
@@ -4864,7 +4763,6 @@ lv_LV:
   failedToExecuteSQL: "Neizdevās izpildīt SQL. Mēģiniet vēlreiz."
   actionExecuted: "Darbība izpildīta"
   noDataReturned: "Dati netika atgriezti."
-  dialogTitle: "Pārvietojieties uz Scratchpad"
   dialogDescription: "Izvēlieties, kurai scratchpad lapai pievienot šo vaicājumu."
   selectPageLabel: "Izvēlieties lapu"
   selectPagePlaceholder: "Izvēlieties lapu..."
@@ -4946,7 +4844,6 @@ lv_LV:
   example27: "Rādīt pārskatu par visiem politikas pārkāpumiem pēdējā ceturksnī"
 
 ml_IN:
-  title: "ചാറ്റ്"
   placeholder: "നിങ്ങളുടെ സന്ദേശം ഇവിടെ ടൈപ്പ് ചെയ്യുക..."
   emptyStateTitle: "എനിക്ക് നിങ്ങളെ എന്ത് സഹായിക്കാനാകും?"
   noModelTitle: "ഒരു മോഡലും ലഭ്യമല്ല"
@@ -4961,7 +4858,6 @@ ml_IN:
   failedToExecuteSQL: "SQL എക്സിക്യൂട്ട് ചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു. വീണ്ടും ശ്രമിക്കുക."
   actionExecuted: "ആക്ഷൻ എക്സിക്യൂട്ട് ചെയ്തു"
   noDataReturned: "ഡാറ്റയൊന്നും തിരികെ ലഭിച്ചില്ല."
-  dialogTitle: "സ്ക്രാച്ച്പാഡിലേക്ക് നീക്കുക"
   dialogDescription: "ഏത് സ്ക്രാച്ച്പാഡ് പേജിലേക്കാണ് ഈ ചോദ്യം ചേർക്കേണ്ടതെന്ന് തിരഞ്ഞെടുക്കുക."
   selectPageLabel: "ഒരു പേജ് തിരഞ്ഞെടുക്കുക"
   selectPagePlaceholder: "ഒരു പേജ് തിരഞ്ഞെടുക്കുക..."
@@ -5043,7 +4939,6 @@ ml_IN:
   example27: "കഴിഞ്ഞ പാദത്തിലെ എല്ലാ നയ ലംഘനങ്ങളുടെയും റിപ്പോർട്ട് കാണിക്കുക"
 
 mr_IN:
-  title: "गप्पा"
   placeholder: "तुमचा संदेश येथे टाइप करा..."
   emptyStateTitle: "मी तुम्हाला काय मदत करू शकतो?"
   noModelTitle: "कोणतेही मॉडेल उपलब्ध नाही"
@@ -5058,7 +4953,6 @@ mr_IN:
   failedToExecuteSQL: "SQL कार्यान्वित करण्यात अयशस्वी. पुन्हा प्रयत्न करा."
   actionExecuted: "कृती अंमलात आणली"
   noDataReturned: "कोणताही डेटा परत आला नाही."
-  dialogTitle: "स्क्रॅचपॅडवर जा"
   dialogDescription: "ही क्वेरी कोणत्या स्क्रॅचपॅडवर जोडायची ते निवडा."
   selectPageLabel: "एक पृष्ठ निवडा"
   selectPagePlaceholder: "एक पृष्ठ निवडा..."
@@ -5140,7 +5034,6 @@ mr_IN:
   example27: "मागील तिमाहीतील सर्व धोरण उल्लंघनांचा अहवाल दर्शवा"
 
 ne_NP:
-  title: "च्याट"
   placeholder: "यहाँ आफ्नो सन्देश टाइप गर्नुहोस्..."
   emptyStateTitle: "म तपाईंलाई के मद्दत गर्न सक्छु?"
   noModelTitle: "कुनै मोडेल उपलब्ध छैन"
@@ -5155,7 +5048,6 @@ ne_NP:
   failedToExecuteSQL: "SQL कार्यान्वयन गर्न असफल भयो। फेरि प्रयास गर्नुहोस्।"
   actionExecuted: "कारबाही गरियो"
   noDataReturned: "कुनै डाटा फिर्ता गरिएको थिएन।"
-  dialogTitle: "Scratchpad मा सार्नुहोस्"
   dialogDescription: "यो क्वेरी थप्न कुन स्क्र्याचप्याड पृष्ठ छनौट गर्नुहोस्।"
   selectPageLabel: "एउटा पृष्ठ चयन गर्नुहोस्"
   selectPagePlaceholder: "एउटा पृष्ठ छान्नुहोस्..."
@@ -5237,7 +5129,6 @@ ne_NP:
   example27: "पछिल्लो क्वाटरमा सबै नीति उल्लङ्घनहरूको रिपोर्ट देखाउनुहोस्"
 
 pa_IN:
-  title: "ਚੈਟ"
   placeholder: "ਆਪਣਾ ਸੁਨੇਹਾ ਇੱਥੇ ਟਾਈਪ ਕਰੋ..."
   emptyStateTitle: "ਮੈਂ ਤੁਹਾਡੀ ਕੀ ਮਦਦ ਕਰ ਸਕਦਾ/ਸਕਦੀ ਹਾਂ?"
   noModelTitle: "ਕੋਈ ਮਾਡਲ ਉਪਲਬਧ ਨਹੀਂ ਹੈ"
@@ -5252,7 +5143,6 @@ pa_IN:
   failedToExecuteSQL: "SQL ਨੂੰ ਚਲਾਉਣ ਵਿੱਚ ਅਸਫਲ। ਫਿਰ ਕੋਸ਼ਿਸ਼ ਕਰੋ."
   actionExecuted: "ਕਾਰਵਾਈ ਕੀਤੀ ਗਈ"
   noDataReturned: "ਕੋਈ ਡਾਟਾ ਵਾਪਸ ਨਹੀਂ ਕੀਤਾ ਗਿਆ ਸੀ।"
-  dialogTitle: "ਸਕ੍ਰੈਚਪੈਡ 'ਤੇ ਜਾਓ"
   dialogDescription: "ਇਸ ਪੁੱਛਗਿੱਛ ਨੂੰ ਸ਼ਾਮਲ ਕਰਨ ਲਈ ਕਿਹੜਾ ਸਕ੍ਰੈਚਪੈਡ ਪੰਨਾ ਚੁਣੋ।"
   selectPageLabel: "ਇੱਕ ਪੰਨਾ ਚੁਣੋ"
   selectPagePlaceholder: "ਇੱਕ ਪੰਨਾ ਚੁਣੋ..."
@@ -5334,7 +5224,6 @@ pa_IN:
   example27: "ਪਿਛਲੀ ਤਿਮਾਹੀ ਵਿੱਚ ਨੀਤੀ ਦੀਆਂ ਸਾਰੀਆਂ ਉਲੰਘਣਾਵਾਂ ਦੀ ਰਿਪੋਰਟ ਦਿਖਾਓ"
 
 si_LK:
-  title: "කතාබස් කරන්න"
   placeholder: "ඔබගේ පණිවිඩය මෙහි ටයිප් කරන්න..."
   emptyStateTitle: "මට ඔබට උදව් කළ හැක්කේ කුමක් ද?"
   noModelTitle: "ආකෘතියක් නොමැත"
@@ -5349,7 +5238,6 @@ si_LK:
   failedToExecuteSQL: "SQL ක්‍රියාත්මක කිරීමට අසමත් විය. නැවත උත්සාහ කරන්න."
   actionExecuted: "ක්‍රියාව ක්‍රියාත්මක කළා"
   noDataReturned: "දත්ත ආපසු ලබා දුන්නේ නැත."
-  dialogTitle: "Scratchpad වෙත ගෙන යන්න"
   dialogDescription: "මෙම විමසුම එක් කළ යුත්තේ කුමන scratchpad පිටුවටද යන්න තෝරන්න."
   selectPageLabel: "පිටුවක් තෝරන්න"
   selectPagePlaceholder: "පිටුවක් තෝරන්න..."
@@ -5431,7 +5319,6 @@ si_LK:
   example27: "පසුගිය කාර්තුවේ සියලුම ප්‍රතිපත්ති කඩකිරීම් පිළිබඳ වාර්තාවක් පෙන්වන්න"
 
 sl_SI:
-  title: "Klepetajte"
   placeholder: "Tukaj vnesite svoje sporočilo ..."
   emptyStateTitle: "S čim ti lahko pomagam?"
   noModelTitle: "Noben model ni na voljo"
@@ -5446,7 +5333,6 @@ sl_SI:
   failedToExecuteSQL: "Izvedba SQL ni uspela. Poskusite znova."
   actionExecuted: "Akcija izvedena"
   noDataReturned: "Podatki niso bili vrnjeni."
-  dialogTitle: "Premakni se v Scratchpad"
   dialogDescription: "Izberite, na katero stran beležke želite dodati to poizvedbo."
   selectPageLabel: "Izberite stran"
   selectPagePlaceholder: "Izberite stran ..."
@@ -5528,7 +5414,6 @@ sl_SI:
   example27: "Prikaži poročilo o vseh kršitvah pravilnika v zadnjem četrtletju"
 
 sr_RS:
-  title: "Ћаскање"
   placeholder: "Унесите своју поруку овде..."
   emptyStateTitle: "У чему вам могу помоћи?"
   noModelTitle: "Није доступан модел"
@@ -5543,7 +5428,6 @@ sr_RS:
   failedToExecuteSQL: "Извршавање СКЛ-а није успело. Покушајте поново."
   actionExecuted: "Акција је извршена"
   noDataReturned: "Подаци нису враћени."
-  dialogTitle: "Пређите на Сцратцхпад"
   dialogDescription: "Изаберите на коју страницу за бележење желите да додате овај упит."
   selectPageLabel: "Изаберите страницу"
   selectPagePlaceholder: "Изаберите страницу..."
@@ -5625,7 +5509,6 @@ sr_RS:
   example27: "Прикажи извештај о свим кршењима смерница у последњем тромесечју"
 
 te_IN:
-  title: "చాట్ చేయండి"
   placeholder: "మీ సందేశాన్ని ఇక్కడ టైప్ చేయండి..."
   emptyStateTitle: "నేను మీకు ఏమి సహాయం చేయగలను?"
   noModelTitle: "మోడల్ అందుబాటులో లేదు"
@@ -5640,7 +5523,6 @@ te_IN:
   failedToExecuteSQL: "SQLని అమలు చేయడంలో విఫలమైంది. మళ్లీ ప్రయత్నించండి."
   actionExecuted: "చర్య అమలు చేయబడింది"
   noDataReturned: "డేటా ఏదీ తిరిగి ఇవ్వబడలేదు."
-  dialogTitle: "స్క్రాచ్‌ప్యాడ్‌కి తరలించండి"
   dialogDescription: "ఈ ప్రశ్నను ఏ స్క్రాచ్‌ప్యాడ్ పేజీకి జోడించాలో ఎంచుకోండి."
   selectPageLabel: "ఒక పేజీని ఎంచుకోండి"
   selectPagePlaceholder: "ఒక పేజీని ఎంచుకోండి..."
@@ -5722,7 +5604,6 @@ te_IN:
   example27: "గత త్రైమాసికంలో అన్ని విధాన ఉల్లంఘనల నివేదికను చూపండి"
 
 tl_PH:
-  title: "Chat"
   placeholder: "I-type ang Iyong Mensahe Dito..."
   emptyStateTitle: "Ano ang Maitutulong Ko sa Iyo?"
   noModelTitle: "Walang Magagamit na Modelo"
@@ -5737,7 +5618,6 @@ tl_PH:
   failedToExecuteSQL: "Nabigong Isagawa ang SQL. Subukan Muli."
   actionExecuted: "Naisasagawa ang Aksyon"
   noDataReturned: "Walang Ibinalik na Data."
-  dialogTitle: "Ilipat sa Scratchpad"
   dialogDescription: "Piliin kung saang pahina ng scratchpad idaragdag ang query na ito."
   selectPageLabel: "Pumili ng Pahina"
   selectPagePlaceholder: "Pumili ng Pahina..."
@@ -5819,7 +5699,6 @@ tl_PH:
   example27: "Magpakita ng ulat ng lahat ng paglabag sa patakaran sa huling quarter"
 
 uz_UZ:
-  title: "Chat"
   placeholder: "Xabaringizni shu yerga yozing..."
   emptyStateTitle: "Sizga nima bilan yordam bera olaman?"
   noModelTitle: "Model mavjud emas"
@@ -5834,7 +5713,6 @@ uz_UZ:
   failedToExecuteSQL: "SQL-ni bajarib bo'lmadi. Qayta urinib ko'ring."
   actionExecuted: "Amal bajarildi"
   noDataReturned: "Hech qanday ma'lumot qaytarilmadi."
-  dialogTitle: "Scratchpad-ga o'ting"
   dialogDescription: "Ushbu so'rovni qaysi skretchpad sahifasiga qo'shishni tanlang."
   selectPageLabel: "Sahifani tanlang"
   selectPagePlaceholder: "Sahifani tanlang..."
@@ -5916,7 +5794,6 @@ uz_UZ:
   example27: "Oxirgi chorakdagi barcha siyosat buzilishlari haqidagi hisobotni ko'rsating"
 
 yo_NG:
-  title: "Wiregbe"
   placeholder: "Tẹ ifiranṣẹ rẹ Nibi ..."
   emptyStateTitle: "Kini MO le Ran Ọ lọwọ Pẹlu?"
   noModelTitle: "Ko si Awoṣe Wa"
@@ -5931,7 +5808,6 @@ yo_NG:
   failedToExecuteSQL: "Kuna lati Ṣiṣẹ SQL. Gbiyanju Lẹẹkansi."
   actionExecuted: "Ti ṣe igbese"
   noDataReturned: "Ko si Data Ti a Dapada."
-  dialogTitle: "Gbe si Scratchpad"
   dialogDescription: "Yan iru oju-iwe scratchpad lati ṣafikun ibeere yii si."
   selectPageLabel: "Yan Oju-iwe kan"
   selectPagePlaceholder: "Yan Oju-iwe kan..."

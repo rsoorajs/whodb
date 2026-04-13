@@ -7,10 +7,6 @@ en_US:
   schema: Schema
   selectSchema: Select Schema
   searchSchema: Search Schema...
-  chat: Chat
-  graph: Graph
-  contactUs: Contact Us
-  settings: Settings
   logOutProfile: Log Out Profile
   moreLogoutOptions: More Logout Options
   logoutAllProfiles: Logout All Profiles
@@ -19,7 +15,6 @@ en_US:
   errorSigningIn: "Error Signing You In:"
   updateAvailable: "Update available: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Switch Profile"
   switchProfileDescription: "Choose a profile to continue, or add a new one."
 
 ar_AE:
@@ -31,10 +26,6 @@ ar_AE:
   schema: "مخطط"
   selectSchema: "حدد المخطط"
   searchSchema: "مخطط البحث..."
-  chat: "محادثة"
-  graph: "رسم بياني"
-  contactUs: "اتصل بنا"
-  settings: "إعدادات"
   logOutProfile: "تسجيل الخروج من الملف الشخصي"
   moreLogoutOptions: "المزيد من خيارات تسجيل الخروج"
   logoutAllProfiles: "تسجيل الخروج من جميع الملفات الشخصية"
@@ -43,7 +34,6 @@ ar_AE:
   errorSigningIn: "حدث خطأ أثناء تسجيل الدخول:"
   updateAvailable: "التحديث متاح: {version}"
   sslSecured: "طبقة المقابس الآمنة: {mode}"
-  switchProfileTitle: "تبديل الملف الشخصي"
   switchProfileDescription: "اختر ملفًا شخصيًا للمتابعة، أو قم بإضافة ملف تعريف جديد."
 
 de_DE:
@@ -55,10 +45,6 @@ de_DE:
   schema: "Schema"
   selectSchema: "Wählen Sie Schema aus"
   searchSchema: "Suchschema..."
-  chat: "Chatten"
-  graph: "Graph"
-  contactUs: "Kontaktieren Sie uns"
-  settings: "Einstellungen"
   logOutProfile: "Profil abmelden"
   moreLogoutOptions: "Weitere Abmeldeoptionen"
   logoutAllProfiles: "Alle Profile abmelden"
@@ -67,7 +53,6 @@ de_DE:
   errorSigningIn: "Fehler bei der Anmeldung:"
   updateAvailable: "Update verfügbar: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Profil wechseln"
   switchProfileDescription: "Wählen Sie ein Profil aus, um fortzufahren, oder fügen Sie ein neues hinzu."
 
 el_GR:
@@ -79,10 +64,6 @@ el_GR:
   schema: "Σχήμα"
   selectSchema: "Επιλέξτε Σχήμα"
   searchSchema: "Σχήμα αναζήτησης..."
-  chat: "Κουβέντα"
-  graph: "Γραφική παράσταση"
-  contactUs: "Επικοινωνήστε μαζί μας"
-  settings: "Ρυθμίσεις"
   logOutProfile: "Προφίλ αποσύνδεσης"
   moreLogoutOptions: "Περισσότερες επιλογές αποσύνδεσης"
   logoutAllProfiles: "Αποσύνδεση όλων των προφίλ"
@@ -91,7 +72,6 @@ el_GR:
   errorSigningIn: "Σφάλμα κατά τη σύνδεσή σας:"
   updateAvailable: "Διαθέσιμη ενημέρωση: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Εναλλαγή προφίλ"
   switchProfileDescription: "Επιλέξτε ένα προφίλ για να συνεχίσετε ή προσθέστε ένα νέο."
 
 en_GB:
@@ -103,10 +83,6 @@ en_GB:
   schema: "Schema"
   selectSchema: "Select Schema"
   searchSchema: "Search Schema..."
-  chat: "Chat"
-  graph: "Graph"
-  contactUs: "Contact Us"
-  settings: "Settings"
   logOutProfile: "Log Out Profile"
   moreLogoutOptions: "More Logout Options"
   logoutAllProfiles: "Logout All Profiles"
@@ -115,7 +91,6 @@ en_GB:
   errorSigningIn: "Error Signing You In:"
   updateAvailable: "Update available: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Switch Profile"
   switchProfileDescription: "Choose a profile to continue, or add a new one."
 
 es_ES:
@@ -127,10 +102,6 @@ es_ES:
   schema: "Esquema"
   selectSchema: "Seleccionar esquema"
   searchSchema: "Esquema de búsqueda..."
-  chat: "Charlar"
-  graph: "Gráfico"
-  contactUs: "Contacta con nosotras"
-  settings: "Ajustes"
   logOutProfile: "Cerrar sesión perfil"
   moreLogoutOptions: "Más opciones de cierre de sesión"
   logoutAllProfiles: "Cerrar sesión en todos los perfiles"
@@ -139,7 +110,6 @@ es_ES:
   errorSigningIn: "Error al iniciar sesión:"
   updateAvailable: "Actualización disponible: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Cambiar perfil"
   switchProfileDescription: "Elija un perfil para continuar o agregue uno nuevo."
 
 fi_FI:
@@ -151,10 +121,6 @@ fi_FI:
   schema: "Kaavio"
   selectSchema: "Valitse Schema"
   searchSchema: "Hakukaavio..."
-  chat: "Chat"
-  graph: "Kaavio"
-  contactUs: "Ota yhteyttä"
-  settings: "Asetukset"
   logOutProfile: "Kirjaudu ulos profiili"
   moreLogoutOptions: "Lisää uloskirjautumisvaihtoehtoja"
   logoutAllProfiles: "Kirjaudu ulos kaikista profiileista"
@@ -163,7 +129,6 @@ fi_FI:
   errorSigningIn: "Virhe kirjautuessasi sisään:"
   updateAvailable: "Päivitys saatavilla: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Vaihda profiilia"
   switchProfileDescription: "Valitse profiili jatkaaksesi tai lisää uusi."
 
 fr_FR:
@@ -175,10 +140,6 @@ fr_FR:
   schema: "Schéma"
   selectSchema: "Sélectionnez un schéma"
   searchSchema: "Schéma de recherche..."
-  chat: "Chatte"
-  graph: "Graphique"
-  contactUs: "Contactez-nous"
-  settings: "Paramètres"
   logOutProfile: "Déconnexion du profil"
   moreLogoutOptions: "Plus d'options de déconnexion"
   logoutAllProfiles: "Se déconnecter de tous les profils"
@@ -187,7 +148,6 @@ fr_FR:
   errorSigningIn: "Erreur lors de votre connexion :"
   updateAvailable: "Mise à jour disponible : {version}"
   sslSecured: "SSL : {mode}"
-  switchProfileTitle: "Changer de profil"
   switchProfileDescription: "Choisissez un profil pour continuer ou ajoutez-en un nouveau."
 
 it_IT:
@@ -199,10 +159,6 @@ it_IT:
   schema: "Schema"
   selectSchema: "Seleziona Schema"
   searchSchema: "Cerca schema..."
-  chat: "Chiacchierata"
-  graph: "Grafico"
-  contactUs: "Contattaci"
-  settings: "Impostazioni"
   logOutProfile: "Esci dal profilo"
   moreLogoutOptions: "Altre opzioni di disconnessione"
   logoutAllProfiles: "Esci da tutti i profili"
@@ -211,7 +167,6 @@ it_IT:
   errorSigningIn: "Errore durante l'accesso:"
   updateAvailable: "Aggiornamento disponibile: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Cambia profilo"
   switchProfileDescription: "Scegli un profilo per continuare o aggiungine uno nuovo."
 
 iw_IL:
@@ -223,10 +178,6 @@ iw_IL:
   schema: "סכֵימָה"
   selectSchema: "בחר סכימה"
   searchSchema: "חיפוש סכימה..."
-  chat: "לְשׂוֹחֵחַ"
-  graph: "גרָף"
-  contactUs: "צור קשר"
-  settings: "הגדרות"
   logOutProfile: "התנתק פרופיל"
   moreLogoutOptions: "אפשרויות התנתקות נוספות"
   logoutAllProfiles: "התנתק מכל הפרופילים"
@@ -235,7 +186,6 @@ iw_IL:
   errorSigningIn: "שגיאה בהכנסתך:"
   updateAvailable: "עדכון זמין: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "החלף פרופיל"
   switchProfileDescription: "בחר פרופיל כדי להמשיך, או הוסף פרופיל חדש."
 
 ja_JP:
@@ -247,10 +197,6 @@ ja_JP:
   schema: "スキーマ"
   selectSchema: "スキーマの選択"
   searchSchema: "スキーマを検索..."
-  chat: "チャット"
-  graph: "グラフ"
-  contactUs: "お問い合わせ"
-  settings: "設定"
   logOutProfile: "ログアウトプロファイル"
   moreLogoutOptions: "その他のログアウト オプション"
   logoutAllProfiles: "すべてのプロファイルをログアウトする"
@@ -259,7 +205,6 @@ ja_JP:
   errorSigningIn: "サインイン時のエラー:"
   updateAvailable: "利用可能なアップデート: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "プロファイルの切り替え"
   switchProfileDescription: "プロファイルを選択して続行するか、新しいプロファイルを追加します。"
 
 ko_KR:
@@ -271,10 +216,6 @@ ko_KR:
   schema: "개요"
   selectSchema: "스키마 선택"
   searchSchema: "스키마 검색..."
-  chat: "채팅"
-  graph: "그래프"
-  contactUs: "문의하기"
-  settings: "설정"
   logOutProfile: "로그아웃 프로필"
   moreLogoutOptions: "추가 로그아웃 옵션"
   logoutAllProfiles: "모든 프로필 로그아웃"
@@ -283,7 +224,6 @@ ko_KR:
   errorSigningIn: "로그인 오류:"
   updateAvailable: "업데이트 가능: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "프로필 전환"
   switchProfileDescription: "계속하려면 프로필을 선택하거나 새 프로필을 추가하세요."
 
 nl_NL:
@@ -295,10 +235,6 @@ nl_NL:
   schema: "Schema"
   selectSchema: "Selecteer Schema"
   searchSchema: "Zoekschema..."
-  chat: "Chatten"
-  graph: "Grafiek"
-  contactUs: "Neem contact met ons op"
-  settings: "Instellingen"
   logOutProfile: "Uitloggen profiel"
   moreLogoutOptions: "Meer uitlogopties"
   logoutAllProfiles: "Meld u af bij alle profielen"
@@ -307,7 +243,6 @@ nl_NL:
   errorSigningIn: "Fout bij aanmelden:"
   updateAvailable: "Update beschikbaar: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Profiel wisselen"
   switchProfileDescription: "Kies een profiel om door te gaan, of voeg een nieuw profiel toe."
 
 pl_PL:
@@ -319,10 +254,6 @@ pl_PL:
   schema: "Schemat"
   selectSchema: "Wybierz Schemat"
   searchSchema: "Wyszukaj schemat..."
-  chat: "Pogawędzić"
-  graph: "Wykres"
-  contactUs: "Skontaktuj się z nami"
-  settings: "Ustawienia"
   logOutProfile: "Wyloguj się z profilu"
   moreLogoutOptions: "Więcej opcji wylogowania"
   logoutAllProfiles: "Wyloguj się ze wszystkich profili"
@@ -331,7 +262,6 @@ pl_PL:
   errorSigningIn: "Błąd podczas logowania:"
   updateAvailable: "Dostępna aktualizacja: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Zmień profil"
   switchProfileDescription: "Wybierz profil, aby kontynuować, lub dodaj nowy."
 
 pt_BR:
@@ -343,10 +273,6 @@ pt_BR:
   schema: "Esquema"
   selectSchema: "Selecione o esquema"
   searchSchema: "Esquema de pesquisa..."
-  chat: "Bater papo"
-  graph: "Gráfico"
-  contactUs: "Contate-nos"
-  settings: "Configurações"
   logOutProfile: "Sair do perfil"
   moreLogoutOptions: "Mais opções de logout"
   logoutAllProfiles: "Sair de todos os perfis"
@@ -355,7 +281,6 @@ pt_BR:
   errorSigningIn: "Erro ao fazer login:"
   updateAvailable: "Atualização disponível: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Trocar perfil"
   switchProfileDescription: "Escolha um perfil para continuar ou adicione um novo."
 
 ro_RO:
@@ -367,10 +292,6 @@ ro_RO:
   schema: "Schemă"
   selectSchema: "Selectați Schema"
   searchSchema: "Schema de căutare..."
-  chat: "Chat"
-  graph: "Grafic"
-  contactUs: "Contactaţi-ne"
-  settings: "Setări"
   logOutProfile: "Profil de deconectare"
   moreLogoutOptions: "Mai multe opțiuni de deconectare"
   logoutAllProfiles: "Deconectați toate profilurile"
@@ -379,7 +300,6 @@ ro_RO:
   errorSigningIn: "Eroare la conectare:"
   updateAvailable: "Actualizare disponibilă: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Schimbați profil"
   switchProfileDescription: "Alegeți un profil pentru a continua sau adăugați unul nou."
 
 ru_RU:
@@ -391,10 +311,6 @@ ru_RU:
   schema: "Схема"
   selectSchema: "Выберите схему"
   searchSchema: "Схема поиска..."
-  chat: "Чат"
-  graph: "График"
-  contactUs: "Связаться с нами"
-  settings: "Настройки"
   logOutProfile: "Выйти из профиля"
   moreLogoutOptions: "Дополнительные параметры выхода из системы"
   logoutAllProfiles: "Выход из всех профилей"
@@ -403,7 +319,6 @@ ru_RU:
   errorSigningIn: "Ошибка при входе в систему:"
   updateAvailable: "Доступно обновление: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Переключить профиль"
   switchProfileDescription: "Выберите профиль, чтобы продолжить, или добавьте новый."
 
 sk_SK:
@@ -415,10 +330,6 @@ sk_SK:
   schema: "Schéma"
   selectSchema: "Vyberte položku Schéma"
   searchSchema: "Hľadať v schéme..."
-  chat: "Chat"
-  graph: "Graf"
-  contactUs: "Kontaktujte nás"
-  settings: "Nastavenia"
   logOutProfile: "Odhlásiť sa z profilu"
   moreLogoutOptions: "Ďalšie možnosti odhlásenia"
   logoutAllProfiles: "Odhlásiť všetky profily"
@@ -427,7 +338,6 @@ sk_SK:
   errorSigningIn: "Chyba pri prihlasovaní:"
   updateAvailable: "Dostupná aktualizácia: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Prepnúť profil"
   switchProfileDescription: "Ak chcete pokračovať, vyberte profil alebo pridajte nový."
 
 sv_SE:
@@ -439,10 +349,6 @@ sv_SE:
   schema: "Schema"
   selectSchema: "Välj Schema"
   searchSchema: "Sök schema..."
-  chat: "Chatta"
-  graph: "Graf"
-  contactUs: "Kontakta oss"
-  settings: "Inställningar"
   logOutProfile: "Logga ut profil"
   moreLogoutOptions: "Fler utloggningsalternativ"
   logoutAllProfiles: "Logga ut alla profiler"
@@ -451,7 +357,6 @@ sv_SE:
   errorSigningIn: "Fel när du loggade in dig:"
   updateAvailable: "Uppdatering tillgänglig: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Byt profil"
   switchProfileDescription: "Välj en profil för att fortsätta, eller lägg till en ny."
 
 zh_CN:
@@ -463,10 +368,6 @@ zh_CN:
   schema: "模式"
   selectSchema: "选择架构"
   searchSchema: "搜索架构..."
-  chat: "聊天"
-  graph: "图形"
-  contactUs: "联系我们"
-  settings: "设置"
   logOutProfile: "注销个人资料"
   moreLogoutOptions: "更多注销选项"
   logoutAllProfiles: "注销所有配置文件"
@@ -475,7 +376,6 @@ zh_CN:
   errorSigningIn: "您登录时出错："
   updateAvailable: "可用更新：{version}"
   sslSecured: "SSL：{mode}"
-  switchProfileTitle: "开关配置文件"
   switchProfileDescription: "选择一个配置文件以继续，或添加新的配置文件。"
 
 zh_TW:
@@ -487,10 +387,6 @@ zh_TW:
   schema: "模式"
   selectSchema: "選擇架構"
   searchSchema: "搜尋架構..."
-  chat: "聊天"
-  graph: "圖形"
-  contactUs: "聯絡我們"
-  settings: "設定"
   logOutProfile: "註銷個人資料"
   moreLogoutOptions: "更多註銷選項"
   logoutAllProfiles: "註銷所有設定檔"
@@ -499,7 +395,6 @@ zh_TW:
   errorSigningIn: "您登入時發生錯誤："
   updateAvailable: "可用更新：{version}"
   sslSecured: "SSL：{mode}"
-  switchProfileTitle: "開關設定檔"
   switchProfileDescription: "選擇一個設定檔以繼續，或新增新的設定檔。"
 
 bg_BG:
@@ -511,10 +406,6 @@ bg_BG:
   schema: "Схема"
   selectSchema: "Изберете Схема"
   searchSchema: "Схема за търсене..."
-  chat: "Чат"
-  graph: "Графика"
-  contactUs: "Свържете се с нас"
-  settings: "Настройки"
   logOutProfile: "Профил за излизане"
   moreLogoutOptions: "Още опции за излизане"
   logoutAllProfiles: "Изход от всички профили"
@@ -523,7 +414,6 @@ bg_BG:
   errorSigningIn: "Грешка при влизането ви:"
   updateAvailable: "Налична актуализация: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Превключване на профил"
   switchProfileDescription: "Изберете профил, за да продължите, или добавете нов."
 
 bn_BD:
@@ -535,10 +425,6 @@ bn_BD:
   schema: "স্কিমা"
   selectSchema: "স্কিমা নির্বাচন করুন"
   searchSchema: "স্কিমা অনুসন্ধান করুন..."
-  chat: "চ্যাট"
-  graph: "গ্রাফ"
-  contactUs: "আমাদের সাথে যোগাযোগ করুন"
-  settings: "সেটিংস"
   logOutProfile: "লগ আউট প্রোফাইল"
   moreLogoutOptions: "আরো লগআউট বিকল্প"
   logoutAllProfiles: "সমস্ত প্রোফাইল লগআউট করুন"
@@ -547,7 +433,6 @@ bn_BD:
   errorSigningIn: "আপনাকে সাইন ইন করতে ত্রুটি:"
   updateAvailable: "আপডেট উপলব্ধ: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "প্রোফাইল স্যুইচ করুন"
   switchProfileDescription: "চালিয়ে যেতে একটি প্রোফাইল চয়ন করুন, বা একটি নতুন যোগ করুন৷"
 
 ca_ES:
@@ -559,10 +444,6 @@ ca_ES:
   schema: "Esquema"
   selectSchema: "Seleccioneu Esquema"
   searchSchema: "Esquema de cerca..."
-  chat: "Xatejar"
-  graph: "Gràfic"
-  contactUs: "Contacta amb nosaltres"
-  settings: "Configuració"
   logOutProfile: "Perfil de tancament"
   moreLogoutOptions: "Més opcions de tancament de sessió"
   logoutAllProfiles: "Tanca la sessió de tots els perfils"
@@ -571,7 +452,6 @@ ca_ES:
   errorSigningIn: "Error en iniciar la sessió:"
   updateAvailable: "Actualització disponible: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Canvia el perfil"
   switchProfileDescription: "Trieu un perfil per continuar o afegeix-ne un de nou."
 
 cs_CZ:
@@ -583,10 +463,6 @@ cs_CZ:
   schema: "Schéma"
   selectSchema: "Vyberte možnost Schéma"
   searchSchema: "Hledat schéma..."
-  chat: "Povídání"
-  graph: "Graf"
-  contactUs: "Kontaktujte nás"
-  settings: "Nastavení"
   logOutProfile: "Odhlášení profilu"
   moreLogoutOptions: "Další možnosti odhlášení"
   logoutAllProfiles: "Odhlásit všechny profily"
@@ -595,7 +471,6 @@ cs_CZ:
   errorSigningIn: "Chyba při přihlašování:"
   updateAvailable: "Dostupná aktualizace: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Přepnout profil"
   switchProfileDescription: "Vyberte profil, chcete-li pokračovat, nebo přidejte nový."
 
 da_DK:
@@ -607,10 +482,6 @@ da_DK:
   schema: "Skema"
   selectSchema: "Vælg Skema"
   searchSchema: "Søg skema..."
-  chat: "Snak"
-  graph: "Kurve"
-  contactUs: "Kontakt os"
-  settings: "Indstillinger"
   logOutProfile: "Log ud profil"
   moreLogoutOptions: "Flere muligheder for at logge ud"
   logoutAllProfiles: "Log af alle profiler"
@@ -619,7 +490,6 @@ da_DK:
   errorSigningIn: "Fejl ved at logge dig ind:"
   updateAvailable: "Opdatering tilgængelig: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Skift profil"
   switchProfileDescription: "Vælg en profil for at fortsætte, eller tilføj en ny."
 
 fa_IR:
@@ -631,10 +501,6 @@ fa_IR:
   schema: "طرحواره"
   selectSchema: "Schema را انتخاب کنید"
   searchSchema: "طرحواره جستجو..."
-  chat: "چت کنید"
-  graph: "نمودار"
-  contactUs: "تماس با ما"
-  settings: "تنظیمات"
   logOutProfile: "نمایه خروج از سیستم"
   moreLogoutOptions: "گزینه های خروج بیشتر"
   logoutAllProfiles: "خروج از تمام نمایه ها"
@@ -643,7 +509,6 @@ fa_IR:
   errorSigningIn: "خطا در ورود به سیستم:"
   updateAvailable: "به‌روزرسانی موجود است: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "تغییر نمایه"
   switchProfileDescription: "نمایه ای را برای ادامه انتخاب کنید یا نمایه جدیدی اضافه کنید."
 
 hi_IN:
@@ -655,10 +520,6 @@ hi_IN:
   schema: "योजना"
   selectSchema: "स्कीमा चुनें"
   searchSchema: "स्कीम खोजें..."
-  chat: "बात करना"
-  graph: "ग्राफ़"
-  contactUs: "हमसे संपर्क करें"
-  settings: "सेटिंग्स"
   logOutProfile: "प्रोफ़ाइल लॉग आउट करें"
   moreLogoutOptions: "अधिक लॉगआउट विकल्प"
   logoutAllProfiles: "सभी प्रोफ़ाइल लॉगआउट करें"
@@ -667,7 +528,6 @@ hi_IN:
   errorSigningIn: "आपको साइन इन करने में त्रुटि:"
   updateAvailable: "अद्यतन उपलब्ध: {version}"
   sslSecured: "एसएसएल: {mode}"
-  switchProfileTitle: "प्रोफ़ाइल स्विच करें"
   switchProfileDescription: "जारी रखने के लिए एक प्रोफ़ाइल चुनें, या एक नया जोड़ें।"
 
 hr_HR:
@@ -679,10 +539,6 @@ hr_HR:
   schema: "Shema"
   selectSchema: "Odaberite Shema"
   searchSchema: "Shema pretraživanja..."
-  chat: "Razgovor"
-  graph: "Grafikon"
-  contactUs: "Kontaktirajte nas"
-  settings: "postavke"
   logOutProfile: "Odjava Profil"
   moreLogoutOptions: "Više opcija odjave"
   logoutAllProfiles: "Odjava sa svih profila"
@@ -691,7 +547,6 @@ hr_HR:
   errorSigningIn: "Pogreška pri prijavi:"
   updateAvailable: "Dostupno ažuriranje: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Promjena profila"
   switchProfileDescription: "Odaberite profil za nastavak ili dodajte novi."
 
 hu_HU:
@@ -703,10 +558,6 @@ hu_HU:
   schema: "Séma"
   selectSchema: "Válassza a Séma lehetőséget"
   searchSchema: "Keresési séma..."
-  chat: "Csevegés"
-  graph: "Grafikon"
-  contactUs: "Lépjen kapcsolatba velünk"
-  settings: "Beállítások elemre"
   logOutProfile: "Kijelentkezési profil"
   moreLogoutOptions: "További kijelentkezési lehetőségek"
   logoutAllProfiles: "Kijelentkezés az összes profilból"
@@ -715,7 +566,6 @@ hu_HU:
   errorSigningIn: "Hiba történt a bejelentkezésekor:"
   updateAvailable: "Frissítés elérhető: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Profil váltása"
   switchProfileDescription: "Válasszon egy profilt a folytatáshoz, vagy adjon hozzá egy újat."
 
 id_ID:
@@ -727,10 +577,6 @@ id_ID:
   schema: "Skema"
   selectSchema: "Pilih Skema"
   searchSchema: "Skema Pencarian..."
-  chat: "Mengobrol"
-  graph: "Grafik"
-  contactUs: "Hubungi kami"
-  settings: "Pengaturan"
   logOutProfile: "Keluar Profil"
   moreLogoutOptions: "Opsi Keluar Lainnya"
   logoutAllProfiles: "Keluar Semua Profil"
@@ -739,7 +585,6 @@ id_ID:
   errorSigningIn: "Terjadi Kesalahan Saat Anda Masuk:"
   updateAvailable: "Pembaruan tersedia: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Ganti Profil"
   switchProfileDescription: "Pilih profil untuk melanjutkan, atau tambahkan yang baru."
 
 ms_MY:
@@ -751,10 +596,6 @@ ms_MY:
   schema: "Skema"
   selectSchema: "Pilih Skema"
   searchSchema: "Skema Carian..."
-  chat: "Sembang"
-  graph: "Graf"
-  contactUs: "Hubungi Kami"
-  settings: "tetapan"
   logOutProfile: "Log Keluar Profil"
   moreLogoutOptions: "Lebih Banyak Pilihan Log Keluar"
   logoutAllProfiles: "Log Keluar Semua Profil"
@@ -763,7 +604,6 @@ ms_MY:
   errorSigningIn: "Ralat Mendaftar Anda Masuk:"
   updateAvailable: "Kemas kini tersedia: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Tukar Profil"
   switchProfileDescription: "Pilih profil untuk meneruskan atau tambah yang baharu."
 
 nb_NO:
@@ -775,10 +615,6 @@ nb_NO:
   schema: "Skjema"
   selectSchema: "Velg Skjema"
   searchSchema: "Søkeskjema..."
-  chat: "Chat"
-  graph: "Kurve"
-  contactUs: "Kontakt oss"
-  settings: "Innstillinger"
   logOutProfile: "Logg ut profil"
   moreLogoutOptions: "Flere utloggingsalternativer"
   logoutAllProfiles: "Logg ut alle profiler"
@@ -787,7 +623,6 @@ nb_NO:
   errorSigningIn: "Feil ved pålogging:"
   updateAvailable: "Oppdatering tilgjengelig: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Bytt profil"
   switchProfileDescription: "Velg en profil for å fortsette, eller legg til en ny."
 
 sw_KE:
@@ -799,10 +634,6 @@ sw_KE:
   schema: "Schema"
   selectSchema: "Chagua Schema"
   searchSchema: "Tafuta Schema..."
-  chat: "Soga"
-  graph: "Grafu"
-  contactUs: "Wasiliana Nasi"
-  settings: "Mipangilio"
   logOutProfile: "Ondoka kwenye Wasifu"
   moreLogoutOptions: "Chaguzi Zaidi za Kuondoka"
   logoutAllProfiles: "Ondoka kwa Wasifu Zote"
@@ -811,7 +642,6 @@ sw_KE:
   errorSigningIn: "Hitilafu katika Kukuingiza:"
   updateAvailable: "Sasisho linapatikana: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Badili Wasifu"
   switchProfileDescription: "Chagua wasifu ili kuendelea, au uongeze mpya."
 
 ta_IN:
@@ -823,10 +653,6 @@ ta_IN:
   schema: "திட்டம்"
   selectSchema: "திட்டத்தைத் தேர்ந்தெடுக்கவும்"
   searchSchema: "தேடல் திட்டம்..."
-  chat: "அரட்டை"
-  graph: "வரைபடம்"
-  contactUs: "எங்களை தொடர்பு கொள்ளவும்"
-  settings: "அமைப்புகள்"
   logOutProfile: "சுயவிவரத்திலிருந்து வெளியேறு"
   moreLogoutOptions: "மேலும் வெளியேறும் விருப்பங்கள்"
   logoutAllProfiles: "அனைத்து சுயவிவரங்களையும் வெளியேறு"
@@ -835,7 +661,6 @@ ta_IN:
   errorSigningIn: "நீங்கள் உள்நுழைவதில் பிழை:"
   updateAvailable: "புதுப்பிப்பு கிடைக்கிறது: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "சுயவிவரத்தை மாற்றவும்"
   switchProfileDescription: "தொடர சுயவிவரத்தைத் தேர்வுசெய்யவும் அல்லது புதிய ஒன்றைச் சேர்க்கவும்."
 
 th_TH:
@@ -847,10 +672,6 @@ th_TH:
   schema: "สคีมา"
   selectSchema: "เลือกสคีมา"
   searchSchema: "ค้นหาสคีมา..."
-  chat: "แชท"
-  graph: "กราฟ"
-  contactUs: "ติดต่อเรา"
-  settings: "การตั้งค่า"
   logOutProfile: "ออกจากระบบโปรไฟล์"
   moreLogoutOptions: "ตัวเลือกการออกจากระบบเพิ่มเติม"
   logoutAllProfiles: "ออกจากระบบโปรไฟล์ทั้งหมด"
@@ -859,7 +680,6 @@ th_TH:
   errorSigningIn: "เกิดข้อผิดพลาดในการลงชื่อเข้าใช้:"
   updateAvailable: "มีการอัปเดต: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "สลับโปรไฟล์"
   switchProfileDescription: "เลือกโปรไฟล์เพื่อดำเนินการต่อหรือเพิ่มโปรไฟล์ใหม่"
 
 tr_TR:
@@ -871,10 +691,6 @@ tr_TR:
   schema: "Şema"
   selectSchema: "Şema Seç"
   searchSchema: "Şemayı Ara..."
-  chat: "Sohbet"
-  graph: "Grafik"
-  contactUs: "Bize Ulaşın"
-  settings: "Ayarlar"
   logOutProfile: "Profilden Çıkış Yap"
   moreLogoutOptions: "Daha Fazla Oturum Kapatma Seçenekleri"
   logoutAllProfiles: "Tüm Profillerden Çıkış Yap"
@@ -883,7 +699,6 @@ tr_TR:
   errorSigningIn: "Oturum Açma Hatası:"
   updateAvailable: "Güncelleme mevcut: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Profili Değiştir"
   switchProfileDescription: "Devam etmek için bir profil seçin veya yeni bir profil ekleyin."
 
 uk_UA:
@@ -895,10 +710,6 @@ uk_UA:
   schema: "Схема"
   selectSchema: "Виберіть Схема"
   searchSchema: "Схема пошуку..."
-  chat: "Чат"
-  graph: "Графік"
-  contactUs: "Зв'яжіться з нами"
-  settings: "Налаштування"
   logOutProfile: "Вийти з профілю"
   moreLogoutOptions: "Додаткові параметри виходу"
   logoutAllProfiles: "Вийти з усіх профілів"
@@ -907,7 +718,6 @@ uk_UA:
   errorSigningIn: "Помилка входу:"
   updateAvailable: "Доступне оновлення: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Змінити профіль"
   switchProfileDescription: "Виберіть профіль, щоб продовжити, або додайте новий."
 
 ur_PK:
@@ -919,10 +729,6 @@ ur_PK:
   schema: "سکیما"
   selectSchema: "سکیما کو منتخب کریں۔"
   searchSchema: "سکیما تلاش کریں..."
-  chat: "گپ شپ"
-  graph: "گراف"
-  contactUs: "ہم سے رابطہ کریں۔"
-  settings: "ترتیبات"
   logOutProfile: "لاگ آؤٹ پروفائل"
   moreLogoutOptions: "مزید لاگ آؤٹ اختیارات"
   logoutAllProfiles: "تمام پروفائلز کو لاگ آؤٹ کریں۔"
@@ -931,7 +737,6 @@ ur_PK:
   errorSigningIn: "آپ کو سائن ان کرنے میں خرابی:"
   updateAvailable: "اپ ڈیٹ دستیاب ہے: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "پروفائل سوئچ کریں۔"
   switchProfileDescription: "جاری رکھنے کے لیے ایک پروفائل منتخب کریں، یا ایک نیا شامل کریں۔"
 
 vi_VN:
@@ -943,10 +748,6 @@ vi_VN:
   schema: "Lược đồ"
   selectSchema: "Chọn lược đồ"
   searchSchema: "Sơ đồ tìm kiếm..."
-  chat: "Trò chuyện"
-  graph: "đồ thị"
-  contactUs: "Liên hệ với chúng tôi"
-  settings: "Cài đặt"
   logOutProfile: "Đăng xuất hồ sơ"
   moreLogoutOptions: "Tùy chọn đăng xuất khác"
   logoutAllProfiles: "Đăng xuất tất cả hồ sơ"
@@ -955,7 +756,6 @@ vi_VN:
   errorSigningIn: "Lỗi khi đăng nhập bạn:"
   updateAvailable: "Đã có bản cập nhật: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Chuyển hồ sơ"
   switchProfileDescription: "Chọn một hồ sơ để tiếp tục hoặc thêm một hồ sơ mới."
 
 af_ZA:
@@ -967,10 +767,6 @@ af_ZA:
   schema: "Skema"
   selectSchema: "Kies Skema"
   searchSchema: "Soek skema..."
-  chat: "Gesels"
-  graph: "Grafiek"
-  contactUs: "Kontak ons"
-  settings: "Instellings"
   logOutProfile: "Teken uit profiel"
   moreLogoutOptions: "Meer afmeldopsies"
   logoutAllProfiles: "Teken alle profiele uit"
@@ -979,7 +775,6 @@ af_ZA:
   errorSigningIn: "Kon nie jou aanmeld nie:"
   updateAvailable: "Opdatering beskikbaar: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Skakel profiel"
   switchProfileDescription: "Kies 'n profiel om voort te gaan, of voeg 'n nuwe een by."
 
 am_ET:
@@ -991,10 +786,6 @@ am_ET:
   schema: "እቅድ"
   selectSchema: "መርሐግብር ይምረጡ"
   searchSchema: "እቅድ ፈልግ..."
-  chat: "ተወያይ"
-  graph: "ግራፍ"
-  contactUs: "ያግኙን"
-  settings: "ቅንብሮች"
   logOutProfile: "ውጣ መገለጫ"
   moreLogoutOptions: "ተጨማሪ የመውጣት አማራጮች"
   logoutAllProfiles: "ሁሉንም መገለጫዎች ውጣ"
@@ -1003,7 +794,6 @@ am_ET:
   errorSigningIn: "እርስዎን ማስገባት ላይ ስህተት፡-"
   updateAvailable: "ዝማኔ ይገኛል፡ {version}"
   sslSecured: "SSL፡ {mode}"
-  switchProfileTitle: "መገለጫ ቀይር"
   switchProfileDescription: "ለመቀጠል መገለጫ ይምረጡ ወይም አዲስ ያክሉ።"
 
 az_AZ:
@@ -1015,10 +805,6 @@ az_AZ:
   schema: "Sxem"
   selectSchema: "Sxem seçin"
   searchSchema: "Sxem axtar..."
-  chat: "Söhbət"
-  graph: "Qrafik"
-  contactUs: "Bizimlə əlaqə saxlayın"
-  settings: "Parametrlər"
   logOutProfile: "Profildən Çıxış"
   moreLogoutOptions: "Daha çox Çıxış Seçimləri"
   logoutAllProfiles: "Bütün Profillərdən çıxın"
@@ -1027,7 +813,6 @@ az_AZ:
   errorSigningIn: "Daxil olma xətası:"
   updateAvailable: "Yeniləmə mövcuddur: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Profili dəyişin"
   switchProfileDescription: "Davam etmək üçün profil seçin və ya yenisini əlavə edin."
 
 et_EE:
@@ -1039,10 +824,6 @@ et_EE:
   schema: "Skeem"
   selectSchema: "Valige Skeem"
   searchSchema: "Otsinguskeem..."
-  chat: "Vestlus"
-  graph: "Graafik"
-  contactUs: "Võtke meiega ühendust"
-  settings: "Seaded"
   logOutProfile: "Väljalogimise profiil"
   moreLogoutOptions: "Rohkem väljalogimisvalikuid"
   logoutAllProfiles: "Logi välja kõikidest profiilidest"
@@ -1051,7 +832,6 @@ et_EE:
   errorSigningIn: "Viga teie sisselogimisel:"
   updateAvailable: "Saadaval on värskendus: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Profiili vahetamine"
   switchProfileDescription: "Valige jätkamiseks profiil või lisage uus."
 
 gu_IN:
@@ -1063,10 +843,6 @@ gu_IN:
   schema: "સ્કીમા"
   selectSchema: "સ્કીમા પસંદ કરો"
   searchSchema: "સ્કીમા શોધો..."
-  chat: "ચેટ"
-  graph: "આલેખ"
-  contactUs: "અમારો સંપર્ક કરો"
-  settings: "સેટિંગ્સ"
   logOutProfile: "લોગ આઉટ પ્રોફાઇલ"
   moreLogoutOptions: "વધુ લૉગઆઉટ વિકલ્પો"
   logoutAllProfiles: "બધી પ્રોફાઇલ લોગઆઉટ કરો"
@@ -1075,7 +851,6 @@ gu_IN:
   errorSigningIn: "તમને સાઇન ઇન કરવામાં ભૂલ:"
   updateAvailable: "અપડેટ ઉપલબ્ધ છે: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "પ્રોફાઇલ સ્વિચ કરો"
   switchProfileDescription: "ચાલુ રાખવા માટે એક પ્રોફાઇલ પસંદ કરો અથવા એક નવી ઉમેરો."
 
 ha_NG:
@@ -1087,10 +862,6 @@ ha_NG:
   schema: "Tsarin tsari"
   selectSchema: "Zaɓi Tsari"
   searchSchema: "Bincika Tsarin..."
-  chat: "Taɗi"
-  graph: "Graph"
-  contactUs: "Tuntube Mu"
-  settings: "Saituna"
   logOutProfile: "Fita Bayanan Bayani"
   moreLogoutOptions: "Ƙarin Zaɓuɓɓukan Fita"
   logoutAllProfiles: "Fita Duk Bayanan Bayanan Bayani"
@@ -1099,7 +870,6 @@ ha_NG:
   errorSigningIn: "Kuskuren Shiga Ku:"
   updateAvailable: "Akwai sabuntawa: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Canja bayanin martaba"
   switchProfileDescription: "Zaɓi bayanin martaba don ci gaba, ko ƙara sabo."
 
 ka_GE:
@@ -1111,10 +881,6 @@ ka_GE:
   schema: "სქემა"
   selectSchema: "აირჩიეთ სქემა"
   searchSchema: "სქემის ძიება..."
-  chat: "ჩატი"
-  graph: "გრაფიკი"
-  contactUs: "დაგვიკავშირდით"
-  settings: "პარამეტრები"
   logOutProfile: "გასვლა პროფილი"
   moreLogoutOptions: "მეტი გასვლის ოფციები"
   logoutAllProfiles: "ყველა პროფილის გამოსვლა"
@@ -1123,7 +889,6 @@ ka_GE:
   errorSigningIn: "შეცდომა შესვლისას:"
   updateAvailable: "ხელმისაწვდომია განახლება: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "პროფილის გადართვა"
   switchProfileDescription: "აირჩიეთ პროფილი გასაგრძელებლად, ან დაამატეთ ახალი."
 
 km_KH:
@@ -1135,10 +900,6 @@ km_KH:
   schema: "គ្រោងការណ៍"
   selectSchema: "ជ្រើសរើសគ្រោងការណ៍"
   searchSchema: "ស្វែងរកគ្រោងការណ៍..."
-  chat: "ជជែក"
-  graph: "ក្រាហ្វ"
-  contactUs: "ទាក់ទងមកយើងខ្ញុំ"
-  settings: "ការកំណត់"
   logOutProfile: "ចេញប្រវត្តិរូប"
   moreLogoutOptions: "ជម្រើសការចេញច្រើនទៀត"
   logoutAllProfiles: "ចេញពីទម្រង់ទាំងអស់។"
@@ -1147,7 +908,6 @@ km_KH:
   errorSigningIn: "កំហុសក្នុងការចូលអ្នក៖"
   updateAvailable: "អាប់ដេតមាន៖ {version}"
   sslSecured: "SSL៖ {mode}"
-  switchProfileTitle: "ប្តូរប្រវត្តិរូប"
   switchProfileDescription: "ជ្រើសរើសកម្រងព័ត៌មានដើម្បីបន្ត ឬបន្ថែមទម្រង់ថ្មី។"
 
 kn_IN:
@@ -1159,10 +919,6 @@ kn_IN:
   schema: "ಸ್ಕೀಮಾ"
   selectSchema: "ಸ್ಕೀಮಾ ಆಯ್ಕೆಮಾಡಿ"
   searchSchema: "ಹುಡುಕಾಟ ಸ್ಕೀಮಾ..."
-  chat: "ಚಾಟ್ ಮಾಡಿ"
-  graph: "ಗ್ರಾಫ್"
-  contactUs: "ನಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸಿ"
-  settings: "ಸೆಟ್ಟಿಂಗ್‌ಗಳು"
   logOutProfile: "ಲಾಗ್ ಔಟ್ ಪ್ರೊಫೈಲ್"
   moreLogoutOptions: "ಇನ್ನಷ್ಟು ಲಾಗ್‌ಔಟ್ ಆಯ್ಕೆಗಳು"
   logoutAllProfiles: "ಎಲ್ಲಾ ಪ್ರೊಫೈಲ್‌ಗಳನ್ನು ಲಾಗ್‌ಔಟ್ ಮಾಡಿ"
@@ -1171,7 +927,6 @@ kn_IN:
   errorSigningIn: "ನಿಮ್ಮನ್ನು ಸೈನ್ ಇನ್ ಮಾಡುವಲ್ಲಿ ದೋಷ:"
   updateAvailable: "ನವೀಕರಣ ಲಭ್ಯವಿದೆ: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "ಸ್ವಿಚ್ ಪ್ರೊಫೈಲ್"
   switchProfileDescription: "ಮುಂದುವರಿಯಲು ಪ್ರೊಫೈಲ್ ಆಯ್ಕೆಮಾಡಿ ಅಥವಾ ಹೊಸದನ್ನು ಸೇರಿಸಿ."
 
 lt_LT:
@@ -1183,10 +938,6 @@ lt_LT:
   schema: "Schema"
   selectSchema: "Pasirinkite Schema"
   searchSchema: "Paieškos schema..."
-  chat: "Pokalbis"
-  graph: "Grafikas"
-  contactUs: "Susisiekite su mumis"
-  settings: "Nustatymai"
   logOutProfile: "Atsijungti profilis"
   moreLogoutOptions: "Daugiau atsijungimo parinkčių"
   logoutAllProfiles: "Atsijungti nuo visų profilių"
@@ -1195,7 +946,6 @@ lt_LT:
   errorSigningIn: "Klaida prisijungiant:"
   updateAvailable: "Galimas atnaujinimas: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Perjungti profilį"
   switchProfileDescription: "Norėdami tęsti, pasirinkite profilį arba pridėkite naują."
 
 lv_LV:
@@ -1207,10 +957,6 @@ lv_LV:
   schema: "Shēma"
   selectSchema: "Atlasiet Shēma"
   searchSchema: "Meklēšanas shēma..."
-  chat: "Tērzēšana"
-  graph: "Grafiks"
-  contactUs: "Sazinieties ar mums"
-  settings: "Iestatījumi"
   logOutProfile: "Atteikšanās profils"
   moreLogoutOptions: "Vairāk atteikšanās iespēju"
   logoutAllProfiles: "Atteikties no visiem profiliem"
@@ -1219,7 +965,6 @@ lv_LV:
   errorSigningIn: "Kļūda, pierakstoties:"
   updateAvailable: "Pieejams atjauninājums: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Pārslēgt profilu"
   switchProfileDescription: "Izvēlieties profilu, lai turpinātu, vai pievienojiet jaunu."
 
 ml_IN:
@@ -1231,10 +976,6 @@ ml_IN:
   schema: "സ്കീമ"
   selectSchema: "സ്കീമ തിരഞ്ഞെടുക്കുക"
   searchSchema: "സ്കീമ തിരയുക..."
-  chat: "ചാറ്റ്"
-  graph: "ഗ്രാഫ്"
-  contactUs: "ഞങ്ങളെ സമീപിക്കുക"
-  settings: "ക്രമീകരണങ്ങൾ"
   logOutProfile: "പ്രൊഫൈൽ ലോഗ് ഔട്ട് ചെയ്യുക"
   moreLogoutOptions: "കൂടുതൽ ലോഗ്ഔട്ട് ഓപ്ഷനുകൾ"
   logoutAllProfiles: "എല്ലാ പ്രൊഫൈലുകളും ലോഗ്ഔട്ട് ചെയ്യുക"
@@ -1243,7 +984,6 @@ ml_IN:
   errorSigningIn: "നിങ്ങളെ സൈൻ ഇൻ ചെയ്യുന്നതിൽ പിശക്:"
   updateAvailable: "അപ്‌ഡേറ്റ് ലഭ്യമാണ്: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "പ്രൊഫൈൽ മാറുക"
   switchProfileDescription: "തുടരാൻ ഒരു പ്രൊഫൈൽ തിരഞ്ഞെടുക്കുക അല്ലെങ്കിൽ പുതിയൊരെണ്ണം ചേർക്കുക."
 
 mr_IN:
@@ -1255,10 +995,6 @@ mr_IN:
   schema: "स्कीमा"
   selectSchema: "स्कीमा निवडा"
   searchSchema: "शोध योजना..."
-  chat: "गप्पा"
-  graph: "आलेख"
-  contactUs: "आमच्याशी संपर्क साधा"
-  settings: "सेटिंग्ज"
   logOutProfile: "लॉग आउट प्रोफाइल"
   moreLogoutOptions: "अधिक लॉगआउट पर्याय"
   logoutAllProfiles: "सर्व प्रोफाइल लॉगआउट करा"
@@ -1267,7 +1003,6 @@ mr_IN:
   errorSigningIn: "तुम्हाला साइन इन करताना त्रुटी:"
   updateAvailable: "अपडेट उपलब्ध: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "प्रोफाइल स्विच करा"
   switchProfileDescription: "सुरू ठेवण्यासाठी प्रोफाईल निवडा किंवा नवीन जोडा."
 
 ne_NP:
@@ -1279,10 +1014,6 @@ ne_NP:
   schema: "योजना"
   selectSchema: "स्कीमा चयन गर्नुहोस्"
   searchSchema: "खोज योजना..."
-  chat: "च्याट"
-  graph: "ग्राफ"
-  contactUs: "हामीलाई सम्पर्क गर्नुहोस्"
-  settings: "सेटिङहरू"
   logOutProfile: "लग आउट प्रोफाइल"
   moreLogoutOptions: "थप लगआउट विकल्पहरू"
   logoutAllProfiles: "सबै प्रोफाइलहरू लगआउट गर्नुहोस्"
@@ -1291,7 +1022,6 @@ ne_NP:
   errorSigningIn: "तपाईंलाई साइन इन गर्दा त्रुटि:"
   updateAvailable: "अपडेट उपलब्ध छ: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "प्रोफाइल स्विच गर्नुहोस्"
   switchProfileDescription: "जारी राख्नको लागि प्रोफाइल छनौट गर्नुहोस्, वा नयाँ थप्नुहोस्।"
 
 pa_IN:
@@ -1303,10 +1033,6 @@ pa_IN:
   schema: "ਸਕੀਮਾ"
   selectSchema: "ਸਕੀਮਾ ਚੁਣੋ"
   searchSchema: "ਖੋਜ ਸਕੀਮਾ..."
-  chat: "ਚੈਟ"
-  graph: "ਗ੍ਰਾਫ਼"
-  contactUs: "ਸਾਡੇ ਨਾਲ ਸੰਪਰਕ ਕਰੋ"
-  settings: "ਸੈਟਿੰਗਾਂ"
   logOutProfile: "ਲੌਗ ਆਉਟ ਪ੍ਰੋਫਾਈਲ"
   moreLogoutOptions: "ਹੋਰ ਲੌਗਆਉਟ ਵਿਕਲਪ"
   logoutAllProfiles: "ਸਾਰੇ ਪ੍ਰੋਫਾਈਲਾਂ ਨੂੰ ਲੌਗਆਊਟ ਕਰੋ"
@@ -1315,7 +1041,6 @@ pa_IN:
   errorSigningIn: "ਤੁਹਾਨੂੰ ਸਾਈਨ ਇਨ ਕਰਨ ਵਿੱਚ ਤਰੁੱਟੀ:"
   updateAvailable: "ਅੱਪਡੇਟ ਉਪਲਬਧ: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "ਪ੍ਰੋਫਾਈਲ ਬਦਲੋ"
   switchProfileDescription: "ਜਾਰੀ ਰੱਖਣ ਲਈ ਇੱਕ ਪ੍ਰੋਫਾਈਲ ਚੁਣੋ, ਜਾਂ ਇੱਕ ਨਵਾਂ ਜੋੜੋ।"
 
 si_LK:
@@ -1327,10 +1052,6 @@ si_LK:
   schema: "යෝජනා ක්රමය"
   selectSchema: "Schema තෝරන්න"
   searchSchema: "යෝජනා ක්‍රමය සොයන්න..."
-  chat: "කතාබස් කරන්න"
-  graph: "ප්‍රස්තාරය"
-  contactUs: "අපව අමතන්න"
-  settings: "සැකසීම්"
   logOutProfile: "ලොග් අවුට් පැතිකඩ"
   moreLogoutOptions: "තවත් පිටවීමේ විකල්ප"
   logoutAllProfiles: "සියලුම පැතිකඩ වලින් ඉවත් වන්න"
@@ -1339,7 +1060,6 @@ si_LK:
   errorSigningIn: "ඔබ ඇතුළු වීමේ දෝෂයකි:"
   updateAvailable: "යාවත්කාලීන ලබා ගත හැක: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "පැතිකඩ මාරු කරන්න"
   switchProfileDescription: "ඉදිරියට යාමට පැතිකඩක් තෝරන්න, නැතහොත් අලුත් එකක් එක් කරන්න."
 
 sl_SI:
@@ -1351,10 +1071,6 @@ sl_SI:
   schema: "Shema"
   selectSchema: "Izberite Shema"
   searchSchema: "Shema iskanja ..."
-  chat: "Klepetajte"
-  graph: "Graf"
-  contactUs: "Kontaktirajte nas"
-  settings: "nastavitve"
   logOutProfile: "Profil za odjavo"
   moreLogoutOptions: "Več možnosti odjave"
   logoutAllProfiles: "Odjava iz vseh profilov"
@@ -1363,7 +1079,6 @@ sl_SI:
   errorSigningIn: "Napaka pri prijavi:"
   updateAvailable: "Na voljo je posodobitev: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Preklopi profil"
   switchProfileDescription: "Za nadaljevanje izberite profil ali dodajte novega."
 
 sr_RS:
@@ -1375,10 +1090,6 @@ sr_RS:
   schema: "Шема"
   selectSchema: "Изаберите Шема"
   searchSchema: "Претражи шему..."
-  chat: "Ћаскање"
-  graph: "Граф"
-  contactUs: "Контактирајте нас"
-  settings: "Подешавања"
   logOutProfile: "Одјавите се профил"
   moreLogoutOptions: "Више опција за одјаву"
   logoutAllProfiles: "Одјавите се са свих профила"
@@ -1387,7 +1098,6 @@ sr_RS:
   errorSigningIn: "Грешка при пријави:"
   updateAvailable: "Доступно ажурирање: {version}"
   sslSecured: "ССЛ: {mode}"
-  switchProfileTitle: "Промени профил"
   switchProfileDescription: "Изаберите профил да наставите или додајте нови."
 
 te_IN:
@@ -1399,10 +1109,6 @@ te_IN:
   schema: "స్కీమా"
   selectSchema: "స్కీమాను ఎంచుకోండి"
   searchSchema: "శోధన స్కీమా..."
-  chat: "చాట్ చేయండి"
-  graph: "గ్రాఫ్"
-  contactUs: "మమ్మల్ని సంప్రదించండి"
-  settings: "సెట్టింగ్‌లు"
   logOutProfile: "లాగ్ అవుట్ ప్రొఫైల్"
   moreLogoutOptions: "మరిన్ని లాగ్అవుట్ ఎంపికలు"
   logoutAllProfiles: "అన్ని ప్రొఫైల్‌లను లాగ్ అవుట్ చేయండి"
@@ -1411,7 +1117,6 @@ te_IN:
   errorSigningIn: "మిమ్మల్ని సైన్ ఇన్ చేయడంలో లోపం:"
   updateAvailable: "అప్‌డేట్ అందుబాటులో ఉంది: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "ప్రొఫైల్‌ని మార్చండి"
   switchProfileDescription: "కొనసాగించడానికి ప్రొఫైల్‌ను ఎంచుకోండి లేదా కొత్తదాన్ని జోడించండి."
 
 tl_PH:
@@ -1423,10 +1128,6 @@ tl_PH:
   schema: "Schema"
   selectSchema: "Piliin ang Schema"
   searchSchema: "Schema ng Paghahanap..."
-  chat: "Chat"
-  graph: "Graph"
-  contactUs: "Makipag-ugnayan sa Amin"
-  settings: "Mga setting"
   logOutProfile: "Mag-log Out Profile"
   moreLogoutOptions: "Higit pang Mga Opsyon sa Pag-logout"
   logoutAllProfiles: "Mag-logout sa Lahat ng Profile"
@@ -1435,7 +1136,6 @@ tl_PH:
   errorSigningIn: "Error sa Pag-sign In:"
   updateAvailable: "Available ang update: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Lumipat ng Profile"
   switchProfileDescription: "Pumili ng profile upang magpatuloy, o magdagdag ng bago."
 
 uz_UZ:
@@ -1447,10 +1147,6 @@ uz_UZ:
   schema: "Sxema"
   selectSchema: "Sxema-ni tanlang"
   searchSchema: "Sxemani qidirish..."
-  chat: "Chat"
-  graph: "Grafik"
-  contactUs: "Biz bilan bog'lanish"
-  settings: "Sozlamalar"
   logOutProfile: "Chiqish profili"
   moreLogoutOptions: "Batafsil chiqish imkoniyatlari"
   logoutAllProfiles: "Barcha profillardan chiqish"
@@ -1459,7 +1155,6 @@ uz_UZ:
   errorSigningIn: "Tizimga kirishda xatolik yuz berdi:"
   updateAvailable: "Yangilanish mavjud: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Profilni almashtirish"
   switchProfileDescription: "Davom etish uchun profilni tanlang yoki yangisini qo‘shing."
 
 yo_NG:
@@ -1471,10 +1166,6 @@ yo_NG:
   schema: "Eto"
   selectSchema: "Yan Eto"
   searchSchema: "Ṣewadii Eto..."
-  chat: "Wiregbe"
-  graph: "Aworan"
-  contactUs: "Pe wa"
-  settings: "Eto"
   logOutProfile: "Jade Profaili"
   moreLogoutOptions: "Awọn aṣayan Jade jade diẹ sii"
   logoutAllProfiles: "Jade Gbogbo Awọn profaili"
@@ -1483,5 +1174,4 @@ yo_NG:
   errorSigningIn: "Aṣiṣe Gbigbawọle Rẹ:"
   updateAvailable: "Imudojuiwọn: {version}"
   sslSecured: "SSL: {mode}"
-  switchProfileTitle: "Yipada Profaili"
   switchProfileDescription: "Yan profaili kan lati tẹsiwaju, tabi ṣafikun ọkan tuntun."

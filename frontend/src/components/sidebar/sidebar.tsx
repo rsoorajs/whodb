@@ -582,7 +582,7 @@ export const Sidebar: FC = () => {
             <Dialog open={showProfileSwitchDialog} onOpenChange={handleProfileSwitchDialogChange}>
                 <DialogContent className="max-w-sm" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
                     <DialogHeader>
-                        <DialogTitle>{t('switchProfileTitle')}</DialogTitle>
+                        <DialogTitle>{t('switchProfile')}</DialogTitle>
                         <DialogDescription>{t('switchProfileDescription')}</DialogDescription>
                     </DialogHeader>
                     <div className="flex flex-col gap-1 mt-2">

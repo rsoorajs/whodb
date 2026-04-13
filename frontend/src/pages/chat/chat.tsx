@@ -268,7 +268,7 @@ const TablePreview: FC<{ type: string, data: TableData, text: string, containerW
         <Dialog open={showScratchpadDialog} onOpenChange={setShowScratchpadDialog}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{t('dialogTitle')}</DialogTitle>
+                    <DialogTitle>{t('moveToScratchpad')}</DialogTitle>
                     <DialogDescription>
                         {t('dialogDescription')}
                     </DialogDescription>

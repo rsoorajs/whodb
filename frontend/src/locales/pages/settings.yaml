@@ -1,5 +1,4 @@
 en_US:
-  title: Settings
   telemetryTitle: Telemetry and Performance Metrics
   telemetryDescription: We use this information solely to enhance the performance of {appName}.
   dataCollectionDetails: For details on what data we collect, how it's collected, stored, and used, please refer to our {privacyPolicyLink}.
@@ -27,9 +26,7 @@ en_US:
   spacious: Spacious
   whereConditionMode: Where Condition Mode
   popover: Popover
-  sheet: Sheet
   defaultPageSize: Default Page Size
-  custom: Custom
   language: Language
   selectView: Select a View
   selectFontSize: Select Font Size
@@ -39,7 +36,6 @@ en_US:
   selectPageSize: Select Page Size
   selectLanguage: Select Language
   databaseSchemaTerminology: Database/Schema Label
-  databaseSchemaTerminologyDatabase: Database
   databaseSchemaTerminologySchema: Schema
   selectDatabaseSchemaTerminology: Select Label
   disableAnimations: Disable Animations
@@ -47,7 +43,6 @@ en_US:
   disableAnimationsDisabled: Animations are enabled
 
 ar_AE:
-  title: "إعدادات"
   telemetryTitle: "القياس عن بعد ومقاييس الأداء"
   telemetryDescription: "نحن نستخدم هذه المعلومات فقط لتحسين أداء {appName}."
   dataCollectionDetails: "للحصول على تفاصيل حول البيانات التي نجمعها، وكيفية جمعها وتخزينها واستخدامها، يرجى الرجوع إلى {privacyPolicyLink}."
@@ -75,9 +70,7 @@ ar_AE:
   spacious: "فسيحة"
   whereConditionMode: "حيث وضع الشرط"
   popover: "بوبوفر"
-  sheet: "ملزمة"
   defaultPageSize: "حجم الصفحة الافتراضي"
-  custom: "مخصص"
   language: "لغة"
   selectView: "حدد طريقة عرض"
   selectFontSize: "حدد حجم الخط"
@@ -87,7 +80,6 @@ ar_AE:
   selectPageSize: "حدد حجم الصفحة"
   selectLanguage: "اختر اللغة"
   databaseSchemaTerminology: "تسمية قاعدة البيانات/المخطط"
-  databaseSchemaTerminologyDatabase: "قاعدة البيانات"
   databaseSchemaTerminologySchema: "مخطط"
   selectDatabaseSchemaTerminology: "حدد التسمية"
   disableAnimations: "تعطيل الرسوم المتحركة"
@@ -95,7 +87,6 @@ ar_AE:
   disableAnimationsDisabled: "تم تمكين الرسوم المتحركة"
 
 de_DE:
-  title: "Einstellungen"
   telemetryTitle: "Telemetrie und Leistungsmetriken"
   telemetryDescription: "Wir verwenden diese Informationen ausschließlich zur Verbesserung der Leistung von {appName}."
   dataCollectionDetails: "Einzelheiten darüber, welche Daten wir erfassen, wie sie erfasst, gespeichert und genutzt werden, finden Sie in unserem {privacyPolicyLink}."
@@ -123,9 +114,7 @@ de_DE:
   spacious: "Geräumig"
   whereConditionMode: "Wo Bedingungsmodus"
   popover: "Popover"
-  sheet: "Blatt"
   defaultPageSize: "Standardseitengröße"
-  custom: "Brauch"
   language: "Sprache"
   selectView: "Wählen Sie eine Ansicht aus"
   selectFontSize: "Wählen Sie Schriftgröße"
@@ -135,7 +124,6 @@ de_DE:
   selectPageSize: "Wählen Sie Seitengröße"
   selectLanguage: "Wählen Sie Sprache aus"
   databaseSchemaTerminology: "Datenbank-/Schemabezeichnung"
-  databaseSchemaTerminologyDatabase: "Datenbank"
   databaseSchemaTerminologySchema: "Schema"
   selectDatabaseSchemaTerminology: "Wählen Sie Etikett aus"
   disableAnimations: "Animationen deaktivieren"
@@ -143,7 +131,6 @@ de_DE:
   disableAnimationsDisabled: "Animationen sind aktiviert"
 
 el_GR:
-  title: "Ρυθμίσεις"
   telemetryTitle: "Τηλεμετρία και μετρήσεις απόδοσης"
   telemetryDescription: "Χρησιμοποιούμε αυτές τις πληροφορίες αποκλειστικά για να βελτιώσουμε την απόδοση του {appName}."
   dataCollectionDetails: "Για λεπτομέρειες σχετικά με τα δεδομένα που συλλέγουμε, πώς συλλέγονται, αποθηκεύονται και χρησιμοποιούνται, ανατρέξτε στο {privacyPolicyLink} μας."
@@ -171,9 +158,7 @@ el_GR:
   spacious: "Ευρύχωρος"
   whereConditionMode: "Όπου Κατάσταση Λειτουργία"
   popover: "Ποπόβερ"
-  sheet: "Σεντόνι"
   defaultPageSize: "Προεπιλεγμένο μέγεθος σελίδας"
-  custom: "Εθιμο"
   language: "Γλώσσα"
   selectView: "Επιλέξτε μια Προβολή"
   selectFontSize: "Επιλέξτε Μέγεθος γραμματοσειράς"
@@ -183,7 +168,6 @@ el_GR:
   selectPageSize: "Επιλέξτε Μέγεθος σελίδας"
   selectLanguage: "Επιλέξτε Γλώσσα"
   databaseSchemaTerminology: "Βάση δεδομένων/Ετικέτα σχήματος"
-  databaseSchemaTerminologyDatabase: "Βάση δεδομένων"
   databaseSchemaTerminologySchema: "Σχήμα"
   selectDatabaseSchemaTerminology: "Επιλέξτε Ετικέτα"
   disableAnimations: "Απενεργοποίηση κινούμενων εικόνων"
@@ -191,7 +175,6 @@ el_GR:
   disableAnimationsDisabled: "Τα κινούμενα σχέδια είναι ενεργοποιημένα"
 
 en_GB:
-  title: "Settings"
   telemetryTitle: "Telemetry and Performance Metrics"
   telemetryDescription: "We use this information solely to enhance the performance of {appName}."
   dataCollectionDetails: "For details on what data we collect, how it's collected, stored, and used, please refer to our {privacyPolicyLink}."
@@ -219,9 +202,7 @@ en_GB:
   spacious: "Spacious"
   whereConditionMode: "Where Condition Mode"
   popover: "Popover"
-  sheet: "Sheet"
   defaultPageSize: "Default Page Size"
-  custom: "Custom"
   language: "Language"
   selectView: "Select a View"
   selectFontSize: "Select Font Size"
@@ -231,7 +212,6 @@ en_GB:
   selectPageSize: "Select Page Size"
   selectLanguage: "Select Language"
   databaseSchemaTerminology: "Database/Schema Label"
-  databaseSchemaTerminologyDatabase: "Database"
   databaseSchemaTerminologySchema: "Schema"
   selectDatabaseSchemaTerminology: "Select Label"
   disableAnimations: "Disable Animations"
@@ -239,7 +219,6 @@ en_GB:
   disableAnimationsDisabled: "Animations are enabled"
 
 es_ES:
-  title: "Ajustes"
   telemetryTitle: "Telemetría y métricas de rendimiento"
   telemetryDescription: "Utilizamos esta información únicamente para mejorar el rendimiento de {appName}."
   dataCollectionDetails: "Para obtener detalles sobre qué datos recopilamos, cómo se recopilan, almacenan y utilizan, consulte nuestro {privacyPolicyLink}."
@@ -267,9 +246,7 @@ es_ES:
   spacious: "Espaciosa"
   whereConditionMode: "Donde modo de condición"
   popover: "popover"
-  sheet: "Hoja"
   defaultPageSize: "Tamaño de página predeterminado"
-  custom: "Costumbre"
   language: "Idioma"
   selectView: "Seleccione una vista"
   selectFontSize: "Seleccionar tamaño de fuente"
@@ -279,7 +256,6 @@ es_ES:
   selectPageSize: "Seleccionar tamaño de página"
   selectLanguage: "Seleccionar idioma"
   databaseSchemaTerminology: "Etiqueta de base de datos/esquema"
-  databaseSchemaTerminologyDatabase: "Base de datos"
   databaseSchemaTerminologySchema: "Esquema"
   selectDatabaseSchemaTerminology: "Seleccionar etiqueta"
   disableAnimations: "Deshabilitar animaciones"
@@ -287,7 +263,6 @@ es_ES:
   disableAnimationsDisabled: "Las animaciones están habilitadas."
 
 fi_FI:
-  title: "Asetukset"
   telemetryTitle: "Telemetria ja suorituskykymittarit"
   telemetryDescription: "Käytämme näitä tietoja ainoastaan ​​parantaaksemme {appName}:n suorituskykyä."
   dataCollectionDetails: "Lisätietoja keräämistämme tiedoista, niiden keräämisestä, tallentamisesta ja käytöstä saat osoitteesta {privacyPolicyLink}."
@@ -315,9 +290,7 @@ fi_FI:
   spacious: "Tilava"
   whereConditionMode: "Missä kuntotila"
   popover: "Popover"
-  sheet: "Arkki"
   defaultPageSize: "Sivun oletuskoko"
-  custom: "Mukautettu"
   language: "Kieli"
   selectView: "Valitse näkymä"
   selectFontSize: "Valitse Fonttikoko"
@@ -327,7 +300,6 @@ fi_FI:
   selectPageSize: "Valitse Sivun koko"
   selectLanguage: "Valitse Kieli"
   databaseSchemaTerminology: "Tietokanta/Schema Label"
-  databaseSchemaTerminologyDatabase: "Tietokanta"
   databaseSchemaTerminologySchema: "Kaavio"
   selectDatabaseSchemaTerminology: "Valitse Label"
   disableAnimations: "Poista animaatiot käytöstä"
@@ -335,7 +307,6 @@ fi_FI:
   disableAnimationsDisabled: "Animaatiot ovat käytössä"
 
 fr_FR:
-  title: "Paramètres"
   telemetryTitle: "Télémétrie et mesures de performances"
   telemetryDescription: "Nous utilisons ces informations uniquement pour améliorer les performances de {appName}."
   dataCollectionDetails: "Pour plus de détails sur les données que nous collectons, comment elles sont collectées, stockées et utilisées, veuillez vous référer à notre {privacyPolicyLink}."
@@ -363,9 +334,7 @@ fr_FR:
   spacious: "Spacieuse"
   whereConditionMode: "Où Mode Condition"
   popover: "Popover"
-  sheet: "Feuille"
   defaultPageSize: "Taille de page par défaut"
-  custom: "Coutume"
   language: "Langue"
   selectView: "Sélectionnez une vue"
   selectFontSize: "Sélectionnez la taille de la police"
@@ -375,7 +344,6 @@ fr_FR:
   selectPageSize: "Sélectionnez la taille de la page"
   selectLanguage: "Sélectionnez la langue"
   databaseSchemaTerminology: "Étiquette de base de données/schéma"
-  databaseSchemaTerminologyDatabase: "Base de données"
   databaseSchemaTerminologySchema: "Schéma"
   selectDatabaseSchemaTerminology: "Sélectionner une étiquette"
   disableAnimations: "Désactiver les animations"
@@ -383,7 +351,6 @@ fr_FR:
   disableAnimationsDisabled: "Les animations sont activées"
 
 it_IT:
-  title: "Impostazioni"
   telemetryTitle: "Telemetria e metriche delle prestazioni"
   telemetryDescription: "Utilizziamo queste informazioni esclusivamente per migliorare le prestazioni di {appName}."
   dataCollectionDetails: "Per dettagli su quali dati raccogliamo, come vengono raccolti, archiviati e utilizzati, fare riferimento al nostro {privacyPolicyLink}."
@@ -411,9 +378,7 @@ it_IT:
   spacious: "Spaziosa"
   whereConditionMode: "Modalità Condizione Dove"
   popover: "Popover"
-  sheet: "Foglio"
   defaultPageSize: "Dimensioni pagina predefinite"
-  custom: "Costume"
   language: "Lingua"
   selectView: "Seleziona una vista"
   selectFontSize: "Seleziona Dimensione carattere"
@@ -423,7 +388,6 @@ it_IT:
   selectPageSize: "Seleziona la dimensione della pagina"
   selectLanguage: "Seleziona lingua"
   databaseSchemaTerminology: "Etichetta database/schema"
-  databaseSchemaTerminologyDatabase: "Banca dati"
   databaseSchemaTerminologySchema: "Schema"
   selectDatabaseSchemaTerminology: "Seleziona Etichetta"
   disableAnimations: "Disabilita animazioni"
@@ -431,7 +395,6 @@ it_IT:
   disableAnimationsDisabled: "Le animazioni sono abilitate"
 
 iw_IL:
-  title: "הגדרות"
   telemetryTitle: "טלמטריה ומדדי ביצועים"
   telemetryDescription: "אנו משתמשים במידע זה אך ורק כדי לשפר את הביצועים של {appName}."
   dataCollectionDetails: "לפרטים על אילו נתונים אנו אוספים, כיצד הם נאספים, מאוחסנים ומשתמשים בהם, עיין ב-{privacyPolicyLink} שלנו."
@@ -459,9 +422,7 @@ iw_IL:
   spacious: "מְרוּוָח"
   whereConditionMode: "איפה מצב מצב"
   popover: "פופ-אובר"
-  sheet: "דַף"
   defaultPageSize: "גודל עמוד ברירת מחדל"
-  custom: "מִנְהָג"
   language: "שָׂפָה"
   selectView: "בחר תצוגה"
   selectFontSize: "בחר גודל גופן"
@@ -471,7 +432,6 @@ iw_IL:
   selectPageSize: "בחר גודל עמוד"
   selectLanguage: "בחר שפה"
   databaseSchemaTerminology: "מסד נתונים/תווית סכימה"
-  databaseSchemaTerminologyDatabase: "מסד נתונים"
   databaseSchemaTerminologySchema: "סכֵימָה"
   selectDatabaseSchemaTerminology: "בחר תווית"
   disableAnimations: "השבת אנימציות"
@@ -479,7 +439,6 @@ iw_IL:
   disableAnimationsDisabled: "אנימציות מופעלות"
 
 ja_JP:
-  title: "設定"
   telemetryTitle: "テレメトリとパフォーマンスのメトリクス"
   telemetryDescription: "この情報は、{appName} のパフォーマンスを向上させるためにのみ使用されます。"
   dataCollectionDetails: "当社が収集するデータ、その収集、保存、使用方法の詳細については、{privacyPolicyLink} を参照してください。"
@@ -507,9 +466,7 @@ ja_JP:
   spacious: "広々とした"
   whereConditionMode: "Where 条件モード"
   popover: "ポップオーバー"
-  sheet: "シート"
   defaultPageSize: "デフォルトのページサイズ"
-  custom: "カスタム"
   language: "言語"
   selectView: "ビューを選択してください"
   selectFontSize: "フォントサイズの選択"
@@ -519,7 +476,6 @@ ja_JP:
   selectPageSize: "ページサイズの選択"
   selectLanguage: "言語の選択"
   databaseSchemaTerminology: "データベース/スキーマラベル"
-  databaseSchemaTerminologyDatabase: "データベース"
   databaseSchemaTerminologySchema: "スキーマ"
   selectDatabaseSchemaTerminology: "ラベルの選択"
   disableAnimations: "アニメーションを無効にする"
@@ -527,7 +483,6 @@ ja_JP:
   disableAnimationsDisabled: "アニメーションが有効になっています"
 
 ko_KR:
-  title: "설정"
   telemetryTitle: "원격 측정 및 성능 측정항목"
   telemetryDescription: "우리는 이 정보를 {appName}의 성능을 향상시키기 위해서만 사용합니다."
   dataCollectionDetails: "당사가 수집하는 데이터, 수집, 저장 및 사용 방법에 대한 자세한 내용은 {privacyPolicyLink}을 참조하세요."
@@ -555,9 +510,7 @@ ko_KR:
   spacious: "넓다"
   whereConditionMode: "Where 조건 모드"
   popover: "팝오버"
-  sheet: "시트"
   defaultPageSize: "기본 페이지 크기"
-  custom: "관습"
   language: "언어"
   selectView: "보기 선택"
   selectFontSize: "글꼴 크기 선택"
@@ -567,7 +520,6 @@ ko_KR:
   selectPageSize: "페이지 크기 선택"
   selectLanguage: "언어 선택"
   databaseSchemaTerminology: "데이터베이스/스키마 레이블"
-  databaseSchemaTerminologyDatabase: "데이터 베이스"
   databaseSchemaTerminologySchema: "개요"
   selectDatabaseSchemaTerminology: "라벨 선택"
   disableAnimations: "애니메이션 비활성화"
@@ -575,7 +527,6 @@ ko_KR:
   disableAnimationsDisabled: "애니메이션이 활성화되었습니다."
 
 nl_NL:
-  title: "Instellingen"
   telemetryTitle: "Telemetrie en prestatiestatistieken"
   telemetryDescription: "We gebruiken deze informatie uitsluitend om de prestaties van {appName} te verbeteren."
   dataCollectionDetails: "Voor details over welke gegevens we verzamelen, hoe deze worden verzameld, opgeslagen en gebruikt, verwijzen wij u naar onze {privacyPolicyLink}."
@@ -603,9 +554,7 @@ nl_NL:
   spacious: "Ruim"
   whereConditionMode: "Waar Conditiemodus"
   popover: "Pop-over"
-  sheet: "Laken"
   defaultPageSize: "Standaard paginaformaat"
-  custom: "Aangepast"
   language: "Taal"
   selectView: "Selecteer een weergave"
   selectFontSize: "Selecteer Lettergrootte"
@@ -615,7 +564,6 @@ nl_NL:
   selectPageSize: "Selecteer Paginaformaat"
   selectLanguage: "Selecteer Taal"
   databaseSchemaTerminology: "Database-/schemalabel"
-  databaseSchemaTerminologyDatabase: "Database"
   databaseSchemaTerminologySchema: "Schema"
   selectDatabaseSchemaTerminology: "Selecteer Etiket"
   disableAnimations: "Schakel animaties uit"
@@ -623,7 +571,6 @@ nl_NL:
   disableAnimationsDisabled: "Animaties zijn ingeschakeld"
 
 pl_PL:
-  title: "Ustawienia"
   telemetryTitle: "Dane telemetryczne i wydajnościowe"
   telemetryDescription: "Używamy tych informacji wyłącznie w celu poprawy wydajności {appName}."
   dataCollectionDetails: "Szczegółowe informacje na temat tego, jakie dane zbieramy, w jaki sposób są gromadzone, przechowywane i wykorzystywane, można znaleźć w naszych {privacyPolicyLink}."
@@ -651,9 +598,7 @@ pl_PL:
   spacious: "Przestronny"
   whereConditionMode: "Gdzie Tryb warunku"
   popover: "Popover"
-  sheet: "Arkusz"
   defaultPageSize: "Domyślny rozmiar strony"
-  custom: "Zwyczaj"
   language: "Język"
   selectView: "Wybierz widok"
   selectFontSize: "Wybierz Rozmiar czcionki"
@@ -663,7 +608,6 @@ pl_PL:
   selectPageSize: "Wybierz Rozmiar strony"
   selectLanguage: "Wybierz Język"
   databaseSchemaTerminology: "Etykieta bazy danych/schematu"
-  databaseSchemaTerminologyDatabase: "Baza danych"
   databaseSchemaTerminologySchema: "Schemat"
   selectDatabaseSchemaTerminology: "Wybierz Etykietę"
   disableAnimations: "Wyłącz animacje"
@@ -671,7 +615,6 @@ pl_PL:
   disableAnimationsDisabled: "Animacje są włączone"
 
 pt_BR:
-  title: "Configurações"
   telemetryTitle: "Telemetria e métricas de desempenho"
   telemetryDescription: "Usamos essas informações apenas para melhorar o desempenho de {appName}."
   dataCollectionDetails: "Para obter detalhes sobre quais dados coletamos, como são coletados, armazenados e usados, consulte nosso {privacyPolicyLink}."
@@ -699,9 +642,7 @@ pt_BR:
   spacious: "Espaçosa"
   whereConditionMode: "Onde modo de condição"
   popover: "Popover"
-  sheet: "Folha"
   defaultPageSize: "Tamanho de página padrão"
-  custom: "Personalizada"
   language: "Linguagem"
   selectView: "Selecione uma visualização"
   selectFontSize: "Selecione o tamanho da fonte"
@@ -711,7 +652,6 @@ pt_BR:
   selectPageSize: "Selecione o tamanho da página"
   selectLanguage: "Selecione o idioma"
   databaseSchemaTerminology: "Rótulo de banco de dados/esquema"
-  databaseSchemaTerminologyDatabase: "Banco de dados"
   databaseSchemaTerminologySchema: "Esquema"
   selectDatabaseSchemaTerminology: "Selecione o rótulo"
   disableAnimations: "Desativar animações"
@@ -719,7 +659,6 @@ pt_BR:
   disableAnimationsDisabled: "As animações estão habilitadas"
 
 ro_RO:
-  title: "Setări"
   telemetryTitle: "Telemetrie și valori de performanță"
   telemetryDescription: "Folosim aceste informații numai pentru a îmbunătăți performanța {appName}."
   dataCollectionDetails: "Pentru detalii despre datele pe care le colectăm, cum sunt colectate, stocate și utilizate, vă rugăm să consultați {privacyPolicyLink}-ul nostru."
@@ -747,9 +686,7 @@ ro_RO:
   spacious: "Spațios"
   whereConditionMode: "Unde Modul Condiție"
   popover: "Popover"
-  sheet: "foaie"
   defaultPageSize: "Dimensiunea implicită a paginii"
-  custom: "Personalizat"
   language: "Limbă"
   selectView: "Selectați o vizualizare"
   selectFontSize: "Selectați Dimensiunea fontului"
@@ -759,7 +696,6 @@ ro_RO:
   selectPageSize: "Selectați Dimensiunea paginii"
   selectLanguage: "Selectați Limbă"
   databaseSchemaTerminology: "Etichetă bază de date/schemă"
-  databaseSchemaTerminologyDatabase: "Baza de date"
   databaseSchemaTerminologySchema: "Schemă"
   selectDatabaseSchemaTerminology: "Selectați Etichetă"
   disableAnimations: "Dezactivați animațiile"
@@ -767,7 +703,6 @@ ro_RO:
   disableAnimationsDisabled: "Animațiile sunt activate"
 
 ru_RU:
-  title: "Настройки"
   telemetryTitle: "Телеметрия и показатели производительности"
   telemetryDescription: "Мы используем эту информацию исключительно для повышения производительности {appName}."
   dataCollectionDetails: "Подробную информацию о том, какие данные мы собираем, как они собираются, хранятся и используются, можно найти в нашем {privacyPolicyLink}."
@@ -795,9 +730,7 @@ ru_RU:
   spacious: "Просторный"
   whereConditionMode: "Где режим условия"
   popover: "Поповер"
-  sheet: "Лист"
   defaultPageSize: "Размер страницы по умолчанию"
-  custom: "Обычай"
   language: "Язык"
   selectView: "Выберите вид"
   selectFontSize: "Выберите размер шрифта"
@@ -807,7 +740,6 @@ ru_RU:
   selectPageSize: "Выберите размер страницы"
   selectLanguage: "Выберите язык"
   databaseSchemaTerminology: "Метка базы данных/схемы"
-  databaseSchemaTerminologyDatabase: "База данных"
   databaseSchemaTerminologySchema: "Схема"
   selectDatabaseSchemaTerminology: "Выберите ярлык"
   disableAnimations: "Отключить анимацию"
@@ -815,7 +747,6 @@ ru_RU:
   disableAnimationsDisabled: "Анимации включены"
 
 sk_SK:
-  title: "Nastavenia"
   telemetryTitle: "Telemetria a metriky výkonu"
   telemetryDescription: "Tieto informácie používame výhradne na zvýšenie výkonu {appName}."
   dataCollectionDetails: "Podrobnosti o tom, aké údaje zhromažďujeme, ako sa zhromažďujú, uchovávajú a používajú, nájdete v našom {privacyPolicyLink}."
@@ -843,9 +774,7 @@ sk_SK:
   spacious: "Priestranný"
   whereConditionMode: "Kde režim stavu"
   popover: "Popover"
-  sheet: "List"
   defaultPageSize: "Predvolená veľkosť strany"
-  custom: "Vlastné"
   language: "Jazyk"
   selectView: "Vyberte zobrazenie"
   selectFontSize: "Vyberte Veľkosť písma"
@@ -855,7 +784,6 @@ sk_SK:
   selectPageSize: "Vyberte Veľkosť strany"
   selectLanguage: "Vyberte Jazyk"
   databaseSchemaTerminology: "Štítok databázy/schémy"
-  databaseSchemaTerminologyDatabase: "Databáza"
   databaseSchemaTerminologySchema: "Schéma"
   selectDatabaseSchemaTerminology: "Vyberte položku Štítok"
   disableAnimations: "Zakázať animácie"
@@ -863,7 +791,6 @@ sk_SK:
   disableAnimationsDisabled: "Animácie sú povolené"
 
 sv_SE:
-  title: "Inställningar"
   telemetryTitle: "Telemetri och prestandamått"
   telemetryDescription: "Vi använder denna information enbart för att förbättra prestandan för {appName}."
   dataCollectionDetails: "För detaljer om vilken data vi samlar in, hur den samlas in, lagras och används, se vår {privacyPolicyLink}."
@@ -891,9 +818,7 @@ sv_SE:
   spacious: "Rymlig"
   whereConditionMode: "Där tillståndsläge"
   popover: "Popover"
-  sheet: "Ark"
   defaultPageSize: "Standard sidstorlek"
-  custom: "Beställnings"
   language: "Språk"
   selectView: "Välj en vy"
   selectFontSize: "Välj Teckenstorlek"
@@ -903,7 +828,6 @@ sv_SE:
   selectPageSize: "Välj Sidstorlek"
   selectLanguage: "Välj Språk"
   databaseSchemaTerminology: "Databas/Schema Label"
-  databaseSchemaTerminologyDatabase: "Databas"
   databaseSchemaTerminologySchema: "Schema"
   selectDatabaseSchemaTerminology: "Välj Etikett"
   disableAnimations: "Inaktivera animationer"
@@ -911,7 +835,6 @@ sv_SE:
   disableAnimationsDisabled: "Animationer är aktiverade"
 
 zh_CN:
-  title: "设置"
   telemetryTitle: "遥测和性能指标"
   telemetryDescription: "我们仅使用此信息来增强 {appName} 的性能。"
   dataCollectionDetails: "有关我们收集哪些数据、如何收集、存储和使用这些数据的详细信息，请参阅我们的 {privacyPolicyLink}。"
@@ -939,9 +862,7 @@ zh_CN:
   spacious: "宽敞"
   whereConditionMode: "Where 条件模式"
   popover: "弹出窗口"
-  sheet: "床单"
   defaultPageSize: "默认页面大小"
-  custom: "风俗"
   language: "语言"
   selectView: "选择一个视图"
   selectFontSize: "选择字体大小"
@@ -951,7 +872,6 @@ zh_CN:
   selectPageSize: "选择页面尺寸"
   selectLanguage: "选择语言"
   databaseSchemaTerminology: "数据库/模式标签"
-  databaseSchemaTerminologyDatabase: "数据库"
   databaseSchemaTerminologySchema: "模式"
   selectDatabaseSchemaTerminology: "选择标签"
   disableAnimations: "禁用动画"
@@ -959,7 +879,6 @@ zh_CN:
   disableAnimationsDisabled: "动画已启用"
 
 zh_TW:
-  title: "設定"
   telemetryTitle: "遙測和性能指標"
   telemetryDescription: "我們僅使用此資訊來增強 {appName} 的效能。"
   dataCollectionDetails: "有關我們收集哪些資料、如何收集、儲存和使用這些資料的詳細信息，請參閱我們的 {privacyPolicyLink}。"
@@ -987,9 +906,7 @@ zh_TW:
   spacious: "寬敞"
   whereConditionMode: "Where 條件模式"
   popover: "彈出視窗"
-  sheet: "床單"
   defaultPageSize: "預設頁面大小"
-  custom: "風俗"
   language: "語言"
   selectView: "選擇一個視圖"
   selectFontSize: "選擇字體大小"
@@ -999,7 +916,6 @@ zh_TW:
   selectPageSize: "選擇頁面尺寸"
   selectLanguage: "Select Language"
   databaseSchemaTerminology: "資料庫/模式標籤"
-  databaseSchemaTerminologyDatabase: "資料庫"
   databaseSchemaTerminologySchema: "模式"
   selectDatabaseSchemaTerminology: "Select Label"
   disableAnimations: "停用動畫"
@@ -1007,7 +923,6 @@ zh_TW:
   disableAnimationsDisabled: "Animations are enabled"
 
 bg_BG:
-  title: "Настройки"
   telemetryTitle: "Телеметрия и показатели за ефективност"
   telemetryDescription: "Използваме тази информация единствено, за да подобрим ефективността на {appName}."
   dataCollectionDetails: "За подробности относно това какви данни събираме, как се събират, съхраняват и използват, моля, вижте нашите {privacyPolicyLink}."
@@ -1035,9 +950,7 @@ bg_BG:
   spacious: "Просторна"
   whereConditionMode: "Къде Режим на състояние"
   popover: "Popover"
-  sheet: "Лист"
   defaultPageSize: "Размер на страницата по подразбиране"
-  custom: "По поръчка"
   language: "език"
   selectView: "Изберете изглед"
   selectFontSize: "Изберете Размер на шрифта"
@@ -1047,7 +960,6 @@ bg_BG:
   selectPageSize: "Изберете Размер на страницата"
   selectLanguage: "Изберете език"
   databaseSchemaTerminology: "Етикет на база данни/схема"
-  databaseSchemaTerminologyDatabase: "База данни"
   databaseSchemaTerminologySchema: "Схема"
   selectDatabaseSchemaTerminology: "Изберете етикет"
   disableAnimations: "Деактивирайте анимациите"
@@ -1055,7 +967,6 @@ bg_BG:
   disableAnimationsDisabled: "Анимациите са активирани"
 
 bn_BD:
-  title: "সেটিংস"
   telemetryTitle: "টেলিমেট্রি এবং পারফরম্যান্স মেট্রিক্স"
   telemetryDescription: "আমরা শুধুমাত্র {appName}-এর কর্মক্ষমতা বাড়াতে এই তথ্য ব্যবহার করি।"
   dataCollectionDetails: "আমরা কোন ডেটা সংগ্রহ করি, কীভাবে এটি সংগ্রহ করা হয়, সংরক্ষণ করা হয় এবং ব্যবহার করা হয় তার বিস্তারিত জানার জন্য, অনুগ্রহ করে আমাদের {privacyPolicyLink} দেখুন।"
@@ -1083,9 +994,7 @@ bn_BD:
   spacious: "প্রশস্ত"
   whereConditionMode: "যেখানে কন্ডিশন মোড"
   popover: "পপওভার"
-  sheet: "শীট"
   defaultPageSize: "ডিফল্ট পৃষ্ঠার আকার"
-  custom: "কাস্টম"
   language: "ভাষা"
   selectView: "একটি ভিউ নির্বাচন করুন"
   selectFontSize: "ফন্ট সাইজ নির্বাচন করুন"
@@ -1095,7 +1004,6 @@ bn_BD:
   selectPageSize: "পৃষ্ঠার আকার নির্বাচন করুন"
   selectLanguage: "ভাষা নির্বাচন করুন"
   databaseSchemaTerminology: "ডাটাবেস/স্কিমা লেবেল"
-  databaseSchemaTerminologyDatabase: "ডাটাবেস"
   databaseSchemaTerminologySchema: "স্কিমা"
   selectDatabaseSchemaTerminology: "লেবেল নির্বাচন করুন"
   disableAnimations: "অ্যানিমেশন অক্ষম করুন"
@@ -1103,7 +1011,6 @@ bn_BD:
   disableAnimationsDisabled: "অ্যানিমেশন সক্রিয় করা হয়"
 
 ca_ES:
-  title: "Configuració"
   telemetryTitle: "Telemetria i mètriques de rendiment"
   telemetryDescription: "Utilitzem aquesta informació únicament per millorar el rendiment de {appName}."
   dataCollectionDetails: "Per obtenir detalls sobre quines dades recollim, com es recullen, emmagatzemen i s'utilitzen, consulteu la nostra {privacyPolicyLink}."
@@ -1131,9 +1038,7 @@ ca_ES:
   spacious: "Espaiosa"
   whereConditionMode: "On Mode Condició"
   popover: "Popover"
-  sheet: "Full"
   defaultPageSize: "Mida de la pàgina per defecte"
-  custom: "Personalitzat"
   language: "Llengua"
   selectView: "Seleccioneu una vista"
   selectFontSize: "Seleccioneu Mida de lletra"
@@ -1143,7 +1048,6 @@ ca_ES:
   selectPageSize: "Seleccioneu Mida de la pàgina"
   selectLanguage: "Seleccioneu Idioma"
   databaseSchemaTerminology: "Base de dades/Etiqueta d'esquema"
-  databaseSchemaTerminologyDatabase: "Base de dades"
   databaseSchemaTerminologySchema: "Esquema"
   selectDatabaseSchemaTerminology: "Seleccioneu Etiqueta"
   disableAnimations: "Desactiva les animacions"
@@ -1151,7 +1055,6 @@ ca_ES:
   disableAnimationsDisabled: "Les animacions estan habilitades"
 
 cs_CZ:
-  title: "Nastavení"
   telemetryTitle: "Telemetrie a metriky výkonu"
   telemetryDescription: "Tyto informace používáme výhradně ke zvýšení výkonu {appName}."
   dataCollectionDetails: "Podrobnosti o tom, jaké údaje shromažďujeme, jak jsou shromažďovány, ukládány a používány, naleznete v našich {privacyPolicyLink}."
@@ -1179,9 +1082,7 @@ cs_CZ:
   spacious: "Prostorný"
   whereConditionMode: "Kde režim podmínky"
   popover: "Popover"
-  sheet: "List"
   defaultPageSize: "Výchozí velikost stránky"
-  custom: "Zvyk"
   language: "Jazyk"
   selectView: "Vyberte zobrazení"
   selectFontSize: "Vyberte Velikost písma"
@@ -1191,7 +1092,6 @@ cs_CZ:
   selectPageSize: "Vyberte Velikost stránky"
   selectLanguage: "Vyberte Jazyk"
   databaseSchemaTerminology: "Štítek databáze/schéma"
-  databaseSchemaTerminologyDatabase: "Databáze"
   databaseSchemaTerminologySchema: "Schéma"
   selectDatabaseSchemaTerminology: "Vyberte Štítek"
   disableAnimations: "Zakázat animace"
@@ -1199,7 +1099,6 @@ cs_CZ:
   disableAnimationsDisabled: "Animace jsou povoleny"
 
 da_DK:
-  title: "Indstillinger"
   telemetryTitle: "Telemetri og præstationsmålinger"
   telemetryDescription: "Vi bruger udelukkende disse oplysninger til at forbedre ydeevnen af ​​{appName}."
   dataCollectionDetails: "For detaljer om, hvilke data vi indsamler, hvordan de indsamles, opbevares og bruges, henvises til vores {privacyPolicyLink}."
@@ -1227,9 +1126,7 @@ da_DK:
   spacious: "Rummelig"
   whereConditionMode: "Hvor Tilstandstilstand"
   popover: "Popover"
-  sheet: "Ark"
   defaultPageSize: "Standard sidestørrelse"
-  custom: "Skik"
   language: "Sprog"
   selectView: "Vælg en visning"
   selectFontSize: "Vælg Skriftstørrelse"
@@ -1239,7 +1136,6 @@ da_DK:
   selectPageSize: "Vælg Sidestørrelse"
   selectLanguage: "Vælg sprog"
   databaseSchemaTerminology: "Database/Skema Label"
-  databaseSchemaTerminologyDatabase: "Database"
   databaseSchemaTerminologySchema: "Skema"
   selectDatabaseSchemaTerminology: "Vælg Label"
   disableAnimations: "Deaktiver animationer"
@@ -1247,7 +1143,6 @@ da_DK:
   disableAnimationsDisabled: "Animationer er aktiveret"
 
 fa_IR:
-  title: "تنظیمات"
   telemetryTitle: "تله متری و معیارهای عملکرد"
   telemetryDescription: "ما از این اطلاعات صرفاً برای افزایش عملکرد {appName} استفاده می کنیم."
   dataCollectionDetails: "برای جزئیات بیشتر در مورد داده هایی که جمع آوری می کنیم، نحوه جمع آوری، ذخیره و استفاده از آنها، لطفاً به {privacyPolicyLink} ما مراجعه کنید."
@@ -1275,9 +1170,7 @@ fa_IR:
   spacious: "جادار"
   whereConditionMode: "جایی که حالت حالت"
   popover: "پاپاور"
-  sheet: "ورق"
   defaultPageSize: "اندازه پیش فرض صفحه"
-  custom: "سفارشی"
   language: "زبان"
   selectView: "یک نما را انتخاب کنید"
   selectFontSize: "اندازه قلم را انتخاب کنید"
@@ -1287,7 +1180,6 @@ fa_IR:
   selectPageSize: "اندازه صفحه را انتخاب کنید"
   selectLanguage: "زبان را انتخاب کنید"
   databaseSchemaTerminology: "پایگاه داده/برچسب طرحواره"
-  databaseSchemaTerminologyDatabase: "پایگاه داده"
   databaseSchemaTerminologySchema: "طرحواره"
   selectDatabaseSchemaTerminology: "Label را انتخاب کنید"
   disableAnimations: "غیرفعال کردن انیمیشن ها"
@@ -1295,7 +1187,6 @@ fa_IR:
   disableAnimationsDisabled: "انیمیشن ها فعال هستند"
 
 hi_IN:
-  title: "सेटिंग्स"
   telemetryTitle: "टेलीमेट्री और प्रदर्शन मेट्रिक्स"
   telemetryDescription: "हम इस जानकारी का उपयोग केवल {appName} के प्रदर्शन को बढ़ाने के लिए करते हैं।"
   dataCollectionDetails: "हम कौन सा डेटा एकत्र करते हैं, इसे कैसे एकत्र, संग्रहीत और उपयोग किया जाता है, इसके विवरण के लिए कृपया हमारा {privacyPolicyLink} देखें।"
@@ -1323,9 +1214,7 @@ hi_IN:
   spacious: "विशाल"
   whereConditionMode: "जहां कंडीशन मोड"
   popover: "जल्दी सेना"
-  sheet: "चादर"
   defaultPageSize: "डिफ़ॉल्ट पृष्ठ आकार"
-  custom: "रिवाज़"
   language: "भाषा"
   selectView: "एक दृश्य चुनें"
   selectFontSize: "फ़ॉन्ट आकार चुनें"
@@ -1335,7 +1224,6 @@ hi_IN:
   selectPageSize: "पृष्ठ आकार चुनें"
   selectLanguage: "भाषा चुने"
   databaseSchemaTerminology: "डेटाबेस/स्कीमा लेबल"
-  databaseSchemaTerminologyDatabase: "डेटाबेस"
   databaseSchemaTerminologySchema: "योजना"
   selectDatabaseSchemaTerminology: "लेबल चुनें"
   disableAnimations: "एनिमेशन अक्षम करें"
@@ -1343,7 +1231,6 @@ hi_IN:
   disableAnimationsDisabled: "एनिमेशन सक्षम हैं"
 
 hr_HR:
-  title: "postavke"
   telemetryTitle: "Telemetrija i metrika performansi"
   telemetryDescription: "Ove podatke koristimo isključivo za poboljšanje performansi {appName}."
   dataCollectionDetails: "Za detalje o tome koje podatke prikupljamo, kako se prikupljaju, pohranjuju i koriste, pogledajte naše {privacyPolicyLink}."
@@ -1371,9 +1258,7 @@ hr_HR:
   spacious: "Prostran"
   whereConditionMode: "Gdje Condition Mode"
   popover: "Popover"
-  sheet: "List"
   defaultPageSize: "Zadana veličina stranice"
-  custom: "Običaj"
   language: "Jezik"
   selectView: "Odaberite prikaz"
   selectFontSize: "Odaberite Veličina fonta"
@@ -1383,7 +1268,6 @@ hr_HR:
   selectPageSize: "Odaberite Veličina stranice"
   selectLanguage: "Odaberite jezik"
   databaseSchemaTerminology: "Oznaka baze podataka/sheme"
-  databaseSchemaTerminologyDatabase: "Baza podataka"
   databaseSchemaTerminologySchema: "Shema"
   selectDatabaseSchemaTerminology: "Odaberite Oznaka"
   disableAnimations: "Onemogući animacije"
@@ -1391,7 +1275,6 @@ hr_HR:
   disableAnimationsDisabled: "Animacije su omogućene"
 
 hu_HU:
-  title: "Beállítások elemre"
   telemetryTitle: "Telemetria és teljesítménymérők"
   telemetryDescription: "Ezeket az információkat kizárólag a {appName} teljesítményének fokozására használjuk."
   dataCollectionDetails: "Ha többet szeretne megtudni arról, hogy milyen adatokat gyűjtünk, hogyan gyűjtjük, tároljuk és felhasználjuk, kérjük, tekintse meg a {privacyPolicyLink} oldalunkat."
@@ -1419,9 +1302,7 @@ hu_HU:
   spacious: "Tágas"
   whereConditionMode: "Ahol állapot mód"
   popover: "Popover"
-  sheet: "Lap"
   defaultPageSize: "Alapértelmezett oldalméret"
-  custom: "Szokás"
   language: "Nyelv"
   selectView: "Válasszon egy nézetet"
   selectFontSize: "Válassza a Betűméret lehetőséget"
@@ -1431,7 +1312,6 @@ hu_HU:
   selectPageSize: "Válassza az Oldalméret lehetőséget"
   selectLanguage: "Válassza a Nyelv lehetőséget"
   databaseSchemaTerminology: "Adatbázis/Sémacímke"
-  databaseSchemaTerminologyDatabase: "Adatbázis"
   databaseSchemaTerminologySchema: "Séma"
   selectDatabaseSchemaTerminology: "Válassza a Címke lehetőséget"
   disableAnimations: "Animációk letiltása"
@@ -1439,7 +1319,6 @@ hu_HU:
   disableAnimationsDisabled: "Az animációk engedélyezve vannak"
 
 id_ID:
-  title: "Pengaturan"
   telemetryTitle: "Telemetri dan Metrik Kinerja"
   telemetryDescription: "Kami menggunakan informasi ini semata-mata untuk meningkatkan kinerja {appName}."
   dataCollectionDetails: "Untuk detail tentang data apa yang kami kumpulkan, bagaimana data tersebut dikumpulkan, disimpan, dan digunakan, silakan merujuk ke {privacyPolicyLink} kami."
@@ -1467,9 +1346,7 @@ id_ID:
   spacious: "Luas"
   whereConditionMode: "Dimana Kondisi Mode"
   popover: "Popover"
-  sheet: "Lembaran"
   defaultPageSize: "Ukuran Halaman Default"
-  custom: "Kebiasaan"
   language: "Bahasa"
   selectView: "Pilih Tampilan"
   selectFontSize: "Pilih Ukuran Font"
@@ -1479,7 +1356,6 @@ id_ID:
   selectPageSize: "Pilih Ukuran Halaman"
   selectLanguage: "Pilih Bahasa"
   databaseSchemaTerminology: "Label Basis Data/Skema"
-  databaseSchemaTerminologyDatabase: "Basis data"
   databaseSchemaTerminologySchema: "Skema"
   selectDatabaseSchemaTerminology: "Pilih Label"
   disableAnimations: "Nonaktifkan Animasi"
@@ -1487,7 +1363,6 @@ id_ID:
   disableAnimationsDisabled: "Animasi diaktifkan"
 
 ms_MY:
-  title: "tetapan"
   telemetryTitle: "Telemetri dan Metrik Prestasi"
   telemetryDescription: "Kami menggunakan maklumat ini semata-mata untuk meningkatkan prestasi {appName}."
   dataCollectionDetails: "Untuk butiran tentang data yang kami kumpulkan, cara ia dikumpul, disimpan dan digunakan, sila rujuk {privacyPolicyLink} kami."
@@ -1515,9 +1390,7 @@ ms_MY:
   spacious: "luas"
   whereConditionMode: "Di mana Mod Keadaan"
   popover: "Popover"
-  sheet: "Lembaran"
   defaultPageSize: "Saiz Halaman Lalai"
-  custom: "Adat"
   language: "Bahasa"
   selectView: "Pilih Pandangan"
   selectFontSize: "Pilih Saiz Fon"
@@ -1527,7 +1400,6 @@ ms_MY:
   selectPageSize: "Pilih Saiz Halaman"
   selectLanguage: "Pilih Bahasa"
   databaseSchemaTerminology: "Label Pangkalan Data/Skema"
-  databaseSchemaTerminologyDatabase: "Pangkalan data"
   databaseSchemaTerminologySchema: "Skema"
   selectDatabaseSchemaTerminology: "Pilih Label"
   disableAnimations: "Lumpuhkan Animasi"
@@ -1535,7 +1407,6 @@ ms_MY:
   disableAnimationsDisabled: "Animasi didayakan"
 
 nb_NO:
-  title: "Innstillinger"
   telemetryTitle: "Telemetri og ytelsesmålinger"
   telemetryDescription: "Vi bruker denne informasjonen utelukkende for å forbedre ytelsen til {appName}."
   dataCollectionDetails: "For detaljer om hvilke data vi samler inn, hvordan de samles inn, lagres og brukes, vennligst se vår {privacyPolicyLink}."
@@ -1563,9 +1434,7 @@ nb_NO:
   spacious: "Romslig"
   whereConditionMode: "Hvor Tilstandsmodus"
   popover: "Popover"
-  sheet: "Ark"
   defaultPageSize: "Standard sidestørrelse"
-  custom: "Skikk"
   language: "Språk"
   selectView: "Velg en visning"
   selectFontSize: "Velg Skriftstørrelse"
@@ -1575,7 +1444,6 @@ nb_NO:
   selectPageSize: "Velg Sidestørrelse"
   selectLanguage: "Velg Språk"
   databaseSchemaTerminology: "Database/skjemaetikett"
-  databaseSchemaTerminologyDatabase: "Database"
   databaseSchemaTerminologySchema: "Skjema"
   selectDatabaseSchemaTerminology: "Velg Etikett"
   disableAnimations: "Deaktiver animasjoner"
@@ -1583,7 +1451,6 @@ nb_NO:
   disableAnimationsDisabled: "Animasjoner er aktivert"
 
 sw_KE:
-  title: "Mipangilio"
   telemetryTitle: "Vipimo vya Telemetry na Utendaji"
   telemetryDescription: "Tunatumia maelezo haya ili kuboresha utendakazi wa {appName} pekee."
   dataCollectionDetails: "Kwa maelezo kuhusu data tunayokusanya, jinsi inavyokusanywa, kuhifadhiwa na kutumiwa, tafadhali rejelea {privacyPolicyLink} yetu."
@@ -1611,9 +1478,7 @@ sw_KE:
   spacious: "Wasaa"
   whereConditionMode: "Ambapo Hali Mode"
   popover: "Popover"
-  sheet: "Laha"
   defaultPageSize: "Ukubwa Chaguomsingi wa Ukurasa"
-  custom: "Desturi"
   language: "Lugha"
   selectView: "Chagua Mwonekano"
   selectFontSize: "Chagua Ukubwa wa herufi"
@@ -1623,7 +1488,6 @@ sw_KE:
   selectPageSize: "Chagua Ukubwa wa Ukurasa"
   selectLanguage: "Chagua Lugha"
   databaseSchemaTerminology: "Lebo ya Hifadhidata/Schema"
-  databaseSchemaTerminologyDatabase: "Hifadhidata"
   databaseSchemaTerminologySchema: "Schema"
   selectDatabaseSchemaTerminology: "Chagua Lebo"
   disableAnimations: "Lemaza Uhuishaji"
@@ -1631,7 +1495,6 @@ sw_KE:
   disableAnimationsDisabled: "Uhuishaji umewashwa"
 
 ta_IN:
-  title: "அமைப்புகள்"
   telemetryTitle: "டெலிமெட்ரி மற்றும் செயல்திறன் அளவீடுகள்"
   telemetryDescription: "{appName} இன் செயல்திறனை மேம்படுத்த மட்டுமே இந்தத் தகவலைப் பயன்படுத்துகிறோம்."
   dataCollectionDetails: "நாங்கள் எந்தத் தரவைச் சேகரிக்கிறோம், அது எவ்வாறு சேகரிக்கப்படுகிறது, சேமிக்கப்படுகிறது மற்றும் பயன்படுத்தப்படுகிறது என்பது பற்றிய விவரங்களுக்கு, எங்கள் {privacyPolicyLink} ஐப் பார்க்கவும்."
@@ -1659,9 +1522,7 @@ ta_IN:
   spacious: "விசாலமான"
   whereConditionMode: "எங்கே கண்டிஷன் மோட்"
   popover: "பாப்ஓவர்"
-  sheet: "தாள்"
   defaultPageSize: "இயல்புநிலை பக்க அளவு"
-  custom: "தனிப்பயன்"
   language: "மொழி"
   selectView: "ஒரு பார்வையைத் தேர்ந்தெடுக்கவும்"
   selectFontSize: "எழுத்துரு அளவைத் தேர்ந்தெடுக்கவும்"
@@ -1671,7 +1532,6 @@ ta_IN:
   selectPageSize: "பக்க அளவைத் தேர்ந்தெடுக்கவும்"
   selectLanguage: "மொழியைத் தேர்ந்தெடுக்கவும்"
   databaseSchemaTerminology: "தரவுத்தளம்/திட்ட லேபிள்"
-  databaseSchemaTerminologyDatabase: "தரவுத்தளம்"
   databaseSchemaTerminologySchema: "திட்டம்"
   selectDatabaseSchemaTerminology: "லேபிளைத் தேர்ந்தெடுக்கவும்"
   disableAnimations: "அனிமேஷன்களை முடக்கு"
@@ -1679,7 +1539,6 @@ ta_IN:
   disableAnimationsDisabled: "அனிமேஷன் இயக்கப்பட்டது"
 
 th_TH:
-  title: "การตั้งค่า"
   telemetryTitle: "การวัดและส่งข้อมูลทางไกลและการวัดประสิทธิภาพ"
   telemetryDescription: "เราใช้ข้อมูลนี้เพื่อปรับปรุงประสิทธิภาพของ {appName} เท่านั้น"
   dataCollectionDetails: "สำหรับรายละเอียดเกี่ยวกับข้อมูลที่เรารวบรวม วิธีการรวบรวม จัดเก็บ และใช้งาน โปรดดูที่ {privacyPolicyLink} ของเรา"
@@ -1707,9 +1566,7 @@ th_TH:
   spacious: "กว้างขวาง"
   whereConditionMode: "โดยที่โหมดเงื่อนไข"
   popover: "ป๊อปโอเวอร์"
-  sheet: "แผ่น"
   defaultPageSize: "ขนาดหน้าเริ่มต้น"
-  custom: "กำหนดเอง"
   language: "ภาษา"
   selectView: "เลือกมุมมอง"
   selectFontSize: "เลือกขนาดตัวอักษร"
@@ -1719,7 +1576,6 @@ th_TH:
   selectPageSize: "เลือกขนาดหน้า"
   selectLanguage: "เลือกภาษา"
   databaseSchemaTerminology: "ป้ายกำกับฐานข้อมูล/สคีมา"
-  databaseSchemaTerminologyDatabase: "ฐานข้อมูล"
   databaseSchemaTerminologySchema: "สคีมา"
   selectDatabaseSchemaTerminology: "เลือกป้ายกำกับ"
   disableAnimations: "ปิดการใช้งานภาพเคลื่อนไหว"
@@ -1727,7 +1583,6 @@ th_TH:
   disableAnimationsDisabled: "เปิดใช้งานภาพเคลื่อนไหวแล้ว"
 
 tr_TR:
-  title: "Ayarlar"
   telemetryTitle: "Telemetri ve Performans Metrikleri"
   telemetryDescription: "Bu bilgileri yalnızca {appName} performansını artırmak için kullanırız."
   dataCollectionDetails: "Hangi verileri topladığımız, bunların nasıl toplandığı, saklandığı ve kullanıldığına ilişkin ayrıntılar için lütfen {privacyPolicyLink} belgemize bakın."
@@ -1755,9 +1610,7 @@ tr_TR:
   spacious: "Ferah"
   whereConditionMode: "Nerede Durum Modu"
   popover: "Popover"
-  sheet: "Çarşaf"
   defaultPageSize: "Varsayılan Sayfa Boyutu"
-  custom: "Gelenek"
   language: "Dil"
   selectView: "Bir Görünüm Seçin"
   selectFontSize: "Yazı Tipi Boyutunu Seçin"
@@ -1767,7 +1620,6 @@ tr_TR:
   selectPageSize: "Sayfa Boyutunu Seçin"
   selectLanguage: "Dil Seçiniz"
   databaseSchemaTerminology: "Veritabanı/Şema Etiketi"
-  databaseSchemaTerminologyDatabase: "Veritabanı"
   databaseSchemaTerminologySchema: "Şema"
   selectDatabaseSchemaTerminology: "Etiket Seçin"
   disableAnimations: "Animasyonları Devre Dışı Bırak"
@@ -1775,7 +1627,6 @@ tr_TR:
   disableAnimationsDisabled: "Animasyonlar etkinleştirildi"
 
 uk_UA:
-  title: "Налаштування"
   telemetryTitle: "Телеметрія та показники продуктивності"
   telemetryDescription: "Ми використовуємо цю інформацію виключно для покращення продуктивності {appName}."
   dataCollectionDetails: "Щоб дізнатися більше про те, які дані ми збираємо, як вони збираються, зберігаються та використовуються, зверніться до {privacyPolicyLink}."
@@ -1803,9 +1654,7 @@ uk_UA:
   spacious: "Простора"
   whereConditionMode: "Де Режим умов"
   popover: "Поповер"
-  sheet: "Аркуш"
   defaultPageSize: "Розмір сторінки за замовчуванням"
-  custom: "Custom"
   language: "Мова"
   selectView: "Виберіть перегляд"
   selectFontSize: "Виберіть Розмір шрифту"
@@ -1815,7 +1664,6 @@ uk_UA:
   selectPageSize: "Виберіть Розмір сторінки"
   selectLanguage: "Виберіть мову"
   databaseSchemaTerminology: "Мітка бази даних/схеми"
-  databaseSchemaTerminologyDatabase: "База даних"
   databaseSchemaTerminologySchema: "Схема"
   selectDatabaseSchemaTerminology: "Виберіть Мітка"
   disableAnimations: "Вимкнути анімацію"
@@ -1823,7 +1671,6 @@ uk_UA:
   disableAnimationsDisabled: "Анімації включені"
 
 ur_PK:
-  title: "ترتیبات"
   telemetryTitle: "ٹیلی میٹری اور پرفارمنس میٹرکس"
   telemetryDescription: "ہم یہ معلومات صرف اور صرف {appName} کی کارکردگی کو بڑھانے کے لیے استعمال کرتے ہیں۔"
   dataCollectionDetails: "ہم کون سا ڈیٹا اکٹھا کرتے ہیں، اسے کیسے اکٹھا، ذخیرہ اور استعمال کیا جاتا ہے، اس بارے میں تفصیلات کے لیے، براہ کرم ہمارے {privacyPolicyLink} سے رجوع کریں۔"
@@ -1851,9 +1698,7 @@ ur_PK:
   spacious: "کشادہ"
   whereConditionMode: "جہاں کنڈیشن موڈ"
   popover: "پاپ اوور"
-  sheet: "چادر"
   defaultPageSize: "پہلے سے طے شدہ صفحہ کا سائز"
-  custom: "حسب ضرورت"
   language: "زبان"
   selectView: "ایک منظر منتخب کریں۔"
   selectFontSize: "فونٹ کا سائز منتخب کریں۔"
@@ -1863,7 +1708,6 @@ ur_PK:
   selectPageSize: "صفحہ کا سائز منتخب کریں۔"
   selectLanguage: "زبان منتخب کریں۔"
   databaseSchemaTerminology: "ڈیٹا بیس/اسکیما لیبل"
-  databaseSchemaTerminologyDatabase: "ڈیٹا بیس"
   databaseSchemaTerminologySchema: "سکیما"
   selectDatabaseSchemaTerminology: "لیبل منتخب کریں۔"
   disableAnimations: "متحرک تصاویر کو غیر فعال کریں۔"
@@ -1871,7 +1715,6 @@ ur_PK:
   disableAnimationsDisabled: "متحرک تصاویر فعال ہیں۔"
 
 vi_VN:
-  title: "Cài đặt"
   telemetryTitle: "Đo lường từ xa và hiệu suất"
   telemetryDescription: "Chúng tôi chỉ sử dụng thông tin này để nâng cao hiệu suất của {appName}."
   dataCollectionDetails: "Để biết chi tiết về những dữ liệu chúng tôi thu thập, cách thu thập, lưu trữ và sử dụng dữ liệu đó, vui lòng tham khảo {privacyPolicyLink} của chúng tôi."
@@ -1899,9 +1742,7 @@ vi_VN:
   spacious: "Rộng rãi"
   whereConditionMode: "Chế độ điều kiện ở đâu"
   popover: "Cửa sổ bật lên"
-  sheet: "Tờ giấy"
   defaultPageSize: "Kích thước trang mặc định"
-  custom: "Phong tục"
   language: "Ngôn ngữ"
   selectView: "Chọn một Chế độ xem"
   selectFontSize: "Chọn cỡ chữ"
@@ -1911,7 +1752,6 @@ vi_VN:
   selectPageSize: "Chọn kích thước trang"
   selectLanguage: "Chọn ngôn ngữ"
   databaseSchemaTerminology: "Cơ sở dữ liệu/Nhãn lược đồ"
-  databaseSchemaTerminologyDatabase: "Cơ sở dữ liệu"
   databaseSchemaTerminologySchema: "Lược đồ"
   selectDatabaseSchemaTerminology: "Chọn Nhãn"
   disableAnimations: "Tắt ảnh động"
@@ -1919,7 +1759,6 @@ vi_VN:
   disableAnimationsDisabled: "Hoạt ảnh được bật"
 
 af_ZA:
-  title: "Instellings"
   telemetryTitle: "Telemetrie en prestasiemaatstawwe"
   telemetryDescription: "Ons gebruik hierdie inligting uitsluitlik om die prestasie van {appName} te verbeter."
   dataCollectionDetails: "Vir besonderhede oor watter data ons insamel, hoe dit ingesamel, gestoor en gebruik word, verwys asseblief na ons {privacyPolicyLink}."
@@ -1947,9 +1786,7 @@ af_ZA:
   spacious: "Ruim"
   whereConditionMode: "Waar toestand-modus"
   popover: "Popover"
-  sheet: "Blad"
   defaultPageSize: "Verstek bladsy grootte"
-  custom: "Pasgemaak"
   language: "Taal"
   selectView: "Kies 'n aansig"
   selectFontSize: "Kies lettergrootte"
@@ -1959,7 +1796,6 @@ af_ZA:
   selectPageSize: "Kies Bladsygrootte"
   selectLanguage: "Kies Taal"
   databaseSchemaTerminology: "Databasis/Skema-etiket"
-  databaseSchemaTerminologyDatabase: "Databasis"
   databaseSchemaTerminologySchema: "Skema"
   selectDatabaseSchemaTerminology: "Kies Etiket"
   disableAnimations: "Deaktiveer animasies"
@@ -1967,7 +1803,6 @@ af_ZA:
   disableAnimationsDisabled: "Animasies is geaktiveer"
 
 am_ET:
-  title: "ቅንብሮች"
   telemetryTitle: "ቴሌሜትሪ እና የአፈጻጸም መለኪያዎች"
   telemetryDescription: "ይህንን መረጃ የ{appName}ን አፈጻጸም ለማሻሻል ብቻ እንጠቀምበታለን።"
   dataCollectionDetails: "ምን አይነት ውሂብ እንደምንሰበስብ፣ እንዴት እንደሚሰበሰብ፣ እንደሚከማች እና እንደሚጠቀም ላይ ዝርዝሮችን ለማግኘት እባክዎ የእኛን {privacyPolicyLink} ይመልከቱ።"
@@ -1995,9 +1830,7 @@ am_ET:
   spacious: "ሰፊ"
   whereConditionMode: "የት ሁኔታ ሁኔታ"
   popover: "ፖፖቨር"
-  sheet: "ሉህ"
   defaultPageSize: "ነባሪ የገጽ መጠን"
-  custom: "ብጁ"
   language: "ቋንቋ"
   selectView: "እይታን ይምረጡ"
   selectFontSize: "የቅርጸ-ቁምፊ መጠንን ይምረጡ"
@@ -2007,7 +1840,6 @@ am_ET:
   selectPageSize: "የገጽ መጠን ይምረጡ"
   selectLanguage: "ቋንቋ ይምረጡ"
   databaseSchemaTerminology: "የውሂብ ጎታ/ የመርሃግብር መለያ"
-  databaseSchemaTerminologyDatabase: "የውሂብ ጎታ"
   databaseSchemaTerminologySchema: "እቅድ"
   selectDatabaseSchemaTerminology: "መለያ ይምረጡ"
   disableAnimations: "እነማዎችን አሰናክል"
@@ -2015,7 +1847,6 @@ am_ET:
   disableAnimationsDisabled: "እነማዎች ነቅተዋል።"
 
 az_AZ:
-  title: "Parametrlər"
   telemetryTitle: "Telemetriya və Performans Metrikləri"
   telemetryDescription: "Biz bu məlumatı yalnız {appName} performansını artırmaq üçün istifadə edirik."
   dataCollectionDetails: "Hansı datanı topladığımız, onların necə toplandığı, saxlandığı və istifadə edildiyi barədə ətraflı məlumat üçün {privacyPolicyLink}-a müraciət edin."
@@ -2043,9 +1874,7 @@ az_AZ:
   spacious: "Geniş"
   whereConditionMode: "Harada Vəziyyət rejimi"
   popover: "Popover"
-  sheet: "Vərəq"
   defaultPageSize: "Defolt Səhifə Ölçüsü"
-  custom: "Xüsusi"
   language: "Dil"
   selectView: "Görünüş seçin"
   selectFontSize: "Şrift ölçüsünü seçin"
@@ -2055,7 +1884,6 @@ az_AZ:
   selectPageSize: "Səhifə ölçüsünü seçin"
   selectLanguage: "Dil seçin"
   databaseSchemaTerminology: "Database/Schema Label"
-  databaseSchemaTerminologyDatabase: "Verilənlər bazası"
   databaseSchemaTerminologySchema: "Sxem"
   selectDatabaseSchemaTerminology: "Etiket seçin"
   disableAnimations: "Animasiyaları söndürün"
@@ -2063,7 +1891,6 @@ az_AZ:
   disableAnimationsDisabled: "Animasiyalar aktivləşdirilib"
 
 et_EE:
-  title: "Seaded"
   telemetryTitle: "Telemeetria ja jõudlusmõõdikud"
   telemetryDescription: "Kasutame seda teavet ainult rakenduse {appName} toimivuse parandamiseks."
   dataCollectionDetails: "Lisateavet selle kohta, milliseid andmeid me kogume, kuidas neid kogume, säilitame ja kasutame, vaadake meie {privacyPolicyLink}."
@@ -2091,9 +1918,7 @@ et_EE:
   spacious: "Avar"
   whereConditionMode: "Kus seisukord"
   popover: "Popover"
-  sheet: "Leht"
   defaultPageSize: "Vaikelehe suurus"
-  custom: "Kohandatud"
   language: "Keel"
   selectView: "Valige vaade"
   selectFontSize: "Valige Fondi suurus"
@@ -2103,7 +1928,6 @@ et_EE:
   selectPageSize: "Valige Lehekülje suurus"
   selectLanguage: "Valige keel"
   databaseSchemaTerminology: "Andmebaas/skeemi silt"
-  databaseSchemaTerminologyDatabase: "Andmebaas"
   databaseSchemaTerminologySchema: "Skeem"
   selectDatabaseSchemaTerminology: "Valige Silt"
   disableAnimations: "Keela animatsioonid"
@@ -2111,7 +1935,6 @@ et_EE:
   disableAnimationsDisabled: "Animatsioonid on lubatud"
 
 gu_IN:
-  title: "સેટિંગ્સ"
   telemetryTitle: "ટેલિમેટ્રી અને પર્ફોર્મન્સ મેટ્રિક્સ"
   telemetryDescription: "અમે આ માહિતીનો ઉપયોગ ફક્ત {appName} ની કામગીરીને વધારવા માટે કરીએ છીએ."
   dataCollectionDetails: "અમે કયો ડેટા એકત્રિત કરીએ છીએ, તે કેવી રીતે એકત્રિત, સંગ્રહિત અને ઉપયોગમાં લેવાય છે તેની વિગતો માટે, કૃપા કરીને અમારા {privacyPolicyLink} નો સંદર્ભ લો."
@@ -2139,9 +1962,7 @@ gu_IN:
   spacious: "વિશાળ"
   whereConditionMode: "જ્યાં કન્ડિશન મોડ"
   popover: "પોપઓવર"
-  sheet: "શીટ"
   defaultPageSize: "મૂળભૂત પૃષ્ઠ કદ"
-  custom: "કસ્ટમ"
   language: "ભાષા"
   selectView: "એક દૃશ્ય પસંદ કરો"
   selectFontSize: "ફોન્ટનું કદ પસંદ કરો"
@@ -2151,7 +1972,6 @@ gu_IN:
   selectPageSize: "પૃષ્ઠનું કદ પસંદ કરો"
   selectLanguage: "ભાષા પસંદ કરો"
   databaseSchemaTerminology: "ડેટાબેઝ/સ્કીમા લેબલ"
-  databaseSchemaTerminologyDatabase: "ડેટાબેઝ"
   databaseSchemaTerminologySchema: "સ્કીમા"
   selectDatabaseSchemaTerminology: "લેબલ પસંદ કરો"
   disableAnimations: "એનિમેશન અક્ષમ કરો"
@@ -2159,7 +1979,6 @@ gu_IN:
   disableAnimationsDisabled: "એનિમેશન સક્ષમ છે"
 
 ha_NG:
-  title: "Saituna"
   telemetryTitle: "Telemetry da Ma'aunin Aiki"
   telemetryDescription: "Muna amfani da wannan bayanin kawai don haɓaka aikin {appName}."
   dataCollectionDetails: "Don cikakkun bayanai kan abubuwan da muke tattarawa, yadda ake tattarawa, adanawa, da amfani da su, da fatan za a duba {privacyPolicyLink} na mu."
@@ -2187,9 +2006,7 @@ ha_NG:
   spacious: "Fadi"
   whereConditionMode: "Inda Yanayin Yanayin"
   popover: "Popover"
-  sheet: "Shet"
   defaultPageSize: "Girman Shafin Tsohuwar"
-  custom: "Custom"
   language: "Harshe"
   selectView: "Zaɓi Duba"
   selectFontSize: "Zaɓi Girman Font"
@@ -2199,7 +2016,6 @@ ha_NG:
   selectPageSize: "Zaɓi Girman Shafi"
   selectLanguage: "Zaɓi Harshe"
   databaseSchemaTerminology: "Database/Label Schema"
-  databaseSchemaTerminologyDatabase: "Database"
   databaseSchemaTerminologySchema: "Tsarin tsari"
   selectDatabaseSchemaTerminology: "Zaɓi Lakabi"
   disableAnimations: "Kashe raye-raye"
@@ -2207,7 +2023,6 @@ ha_NG:
   disableAnimationsDisabled: "An kunna raye-raye"
 
 ka_GE:
-  title: "პარამეტრები"
   telemetryTitle: "ტელემეტრია და შესრულების მეტრიკა"
   telemetryDescription: "ჩვენ ვიყენებთ ამ ინფორმაციას მხოლოდ {appName}-ის მუშაობის გასაუმჯობესებლად."
   dataCollectionDetails: "დეტალებისთვის, თუ რა მონაცემებს ვაგროვებთ, როგორ ხდება მათი შეგროვება, შენახვა და გამოყენება, გთხოვთ, მიმართოთ ჩვენს {privacyPolicyLink}."
@@ -2235,9 +2050,7 @@ ka_GE:
   spacious: "ფართო"
   whereConditionMode: "სად მდგომარეობის რეჟიმი"
   popover: "პოპოვერი"
-  sheet: "ფურცელი"
   defaultPageSize: "გვერდის ნაგულისხმევი ზომა"
-  custom: "საბაჟო"
   language: "ენა"
   selectView: "აირჩიეთ ხედი"
   selectFontSize: "აირჩიეთ შრიფტის ზომა"
@@ -2247,7 +2060,6 @@ ka_GE:
   selectPageSize: "აირჩიეთ გვერდის ზომა"
   selectLanguage: "აირჩიეთ ენა"
   databaseSchemaTerminology: "მონაცემთა ბაზა/სქემის ლეიბლი"
-  databaseSchemaTerminologyDatabase: "მონაცემთა ბაზა"
   databaseSchemaTerminologySchema: "სქემა"
   selectDatabaseSchemaTerminology: "აირჩიეთ ლეიბლი"
   disableAnimations: "გამორთეთ ანიმაციები"
@@ -2255,7 +2067,6 @@ ka_GE:
   disableAnimationsDisabled: "ანიმაციები ჩართულია"
 
 km_KH:
-  title: "ការកំណត់"
   telemetryTitle: "Telemetry និង​ម៉ែត្រ​ការ​អនុវត្ត"
   telemetryDescription: "យើងប្រើប្រាស់ព័ត៌មាននេះតែមួយគត់ ដើម្បីបង្កើនប្រសិទ្ធភាពនៃ {appName}។"
   dataCollectionDetails: "សម្រាប់ព័ត៌មានលម្អិតអំពីទិន្នន័យដែលយើងប្រមូល របៀបដែលវាត្រូវបានប្រមូល រក្សាទុក និងប្រើប្រាស់ សូមមើល {privacyPolicyLink} របស់យើង។"
@@ -2283,9 +2094,7 @@ km_KH:
   spacious: "ទូលាយ"
   whereConditionMode: "របៀបលក្ខខណ្ឌ"
   popover: "Popover"
-  sheet: "សន្លឹក"
   defaultPageSize: "ទំហំទំព័រលំនាំដើម"
-  custom: "ផ្ទាល់ខ្លួន"
   language: "ភាសា"
   selectView: "ជ្រើសរើសទិដ្ឋភាព"
   selectFontSize: "ជ្រើសរើសទំហំពុម្ពអក្សរ"
@@ -2295,7 +2104,6 @@ km_KH:
   selectPageSize: "ជ្រើសរើសទំហំទំព័រ"
   selectLanguage: "ជ្រើសរើសភាសា"
   databaseSchemaTerminology: "ស្លាកមូលដ្ឋានទិន្នន័យ/គ្រោងការណ៍"
-  databaseSchemaTerminologyDatabase: "មូលដ្ឋានទិន្នន័យ"
   databaseSchemaTerminologySchema: "គ្រោងការណ៍"
   selectDatabaseSchemaTerminology: "ជ្រើសរើសស្លាក"
   disableAnimations: "បិទចលនា"
@@ -2303,7 +2111,6 @@ km_KH:
   disableAnimationsDisabled: "ចលនាត្រូវបានបើក"
 
 kn_IN:
-  title: "ಸೆಟ್ಟಿಂಗ್‌ಗಳು"
   telemetryTitle: "ಟೆಲಿಮೆಟ್ರಿ ಮತ್ತು ಕಾರ್ಯಕ್ಷಮತೆಯ ಮೆಟ್ರಿಕ್ಸ್"
   telemetryDescription: "{appName} ನ ಕಾರ್ಯಕ್ಷಮತೆಯನ್ನು ಹೆಚ್ಚಿಸಲು ನಾವು ಈ ಮಾಹಿತಿಯನ್ನು ಬಳಸುತ್ತೇವೆ."
   dataCollectionDetails: "ನಾವು ಯಾವ ಡೇಟಾವನ್ನು ಸಂಗ್ರಹಿಸುತ್ತೇವೆ, ಅದನ್ನು ಹೇಗೆ ಸಂಗ್ರಹಿಸಲಾಗುತ್ತದೆ, ಸಂಗ್ರಹಿಸಲಾಗುತ್ತದೆ ಮತ್ತು ಬಳಸಲಾಗುತ್ತದೆ ಎಂಬುದರ ಕುರಿತು ವಿವರಗಳಿಗಾಗಿ, ದಯವಿಟ್ಟು ನಮ್ಮ {privacyPolicyLink} ಅನ್ನು ಉಲ್ಲೇಖಿಸಿ."
@@ -2331,9 +2138,7 @@ kn_IN:
   spacious: "ವಿಶಾಲವಾದ"
   whereConditionMode: "ಅಲ್ಲಿ ಕಂಡೀಷನ್ ಮೋಡ್"
   popover: "ಪಾಪೋವರ್"
-  sheet: "ಹಾಳೆ"
   defaultPageSize: "ಡೀಫಾಲ್ಟ್ ಪುಟದ ಗಾತ್ರ"
-  custom: "ಕಸ್ಟಮ್"
   language: "ಭಾಷೆ"
   selectView: "ಒಂದು ವೀಕ್ಷಣೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ"
   selectFontSize: "ಫಾಂಟ್ ಗಾತ್ರವನ್ನು ಆಯ್ಕೆಮಾಡಿ"
@@ -2343,7 +2148,6 @@ kn_IN:
   selectPageSize: "ಪುಟದ ಗಾತ್ರವನ್ನು ಆಯ್ಕೆಮಾಡಿ"
   selectLanguage: "ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ"
   databaseSchemaTerminology: "ಡೇಟಾಬೇಸ್/ಸ್ಕೀಮಾ ಲೇಬಲ್"
-  databaseSchemaTerminologyDatabase: "ಡೇಟಾಬೇಸ್"
   databaseSchemaTerminologySchema: "ಸ್ಕೀಮಾ"
   selectDatabaseSchemaTerminology: "ಲೇಬಲ್ ಆಯ್ಕೆಮಾಡಿ"
   disableAnimations: "ಅನಿಮೇಷನ್‌ಗಳನ್ನು ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಿ"
@@ -2351,7 +2155,6 @@ kn_IN:
   disableAnimationsDisabled: "ಅನಿಮೇಷನ್‌ಗಳನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ"
 
 lt_LT:
-  title: "Nustatymai"
   telemetryTitle: "Telemetrija ir našumo metrika"
   telemetryDescription: "Šią informaciją naudojame tik siekdami pagerinti {appName} našumą."
   dataCollectionDetails: "Daugiau informacijos apie tai, kokius duomenis renkame, kaip jie renkami, saugomi ir naudojami, rasite mūsų {privacyPolicyLink}."
@@ -2379,9 +2182,7 @@ lt_LT:
   spacious: "Erdvus"
   whereConditionMode: "Kur sąlygos režimas"
   popover: "Popover"
-  sheet: "Lapas"
   defaultPageSize: "Numatytasis puslapio dydis"
-  custom: "Pasirinktinis"
   language: "Kalba"
   selectView: "Pasirinkite rodinį"
   selectFontSize: "Pasirinkite Šrifto dydis"
@@ -2391,7 +2192,6 @@ lt_LT:
   selectPageSize: "Pasirinkite Puslapio dydis"
   selectLanguage: "Pasirinkite Kalba"
   databaseSchemaTerminology: "Duomenų bazė/schemos etiketė"
-  databaseSchemaTerminologyDatabase: "Duomenų bazė"
   databaseSchemaTerminologySchema: "Schema"
   selectDatabaseSchemaTerminology: "Pasirinkite Etiketė"
   disableAnimations: "Išjungti animacijas"
@@ -2399,7 +2199,6 @@ lt_LT:
   disableAnimationsDisabled: "Animacijos įjungtos"
 
 lv_LV:
-  title: "Iestatījumi"
   telemetryTitle: "Telemetrija un veiktspējas metrika"
   telemetryDescription: "Mēs izmantojam šo informāciju tikai, lai uzlabotu {appName} veiktspēju."
   dataCollectionDetails: "Lai iegūtu sīkāku informāciju par to, kādus datus mēs apkopojam, kā tie tiek vākti, glabāti un izmantoti, lūdzu, skatiet mūsu {privacyPolicyLink}."
@@ -2427,9 +2226,7 @@ lv_LV:
   spacious: "Plašs"
   whereConditionMode: "Kur Stāvokļa režīms"
   popover: "Popover"
-  sheet: "Lapa"
   defaultPageSize: "Noklusējuma lapas izmērs"
-  custom: "Pielāgots"
   language: "Valoda"
   selectView: "Izvēlieties skatu"
   selectFontSize: "Atlasiet Fonta lielums"
@@ -2439,7 +2236,6 @@ lv_LV:
   selectPageSize: "Izvēlieties Lapas izmērs"
   selectLanguage: "Izvēlieties valodu"
   databaseSchemaTerminology: "Datu bāze/shēmas etiķete"
-  databaseSchemaTerminologyDatabase: "Datu bāze"
   databaseSchemaTerminologySchema: "Shēma"
   selectDatabaseSchemaTerminology: "Atlasiet Iezīme"
   disableAnimations: "Atspējot animācijas"
@@ -2447,7 +2243,6 @@ lv_LV:
   disableAnimationsDisabled: "Animācijas ir iespējotas"
 
 ml_IN:
-  title: "ക്രമീകരണങ്ങൾ"
   telemetryTitle: "ടെലിമെട്രി, പെർഫോമൻസ് മെട്രിക്‌സ്"
   telemetryDescription: "{appName} എന്നതിൻ്റെ പ്രകടനം മെച്ചപ്പെടുത്താൻ മാത്രമാണ് ഞങ്ങൾ ഈ വിവരങ്ങൾ ഉപയോഗിക്കുന്നത്."
   dataCollectionDetails: "ഞങ്ങൾ ഏത് ഡാറ്റയാണ് ശേഖരിക്കുന്നത്, അത് എങ്ങനെ ശേഖരിക്കുന്നു, സംഭരിക്കുന്നു, ഉപയോഗിക്കുന്നു എന്നതിനെക്കുറിച്ചുള്ള വിശദാംശങ്ങൾക്ക്, ദയവായി ഞങ്ങളുടെ {privacyPolicyLink} കാണുക."
@@ -2475,9 +2270,7 @@ ml_IN:
   spacious: "വിശാലമായ"
   whereConditionMode: "എവിടെ കണ്ടീഷൻ മോഡ്"
   popover: "പോപ്പോവർ"
-  sheet: "ഷീറ്റ്"
   defaultPageSize: "സ്ഥിര പേജ് വലുപ്പം"
-  custom: "കസ്റ്റം"
   language: "ഭാഷ"
   selectView: "ഒരു കാഴ്ച തിരഞ്ഞെടുക്കുക"
   selectFontSize: "ഫോണ്ട് വലുപ്പം തിരഞ്ഞെടുക്കുക"
@@ -2487,7 +2280,6 @@ ml_IN:
   selectPageSize: "പേജ് വലുപ്പം തിരഞ്ഞെടുക്കുക"
   selectLanguage: "ഭാഷ തിരഞ്ഞെടുക്കുക"
   databaseSchemaTerminology: "ഡാറ്റാബേസ്/സ്കീമ ലേബൽ"
-  databaseSchemaTerminologyDatabase: "ഡാറ്റാബേസ്"
   databaseSchemaTerminologySchema: "സ്കീമ"
   selectDatabaseSchemaTerminology: "ലേബൽ തിരഞ്ഞെടുക്കുക"
   disableAnimations: "ആനിമേഷനുകൾ പ്രവർത്തനരഹിതമാക്കുക"
@@ -2495,7 +2287,6 @@ ml_IN:
   disableAnimationsDisabled: "ആനിമേഷനുകൾ പ്രവർത്തനക്ഷമമാക്കി"
 
 mr_IN:
-  title: "सेटिंग्ज"
   telemetryTitle: "टेलीमेट्री आणि परफॉर्मन्स मेट्रिक्स"
   telemetryDescription: "आम्ही ही माहिती केवळ {appName} ची कार्यक्षमता वाढवण्यासाठी वापरतो."
   dataCollectionDetails: "आम्ही कोणता डेटा संकलित करतो, तो कसा संकलित, संग्रहित आणि वापरला जातो याच्या तपशीलांसाठी कृपया आमच्या {privacyPolicyLink} चा संदर्भ घ्या."
@@ -2523,9 +2314,7 @@ mr_IN:
   spacious: "प्रशस्त"
   whereConditionMode: "जेथे स्थिती मोड"
   popover: "पॉपओव्हर"
-  sheet: "पत्रक"
   defaultPageSize: "डीफॉल्ट पृष्ठ आकार"
-  custom: "सानुकूल"
   language: "भाषा"
   selectView: "एक दृश्य निवडा"
   selectFontSize: "फॉन्ट आकार निवडा"
@@ -2535,7 +2324,6 @@ mr_IN:
   selectPageSize: "पृष्ठ आकार निवडा"
   selectLanguage: "भाषा निवडा"
   databaseSchemaTerminology: "डेटाबेस/स्कीमा लेबल"
-  databaseSchemaTerminologyDatabase: "डेटाबेस"
   databaseSchemaTerminologySchema: "स्कीमा"
   selectDatabaseSchemaTerminology: "लेबल निवडा"
   disableAnimations: "ॲनिमेशन अक्षम करा"
@@ -2543,7 +2331,6 @@ mr_IN:
   disableAnimationsDisabled: "ॲनिमेशन सक्षम केले आहेत"
 
 ne_NP:
-  title: "सेटिङहरू"
   telemetryTitle: "टेलिमेट्री र प्रदर्शन मेट्रिक्स"
   telemetryDescription: "हामी यो जानकारी {appName} को कार्यसम्पादन बढाउनको लागि मात्र प्रयोग गर्छौं।"
   dataCollectionDetails: "हामीले कुन डाटा सङ्कलन गर्छौं, यो कसरी सङ्कलन, भण्डारण र प्रयोग गरिन्छ भन्ने बारे विवरणहरूको लागि, कृपया हाम्रो {privacyPolicyLink} लाई सन्दर्भ गर्नुहोस्।"
@@ -2571,9 +2358,7 @@ ne_NP:
   spacious: "प्रशस्त"
   whereConditionMode: "जहाँ अवस्था मोड"
   popover: "Popover"
-  sheet: "पाना"
   defaultPageSize: "पूर्वनिर्धारित पृष्ठ आकार"
-  custom: "अनुकूलन"
   language: "भाषा"
   selectView: "एउटा दृश्य चयन गर्नुहोस्"
   selectFontSize: "फन्ट साइज चयन गर्नुहोस्"
@@ -2583,7 +2368,6 @@ ne_NP:
   selectPageSize: "पृष्ठ आकार चयन गर्नुहोस्"
   selectLanguage: "भाषा चयन गर्नुहोस्"
   databaseSchemaTerminology: "डाटाबेस/स्कीमा लेबल"
-  databaseSchemaTerminologyDatabase: "डाटाबेस"
   databaseSchemaTerminologySchema: "योजना"
   selectDatabaseSchemaTerminology: "लेबल चयन गर्नुहोस्"
   disableAnimations: "एनिमेसन असक्षम पार्नुहोस्"
@@ -2591,7 +2375,6 @@ ne_NP:
   disableAnimationsDisabled: "एनिमेसनहरू सक्षम छन्"
 
 pa_IN:
-  title: "ਸੈਟਿੰਗਾਂ"
   telemetryTitle: "ਟੈਲੀਮੈਟਰੀ ਅਤੇ ਪ੍ਰਦਰਸ਼ਨ ਮੈਟ੍ਰਿਕਸ"
   telemetryDescription: "ਅਸੀਂ ਇਸ ਜਾਣਕਾਰੀ ਦੀ ਵਰਤੋਂ ਸਿਰਫ਼ {appName} ਦੀ ਕਾਰਗੁਜ਼ਾਰੀ ਨੂੰ ਵਧਾਉਣ ਲਈ ਕਰਦੇ ਹਾਂ।"
   dataCollectionDetails: "ਅਸੀਂ ਕਿਹੜਾ ਡੇਟਾ ਇਕੱਠਾ ਕਰਦੇ ਹਾਂ, ਇਸ ਨੂੰ ਕਿਵੇਂ ਇਕੱਠਾ ਕੀਤਾ, ਸਟੋਰ ਕੀਤਾ ਅਤੇ ਵਰਤਿਆ ਜਾਂਦਾ ਹੈ, ਇਸ ਬਾਰੇ ਵੇਰਵਿਆਂ ਲਈ, ਕਿਰਪਾ ਕਰਕੇ ਸਾਡੇ {privacyPolicyLink} ਨੂੰ ਵੇਖੋ।"
@@ -2619,9 +2402,7 @@ pa_IN:
   spacious: "ਵਿਸ਼ਾਲ"
   whereConditionMode: "ਜਿੱਥੇ ਕੰਡੀਸ਼ਨ ਮੋਡ"
   popover: "ਪੋਪਓਵਰ"
-  sheet: "ਸ਼ੀਟ"
   defaultPageSize: "ਪੂਰਵ-ਨਿਰਧਾਰਤ ਪੰਨਾ ਆਕਾਰ"
-  custom: "ਕਸਟਮ"
   language: "ਭਾਸ਼ਾ"
   selectView: "ਇੱਕ ਦ੍ਰਿਸ਼ ਚੁਣੋ"
   selectFontSize: "ਫੌਂਟ ਦਾ ਆਕਾਰ ਚੁਣੋ"
@@ -2631,7 +2412,6 @@ pa_IN:
   selectPageSize: "ਪੰਨਾ ਆਕਾਰ ਚੁਣੋ"
   selectLanguage: "ਭਾਸ਼ਾ ਚੁਣੋ"
   databaseSchemaTerminology: "ਡਾਟਾਬੇਸ/ਸਕੀਮਾ ਲੇਬਲ"
-  databaseSchemaTerminologyDatabase: "ਡਾਟਾਬੇਸ"
   databaseSchemaTerminologySchema: "ਸਕੀਮਾ"
   selectDatabaseSchemaTerminology: "ਲੇਬਲ ਚੁਣੋ"
   disableAnimations: "ਐਨੀਮੇਸ਼ਨਾਂ ਨੂੰ ਅਸਮਰੱਥ ਬਣਾਓ"
@@ -2639,7 +2419,6 @@ pa_IN:
   disableAnimationsDisabled: "ਐਨੀਮੇਸ਼ਨ ਚਾਲੂ ਹਨ"
 
 si_LK:
-  title: "සැකසීම්"
   telemetryTitle: "Telemetry සහ කාර්ය සාධන මිතික"
   telemetryDescription: "අපි මෙම තොරතුරු භාවිතා කරන්නේ {appName} හි කාර්ය සාධනය වැඩි දියුණු කිරීමට පමණි."
   dataCollectionDetails: "අප රැස් කරන දත්ත මොනවාද, එය රැස් කරන්නේ කෙසේද, ගබඩා කරන්නේ කෙසේද සහ භාවිතා කරන්නේ කෙසේද යන්න පිළිබඳ විස්තර සඳහා කරුණාකර අපගේ {privacyPolicyLink} වෙත යොමු වන්න."
@@ -2667,9 +2446,7 @@ si_LK:
   spacious: "ඉඩකඩ සහිතයි"
   whereConditionMode: "කොහෙද Condition Mode"
   popover: "පොපෝවර්"
-  sheet: "පත්රය"
   defaultPageSize: "පෙරනිමි පිටු ප්‍රමාණය"
-  custom: "අභිරුචි"
   language: "භාෂාව"
   selectView: "දර්ශනයක් තෝරන්න"
   selectFontSize: "අකුරු ප්‍රමාණය තෝරන්න"
@@ -2679,7 +2456,6 @@ si_LK:
   selectPageSize: "පිටු ප්‍රමාණය තෝරන්න"
   selectLanguage: "භාෂාව තෝරන්න"
   databaseSchemaTerminology: "දත්ත සමුදාය/ යෝජනා ක්‍රම ලේබලය"
-  databaseSchemaTerminologyDatabase: "දත්ත සමුදාය"
   databaseSchemaTerminologySchema: "යෝජනා ක්රමය"
   selectDatabaseSchemaTerminology: "ලේබලය තෝරන්න"
   disableAnimations: "සජීවිකරණ අක්රිය කරන්න"
@@ -2687,7 +2463,6 @@ si_LK:
   disableAnimationsDisabled: "සජීවිකරණ සබල කර ඇත"
 
 sl_SI:
-  title: "nastavitve"
   telemetryTitle: "Telemetrija in meritve zmogljivosti"
   telemetryDescription: "Te informacije uporabljamo izključno za izboljšanje delovanja {appName}."
   dataCollectionDetails: "Za podrobnosti o tem, katere podatke zbiramo, kako se zbirajo, shranjujejo in uporabljajo, glejte naše {privacyPolicyLink}."
@@ -2715,9 +2490,7 @@ sl_SI:
   spacious: "Prostorna"
   whereConditionMode: "Kje Način stanja"
   popover: "Popover"
-  sheet: "List"
   defaultPageSize: "Privzeta velikost strani"
-  custom: "Po meri"
   language: "Jezik"
   selectView: "Izberite pogled"
   selectFontSize: "Izberite Velikost pisave"
@@ -2727,7 +2500,6 @@ sl_SI:
   selectPageSize: "Izberite Velikost strani"
   selectLanguage: "Izberite Jezik"
   databaseSchemaTerminology: "Oznaka zbirke podatkov/sheme"
-  databaseSchemaTerminologyDatabase: "Baza podatkov"
   databaseSchemaTerminologySchema: "Shema"
   selectDatabaseSchemaTerminology: "Izberite Oznaka"
   disableAnimations: "Onemogoči animacije"
@@ -2735,7 +2507,6 @@ sl_SI:
   disableAnimationsDisabled: "Animacije so omogočene"
 
 sr_RS:
-  title: "Подешавања"
   telemetryTitle: "Телеметрија и метрика перформанси"
   telemetryDescription: "Користимо ове информације искључиво да бисмо побољшали перформансе {appName}."
   dataCollectionDetails: "За детаље о томе које податке прикупљамо, како се прикупљају, чувају и користе, погледајте нашу {privacyPolicyLink}."
@@ -2763,9 +2534,7 @@ sr_RS:
   spacious: "Пространо"
   whereConditionMode: "Где Режим услова"
   popover: "Поповер"
-  sheet: "Лист"
   defaultPageSize: "Подразумевана величина странице"
-  custom: "Цустом"
   language: "Језик"
   selectView: "Изаберите приказ"
   selectFontSize: "Изаберите Величина фонта"
@@ -2775,7 +2544,6 @@ sr_RS:
   selectPageSize: "Изаберите Величина странице"
   selectLanguage: "Изаберите Језик"
   databaseSchemaTerminology: "Ознака базе података/шеме"
-  databaseSchemaTerminologyDatabase: "База података"
   databaseSchemaTerminologySchema: "Шема"
   selectDatabaseSchemaTerminology: "Изаберите Ознака"
   disableAnimations: "Онемогући анимације"
@@ -2783,7 +2551,6 @@ sr_RS:
   disableAnimationsDisabled: "Анимације су омогућене"
 
 te_IN:
-  title: "సెట్టింగ్‌లు"
   telemetryTitle: "టెలిమెట్రీ మరియు పనితీరు కొలమానాలు"
   telemetryDescription: "మేము {appName} పనితీరును మెరుగుపరచడానికి మాత్రమే ఈ సమాచారాన్ని ఉపయోగిస్తాము."
   dataCollectionDetails: "మేము ఏ డేటాను సేకరిస్తాము, అది ఎలా సేకరించబడుతుంది, నిల్వ చేయబడుతుంది మరియు ఉపయోగించబడుతుంది అనే వివరాల కోసం, దయచేసి మా {privacyPolicyLink}ని చూడండి."
@@ -2811,9 +2578,7 @@ te_IN:
   spacious: "విశాలమైనది"
   whereConditionMode: "ఎక్కడ కండిషన్ మోడ్"
   popover: "పాపోవర్"
-  sheet: "షీట్"
   defaultPageSize: "డిఫాల్ట్ పేజీ పరిమాణం"
-  custom: "కస్టమ్"
   language: "భాష"
   selectView: "వీక్షణను ఎంచుకోండి"
   selectFontSize: "ఫాంట్ పరిమాణాన్ని ఎంచుకోండి"
@@ -2823,7 +2588,6 @@ te_IN:
   selectPageSize: "పేజీ పరిమాణాన్ని ఎంచుకోండి"
   selectLanguage: "భాషను ఎంచుకోండి"
   databaseSchemaTerminology: "డేటాబేస్/స్కీమా లేబుల్"
-  databaseSchemaTerminologyDatabase: "డేటాబేస్"
   databaseSchemaTerminologySchema: "స్కీమా"
   selectDatabaseSchemaTerminology: "లేబుల్‌ని ఎంచుకోండి"
   disableAnimations: "యానిమేషన్‌లను నిలిపివేయండి"
@@ -2831,7 +2595,6 @@ te_IN:
   disableAnimationsDisabled: "యానిమేషన్లు ప్రారంభించబడ్డాయి"
 
 tl_PH:
-  title: "Mga setting"
   telemetryTitle: "Telemetry at Mga Sukatan ng Pagganap"
   telemetryDescription: "Ginagamit namin ang impormasyong ito para lamang mapahusay ang pagganap ng {appName}."
   dataCollectionDetails: "Para sa mga detalye sa kung anong data ang aming kinokolekta, kung paano ito kinokolekta, iniimbak, at ginagamit, mangyaring sumangguni sa aming {privacyPolicyLink}."
@@ -2859,9 +2622,7 @@ tl_PH:
   spacious: "Maluwag"
   whereConditionMode: "Kung saan Mode ng Kondisyon"
   popover: "Popover"
-  sheet: "Sheet"
   defaultPageSize: "Default na Laki ng Pahina"
-  custom: "Custom"
   language: "Wika"
   selectView: "Pumili ng View"
   selectFontSize: "Piliin ang Laki ng Font"
@@ -2871,7 +2632,6 @@ tl_PH:
   selectPageSize: "Piliin ang Laki ng Pahina"
   selectLanguage: "Piliin ang Wika"
   databaseSchemaTerminology: "Label ng Database/Schema"
-  databaseSchemaTerminologyDatabase: "Database"
   databaseSchemaTerminologySchema: "Schema"
   selectDatabaseSchemaTerminology: "Piliin ang Label"
   disableAnimations: "Huwag paganahin ang mga animation"
@@ -2879,7 +2639,6 @@ tl_PH:
   disableAnimationsDisabled: "Ang mga animation ay pinagana"
 
 uz_UZ:
-  title: "Sozlamalar"
   telemetryTitle: "Telemetriya va ishlash ko'rsatkichlari"
   telemetryDescription: "Biz bu maʼlumotlardan faqat {appName} unumdorligini oshirish uchun foydalanamiz."
   dataCollectionDetails: "Biz qanday maʼlumotlarni toʻplashimiz, ular qanday toʻplanishi, saqlanishi va ishlatilishi haqida batafsil maʼlumot olish uchun bizning {privacyPolicyLink} sahifamizga qarang."
@@ -2907,9 +2666,7 @@ uz_UZ:
   spacious: "Keng"
   whereConditionMode: "Vaziyat rejimi"
   popover: "Popover"
-  sheet: "Varaq"
   defaultPageSize: "Standart sahifa oʻlchami"
-  custom: "Maxsus"
   language: "Til"
   selectView: "Ko'rinishni tanlang"
   selectFontSize: "Shrift hajmini tanlang"
@@ -2919,7 +2676,6 @@ uz_UZ:
   selectPageSize: "Sahifa hajmini tanlang"
   selectLanguage: "Tilni tanlang"
   databaseSchemaTerminology: "Ma'lumotlar bazasi/sxema yorlig'i"
-  databaseSchemaTerminologyDatabase: "Ma'lumotlar bazasi"
   databaseSchemaTerminologySchema: "Sxema"
   selectDatabaseSchemaTerminology: "Yorliq ni tanlang"
   disableAnimations: "Animatsiyalarni o'chiring"
@@ -2927,7 +2683,6 @@ uz_UZ:
   disableAnimationsDisabled: "Animatsiyalar yoqilgan"
 
 yo_NG:
-  title: "Eto"
   telemetryTitle: "Telemetry ati Awọn Metiriki Iṣẹ"
   telemetryDescription: "A lo alaye yii nikan lati mu iṣẹ ṣiṣe ti {appName} dara si."
   dataCollectionDetails: "Fun awọn ẹkunrẹrẹ lori iru data ti a gba, bawo ni a ṣe n gba, ti o fipamọ, ati lilo, jọwọ tọka si {privacyPolicyLink} wa]."
@@ -2955,9 +2710,7 @@ yo_NG:
   spacious: "Aláyè gbígbòòrò"
   whereConditionMode: "Nibo Ipo Ipo"
   popover: "Agbejade"
-  sheet: "Dìde"
   defaultPageSize: "Aiyipada Page Iwon"
-  custom: "Aṣa"
   language: "Ede"
   selectView: "Yan Wiwo kan"
   selectFontSize: "Yan Iwon Font"
@@ -2967,7 +2720,6 @@ yo_NG:
   selectPageSize: "Yan Iwọn Oju-iwe"
   selectLanguage: "Yan Ede"
   databaseSchemaTerminology: "Ipilẹ aaye data / Aami Iṣeto"
-  databaseSchemaTerminologyDatabase: "Aaye data"
   databaseSchemaTerminologySchema: "Eto"
   selectDatabaseSchemaTerminology: "Yan Aami"
   disableAnimations: "Pa awọn ohun idanilaraya"

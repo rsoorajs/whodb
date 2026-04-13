@@ -211,8 +211,8 @@ export const AwsConnectionPicker: FC<AwsConnectionPickerProps> = ({
                                         <p className="font-medium text-foreground">{t('helpServices')}</p>
                                         <ul className="list-disc list-inside space-y-1 pl-1">
                                             <li><span className="font-medium">RDS</span> – {t('helpRdsDesc')}</li>
-                                            <li><span className="font-medium">ElastiCache</span> – {t('helpElasticacheDesc')}</li>
-                                            <li><span className="font-medium">DocumentDB</span> – {t('helpDocumentdbDesc')}</li>
+                                            <li><span className="font-medium">ElastiCache</span> – {t('elasticacheDesc')}</li>
+                                            <li><span className="font-medium">DocumentDB</span> – {t('documentdbDesc')}</li>
                                         </ul>
                                     </div>
                                     <p className="pt-1 border-t">{t('helpCredentialNote', { appName })}</p>

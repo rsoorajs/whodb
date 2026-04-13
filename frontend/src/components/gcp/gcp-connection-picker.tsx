@@ -219,8 +219,8 @@ export const GcpConnectionPicker: FC<GcpConnectionPickerProps> = ({
                                         <p className="font-medium text-foreground">{t('helpServices')}</p>
                                         <ul className="list-disc list-inside space-y-1 pl-1">
                                             <li><span className="font-medium">Cloud SQL</span> -- {t('helpCloudSqlDesc')}</li>
-                                            <li><span className="font-medium">AlloyDB</span> -- {t('helpAlloyDbDesc')}</li>
-                                            <li><span className="font-medium">Memorystore</span> -- {t('helpMemorystoreDesc')}</li>
+                                            <li><span className="font-medium">AlloyDB</span> -- {t('alloyDbDesc')}</li>
+                                            <li><span className="font-medium">Memorystore</span> -- {t('memorystoreDesc')}</li>
                                         </ul>
                                     </div>
                                     <p className="pt-1 border-t">{t('helpCredentialNote', { appName })}</p>

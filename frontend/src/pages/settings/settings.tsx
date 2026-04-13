@@ -277,7 +277,7 @@ export const SettingsPage: FC = () => {
                                     <SelectValue placeholder={t('selectDatabaseSchemaTerminology')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="database" data-value="database">{t('databaseSchemaTerminologyDatabase')}</SelectItem>
+                                    <SelectItem value="database" data-value="database">{t('database')}</SelectItem>
                                     <SelectItem value="schema" data-value="schema">{t('databaseSchemaTerminologySchema')}</SelectItem>
                                 </SelectContent>
                             </Select>
