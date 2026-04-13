@@ -20,7 +20,6 @@ package graph
 
 import (
 	ctx "context"
-	"encoding/json"
 	"net/http"
 
 	"github.com/clidey/whodb/core/baml_client"
@@ -49,17 +48,12 @@ func ceAIChatStreamHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Debugf("AI Chat Stream: Request parsed - model=%s, schema=%s, query=%s", req.ModelType, req.Schema, req.Input.Query)
 
-	// Setup SSE - check if streaming is supported
+	// Setup SSE
 	flusher := SetupSSEHeaders(w)
-	streamingSupported := flusher != nil
-	log.Debugf("AI Chat Stream: Streaming supported: %v", streamingSupported)
-
-	// If streaming not supported (e.g., Wails), fall back to non-streaming mode
-	if !streamingSupported {
-		HandleNonStreamingAIChat(w, r, req)
+	if flusher == nil {
+		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
 		return
 	}
-	log.Debugf("AI Chat Stream: SSE headers set, flusher available")
 
 	// Get plugin and config
 	plugin, config := GetPluginForContext(r.Context())
@@ -189,71 +183,5 @@ func convertStreamResponse(bamlResp *stream_types.ChatResponse) map[string]any {
 		"type":      typeStr,
 		"text":      textStr,
 		"operation": opStr,
-	}
-}
-
-// HandleNonStreamingAIChat handles AI chat when SSE streaming is not supported (e.g., Wails desktop).
-// It uses the shared ExecuteChatQuery path and returns a JSON response.
-func HandleNonStreamingAIChat(w http.ResponseWriter, r *http.Request, req *StreamRequest) {
-	plugin, config := GetPluginForContext(r.Context())
-	if plugin == nil {
-		http.Error(w, "No database plugin available", http.StatusInternalServerError)
-		return
-	}
-	if config == nil || config.Credentials == nil {
-		http.Error(w, "No credentials available", http.StatusUnauthorized)
-		return
-	}
-
-	creds := envconfig.ResolveProviderCredentials(req.ProviderId, req.Token, req.Endpoint, req.ModelType)
-	config.ExternalModel = &engine.ExternalModel{
-		Type:     creds.ModelType,
-		Token:    creds.Token,
-		Model:    req.Model,
-		Endpoint: creds.Endpoint,
-	}
-
-	tableDetails, err := BuildTableDetails(plugin, config, req.Schema)
-	if err != nil {
-		http.Error(w, "Failed to get table info: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	chatMessages, err := bamlconfig.ExecuteChatQuery(
-		ctx.Background(),
-		config.Credentials.Type,
-		req.Schema,
-		tableDetails,
-		req.Input.PreviousConversation,
-		req.Input.Query,
-		config,
-		plugin,
-	)
-	if err != nil {
-		http.Error(w, "AI query failed: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	var messages []*model.AIChatMessage
-	for _, msg := range chatMessages {
-		aiMsg := &model.AIChatMessage{
-			Type:                 msg.Type,
-			Text:                 msg.Text,
-			RequiresConfirmation: msg.RequiresConfirmation,
-		}
-		if msg.Result != nil {
-			aiMsg.Result = ConvertResultToMessage(msg.Result)
-		}
-		messages = append(messages, aiMsg)
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	response := map[string]any{
-		"messages": messages,
-		"done":     true,
-	}
-
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.WithError(err).Error("Failed to encode non-streaming AI chat response")
 	}
 }

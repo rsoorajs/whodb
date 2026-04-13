@@ -78,7 +78,7 @@ import {databaseSupportsScratchpad, databaseTypesThatUseDatabaseInsteadOfSchema}
 import {useNavigate} from "react-router-dom";
 import {useChatExamples} from "./examples";
 import {useTranslation} from '@/hooks/use-translation';
-import {addAuthHeader, isDesktopScheme} from "../../utils/auth-headers";
+import {addAuthHeader} from "../../utils/auth-headers";
 import {matchesShortcut, SHORTCUTS} from "../../utils/shortcuts";
 import {useContainerWidth} from "../../hooks/use-container-width";
 
@@ -463,30 +463,25 @@ export const ChatPage: FC = () => {
         }, 250);
 
         try {
-            const isDesktop = isDesktopScheme();
-            const endpoint = '/api/ai-chat/stream';
-
-            const requestBody = {
-                schema,
-                modelType: modelType.modelType,
-                providerId: modelType.id || '',
-                token: modelType.token || '',
-                model: currentModel ?? '',
-                input: {
-                    Query: sanitizedQuery,
-                    PreviousConversation: chats.map(chat =>
-                        `${chat.isUserInput ? "<User>" : "<System>"}${chat.Text}${chat.isUserInput ? "</User>" : "</System>"}`
-                    ).join("\n"),
-                },
-            };
-
-            const response = await fetch(endpoint, {
+            const response = await fetch('/api/ai-chat/stream', {
                 method: 'POST',
                 credentials: 'include',
                 headers: addAuthHeader({
                     'Content-Type': 'application/json',
                 }),
-                body: JSON.stringify(requestBody),
+                body: JSON.stringify({
+                    schema,
+                    modelType: modelType.modelType,
+                    providerId: modelType.id || '',
+                    token: modelType.token || '',
+                    model: currentModel ?? '',
+                    input: {
+                        Query: sanitizedQuery,
+                        PreviousConversation: chats.map(chat =>
+                            `${chat.isUserInput ? "<User>" : "<System>"}${chat.Text}${chat.isUserInput ? "</User>" : "</System>"}`
+                        ).join("\n"),
+                    },
+                }),
             });
 
             if (!response.ok) {
@@ -494,53 +489,6 @@ export const ChatPage: FC = () => {
                 return;
             }
 
-            // Check response type - server returns JSON for non-streaming (Wails), SSE for streaming
-            const contentType = response.headers.get('Content-Type') || '';
-            const isNonStreaming = contentType.includes('application/json') || isDesktop;
-
-            // Non-streaming mode (desktop/Wails) - server returns JSON
-            if (isNonStreaming) {
-                const data = await response.json();
-                // Server returns { messages: [...], done: true }
-                const messages = data.messages || data;
-
-                // Remove the placeholder streaming message
-                dispatch(HoudiniActions.removeChatMessage(streamingMessageId));
-
-                // Add all messages from the response
-                if (Array.isArray(messages)) {
-                    for (const msg of messages) {
-                        const messageId = getUniqueMessageId();
-                        dispatch(HoudiniActions.addChatMessage({
-                            Type: msg.Type,
-                            Text: msg.Text,
-                            Result: msg.Result,
-                            RequiresConfirmation: msg.RequiresConfirmation || false,
-                            id: messageId,
-                        }));
-                    }
-                }
-
-                setLoading(false);
-
-                // Try to generate title if session still has default name
-                if (shouldTryTitle) {
-                    generateChatTitle(sanitizedQuery);
-                }
-
-                // Scroll to bottom
-                setTimeout(() => {
-                    if (scrollContainerRef.current != null) {
-                        scrollContainerRef.current.scroll({
-                            top: scrollContainerRef.current.scrollHeight,
-                            behavior: "smooth",
-                        });
-                    }
-                }, 100);
-                return;
-            }
-
-            // SSE streaming mode (browser)
             if (!response.body) {
                 setLoading(false);
                 return;
@@ -551,6 +499,7 @@ export const ChatPage: FC = () => {
             let streamingText = '';
             let currentEventType = '';
             let addedSqlMessages = new Set<string>(); // Track added SQL to avoid duplicates
+            let streamDone = false;
 
             while (true) {
                 const { done, value } = await reader.read();
@@ -638,6 +587,7 @@ export const ChatPage: FC = () => {
                                 if (shouldTryTitle) {
                                     generateChatTitle(sanitizedQuery);
                                 }
+                                streamDone = true;
                             } else if (currentEventType === 'error') {
                                 dispatch(HoudiniActions.removeChatMessage(streamingMessageId));
                                 const errorMessage = typeof parsed.error === 'string'
@@ -645,11 +595,18 @@ export const ChatPage: FC = () => {
                                     : parsed.error?.message || parsed.message || 'Unknown error';
                                 toast.error(t('unableToQuery') + " " + errorMessage);
                                 setLoading(false);
+                                streamDone = true;
                             }
                         } catch (e) {
                             console.error('Failed to parse SSE data:', e);
                         }
                     }
+                }
+
+                // Stop reading after done/error — avoids WebKit throwing on post-EOF read in Wails
+                if (streamDone) {
+                    reader.cancel();
+                    break;
                 }
             }
         } catch (error) {
