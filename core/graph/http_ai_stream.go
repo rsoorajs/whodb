@@ -56,7 +56,7 @@ func ceAIChatStreamHandler(w http.ResponseWriter, r *http.Request) {
 
 	// If streaming not supported (e.g., Wails), fall back to non-streaming mode
 	if !streamingSupported {
-		handleNonStreamingAIChat(w, r, req)
+		HandleNonStreamingAIChat(w, r, req)
 		return
 	}
 	log.Debugf("AI Chat Stream: SSE headers set, flusher available")
@@ -155,74 +155,29 @@ func processFinalChunk(w http.ResponseWriter, flusher http.Flusher, responses *[
 
 	for _, bamlResp := range *responses {
 		if bamlResp.Type == types.ChatMessageTypeSQL {
-			message := executeSQLResponse(&bamlResp, plugin, config)
-			SendSSEMessage(w, flusher, message)
+			chatMsg := bamlconfig.ProcessBAMLResponse(&bamlResp, config, plugin)
+			aiMsg := &model.AIChatMessage{
+				Type:                 chatMsg.Type,
+				Text:                 chatMsg.Text,
+				RequiresConfirmation: chatMsg.RequiresConfirmation,
+			}
+			if chatMsg.Result != nil {
+				aiMsg.Result = ConvertResultToMessage(chatMsg.Result)
+			}
+			SendSSEMessage(w, flusher, aiMsg)
 		}
 	}
-}
-
-func executeSQLResponse(bamlResp *types.ChatResponse, plugin *engine.Plugin, config *engine.PluginConfig) *model.AIChatMessage {
-	message := &model.AIChatMessage{
-		Type:                 string(bamlResp.Type),
-		Text:                 bamlResp.Text,
-		RequiresConfirmation: false,
-	}
-
-	if bamlResp.Operation == nil {
-		result, err := plugin.RawExecute(config, bamlResp.Text)
-		if err != nil {
-			message.Type = "error"
-			message.Text = err.Error()
-		} else {
-			message.Result = ConvertResultToMessage(result)
-			message.Type = "sql:get"
-		}
-		return message
-	}
-
-	// Check if mutation
-	isMutation := *bamlResp.Operation == types.OperationTypeINSERT ||
-		*bamlResp.Operation == types.OperationTypeUPDATE ||
-		*bamlResp.Operation == types.OperationTypeDELETE ||
-		*bamlResp.Operation == types.OperationTypeCREATE ||
-		*bamlResp.Operation == types.OperationTypeALTER ||
-		*bamlResp.Operation == types.OperationTypeDROP
-
-	if isMutation {
-		message.Type = convertOperationType(*bamlResp.Operation)
-		message.RequiresConfirmation = true
-	} else {
-		result, err := plugin.RawExecute(config, bamlResp.Text)
-		if err != nil {
-			message.Type = "error"
-			message.Text = err.Error()
-		} else {
-			message.Result = ConvertResultToMessage(result)
-			message.Type = convertOperationType(*bamlResp.Operation)
-		}
-	}
-
-	return message
 }
 
 func convertStreamResponse(bamlResp *stream_types.ChatResponse) map[string]any {
 	typeStr := ""
 	if bamlResp.Type != nil {
-		switch *bamlResp.Type {
-		case types.ChatMessageTypeSQL:
-			typeStr = "sql"
-		case types.ChatMessageTypeMESSAGE:
-			typeStr = "message"
-		case types.ChatMessageTypeERROR:
-			typeStr = "error"
-		default:
-			typeStr = string(*bamlResp.Type)
-		}
+		typeStr = bamlconfig.ConvertBAMLTypeToWhoDB(*bamlResp.Type)
 	}
 
 	opStr := ""
 	if bamlResp.Operation != nil {
-		opStr = operationToString(*bamlResp.Operation)
+		opStr = bamlconfig.OperationToString(*bamlResp.Operation)
 	}
 
 	textStr := ""
@@ -237,37 +192,9 @@ func convertStreamResponse(bamlResp *stream_types.ChatResponse) map[string]any {
 	}
 }
 
-func operationToString(op types.OperationType) string {
-	switch op {
-	case types.OperationTypeGET:
-		return "get"
-	case types.OperationTypeINSERT:
-		return "insert"
-	case types.OperationTypeUPDATE:
-		return "update"
-	case types.OperationTypeDELETE:
-		return "delete"
-	case types.OperationTypeCREATE:
-		return "create"
-	case types.OperationTypeALTER:
-		return "alter"
-	case types.OperationTypeDROP:
-		return "drop"
-	case types.OperationTypeTEXT:
-		return "text"
-	default:
-		return string(op)
-	}
-}
-
-func convertOperationType(operation types.OperationType) string {
-	return "sql:" + operationToString(operation)
-}
-
-// handleNonStreamingAIChat handles AI chat when SSE streaming is not supported (e.g., Wails desktop)
-// It uses the non-streaming BAML client and returns a JSON response
-func handleNonStreamingAIChat(w http.ResponseWriter, r *http.Request, req *StreamRequest) {
-	// Get plugin and config
+// HandleNonStreamingAIChat handles AI chat when SSE streaming is not supported (e.g., Wails desktop).
+// It uses the shared ExecuteChatQuery path and returns a JSON response.
+func HandleNonStreamingAIChat(w http.ResponseWriter, r *http.Request, req *StreamRequest) {
 	plugin, config := GetPluginForContext(r.Context())
 	if plugin == nil {
 		http.Error(w, "No database plugin available", http.StatusInternalServerError)
@@ -278,7 +205,6 @@ func handleNonStreamingAIChat(w http.ResponseWriter, r *http.Request, req *Strea
 		return
 	}
 
-	// Build ExternalModel, resolving credentials from environment if providerId is set
 	creds := envconfig.ResolveProviderCredentials(req.ProviderId, req.Token, req.Endpoint, req.ModelType)
 	config.ExternalModel = &engine.ExternalModel{
 		Type:     creds.ModelType,
@@ -287,37 +213,40 @@ func handleNonStreamingAIChat(w http.ResponseWriter, r *http.Request, req *Strea
 		Endpoint: creds.Endpoint,
 	}
 
-	// Build table details
 	tableDetails, err := BuildTableDetails(plugin, config, req.Schema)
 	if err != nil {
 		http.Error(w, "Failed to get table info: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Setup BAML context
-	dbContext := types.DatabaseContext{
-		Database_type:         config.Credentials.Type,
-		Schema:                req.Schema,
-		Tables_and_fields:     tableDetails,
-		Previous_conversation: req.Input.PreviousConversation,
-	}
-
-	// Use non-streaming BAML client
-	callOpts := bamlconfig.SetupAIClient(config.ExternalModel)
-	responses, err := baml_client.GenerateSQLQuery(ctx.Background(), dbContext, req.Input.Query, callOpts...)
+	chatMessages, err := bamlconfig.ExecuteChatQuery(
+		ctx.Background(),
+		config.Credentials.Type,
+		req.Schema,
+		tableDetails,
+		req.Input.PreviousConversation,
+		req.Input.Query,
+		config,
+		plugin,
+	)
 	if err != nil {
 		http.Error(w, "AI query failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Convert responses to messages
 	var messages []*model.AIChatMessage
-	for _, bamlResp := range responses {
-		msg := convertBamlResponseToMessage(&bamlResp, plugin, config)
-		messages = append(messages, msg)
+	for _, msg := range chatMessages {
+		aiMsg := &model.AIChatMessage{
+			Type:                 msg.Type,
+			Text:                 msg.Text,
+			RequiresConfirmation: msg.RequiresConfirmation,
+		}
+		if msg.Result != nil {
+			aiMsg.Result = ConvertResultToMessage(msg.Result)
+		}
+		messages = append(messages, aiMsg)
 	}
 
-	// Return as JSON (mimicking SSE done event format for frontend compatibility)
 	w.Header().Set("Content-Type", "application/json")
 	response := map[string]any{
 		"messages": messages,
@@ -325,63 +254,6 @@ func handleNonStreamingAIChat(w http.ResponseWriter, r *http.Request, req *Strea
 	}
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-
+		log.WithError(err).Error("Failed to encode non-streaming AI chat response")
 	}
-}
-
-// convertBamlResponseToMessage converts a BAML response to an AIChatMessage
-func convertBamlResponseToMessage(bamlResp *types.ChatResponse, plugin *engine.Plugin, config *engine.PluginConfig) *model.AIChatMessage {
-	// Convert BAML type to lowercase frontend-compatible format
-	typeStr := "message" // default
-	switch bamlResp.Type {
-	case types.ChatMessageTypeSQL:
-		typeStr = "sql"
-	case types.ChatMessageTypeMESSAGE:
-		typeStr = "message"
-	case types.ChatMessageTypeERROR:
-		typeStr = "error"
-	}
-
-	message := &model.AIChatMessage{
-		Type:                 typeStr,
-		Text:                 bamlResp.Text,
-		RequiresConfirmation: false,
-	}
-
-	// For SQL responses, execute or mark for confirmation
-	if bamlResp.Type == types.ChatMessageTypeSQL {
-		if bamlResp.Operation == nil {
-			result, err := plugin.RawExecute(config, bamlResp.Text)
-			if err != nil {
-				message.Type = "error"
-				message.Text = err.Error()
-			} else {
-				message.Result = ConvertResultToMessage(result)
-				message.Type = "sql:get"
-			}
-		} else {
-			isMutation := *bamlResp.Operation == types.OperationTypeINSERT ||
-				*bamlResp.Operation == types.OperationTypeUPDATE ||
-				*bamlResp.Operation == types.OperationTypeDELETE ||
-				*bamlResp.Operation == types.OperationTypeCREATE ||
-				*bamlResp.Operation == types.OperationTypeALTER ||
-				*bamlResp.Operation == types.OperationTypeDROP
-
-			if isMutation {
-				message.Type = convertOperationType(*bamlResp.Operation)
-				message.RequiresConfirmation = true
-			} else {
-				result, err := plugin.RawExecute(config, bamlResp.Text)
-				if err != nil {
-					message.Type = "error"
-					message.Text = err.Error()
-				} else {
-					message.Result = ConvertResultToMessage(result)
-					message.Type = convertOperationType(*bamlResp.Operation)
-				}
-			}
-		}
-	}
-
-	return message
 }

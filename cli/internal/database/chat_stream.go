@@ -171,77 +171,23 @@ func buildTableDetails(plugin *engine.Plugin, config *engine.PluginConfig, schem
 
 // convertFinalResponses converts BAML final responses to ChatMessages,
 // executing SELECT queries and marking mutations for confirmation.
+// convertFinalResponses converts BAML final responses to ChatMessages,
+// executing SELECT queries and marking mutations for confirmation.
+// Uses bamlconfig.ProcessBAMLResponse for the shared mutation-check + execute logic,
+// then strips trailing semicolons (some DB drivers reject them in CLI context).
 func convertFinalResponses(responses []types.ChatResponse, plugin *engine.Plugin, config *engine.PluginConfig) []*ChatMessage {
 	var messages []*ChatMessage
 	for _, resp := range responses {
-		msg := &ChatMessage{
-			Type: convertBAMLType(resp.Type),
-			Text: resp.Text,
-		}
+		// Strip trailing semicolons before processing — some DB drivers reject them
+		resp.Text = strings.TrimRight(strings.TrimSpace(resp.Text), ";")
 
-		if resp.Type == types.ChatMessageTypeSQL && resp.Operation != nil {
-			// Strip trailing semicolons — some DB drivers reject them
-			queryText := strings.TrimRight(strings.TrimSpace(resp.Text), ";")
-
-			isMutation := *resp.Operation == types.OperationTypeINSERT ||
-				*resp.Operation == types.OperationTypeUPDATE ||
-				*resp.Operation == types.OperationTypeDELETE ||
-				*resp.Operation == types.OperationTypeCREATE ||
-				*resp.Operation == types.OperationTypeALTER ||
-				*resp.Operation == types.OperationTypeDROP
-
-			if isMutation {
-				msg.Type = convertOperationType(*resp.Operation)
-				msg.RequiresConfirmation = true
-			} else {
-				result, err := plugin.RawExecute(config, queryText)
-				if err != nil {
-					msg.Type = "error"
-					msg.Text = err.Error()
-				} else {
-					msg.Type = convertOperationType(*resp.Operation)
-					msg.Result = result
-				}
-			}
-		}
-
-		messages = append(messages, msg)
+		chatMsg := bamlconfig.ProcessBAMLResponse(&resp, config, plugin)
+		messages = append(messages, &ChatMessage{
+			Type:                 chatMsg.Type,
+			Text:                 chatMsg.Text,
+			RequiresConfirmation: chatMsg.RequiresConfirmation,
+			Result:               chatMsg.Result,
+		})
 	}
 	return messages
-}
-
-func convertBAMLType(t types.ChatMessageType) string {
-	switch t {
-	case types.ChatMessageTypeSQL:
-		return "sql"
-	case types.ChatMessageTypeMESSAGE:
-		return "message"
-	case types.ChatMessageTypeERROR:
-		return "error"
-	default:
-		return "message"
-	}
-}
-
-func convertOperationType(op types.OperationType) string {
-	switch op {
-	case types.OperationTypeGET:
-		return "sql:get"
-	case types.OperationTypeINSERT:
-		return "sql:insert"
-	case types.OperationTypeUPDATE:
-		return "sql:update"
-	case types.OperationTypeDELETE:
-		return "sql:delete"
-	case types.OperationTypeCREATE:
-		return "sql:create"
-	case types.OperationTypeALTER:
-		return "sql:alter"
-	case types.OperationTypeDROP:
-		return "sql:drop"
-	case types.OperationTypeTEXT:
-		return "text"
-	default:
-		return "sql"
-	}
 }
