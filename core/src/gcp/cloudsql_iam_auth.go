@@ -19,23 +19,37 @@ package gcp
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/clidey/whodb/core/src/log"
 	"golang.org/x/oauth2/google"
-	"google.golang.org/api/option"
 )
 
 // GenerateCloudSQLIAMAuthToken generates an OAuth2 access token for Cloud SQL IAM
 // database authentication. The access token is used directly as the database password.
 //
+// If serviceAccountKeyPath is non-empty, credentials are loaded from that file.
+// Otherwise, Application Default Credentials are used.
+//
 // See: https://cloud.google.com/sql/docs/mysql/iam-authentication
-func GenerateCloudSQLIAMAuthToken(ctx context.Context, opts []option.ClientOption, username string) (string, error) {
+func GenerateCloudSQLIAMAuthToken(ctx context.Context, serviceAccountKeyPath, username string) (string, error) {
 	log.Infof("Cloud SQL IAM Auth: generating token for user=%s", username)
 
-	// Cloud SQL IAM auth requires the sqlservice.login scope
 	scopes := []string{"https://www.googleapis.com/auth/sqlservice.login"}
 
-	creds, err := google.FindDefaultCredentials(ctx, scopes...)
+	var creds *google.Credentials
+	var err error
+
+	if serviceAccountKeyPath != "" {
+		data, readErr := os.ReadFile(serviceAccountKeyPath)
+		if readErr != nil {
+			return "", fmt.Errorf("failed to read service account key file: %w", readErr)
+		}
+		creds, err = google.CredentialsFromJSONWithParams(ctx, data, google.CredentialsParams{Scopes: scopes})
+	} else {
+		creds, err = google.FindDefaultCredentials(ctx, scopes...)
+	}
+
 	if err != nil {
 		log.Errorf("Cloud SQL IAM Auth: failed to find credentials: %v", err)
 		return "", fmt.Errorf("failed to find GCP credentials for Cloud SQL IAM auth: %w", err)

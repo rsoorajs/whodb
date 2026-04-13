@@ -1216,7 +1216,7 @@ func (r *mutationResolver) GenerateCloudSQLIAMAuthToken(ctx context.Context, pro
 	tokenCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	token, err := gcp.GenerateCloudSQLIAMAuthToken(tokenCtx, gcpProvider.GetClientOpts(), username)
+	token, err := gcp.GenerateCloudSQLIAMAuthToken(tokenCtx, gcpProvider.GetConfig().ServiceAccountKeyPath, username)
 	if err != nil {
 		return "", err
 	}

@@ -11,7 +11,7 @@ en_US:
 
   sourceGcloud: gcloud CLI
   sourceEnvironment: Environment vars
-  sourceMetadata: Metadata server
+  sourceServiceAccount: Service account key
 
   displayName: Display Name
   namePlaceholder: e.g., Production GCP

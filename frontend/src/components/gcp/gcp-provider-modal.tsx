@@ -269,10 +269,10 @@ export const GcpProviderModal: FC<GcpProviderModalProps> = ({
                             <div className="flex flex-wrap gap-2">
                                 {localProjects.map((project) => {
                                     const sourceKey = {
-                                        gcloud: 'sourceGcloud',
-                                        environment: 'sourceEnvironment',
-                                        metadata: 'sourceMetadata',
-                                    }[project.Source];
+                                        'gcloud-config': 'sourceGcloud',
+                                        'environment': 'sourceEnvironment',
+                                        'service-account': 'sourceServiceAccount',
+                                    }[project.Source] as string | undefined;
                                     const sourceDisplay = sourceKey ? t(sourceKey) : project.Source;
 
                                     return (
