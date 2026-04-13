@@ -161,7 +161,8 @@ export enum DatabaseType {
   MySql = 'MySQL',
   Postgres = 'Postgres',
   Redis = 'Redis',
-  Sqlite3 = 'Sqlite3'
+  Sqlite3 = 'Sqlite3',
+  TiDb = 'TiDB'
 }
 
 export type DiscoveredConnection = {
