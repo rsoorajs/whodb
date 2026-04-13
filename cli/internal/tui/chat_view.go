@@ -34,10 +34,11 @@ import (
 )
 
 type chatMessage struct {
-	Role    string
-	Content string
-	Type    string
-	Result  *engine.GetRowsResult
+	Role                 string
+	Content              string
+	Type                 string
+	Result               *engine.GetRowsResult
+	RequiresConfirmation bool
 }
 
 type ChatView struct {
@@ -63,6 +64,8 @@ type ChatView struct {
 	chatCancel   context.CancelFunc
 	modelsCancel context.CancelFunc
 	retryPrompt  RetryPrompt
+	// Streaming support
+	streamChan <-chan database.StreamChunk
 }
 
 const (
@@ -209,10 +212,11 @@ func (v *ChatView) Update(msg tea.Msg) (*ChatView, tea.Cmd) {
 
 		for _, m := range msg.messages {
 			v.messages = append(v.messages, chatMessage{
-				Role:    "system",
-				Content: m.Text,
-				Type:    m.Type,
-				Result:  m.Result,
+				Role:                 "system",
+				Content:              m.Text,
+				Type:                 m.Type,
+				Result:               m.Result,
+				RequiresConfirmation: m.RequiresConfirmation,
 			})
 		}
 		v.err = nil
@@ -268,6 +272,49 @@ func (v *ChatView) Update(msg tea.Msg) (*ChatView, tea.Cmd) {
 		}
 		v.err = nil
 		return v, nil
+
+	case chatStreamChunkMsg:
+		// Update the in-progress streaming message
+		if len(v.messages) > 0 && v.messages[len(v.messages)-1].Role == "system" {
+			v.messages[len(v.messages)-1].Content = msg.text
+		}
+		// Read next chunk
+		return v, v.readNextStreamChunk()
+
+	case chatStreamDoneMsg:
+		v.sending = false
+		v.chatCancel = nil
+		v.streamChan = nil
+		maxVisibleMessages := v.maxVisibleMessages()
+		if msg.err != nil {
+			if !errors.Is(msg.err, context.Canceled) {
+				v.messages = append(v.messages, chatMessage{
+					Role: "system", Content: msg.err.Error(), Type: "error",
+				})
+			}
+			return v, nil
+		}
+		// Replace the streaming placeholder with final messages
+		if len(v.messages) > 0 && v.messages[len(v.messages)-1].Role == "system" {
+			v.messages = v.messages[:len(v.messages)-1]
+		}
+		for _, m := range msg.messages {
+			v.messages = append(v.messages, chatMessage{
+				Role: "system", Content: m.Text, Type: m.Type,
+				Result: m.Result, RequiresConfirmation: m.RequiresConfirmation,
+			})
+		}
+		if v.selectedProvider < len(v.providers) {
+			v.parent.config.SetLastAIProvider(v.providers[v.selectedProvider].Type)
+		}
+		if v.selectedModel < len(v.models) {
+			v.parent.config.SetLastAIModel(v.models[v.selectedModel])
+		}
+		v.parent.config.Save()
+		if len(v.messages) > maxVisibleMessages {
+			v.scrollOffset = len(v.messages) - maxVisibleMessages
+		}
+		return v, v.parent.SetStatus("Response received")
 
 	case tea.WindowSizeMsg:
 		v.width = msg.Width
@@ -434,13 +481,27 @@ func (v *ChatView) Update(msg tea.Msg) (*ChatView, tea.Cmd) {
 			return v, nil
 
 		case key.Matches(msg, Keys.Chat.Send):
-			// View table if a message with result is selected
+			// Handle selected message actions
 			if v.selectedMessage >= 0 && v.selectedMessage < len(v.messages) {
-				chatMsg := v.messages[v.selectedMessage]
+				chatMsg := &v.messages[v.selectedMessage]
+				// View results for completed SQL
 				if chatMsg.Result != nil && strings.HasPrefix(chatMsg.Type, "sql") {
 					v.parent.resultsView.SetResults(chatMsg.Result, "")
 					v.parent.PushView(ViewResults)
 					return v, nil
+				}
+				// Execute mutation that requires confirmation
+				if chatMsg.RequiresConfirmation {
+					result, err := v.parent.dbManager.ExecuteQuery(chatMsg.Content)
+					if err != nil {
+						chatMsg.Type = "error"
+						chatMsg.Content = err.Error()
+						chatMsg.RequiresConfirmation = false
+					} else {
+						chatMsg.Result = result
+						chatMsg.RequiresConfirmation = false
+					}
+					return v, v.parent.SetStatus("Query executed")
 				}
 			}
 			if v.focusField == focusFieldProvider {
@@ -770,56 +831,80 @@ func (v *ChatView) sendChatWithTimeout(query string, timeout time.Duration) tea.
 	msgs := make([]chatMessage, len(v.messages))
 	copy(msgs, v.messages)
 
+	// Build conversation history
+	previousConversation := ""
+	if len(msgs) > 1 {
+		var convMessages []map[string]string
+		for _, m := range msgs {
+			if m.Type != "error" {
+				convMessages = append(convMessages, map[string]string{
+					"role":    m.Role,
+					"content": m.Content,
+				})
+			}
+		}
+		convBytes, _ := json.Marshal(convMessages)
+		previousConversation = string(convBytes)
+	}
+
+	currentSchema := schema
+	if currentSchema == "" {
+		schemas, _ := v.parent.dbManager.GetSchemas()
+		currentSchema = selectBestSchema(schemas)
+	}
+
 	// Set sending state and create context
 	v.sending = true
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	v.chatCancel = cancel
 
+	// Try streaming first
+	streamCh, err := v.parent.dbManager.SendAIChatStream(
+		ctx, provider.ProviderId, modelType, "", currentSchema,
+		model, previousConversation, query,
+	)
+	if err == nil {
+		// Streaming available — add placeholder message and start reading
+		v.streamChan = streamCh
+		v.messages = append(v.messages, chatMessage{
+			Role: "system", Content: "...", Type: "message",
+		})
+		return v.readNextStreamChunk()
+	}
+
+	// Streaming not available — fall back to blocking call
 	return func() tea.Msg {
 		defer cancel()
 
-		// Use the schema selected in browser view if available
-		currentSchema := schema
-		if currentSchema == "" {
-			schemas, err := v.parent.dbManager.GetSchemas()
-			if err != nil {
-				// Schema-less databases (SQLite, Redis, etc.) don't support schemas.
-				schemas = []string{}
-			}
-			currentSchema = selectBestSchema(schemas)
-		}
-
-		previousConversation := ""
-		if len(msgs) > 1 {
-			var convMessages []map[string]string
-			for _, msg := range msgs {
-				if msg.Type != "error" {
-					convMessages = append(convMessages, map[string]string{
-						"role":    msg.Role,
-						"content": msg.Content,
-					})
-				}
-			}
-			convBytes, _ := json.Marshal(convMessages)
-			previousConversation = string(convBytes)
-		}
-
 		result, err := v.parent.dbManager.SendAIChatWithContext(
-			ctx,
-			provider.ProviderId,
-			modelType,
-			"",
-			currentSchema,
-			model,
-			previousConversation,
-			query,
+			ctx, provider.ProviderId, modelType, "",
+			currentSchema, model, previousConversation, query,
 		)
-
 		if err != nil {
 			return chatResponseMsg{messages: nil, query: query, err: err}
 		}
-
 		return chatResponseMsg{messages: result, query: query, err: nil}
+	}
+}
+
+// readNextStreamChunk returns a command that reads the next chunk from the stream channel.
+func (v *ChatView) readNextStreamChunk() tea.Cmd {
+	ch := v.streamChan
+	if ch == nil {
+		return nil
+	}
+	return func() tea.Msg {
+		chunk, ok := <-ch
+		if !ok {
+			return chatStreamDoneMsg{err: fmt.Errorf("stream closed unexpectedly")}
+		}
+		if chunk.Err != nil {
+			return chatStreamDoneMsg{err: chunk.Err}
+		}
+		if chunk.IsFinal {
+			return chatStreamDoneMsg{messages: chunk.Final}
+		}
+		return chatStreamChunkMsg{text: chunk.Text}
 	}
 }
 

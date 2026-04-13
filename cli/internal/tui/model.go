@@ -416,7 +416,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateEditorView(msg)
 	case tablesLoadedMsg, escConfirmTimeoutMsg:
 		return m.updateBrowserView(msg)
-	case chatResponseMsg, modelsLoadedMsg:
+	case chatResponseMsg, modelsLoadedMsg, chatStreamChunkMsg, chatStreamDoneMsg:
 		return m.updateChatView(msg)
 	case HistoryQueryMsg:
 		return m.updateHistoryView(msg)
