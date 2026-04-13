@@ -19,6 +19,7 @@ package azure
 import (
 	"context"
 	"strconv"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/redis/armredis"
 
@@ -30,6 +31,7 @@ import (
 
 // discoverRedis discovers Azure Cache for Redis instances.
 func (p *Provider) discoverRedis(ctx context.Context) ([]providers.DiscoveredConnection, error) {
+	start := time.Now()
 	var connections []providers.DiscoveredConnection
 
 	log.Debugf("Azure Redis: starting discovery for provider %s", p.config.ID)
@@ -46,6 +48,11 @@ func (p *Provider) discoverRedis(ctx context.Context) ([]providers.DiscoveredCon
 	}
 
 	for pager.More() {
+		if ctx.Err() != nil {
+			log.Warnf("Azure Redis: context cancelled, returning %d results so far", len(connections))
+			return connections, ctx.Err()
+		}
+
 		page, err := pager.NextPage(ctx)
 		if err != nil {
 			log.Errorf("Azure Redis: list failed: %v", err)
@@ -62,7 +69,7 @@ func (p *Provider) discoverRedis(ctx context.Context) ([]providers.DiscoveredCon
 		}
 	}
 
-	log.Infof("Azure Redis: discovered %d caches", len(connections))
+	log.Infof("Azure Redis: discovered %d caches in %v", len(connections), time.Since(start))
 	return connections, nil
 }
 

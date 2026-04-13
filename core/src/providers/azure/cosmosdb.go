@@ -19,6 +19,7 @@ package azure
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/cosmos/armcosmos/v3"
 
@@ -31,6 +32,7 @@ import (
 // discoverCosmosDB discovers Azure Cosmos DB accounts with MongoDB API.
 // Only accounts with Kind == "MongoDB" or the EnableMongo capability are included.
 func (p *Provider) discoverCosmosDB(ctx context.Context) ([]providers.DiscoveredConnection, error) {
+	start := time.Now()
 	var connections []providers.DiscoveredConnection
 
 	log.Debugf("Azure CosmosDB: starting discovery for provider %s", p.config.ID)
@@ -47,6 +49,11 @@ func (p *Provider) discoverCosmosDB(ctx context.Context) ([]providers.Discovered
 	}
 
 	for pager.More() {
+		if ctx.Err() != nil {
+			log.Warnf("Azure CosmosDB: context cancelled, returning %d results so far", len(connections))
+			return connections, ctx.Err()
+		}
+
 		page, err := pager.NextPage(ctx)
 		if err != nil {
 			log.Errorf("Azure CosmosDB: list failed: %v", err)
@@ -67,7 +74,7 @@ func (p *Provider) discoverCosmosDB(ctx context.Context) ([]providers.Discovered
 		}
 	}
 
-	log.Infof("Azure CosmosDB: discovered %d MongoDB accounts", len(connections))
+	log.Infof("Azure CosmosDB: discovered %d MongoDB accounts in %v", len(connections), time.Since(start))
 	return connections, nil
 }
 

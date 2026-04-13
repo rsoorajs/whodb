@@ -19,6 +19,7 @@ package azure
 import (
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/clidey/whodb/core/src/log"
@@ -39,8 +40,7 @@ func CheckConnectivity(connections []providers.DiscoveredConnection) {
 	sem := make(chan struct{}, maxConcurrentChecks)
 	var wg sync.WaitGroup
 
-	reachable := 0
-	unreachable := 0
+	var reachable, unreachable atomic.Int32
 
 	for i := range connections {
 		conn := &connections[i]
@@ -61,16 +61,16 @@ func CheckConnectivity(connections []providers.DiscoveredConnection) {
 			if err != nil {
 				log.Debugf("Azure Connectivity: %s unreachable: %v", addr, err)
 				conn.Metadata["connectivity"] = connectivityUnreachable
-				unreachable++
+				unreachable.Add(1)
 				return
 			}
 			c.Close()
 			log.Debugf("Azure Connectivity: %s reachable", addr)
 			conn.Metadata["connectivity"] = connectivityReachable
-			reachable++
+			reachable.Add(1)
 		}()
 	}
 
 	wg.Wait()
-	log.Infof("Azure Connectivity: done — %d reachable, %d unreachable", reachable, unreachable)
+	log.Infof("Azure Connectivity: done — %d reachable, %d unreachable", reachable.Load(), unreachable.Load())
 }

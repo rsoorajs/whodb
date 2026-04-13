@@ -20,10 +20,11 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	redispb "cloud.google.com/go/redis/apiv1/redispb"
-	gcpinfra "github.com/clidey/whodb/core/src/gcp"
 	"github.com/clidey/whodb/core/src/engine"
+	gcpinfra "github.com/clidey/whodb/core/src/gcp"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/providers"
 	"google.golang.org/api/iterator"
@@ -31,6 +32,7 @@ import (
 
 // discoverMemorystore discovers Memorystore for Redis instances in the configured project/region.
 func (p *Provider) discoverMemorystore(ctx context.Context) ([]providers.DiscoveredConnection, error) {
+	start := time.Now()
 	var connections []providers.DiscoveredConnection
 
 	parent := fmt.Sprintf("projects/%s/locations/%s", p.config.ProjectID, p.config.Region)
@@ -41,6 +43,11 @@ func (p *Provider) discoverMemorystore(ctx context.Context) ([]providers.Discove
 	})
 
 	for {
+		if ctx.Err() != nil {
+			log.Warnf("Memorystore: context cancelled, returning %d results so far", len(connections))
+			return connections, ctx.Err()
+		}
+
 		instance, err := iter.Next()
 		if err == iterator.Done {
 			break
@@ -57,7 +64,7 @@ func (p *Provider) discoverMemorystore(ctx context.Context) ([]providers.Discove
 		}
 	}
 
-	log.Debugf("Memorystore: completed, found %d instances", len(connections))
+	log.Infof("Memorystore: found %d instances in %v", len(connections), time.Since(start))
 	return connections, nil
 }
 

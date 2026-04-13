@@ -20,9 +20,10 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"time"
 
-	gcpinfra "github.com/clidey/whodb/core/src/gcp"
 	"github.com/clidey/whodb/core/src/engine"
+	gcpinfra "github.com/clidey/whodb/core/src/gcp"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/providers"
 	sqladmin "google.golang.org/api/sqladmin/v1beta4"
@@ -30,12 +31,18 @@ import (
 
 // discoverCloudSQL discovers Cloud SQL instances in the configured project.
 func (p *Provider) discoverCloudSQL(ctx context.Context) ([]providers.DiscoveredConnection, error) {
+	start := time.Now()
 	var connections []providers.DiscoveredConnection
 	var nextToken string
 
 	log.Debugf("Cloud SQL: starting discovery for provider %s (project=%s)", p.config.ID, p.config.ProjectID)
 
 	for page := 0; page < maxPaginationPages; page++ {
+		if ctx.Err() != nil {
+			log.Warnf("Cloud SQL: context cancelled, returning %d results so far", len(connections))
+			return connections, ctx.Err()
+		}
+
 		call := p.sqladminService.Instances.List(p.config.ProjectID).Context(ctx)
 		if nextToken != "" {
 			call = call.PageToken(nextToken)
@@ -69,9 +76,16 @@ func (p *Provider) discoverCloudSQL(ctx context.Context) ([]providers.Discovered
 			break
 		}
 		nextToken = output.NextPageToken
+
+		if page > 0 && page%10 == 0 {
+			log.Debugf("Cloud SQL: processed %d pages, %d instances so far", page, len(connections))
+		}
+		if page == maxPaginationPages-1 {
+			log.Warnf("Cloud SQL: hit pagination limit of %d pages, results may be incomplete", maxPaginationPages)
+		}
 	}
 
-	log.Debugf("Cloud SQL: completed, found %d connections", len(connections))
+	log.Infof("Cloud SQL: found %d connections in %v", len(connections), time.Since(start))
 	return connections, nil
 }
 

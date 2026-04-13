@@ -20,10 +20,11 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	alloydbpb "cloud.google.com/go/alloydb/apiv1/alloydbpb"
-	gcpinfra "github.com/clidey/whodb/core/src/gcp"
 	"github.com/clidey/whodb/core/src/engine"
+	gcpinfra "github.com/clidey/whodb/core/src/gcp"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/providers"
 	"google.golang.org/api/iterator"
@@ -32,6 +33,7 @@ import (
 // discoverAlloyDB discovers AlloyDB clusters and their instances in the configured project/region.
 // AlloyDB is PostgreSQL-compatible, so all instances map to the Postgres database type.
 func (p *Provider) discoverAlloyDB(ctx context.Context) ([]providers.DiscoveredConnection, error) {
+	start := time.Now()
 	var connections []providers.DiscoveredConnection
 
 	parent := fmt.Sprintf("projects/%s/locations/%s", p.config.ProjectID, p.config.Region)
@@ -43,6 +45,14 @@ func (p *Provider) discoverAlloyDB(ctx context.Context) ([]providers.DiscoveredC
 
 	clusterCount := 0
 	for {
+		if ctx.Err() != nil {
+			log.Warnf("AlloyDB: context cancelled, returning %d results so far", len(connections))
+			return connections, ctx.Err()
+		}
+		if clusterCount >= maxPaginationPages {
+			log.Warnf("AlloyDB: hit cluster pagination limit of %d", maxPaginationPages)
+			break
+		}
 		cluster, err := clusterIter.Next()
 		if err == iterator.Done {
 			break
@@ -61,14 +71,22 @@ func (p *Provider) discoverAlloyDB(ctx context.Context) ([]providers.DiscoveredC
 			Parent: cluster.Name,
 		})
 
-		for {
+		for instanceCount := 0; ; instanceCount++ {
+			if ctx.Err() != nil {
+				log.Warnf("AlloyDB: context cancelled during instance iteration, returning %d results so far", len(connections))
+				return connections, ctx.Err()
+			}
+			if instanceCount >= maxPaginationPages {
+				log.Warnf("AlloyDB: hit instance pagination limit of %d for cluster %s", maxPaginationPages, clusterName)
+				break
+			}
 			instance, err := instanceIter.Next()
 			if err == iterator.Done {
 				break
 			}
 			if err != nil {
 				log.Errorf("AlloyDB: ListInstances failed for cluster %s: %v", clusterName, err)
-				break
+				return connections, fmt.Errorf("AlloyDB ListInstances for cluster %s: %w", clusterName, err)
 			}
 
 			conn := p.alloyDBInstanceToConnection(instance, clusterName)
@@ -79,7 +97,7 @@ func (p *Provider) discoverAlloyDB(ctx context.Context) ([]providers.DiscoveredC
 		}
 	}
 
-	log.Debugf("AlloyDB: completed, found %d instances across %d clusters", len(connections), clusterCount)
+	log.Infof("AlloyDB: found %d instances across %d clusters in %v", len(connections), clusterCount, time.Since(start))
 	return connections, nil
 }
 

@@ -59,6 +59,9 @@ import (
 	"github.com/clidey/whodb/core/src/providers"
 )
 
+// discoveryTimeout is the per-service timeout for individual discovery operations.
+const discoveryTimeout = 60 * time.Second
+
 // DiscoveryExtension discovers additional database connections.
 type DiscoveryExtension func(ctx context.Context, p *Provider) ([]providers.DiscoveredConnection, error)
 
@@ -116,12 +119,26 @@ type Config struct {
 
 	// DiscoverCosmosDB enables Azure Cosmos DB for MongoDB discovery.
 	DiscoverCosmosDB bool
+
+	// DiscoveryTimeout overrides the default per-service discovery timeout.
+	DiscoveryTimeout time.Duration
 }
 
 // String returns a safe string representation that excludes sensitive credentials.
 func (c *Config) String() string {
 	return fmt.Sprintf("Config{ID:%s, Name:%s, SubscriptionID:%s, AuthMethod:%s, ResourceGroup:%s, DiscoverPostgreSQL:%t, DiscoverMySQL:%t, DiscoverRedis:%t, DiscoverCosmosDB:%t}",
 		c.ID, c.Name, c.SubscriptionID, c.AuthMethod, c.ResourceGroup, c.DiscoverPostgreSQL, c.DiscoverMySQL, c.DiscoverRedis, c.DiscoverCosmosDB)
+}
+
+// Validate checks that the provider configuration has required fields.
+func (c *Config) Validate() error {
+	if c.SubscriptionID == "" {
+		return errors.New("azure: subscription ID is required")
+	}
+	if !c.DiscoverPostgreSQL && !c.DiscoverMySQL && !c.DiscoverRedis && !c.DiscoverCosmosDB {
+		log.Warnf("Azure provider %s: no discovery flags enabled", c.ID)
+	}
+	return nil
 }
 
 // DefaultConfig returns a Config with sensible defaults.
@@ -160,8 +177,8 @@ func New(config *Config) (*Provider, error) {
 	if config.ID == "" {
 		return nil, errors.New("provider ID is required")
 	}
-	if config.SubscriptionID == "" {
-		return nil, errors.New("subscription ID is required")
+	if err := config.Validate(); err != nil {
+		return nil, err
 	}
 
 	return &Provider{
@@ -299,12 +316,19 @@ func (p *Provider) DiscoverConnections(ctx context.Context) ([]providers.Discove
 		return nil, nil
 	}
 
+	timeout := discoveryTimeout
+	if p.config.DiscoveryTimeout > 0 {
+		timeout = p.config.DiscoveryTimeout
+	}
+
 	results := make(chan discoveryResult, taskCount)
 	g, gctx := errgroup.WithContext(ctx)
 
 	if p.config.DiscoverPostgreSQL && p.postgresClient != nil {
 		g.Go(func() error {
-			conns, err := p.discoverPostgreSQL(gctx)
+			svcCtx, cancel := context.WithTimeout(gctx, timeout)
+			defer cancel()
+			conns, err := p.discoverPostgreSQL(svcCtx)
 			results <- discoveryResult{conns, err, "PostgreSQL"}
 			return nil
 		})
@@ -312,7 +336,9 @@ func (p *Provider) DiscoverConnections(ctx context.Context) ([]providers.Discove
 
 	if p.config.DiscoverMySQL && p.mysqlClient != nil {
 		g.Go(func() error {
-			conns, err := p.discoverMySQL(gctx)
+			svcCtx, cancel := context.WithTimeout(gctx, timeout)
+			defer cancel()
+			conns, err := p.discoverMySQL(svcCtx)
 			results <- discoveryResult{conns, err, "MySQL"}
 			return nil
 		})
@@ -320,7 +346,9 @@ func (p *Provider) DiscoverConnections(ctx context.Context) ([]providers.Discove
 
 	if p.config.DiscoverRedis && p.redisClient != nil {
 		g.Go(func() error {
-			conns, err := p.discoverRedis(gctx)
+			svcCtx, cancel := context.WithTimeout(gctx, timeout)
+			defer cancel()
+			conns, err := p.discoverRedis(svcCtx)
 			results <- discoveryResult{conns, err, "Redis"}
 			return nil
 		})
@@ -328,7 +356,9 @@ func (p *Provider) DiscoverConnections(ctx context.Context) ([]providers.Discove
 
 	if p.config.DiscoverCosmosDB && p.cosmosClient != nil {
 		g.Go(func() error {
-			conns, err := p.discoverCosmosDB(gctx)
+			svcCtx, cancel := context.WithTimeout(gctx, timeout)
+			defer cancel()
+			conns, err := p.discoverCosmosDB(svcCtx)
 			results <- discoveryResult{conns, err, "CosmosDB"}
 			return nil
 		})
@@ -337,7 +367,9 @@ func (p *Provider) DiscoverConnections(ctx context.Context) ([]providers.Discove
 	for _, ext := range discoveryExtensions {
 		ext := ext
 		g.Go(func() error {
-			conns, err := ext(gctx, p)
+			svcCtx, cancel := context.WithTimeout(gctx, timeout)
+			defer cancel()
+			conns, err := ext(svcCtx, p)
 			results <- discoveryResult{conns, err, "extension"}
 			return nil
 		})

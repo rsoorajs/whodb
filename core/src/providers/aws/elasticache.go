@@ -20,6 +20,7 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/elasticache"
@@ -64,15 +65,21 @@ func (p *Provider) discoverElastiCache(ctx context.Context) ([]providers.Discove
 }
 
 func (p *Provider) discoverElastiCacheServerless(ctx context.Context) ([]providers.DiscoveredConnection, error) {
+	start := time.Now()
 	var connections []providers.DiscoveredConnection
 	var nextToken *string
 
 	log.Debugf("ElastiCache: calling DescribeServerlessCaches for provider %s", p.config.ID)
 
 	for page := 0; page < maxPaginationPages; page++ {
+		if ctx.Err() != nil {
+			log.Warnf("ElastiCache Serverless: context cancelled, returning %d results so far", len(connections))
+			return connections, ctx.Err()
+		}
+
 		input := &elasticache.DescribeServerlessCachesInput{
 			NextToken:  nextToken,
-			MaxResults: aws.Int32(50),
+			MaxResults: aws.Int32(100),
 		}
 
 		output, err := p.elasticacheClient.DescribeServerlessCaches(ctx, input)
@@ -107,21 +114,35 @@ func (p *Provider) discoverElastiCacheServerless(ctx context.Context) ([]provide
 			break
 		}
 		nextToken = output.NextToken
+
+		if page > 0 && page%10 == 0 {
+			log.Debugf("ElastiCache Serverless: processed %d pages, %d instances so far", page, len(connections))
+		}
+		if page == maxPaginationPages-1 {
+			log.Warnf("ElastiCache Serverless: hit pagination limit of %d pages, results may be incomplete", maxPaginationPages)
+		}
 	}
 
+	log.Infof("ElastiCache Serverless: found %d caches in %v", len(connections), time.Since(start))
 	return connections, nil
 }
 
 func (p *Provider) discoverElastiCacheReplicationGroups(ctx context.Context) ([]providers.DiscoveredConnection, error) {
+	start := time.Now()
 	var connections []providers.DiscoveredConnection
 	var nextToken *string
 
 	log.Debugf("ElastiCache: calling DescribeReplicationGroups for provider %s", p.config.ID)
 
 	for page := 0; page < maxPaginationPages; page++ {
+		if ctx.Err() != nil {
+			log.Warnf("ElastiCache ReplicationGroups: context cancelled, returning %d results so far", len(connections))
+			return connections, ctx.Err()
+		}
+
 		input := &elasticache.DescribeReplicationGroupsInput{
 			Marker:     nextToken,
-			MaxRecords: aws.Int32(50),
+			MaxRecords: aws.Int32(100),
 		}
 
 		output, err := p.elasticacheClient.DescribeReplicationGroups(ctx, input)
@@ -150,21 +171,35 @@ func (p *Provider) discoverElastiCacheReplicationGroups(ctx context.Context) ([]
 			break
 		}
 		nextToken = output.Marker
+
+		if page > 0 && page%10 == 0 {
+			log.Debugf("ElastiCache ReplicationGroups: processed %d pages, %d instances so far", page, len(connections))
+		}
+		if page == maxPaginationPages-1 {
+			log.Warnf("ElastiCache ReplicationGroups: hit pagination limit of %d pages, results may be incomplete", maxPaginationPages)
+		}
 	}
 
+	log.Infof("ElastiCache ReplicationGroups: found %d groups in %v", len(connections), time.Since(start))
 	return connections, nil
 }
 
 func (p *Provider) discoverElastiCacheClusters(ctx context.Context) ([]providers.DiscoveredConnection, error) {
+	start := time.Now()
 	var connections []providers.DiscoveredConnection
 	var nextToken *string
 
 	log.Debugf("ElastiCache: calling DescribeCacheClusters for provider %s", p.config.ID)
 
 	for page := 0; page < maxPaginationPages; page++ {
+		if ctx.Err() != nil {
+			log.Warnf("ElastiCache Clusters: context cancelled, returning %d results so far", len(connections))
+			return connections, ctx.Err()
+		}
+
 		input := &elasticache.DescribeCacheClustersInput{
 			Marker:            nextToken,
-			MaxRecords:        aws.Int32(50),
+			MaxRecords:        aws.Int32(100),
 			ShowCacheNodeInfo: aws.Bool(true),
 		}
 
@@ -202,8 +237,16 @@ func (p *Provider) discoverElastiCacheClusters(ctx context.Context) ([]providers
 			break
 		}
 		nextToken = output.Marker
+
+		if page > 0 && page%10 == 0 {
+			log.Debugf("ElastiCache Clusters: processed %d pages, %d instances so far", page, len(connections))
+		}
+		if page == maxPaginationPages-1 {
+			log.Warnf("ElastiCache Clusters: hit pagination limit of %d pages, results may be incomplete", maxPaginationPages)
+		}
 	}
 
+	log.Infof("ElastiCache Clusters: found %d clusters in %v", len(connections), time.Since(start))
 	return connections, nil
 }
 

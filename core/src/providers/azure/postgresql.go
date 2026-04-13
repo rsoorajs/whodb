@@ -18,6 +18,7 @@ package azure
 
 import (
 	"context"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/postgresql/armpostgresqlflexibleservers"
 
@@ -29,6 +30,7 @@ import (
 
 // discoverPostgreSQL discovers Azure Database for PostgreSQL Flexible Servers.
 func (p *Provider) discoverPostgreSQL(ctx context.Context) ([]providers.DiscoveredConnection, error) {
+	start := time.Now()
 	var connections []providers.DiscoveredConnection
 
 	log.Debugf("Azure PostgreSQL: starting discovery for provider %s", p.config.ID)
@@ -45,6 +47,11 @@ func (p *Provider) discoverPostgreSQL(ctx context.Context) ([]providers.Discover
 	}
 
 	for pager.More() {
+		if ctx.Err() != nil {
+			log.Warnf("Azure PostgreSQL: context cancelled, returning %d results so far", len(connections))
+			return connections, ctx.Err()
+		}
+
 		page, err := pager.NextPage(ctx)
 		if err != nil {
 			log.Errorf("Azure PostgreSQL: list failed: %v", err)
@@ -61,7 +68,7 @@ func (p *Provider) discoverPostgreSQL(ctx context.Context) ([]providers.Discover
 		}
 	}
 
-	log.Infof("Azure PostgreSQL: discovered %d servers", len(connections))
+	log.Infof("Azure PostgreSQL: discovered %d servers in %v", len(connections), time.Since(start))
 	return connections, nil
 }
 

@@ -62,6 +62,9 @@ import (
 // maxPaginationPages is a safety limit to prevent infinite loops if AWS pagination is broken.
 const maxPaginationPages = 1000
 
+// discoveryTimeout is the per-service timeout for individual discovery operations.
+const discoveryTimeout = 60 * time.Second
+
 // DiscoveryExtension discovers additional database connections.
 type DiscoveryExtension func(ctx context.Context, p *Provider) ([]providers.DiscoveredConnection, error)
 
@@ -104,6 +107,9 @@ type Config struct {
 
 	// DiscoverDocumentDB enables DocumentDB cluster discovery.
 	DiscoverDocumentDB bool
+
+	// DiscoveryTimeout overrides the default per-service discovery timeout.
+	DiscoveryTimeout time.Duration
 }
 
 // String returns a safe string representation that excludes sensitive credentials.
@@ -111,6 +117,17 @@ type Config struct {
 func (c *Config) String() string {
 	return fmt.Sprintf("Config{ID:%s, Name:%s, Region:%s, AuthMethod:%s, ProfileName:%s, DiscoverRDS:%t, DiscoverElastiCache:%t, DiscoverDocumentDB:%t}",
 		c.ID, c.Name, c.Region, c.AuthMethod, c.ProfileName, c.DiscoverRDS, c.DiscoverElastiCache, c.DiscoverDocumentDB)
+}
+
+// Validate checks that the provider configuration has required fields.
+func (c *Config) Validate() error {
+	if c.Region == "" {
+		return errors.New("aws: region is required")
+	}
+	if !c.DiscoverRDS && !c.DiscoverElastiCache && !c.DiscoverDocumentDB {
+		log.Warnf("AWS provider %s: no discovery flags enabled", c.ID)
+	}
+	return nil
 }
 
 // DefaultConfig returns a Config with sensible defaults.
@@ -148,8 +165,8 @@ func New(config *Config) (*Provider, error) {
 	if config.ID == "" {
 		return nil, errors.New("provider ID is required")
 	}
-	if config.Region == "" {
-		return nil, errors.New("region is required")
+	if err := config.Validate(); err != nil {
+		return nil, err
 	}
 
 	return &Provider{
@@ -262,22 +279,33 @@ func (p *Provider) DiscoverConnections(ctx context.Context) ([]providers.Discove
 		return nil, nil
 	}
 
+	timeout := discoveryTimeout
+	if p.config.DiscoveryTimeout > 0 {
+		timeout = p.config.DiscoveryTimeout
+	}
+
 	results := make(chan discoveryResult, taskCount)
 	g, gctx := errgroup.WithContext(ctx)
 
 	if p.config.DiscoverRDS && p.rdsClient != nil {
 		g.Go(func() error {
-			conns, err := p.discoverRDS(gctx)
+			svcCtx, cancel := context.WithTimeout(gctx, timeout)
+			defer cancel()
+			conns, err := p.discoverRDS(svcCtx)
 			results <- discoveryResult{conns, err, "RDS"}
 			return nil
 		})
 		g.Go(func() error {
-			conns, err := p.discoverRDSClusters(gctx)
+			svcCtx, cancel := context.WithTimeout(gctx, timeout)
+			defer cancel()
+			conns, err := p.discoverRDSClusters(svcCtx)
 			results <- discoveryResult{conns, err, "RDS Clusters"}
 			return nil
 		})
 		g.Go(func() error {
-			conns, err := p.discoverRDSProxies(gctx)
+			svcCtx, cancel := context.WithTimeout(gctx, timeout)
+			defer cancel()
+			conns, err := p.discoverRDSProxies(svcCtx)
 			results <- discoveryResult{conns, err, "RDS Proxies"}
 			return nil
 		})
@@ -285,21 +313,27 @@ func (p *Provider) DiscoverConnections(ctx context.Context) ([]providers.Discove
 
 	if p.config.DiscoverElastiCache && p.elasticacheClient != nil {
 		g.Go(func() error {
-			conns, err := p.discoverElastiCache(gctx)
+			svcCtx, cancel := context.WithTimeout(gctx, timeout)
+			defer cancel()
+			conns, err := p.discoverElastiCache(svcCtx)
 			results <- discoveryResult{conns, err, "ElastiCache"}
 			return nil
 		})
 	}
 
 	g.Go(func() error {
-		conns, err := p.discoverOpenSearch(gctx)
+		svcCtx, cancel := context.WithTimeout(gctx, timeout)
+		defer cancel()
+		conns, err := p.discoverOpenSearch(svcCtx)
 		results <- discoveryResult{conns, err, "OpenSearch"}
 		return nil
 	})
 
 	if p.config.DiscoverDocumentDB && p.docdbClient != nil {
 		g.Go(func() error {
-			conns, err := p.discoverDocumentDB(gctx)
+			svcCtx, cancel := context.WithTimeout(gctx, timeout)
+			defer cancel()
+			conns, err := p.discoverDocumentDB(svcCtx)
 			results <- discoveryResult{conns, err, "DocumentDB"}
 			return nil
 		})
@@ -308,7 +342,9 @@ func (p *Provider) DiscoverConnections(ctx context.Context) ([]providers.Discove
 	for _, ext := range discoveryExtensions {
 		ext := ext
 		g.Go(func() error {
-			conns, err := ext(gctx, p)
+			svcCtx, cancel := context.WithTimeout(gctx, timeout)
+			defer cancel()
+			conns, err := ext(svcCtx, p)
 			results <- discoveryResult{conns, err, "extension"}
 			return nil
 		})

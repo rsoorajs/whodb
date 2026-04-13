@@ -63,6 +63,9 @@ import (
 // maxPaginationPages is a safety limit to prevent infinite loops if GCP pagination is broken.
 const maxPaginationPages = 1000
 
+// discoveryTimeout is the per-service timeout for individual discovery operations.
+const discoveryTimeout = 60 * time.Second
+
 // DiscoveryExtension discovers additional database connections.
 type DiscoveryExtension func(ctx context.Context, p *Provider) ([]providers.DiscoveredConnection, error)
 
@@ -102,12 +105,29 @@ type Config struct {
 
 	// DiscoverMemorystore enables Memorystore Redis discovery.
 	DiscoverMemorystore bool
+
+	// DiscoveryTimeout overrides the default per-service discovery timeout.
+	DiscoveryTimeout time.Duration
 }
 
 // String returns a safe string representation that excludes sensitive credentials.
 func (c *Config) String() string {
 	return fmt.Sprintf("Config{ID:%s, Name:%s, ProjectID:%s, Region:%s, AuthMethod:%s, DiscoverCloudSQL:%t, DiscoverAlloyDB:%t, DiscoverMemorystore:%t}",
 		c.ID, c.Name, c.ProjectID, c.Region, c.AuthMethod, c.DiscoverCloudSQL, c.DiscoverAlloyDB, c.DiscoverMemorystore)
+}
+
+// Validate checks that the provider configuration has required fields.
+func (c *Config) Validate() error {
+	if c.ProjectID == "" {
+		return errors.New("gcp: project ID is required")
+	}
+	if c.Region == "" {
+		return errors.New("gcp: region is required")
+	}
+	if !c.DiscoverCloudSQL && !c.DiscoverAlloyDB && !c.DiscoverMemorystore {
+		log.Warnf("GCP provider %s: no discovery flags enabled", c.ID)
+	}
+	return nil
 }
 
 // DefaultConfig returns a Config with sensible defaults.
@@ -147,11 +167,8 @@ func New(config *Config) (*Provider, error) {
 	if config.ID == "" {
 		return nil, errors.New("provider ID is required")
 	}
-	if config.ProjectID == "" {
-		return nil, errors.New("project ID is required")
-	}
-	if config.Region == "" {
-		return nil, errors.New("region is required")
+	if err := config.Validate(); err != nil {
+		return nil, err
 	}
 
 	return &Provider{
@@ -261,12 +278,19 @@ func (p *Provider) DiscoverConnections(ctx context.Context) ([]providers.Discove
 		return nil, nil
 	}
 
+	timeout := discoveryTimeout
+	if p.config.DiscoveryTimeout > 0 {
+		timeout = p.config.DiscoveryTimeout
+	}
+
 	results := make(chan discoveryResult, taskCount)
 	g, gctx := errgroup.WithContext(ctx)
 
 	if p.config.DiscoverCloudSQL && p.sqladminService != nil {
 		g.Go(func() error {
-			conns, err := p.discoverCloudSQL(gctx)
+			svcCtx, cancel := context.WithTimeout(gctx, timeout)
+			defer cancel()
+			conns, err := p.discoverCloudSQL(svcCtx)
 			results <- discoveryResult{conns, err, "Cloud SQL"}
 			return nil
 		})
@@ -274,7 +298,9 @@ func (p *Provider) DiscoverConnections(ctx context.Context) ([]providers.Discove
 
 	if p.config.DiscoverAlloyDB && p.alloydbClient != nil {
 		g.Go(func() error {
-			conns, err := p.discoverAlloyDB(gctx)
+			svcCtx, cancel := context.WithTimeout(gctx, timeout)
+			defer cancel()
+			conns, err := p.discoverAlloyDB(svcCtx)
 			results <- discoveryResult{conns, err, "AlloyDB"}
 			return nil
 		})
@@ -282,7 +308,9 @@ func (p *Provider) DiscoverConnections(ctx context.Context) ([]providers.Discove
 
 	if p.config.DiscoverMemorystore && p.memorystoreClient != nil {
 		g.Go(func() error {
-			conns, err := p.discoverMemorystore(gctx)
+			svcCtx, cancel := context.WithTimeout(gctx, timeout)
+			defer cancel()
+			conns, err := p.discoverMemorystore(svcCtx)
 			results <- discoveryResult{conns, err, "Memorystore"}
 			return nil
 		})
@@ -290,7 +318,9 @@ func (p *Provider) DiscoverConnections(ctx context.Context) ([]providers.Discove
 
 	if p.config.DiscoverMemorystore && p.memcachedClient != nil {
 		g.Go(func() error {
-			conns, err := p.discoverMemcached(gctx)
+			svcCtx, cancel := context.WithTimeout(gctx, timeout)
+			defer cancel()
+			conns, err := p.discoverMemcached(svcCtx)
 			results <- discoveryResult{conns, err, "Memcached"}
 			return nil
 		})
@@ -299,7 +329,9 @@ func (p *Provider) DiscoverConnections(ctx context.Context) ([]providers.Discove
 	for _, ext := range discoveryExtensions {
 		ext := ext
 		g.Go(func() error {
-			conns, err := ext(gctx, p)
+			svcCtx, cancel := context.WithTimeout(gctx, timeout)
+			defer cancel()
+			conns, err := ext(svcCtx, p)
 			results <- discoveryResult{conns, err, "extension"}
 			return nil
 		})
@@ -365,6 +397,9 @@ func (p *Provider) Close(ctx context.Context) error {
 	}
 	if p.memorystoreClient != nil {
 		p.memorystoreClient.Close()
+	}
+	if p.memcachedClient != nil {
+		p.memcachedClient.Close()
 	}
 	return nil
 }

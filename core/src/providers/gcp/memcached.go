@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	memcachepb "cloud.google.com/go/memcache/apiv1/memcachepb"
 	"github.com/clidey/whodb/core/src/engine"
@@ -31,6 +32,7 @@ import (
 
 // discoverMemcached discovers Memorystore for Memcached instances in the configured project/region.
 func (p *Provider) discoverMemcached(ctx context.Context) ([]providers.DiscoveredConnection, error) {
+	start := time.Now()
 	var connections []providers.DiscoveredConnection
 
 	parent := fmt.Sprintf("projects/%s/locations/%s", p.config.ProjectID, p.config.Region)
@@ -41,6 +43,11 @@ func (p *Provider) discoverMemcached(ctx context.Context) ([]providers.Discovere
 	})
 
 	for {
+		if ctx.Err() != nil {
+			log.Warnf("Memcached: context cancelled, returning %d results so far", len(connections))
+			return connections, ctx.Err()
+		}
+
 		instance, err := iter.Next()
 		if err == iterator.Done {
 			break
@@ -56,7 +63,7 @@ func (p *Provider) discoverMemcached(ctx context.Context) ([]providers.Discovere
 		}
 	}
 
-	log.Debugf("Memcached: completed, found %d instances", len(connections))
+	log.Infof("Memcached: found %d instances in %v", len(connections), time.Since(start))
 	return connections, nil
 }
 

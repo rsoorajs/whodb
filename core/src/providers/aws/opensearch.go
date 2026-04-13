@@ -18,6 +18,7 @@ package aws
 
 import (
 	"context"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/opensearch"
@@ -30,6 +31,7 @@ import (
 
 // discoverOpenSearch discovers Amazon OpenSearch Service domains.
 func (p *Provider) discoverOpenSearch(ctx context.Context) ([]providers.DiscoveredConnection, error) {
+	start := time.Now()
 	log.Debugf("OpenSearch: starting discovery for provider %s", p.config.ID)
 
 	client := opensearch.NewFromConfig(p.awsConfig)
@@ -97,7 +99,7 @@ func (p *Provider) discoverOpenSearch(ctx context.Context) ([]providers.Discover
 		connections = append(connections, conn)
 	}
 
-	log.Infof("OpenSearch: discovered %d domains", len(connections))
+	log.Infof("OpenSearch: discovered %d domains in %v", len(connections), time.Since(start))
 	return connections, nil
 }
 

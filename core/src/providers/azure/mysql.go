@@ -18,6 +18,7 @@ package azure
 
 import (
 	"context"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/mysql/armmysqlflexibleservers"
 
@@ -29,6 +30,7 @@ import (
 
 // discoverMySQL discovers Azure Database for MySQL Flexible Servers.
 func (p *Provider) discoverMySQL(ctx context.Context) ([]providers.DiscoveredConnection, error) {
+	start := time.Now()
 	var connections []providers.DiscoveredConnection
 
 	log.Debugf("Azure MySQL: starting discovery for provider %s", p.config.ID)
@@ -45,6 +47,11 @@ func (p *Provider) discoverMySQL(ctx context.Context) ([]providers.DiscoveredCon
 	}
 
 	for pager.More() {
+		if ctx.Err() != nil {
+			log.Warnf("Azure MySQL: context cancelled, returning %d results so far", len(connections))
+			return connections, ctx.Err()
+		}
+
 		page, err := pager.NextPage(ctx)
 		if err != nil {
 			log.Errorf("Azure MySQL: list failed: %v", err)
@@ -61,7 +68,7 @@ func (p *Provider) discoverMySQL(ctx context.Context) ([]providers.DiscoveredCon
 		}
 	}
 
-	log.Infof("Azure MySQL: discovered %d servers", len(connections))
+	log.Infof("Azure MySQL: discovered %d servers in %v", len(connections), time.Since(start))
 	return connections, nil
 }
 
