@@ -83,11 +83,7 @@ const ceLogos = {
       <circle cx="22" cy="22" r="9" stroke="#fff" strokeWidth="3" fill="none"/>
       <path d="M29 29l8 8" stroke="#fff" strokeWidth="3" strokeLinecap="round"/>
     </svg>,
-    StarRocks: <svg className="w-6 h-6" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-      <rect width="48" height="48" rx="8" fill="#0050CC"/>
-      <path d="M24 8l4.5 9.3 10.2 1.5-7.4 7.2 1.7 10.2L24 31.5l-9 4.7 1.7-10.2-7.4-7.2 10.2-1.5z" fill="#fff"/>
-    </svg>,
-    YugabyteDB: <svg className="w-6 h-6" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+YugabyteDB: <svg className="w-6 h-6" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
       <rect width="48" height="48" rx="8" fill="#2B59C3"/>
       <path d="M24 26v10M14 14l10 12M34 14L24 26" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
     </svg>,

@@ -112,7 +112,6 @@ export function getDatabaseStorageUnitLabel(databaseType: string | undefined, si
         case DatabaseType.Sqlite3:
         case DatabaseType.DuckDb:
         case DatabaseType.ClickHouse:
-        case "StarRocks":
         case "YugabyteDB":
         case "QuestDB":
             return singular ? "Table" : "Tables";
