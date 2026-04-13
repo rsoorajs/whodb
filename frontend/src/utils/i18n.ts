@@ -76,12 +76,16 @@ export const loadTranslationsSync = (
     }
 
     try {
-        let translations: TranslationMap | undefined;
+        // Start with shared common translations as the base layer
+        const commonParsed = ceIndex.get('common');
+        let translations: TranslationMap = commonParsed
+            ? { ...(commonParsed[language] || commonParsed[DEFAULT_LANGUAGE]) }
+            : {};
 
-        // Load CE locale files as the base
+        // Merge component-specific translations on top
         const ceParsed = ceIndex.get(componentPath);
         if (ceParsed) {
-            translations = ceParsed[language] || ceParsed[DEFAULT_LANGUAGE];
+            translations = { ...translations, ...(ceParsed[language] || ceParsed[DEFAULT_LANGUAGE]) };
         }
 
         // Merge extension translations on top (overrides CE keys if present)
@@ -93,12 +97,12 @@ export const loadTranslationsSync = (
             }
         }
 
-        if (!translations) {
+        if (!ceParsed && !extParsed) {
             console.error(`Translation file not found for ${componentPath}`, {
                 availableCE: [...ceIndex.keys()],
                 language
             });
-            return {};
+            return translations;
         }
 
         translationCache[cacheKey] = translations;

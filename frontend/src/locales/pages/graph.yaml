@@ -1,7 +1,5 @@
 en_US:
   title: Graph
-  searchPlaceholder: Search Tables
-  searchAriaLabel: Search Tables
   noItems: No Items
   noNodesTitle: No Nodes Selected
   noNodesDescription: Select {storageUnit} on the left to add them to the graph.
@@ -9,8 +7,6 @@ en_US:
 
 ar_AE:
   title: "رسم بياني"
-  searchPlaceholder: "جداول البحث"
-  searchAriaLabel: "جداول البحث"
   noItems: "لا توجد عناصر"
   noNodesTitle: "لم يتم تحديد أي عقد"
   noNodesDescription: "حدد {storageUnit} على اليسار لإضافتها إلى الرسم البياني."
@@ -18,8 +14,6 @@ ar_AE:
 
 de_DE:
   title: "Graph"
-  searchPlaceholder: "Suchtabellen"
-  searchAriaLabel: "Suchtabellen"
   noItems: "Keine Artikel"
   noNodesTitle: "Keine Knoten ausgewählt"
   noNodesDescription: "Wählen Sie links {storageUnit} aus, um sie dem Diagramm hinzuzufügen."
@@ -27,8 +21,6 @@ de_DE:
 
 el_GR:
   title: "Γραφική παράσταση"
-  searchPlaceholder: "Αναζήτηση πινάκων"
-  searchAriaLabel: "Αναζήτηση πινάκων"
   noItems: "Δεν υπάρχουν αντικείμενα"
   noNodesTitle: "Δεν επιλέχθηκαν κόμβοι"
   noNodesDescription: "Επιλέξτε {storageUnit} στα αριστερά για να τα προσθέσετε στο γράφημα."
@@ -36,8 +28,6 @@ el_GR:
 
 en_GB:
   title: "Graph"
-  searchPlaceholder: "Search Tables"
-  searchAriaLabel: "Search Tables"
   noItems: "No Items"
   noNodesTitle: "No Nodes Selected"
   noNodesDescription: "Select {storageUnit} on the left to add them to the graph."
@@ -45,8 +35,6 @@ en_GB:
 
 es_ES:
   title: "Gráfico"
-  searchPlaceholder: "Buscar tablas"
-  searchAriaLabel: "Buscar tablas"
   noItems: "Sin artículos"
   noNodesTitle: "No hay nodos seleccionados"
   noNodesDescription: "Seleccione {storageUnit} a la izquierda para agregarlas al gráfico."
@@ -54,8 +42,6 @@ es_ES:
 
 fi_FI:
   title: "Kaavio"
-  searchPlaceholder: "Etsi taulukoita"
-  searchAriaLabel: "Etsi taulukoita"
   noItems: "Ei kohteita"
   noNodesTitle: "Ei valittuja solmuja"
   noNodesDescription: "Valitse {storageUnit} vasemmalta lisätäksesi ne kaavioon."
@@ -63,8 +49,6 @@ fi_FI:
 
 fr_FR:
   title: "Graphique"
-  searchPlaceholder: "Rechercher des tableaux"
-  searchAriaLabel: "Rechercher des tableaux"
   noItems: "Aucun article"
   noNodesTitle: "Aucun nœud sélectionné"
   noNodesDescription: "Sélectionnez {storageUnit} sur la gauche pour les ajouter au graphique."
@@ -72,8 +56,6 @@ fr_FR:
 
 it_IT:
   title: "Grafico"
-  searchPlaceholder: "Cerca tabelle"
-  searchAriaLabel: "Cerca tabelle"
   noItems: "Nessun articolo"
   noNodesTitle: "Nessun nodo selezionato"
   noNodesDescription: "Seleziona {storageUnit} a sinistra per aggiungerli al grafico."
@@ -81,8 +63,6 @@ it_IT:
 
 iw_IL:
   title: "גרָף"
-  searchPlaceholder: "חפש בטבלאות"
-  searchAriaLabel: "חפש בטבלאות"
   noItems: "אין פריטים"
   noNodesTitle: "לא נבחרו צמתים"
   noNodesDescription: "בחר {storageUnit} בצד שמאל כדי להוסיף אותם לתרשים."
@@ -90,8 +70,6 @@ iw_IL:
 
 ja_JP:
   title: "グラフ"
-  searchPlaceholder: "検索テーブル"
-  searchAriaLabel: "検索テーブル"
   noItems: "アイテムがありません"
   noNodesTitle: "ノードが選択されていません"
   noNodesDescription: "左側の {storageUnit} を選択してグラフに追加します。"
@@ -99,8 +77,6 @@ ja_JP:
 
 ko_KR:
   title: "그래프"
-  searchPlaceholder: "테이블 검색"
-  searchAriaLabel: "테이블 검색"
   noItems: "항목 없음"
   noNodesTitle: "선택한 노드가 없습니다."
   noNodesDescription: "그래프에 추가하려면 왼쪽의 {storageUnit}을 선택하세요."
@@ -108,8 +84,6 @@ ko_KR:
 
 nl_NL:
   title: "Grafiek"
-  searchPlaceholder: "Zoek tabellen"
-  searchAriaLabel: "Zoek tabellen"
   noItems: "Geen artikelen"
   noNodesTitle: "Geen knooppunten geselecteerd"
   noNodesDescription: "Selecteer {storageUnit} aan de linkerkant om ze aan de grafiek toe te voegen."
@@ -117,8 +91,6 @@ nl_NL:
 
 pl_PL:
   title: "Wykres"
-  searchPlaceholder: "Przeszukaj tabele"
-  searchAriaLabel: "Przeszukaj tabele"
   noItems: "Brak przedmiotów"
   noNodesTitle: "Nie wybrano żadnych węzłów"
   noNodesDescription: "Wybierz {storageUnit} po lewej stronie, aby dodać je do wykresu."
@@ -126,8 +98,6 @@ pl_PL:
 
 pt_BR:
   title: "Gráfico"
-  searchPlaceholder: "Pesquisar tabelas"
-  searchAriaLabel: "Pesquisar tabelas"
   noItems: "Nenhum item"
   noNodesTitle: "Nenhum nó selecionado"
   noNodesDescription: "Selecione {storageUnit} à esquerda para adicioná-los ao gráfico."
@@ -135,8 +105,6 @@ pt_BR:
 
 ro_RO:
   title: "Grafic"
-  searchPlaceholder: "Căutați în tabele"
-  searchAriaLabel: "Căutați în tabele"
   noItems: "Fără articole"
   noNodesTitle: "Nu au fost selectate noduri"
   noNodesDescription: "Selectați {storageUnit} din stânga pentru a le adăuga la grafic."
@@ -144,8 +112,6 @@ ro_RO:
 
 ru_RU:
   title: "График"
-  searchPlaceholder: "Поиск по таблицам"
-  searchAriaLabel: "Поиск по таблицам"
   noItems: "Нет товаров"
   noNodesTitle: "Узлы не выбраны"
   noNodesDescription: "Выберите {storageUnit} слева, чтобы добавить их на график."
@@ -153,8 +119,6 @@ ru_RU:
 
 sk_SK:
   title: "Graf"
-  searchPlaceholder: "Prehľadávať tabuľky"
-  searchAriaLabel: "Prehľadávať tabuľky"
   noItems: "Žiadne položky"
   noNodesTitle: "Nie sú vybraté žiadne uzly"
   noNodesDescription: "Ak ich chcete pridať do grafu, vyberte {storageUnit} vľavo."
@@ -162,8 +126,6 @@ sk_SK:
 
 sv_SE:
   title: "Graf"
-  searchPlaceholder: "Sök tabeller"
-  searchAriaLabel: "Sök tabeller"
   noItems: "Inga föremål"
   noNodesTitle: "Inga noder valda"
   noNodesDescription: "Välj {storageUnit} till vänster för att lägga till dem i grafen."
@@ -171,8 +133,6 @@ sv_SE:
 
 zh_CN:
   title: "图形"
-  searchPlaceholder: "搜索表"
-  searchAriaLabel: "搜索表"
   noItems: "没有商品"
   noNodesTitle: "未选择节点"
   noNodesDescription: "选择左侧的 {storageUnit} 将它们添加到图表中。"
@@ -180,8 +140,6 @@ zh_CN:
 
 zh_TW:
   title: "圖形"
-  searchPlaceholder: "搜尋表"
-  searchAriaLabel: "搜尋表"
   noItems: "沒有商品"
   noNodesTitle: "未選擇節點"
   noNodesDescription: "選擇左側的 {storageUnit} 將它們加入圖表。"
@@ -189,8 +147,6 @@ zh_TW:
 
 bg_BG:
   title: "Графика"
-  searchPlaceholder: "Таблици за търсене"
-  searchAriaLabel: "Таблици за търсене"
   noItems: "Няма артикули"
   noNodesTitle: "Няма избрани възли"
   noNodesDescription: "Изберете {storageUnit} отляво, за да ги добавите към графиката."
@@ -198,8 +154,6 @@ bg_BG:
 
 bn_BD:
   title: "গ্রাফ"
-  searchPlaceholder: "অনুসন্ধান সারণী"
-  searchAriaLabel: "অনুসন্ধান সারণী"
   noItems: "কোন আইটেম নেই"
   noNodesTitle: "কোনো নোড নির্বাচন করা হয়নি"
   noNodesDescription: "তাদের গ্রাফে যুক্ত করতে বাম দিকে {storageUnit} নির্বাচন করুন।"
@@ -207,8 +161,6 @@ bn_BD:
 
 ca_ES:
   title: "Gràfic"
-  searchPlaceholder: "Cerca taules"
-  searchAriaLabel: "Cerca taules"
   noItems: "No hi ha articles"
   noNodesTitle: "No s'han seleccionat cap node"
   noNodesDescription: "Seleccioneu {storageUnit} a l'esquerra per afegir-los al gràfic."
@@ -216,8 +168,6 @@ ca_ES:
 
 cs_CZ:
   title: "Graf"
-  searchPlaceholder: "Hledat tabulky"
-  searchAriaLabel: "Hledat tabulky"
   noItems: "Žádné položky"
   noNodesTitle: "Nejsou vybrány žádné uzly"
   noNodesDescription: "Vyberte {storageUnit} na levé straně a přidejte je do grafu."
@@ -225,8 +175,6 @@ cs_CZ:
 
 da_DK:
   title: "Kurve"
-  searchPlaceholder: "Søg i tabeller"
-  searchAriaLabel: "Søg i tabeller"
   noItems: "Ingen varer"
   noNodesTitle: "Ingen noder valgt"
   noNodesDescription: "Vælg {storageUnit} til venstre for at tilføje dem til grafen."
@@ -234,8 +182,6 @@ da_DK:
 
 fa_IR:
   title: "نمودار"
-  searchPlaceholder: "جداول جستجو"
-  searchAriaLabel: "جداول جستجو"
   noItems: "هیچ موردی وجود ندارد"
   noNodesTitle: "هیچ گرهی انتخاب نشد"
   noNodesDescription: "{storageUnit} را در سمت چپ انتخاب کنید تا آنها را به نمودار اضافه کنید."
@@ -243,8 +189,6 @@ fa_IR:
 
 hi_IN:
   title: "ग्राफ़"
-  searchPlaceholder: "तालिकाएँ खोजें"
-  searchAriaLabel: "तालिकाएँ खोजें"
   noItems: "कोई आइटम नहीं"
   noNodesTitle: "कोई नोड चयनित नहीं"
   noNodesDescription: "उन्हें ग्राफ़ में जोड़ने के लिए बाईं ओर {storageUnit} का चयन करें।"
@@ -252,8 +196,6 @@ hi_IN:
 
 hr_HR:
   title: "Grafikon"
-  searchPlaceholder: "Pretraži tablice"
-  searchAriaLabel: "Pretraži tablice"
   noItems: "Nema predmeta"
   noNodesTitle: "Nema odabranih čvorova"
   noNodesDescription: "Odaberite {storageUnit} s lijeve strane kako biste ih dodali na grafikon."
@@ -261,8 +203,6 @@ hr_HR:
 
 hu_HU:
   title: "Grafikon"
-  searchPlaceholder: "Keresés a táblázatokban"
-  searchAriaLabel: "Keresés a táblázatokban"
   noItems: "Nincsenek tételek"
   noNodesTitle: "Nincsenek kiválasztva csomópontok"
   noNodesDescription: "Válassza a {storageUnit} lehetőséget a bal oldalon, hogy hozzáadja őket a diagramhoz."
@@ -270,8 +210,6 @@ hu_HU:
 
 id_ID:
   title: "Grafik"
-  searchPlaceholder: "Tabel Pencarian"
-  searchAriaLabel: "Tabel Pencarian"
   noItems: "Tidak ada Item"
   noNodesTitle: "Tidak Ada Node yang Dipilih"
   noNodesDescription: "Pilih {storageUnit} di sebelah kiri untuk menambahkannya ke grafik."
@@ -279,8 +217,6 @@ id_ID:
 
 ms_MY:
   title: "Graf"
-  searchPlaceholder: "Cari Jadual"
-  searchAriaLabel: "Cari Jadual"
   noItems: "Tiada Item"
   noNodesTitle: "Tiada Nod Dipilih"
   noNodesDescription: "Pilih {storageUnit} di sebelah kiri untuk menambahkannya pada graf."
@@ -288,8 +224,6 @@ ms_MY:
 
 nb_NO:
   title: "Kurve"
-  searchPlaceholder: "Søk i tabeller"
-  searchAriaLabel: "Søk i tabeller"
   noItems: "Ingen varer"
   noNodesTitle: "Ingen noder valgt"
   noNodesDescription: "Velg {storageUnit} til venstre for å legge dem til grafen."
@@ -297,8 +231,6 @@ nb_NO:
 
 sw_KE:
   title: "Grafu"
-  searchPlaceholder: "Tafuta Majedwali"
-  searchAriaLabel: "Tafuta Majedwali"
   noItems: "Hakuna Vipengee"
   noNodesTitle: "Hakuna Nodi Zilizochaguliwa"
   noNodesDescription: "Chagua {storageUnit} upande wa kushoto ili kuziongeza kwenye grafu."
@@ -306,8 +238,6 @@ sw_KE:
 
 ta_IN:
   title: "வரைபடம்"
-  searchPlaceholder: "தேடல் அட்டவணைகள்"
-  searchAriaLabel: "தேடல் அட்டவணைகள்"
   noItems: "பொருட்கள் இல்லை"
   noNodesTitle: "முனைகள் எதுவும் தேர்ந்தெடுக்கப்படவில்லை"
   noNodesDescription: "வரைபடத்தில் சேர்க்க இடதுபுறத்தில் உள்ள {storageUnit} ஐத் தேர்ந்தெடுக்கவும்."
@@ -315,8 +245,6 @@ ta_IN:
 
 th_TH:
   title: "กราฟ"
-  searchPlaceholder: "ค้นหาตาราง"
-  searchAriaLabel: "ค้นหาตาราง"
   noItems: "ไม่มีรายการ"
   noNodesTitle: "ไม่ได้เลือกโหนด"
   noNodesDescription: "เลือก {storageUnit} ทางด้านซ้ายเพื่อเพิ่มลงในกราฟ"
@@ -324,8 +252,6 @@ th_TH:
 
 tr_TR:
   title: "Grafik"
-  searchPlaceholder: "Tablolarda Ara"
-  searchAriaLabel: "Tablolarda Ara"
   noItems: "Ürün Yok"
   noNodesTitle: "Hiçbir Düğüm Seçilmedi"
   noNodesDescription: "Bunları grafiğe eklemek için soldaki {storageUnit} öğesini seçin."
@@ -333,8 +259,6 @@ tr_TR:
 
 uk_UA:
   title: "Графік"
-  searchPlaceholder: "Таблиці пошуку"
-  searchAriaLabel: "Таблиці пошуку"
   noItems: "Немає предметів"
   noNodesTitle: "Вузли не вибрано"
   noNodesDescription: "Виберіть {storageUnit} ліворуч, щоб додати їх до графіка."
@@ -342,8 +266,6 @@ uk_UA:
 
 ur_PK:
   title: "گراف"
-  searchPlaceholder: "میزیں تلاش کریں۔"
-  searchAriaLabel: "میزیں تلاش کریں۔"
   noItems: "کوئی آئٹمز نہیں۔"
   noNodesTitle: "کوئی نوڈس منتخب نہیں کیا گیا۔"
   noNodesDescription: "انہیں گراف میں شامل کرنے کے لیے بائیں جانب {storageUnit} کو منتخب کریں۔"
@@ -351,8 +273,6 @@ ur_PK:
 
 vi_VN:
   title: "đồ thị"
-  searchPlaceholder: "Tìm kiếm bảng"
-  searchAriaLabel: "Tìm kiếm bảng"
   noItems: "Không có mục nào"
   noNodesTitle: "Không có nút nào được chọn"
   noNodesDescription: "Chọn {storageUnit} ở bên trái để thêm chúng vào biểu đồ."
@@ -360,8 +280,6 @@ vi_VN:
 
 af_ZA:
   title: "Grafiek"
-  searchPlaceholder: "Soek Tabelle"
-  searchAriaLabel: "Soek Tabelle"
   noItems: "Geen items"
   noNodesTitle: "Geen nodusse gekies nie"
   noNodesDescription: "Kies {storageUnit} aan die linkerkant om hulle by die grafiek te voeg."
@@ -369,8 +287,6 @@ af_ZA:
 
 am_ET:
   title: "ግራፍ"
-  searchPlaceholder: "ሰንጠረዦችን ፈልግ"
-  searchAriaLabel: "ሰንጠረዦችን ፈልግ"
   noItems: "ምንም እቃዎች የሉም"
   noNodesTitle: "ምንም አንጓዎች አልተመረጡም።"
   noNodesDescription: "ወደ ግራፉ ለመጨመር {storageUnit}ን በግራ በኩል ይምረጡ።"
@@ -378,8 +294,6 @@ am_ET:
 
 az_AZ:
   title: "Qrafik"
-  searchPlaceholder: "Cədvəlləri axtarın"
-  searchAriaLabel: "Cədvəlləri axtarın"
   noItems: "Element yoxdur"
   noNodesTitle: "Heç bir qovşaq seçilməyib"
   noNodesDescription: "Onları qrafikə əlavə etmək üçün soldan {storageUnit} seçin."
@@ -387,8 +301,6 @@ az_AZ:
 
 et_EE:
   title: "Graafik"
-  searchPlaceholder: "Otsi tabeleid"
-  searchAriaLabel: "Otsi tabeleid"
   noItems: "Üksusi pole"
   noNodesTitle: "Sõlme pole valitud"
   noNodesDescription: "Nende graafikule lisamiseks valige vasakult {storageUnit}."
@@ -396,8 +308,6 @@ et_EE:
 
 gu_IN:
   title: "આલેખ"
-  searchPlaceholder: "કોષ્ટકો શોધો"
-  searchAriaLabel: "કોષ્ટકો શોધો"
   noItems: "કોઈ આઇટમ્સ નથી"
   noNodesTitle: "કોઈ નોડ પસંદ કરેલ નથી"
   noNodesDescription: "તેમને ગ્રાફમાં ઉમેરવા માટે ડાબી બાજુએ {storageUnit} પસંદ કરો."
@@ -405,8 +315,6 @@ gu_IN:
 
 ha_NG:
   title: "Graph"
-  searchPlaceholder: "Bincika Tables"
-  searchAriaLabel: "Bincika Tables"
   noItems: "Babu Abubuwa"
   noNodesTitle: "Babu Nodes da aka zaɓa"
   noNodesDescription: "Zaɓi {storageUnit} a hagu don ƙara su zuwa jadawali."
@@ -414,8 +322,6 @@ ha_NG:
 
 ka_GE:
   title: "გრაფიკი"
-  searchPlaceholder: "ცხრილების ძიება"
-  searchAriaLabel: "ცხრილების ძიება"
   noItems: "არ არის ელემენტი"
   noNodesTitle: "კვანძები არ არის არჩეული"
   noNodesDescription: "აირჩიეთ {storageUnit} მარცხნივ, რომ დაამატოთ ისინი გრაფიკზე."
@@ -423,8 +329,6 @@ ka_GE:
 
 km_KH:
   title: "ក្រាហ្វ"
-  searchPlaceholder: "ស្វែងរកតារាង"
-  searchAriaLabel: "ស្វែងរកតារាង"
   noItems: "គ្មានធាតុ"
   noNodesTitle: "គ្មានថ្នាំងដែលបានជ្រើសរើសទេ។"
   noNodesDescription: "ជ្រើសរើស {storageUnit} នៅខាងឆ្វេង ដើម្បីបន្ថែមពួកវាទៅក្នុងក្រាហ្វ។"
@@ -432,8 +336,6 @@ km_KH:
 
 kn_IN:
   title: "ಗ್ರಾಫ್"
-  searchPlaceholder: "ಹುಡುಕಾಟ ಕೋಷ್ಟಕಗಳು"
-  searchAriaLabel: "ಹುಡುಕಾಟ ಕೋಷ್ಟಕಗಳು"
   noItems: "ಯಾವುದೇ ಐಟಂಗಳಿಲ್ಲ"
   noNodesTitle: "ಯಾವುದೇ ನೋಡ್‌ಗಳನ್ನು ಆಯ್ಕೆ ಮಾಡಲಾಗಿಲ್ಲ"
   noNodesDescription: "ಅವುಗಳನ್ನು ಗ್ರಾಫ್‌ಗೆ ಸೇರಿಸಲು ಎಡಭಾಗದಲ್ಲಿ {storageUnit} ಆಯ್ಕೆಮಾಡಿ."
@@ -441,8 +343,6 @@ kn_IN:
 
 lt_LT:
   title: "Grafikas"
-  searchPlaceholder: "Paieškos lentelės"
-  searchAriaLabel: "Paieškos lentelės"
   noItems: "Nėra elementų"
   noNodesTitle: "Nepasirinkta jokių mazgų"
   noNodesDescription: "Kairėje pasirinkite {storageUnit}, kad įtrauktumėte juos į diagramą."
@@ -450,8 +350,6 @@ lt_LT:
 
 lv_LV:
   title: "Grafiks"
-  searchPlaceholder: "Meklēt tabulas"
-  searchAriaLabel: "Meklēt tabulas"
   noItems: "Nav vienumu"
   noNodesTitle: "Nav atlasīts neviens mezgls"
   noNodesDescription: "Kreisajā pusē atlasiet {storageUnit}, lai pievienotu tos diagrammai."
@@ -459,8 +357,6 @@ lv_LV:
 
 ml_IN:
   title: "ഗ്രാഫ്"
-  searchPlaceholder: "പട്ടികകൾ തിരയുക"
-  searchAriaLabel: "പട്ടികകൾ തിരയുക"
   noItems: "ഇനങ്ങളൊന്നുമില്ല"
   noNodesTitle: "നോഡുകളൊന്നും തിരഞ്ഞെടുത്തിട്ടില്ല"
   noNodesDescription: "ഗ്രാഫിലേക്ക് ചേർക്കുന്നതിന് ഇടതുവശത്തുള്ള {storageUnit} തിരഞ്ഞെടുക്കുക."
@@ -468,8 +364,6 @@ ml_IN:
 
 mr_IN:
   title: "आलेख"
-  searchPlaceholder: "सारण्या शोधा"
-  searchAriaLabel: "सारण्या शोधा"
   noItems: "कोणतेही आयटम नाहीत"
   noNodesTitle: "कोणतेही नोड निवडलेले नाहीत"
   noNodesDescription: "त्यांना आलेखामध्ये जोडण्यासाठी डावीकडील {storageUnit} निवडा."
@@ -477,8 +371,6 @@ mr_IN:
 
 ne_NP:
   title: "ग्राफ"
-  searchPlaceholder: "तालिकाहरू खोज्नुहोस्"
-  searchAriaLabel: "तालिकाहरू खोज्नुहोस्"
   noItems: "कुनै वस्तुहरू छैनन्"
   noNodesTitle: "कुनै नोड चयन गरिएको छैन"
   noNodesDescription: "तिनीहरूलाई ग्राफमा थप्न बाँयामा {storageUnit} चयन गर्नुहोस्।"
@@ -486,8 +378,6 @@ ne_NP:
 
 pa_IN:
   title: "ਗ੍ਰਾਫ਼"
-  searchPlaceholder: "ਟੇਬਲ ਖੋਜੋ"
-  searchAriaLabel: "ਟੇਬਲ ਖੋਜੋ"
   noItems: "ਕੋਈ ਆਈਟਮਾਂ ਨਹੀਂ"
   noNodesTitle: "ਕੋਈ ਨੋਡ ਨਹੀਂ ਚੁਣਿਆ ਗਿਆ"
   noNodesDescription: "ਉਹਨਾਂ ਨੂੰ ਗ੍ਰਾਫ ਵਿੱਚ ਜੋੜਨ ਲਈ ਖੱਬੇ ਪਾਸੇ {storageUnit} ਨੂੰ ਚੁਣੋ।"
@@ -495,8 +385,6 @@ pa_IN:
 
 si_LK:
   title: "ප්‍රස්තාරය"
-  searchPlaceholder: "සෙවුම් වගු"
-  searchAriaLabel: "සෙවුම් වගු"
   noItems: "අයිතම නැත"
   noNodesTitle: "නෝඩ් තෝරාගෙන නැත"
   noNodesDescription: "ඒවා ප්‍රස්ථාරයට එක් කිරීමට වම් පස ඇති {storageUnit} තෝරන්න."
@@ -504,8 +392,6 @@ si_LK:
 
 sl_SI:
   title: "Graf"
-  searchPlaceholder: "Iskanje tabel"
-  searchAriaLabel: "Iskanje tabel"
   noItems: "Ni predmetov"
   noNodesTitle: "Ni izbranih vozlišč"
   noNodesDescription: "Izberite {storageUnit} na levi, da jih dodate na graf."
@@ -513,8 +399,6 @@ sl_SI:
 
 sr_RS:
   title: "Граф"
-  searchPlaceholder: "Сеарцх Таблес"
-  searchAriaLabel: "Сеарцх Таблес"
   noItems: "Нема предмета"
   noNodesTitle: "Нема изабраних чворова"
   noNodesDescription: "Изаберите {storageUnit} са леве стране да бисте их додали на графикон."
@@ -522,8 +406,6 @@ sr_RS:
 
 te_IN:
   title: "గ్రాఫ్"
-  searchPlaceholder: "పట్టికలను శోధించండి"
-  searchAriaLabel: "పట్టికలను శోధించండి"
   noItems: "అంశాలు లేవు"
   noNodesTitle: "నోడ్‌లు ఎంచుకోబడలేదు"
   noNodesDescription: "వాటిని గ్రాఫ్‌కి జోడించడానికి ఎడమవైపున {storageUnit}ని ఎంచుకోండి."
@@ -531,8 +413,6 @@ te_IN:
 
 tl_PH:
   title: "Graph"
-  searchPlaceholder: "Maghanap ng mga Talahanayan"
-  searchAriaLabel: "Maghanap ng mga Talahanayan"
   noItems: "Walang Item"
   noNodesTitle: "Walang Napiling Node"
   noNodesDescription: "Piliin ang {storageUnit} sa kaliwa upang idagdag sila sa graph."
@@ -540,8 +420,6 @@ tl_PH:
 
 uz_UZ:
   title: "Grafik"
-  searchPlaceholder: "Jadvallarni qidirish"
-  searchAriaLabel: "Jadvallarni qidirish"
   noItems: "Elementlar yoʻq"
   noNodesTitle: "Hech qanday tugun tanlanmagan"
   noNodesDescription: "Grafikga qo'shish uchun chap tarafdagi {storageUnit} ni tanlang."
@@ -549,8 +427,6 @@ uz_UZ:
 
 yo_NG:
   title: "Aworan"
-  searchPlaceholder: "Wa Awọn tabili"
-  searchAriaLabel: "Wa Awọn tabili"
   noItems: "Ko si Awọn nkan"
   noNodesTitle: "Ko si Awọn apa ti a yan"
   noNodesDescription: "Yan {storageUnit} ni apa osi lati fi wọn kun aworan."

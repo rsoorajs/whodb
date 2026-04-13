@@ -1,247 +1,185 @@
 en_US:
   tip: Tip
-  close: Close
 
 ar_AE:
-  tip: نصيحة
-  close: يغلق
+  tip: "نصيحة"
 
 de_DE:
-  tip: Tipp
-  close: Schließen
+  tip: "Tipp"
 
 el_GR:
-  tip: Ακρο
-  close: Κοντά
+  tip: "Ακρο"
 
 en_GB:
-  tip: Tip
-  close: Close
+  tip: "Tip"
 
 es_ES:
-  tip: Consejo
-  close: Cerca
+  tip: "Consejo"
 
 fi_FI:
-  tip: Kärki
-  close: Lähellä
+  tip: "Kärki"
 
 fr_FR:
-  tip: Conseil
-  close: Fermer
+  tip: "Conseil"
 
 it_IT:
-  tip: Mancia
-  close: Vicina
+  tip: "Mancia"
 
 iw_IL:
-  tip: עֵצָה
-  close: לִסְגוֹר
+  tip: "עֵצָה"
 
 ja_JP:
-  tip: ヒント
-  close: 近い
+  tip: "ヒント"
 
 ko_KR:
-  tip: 팁
-  close: 닫다
+  tip: "팁"
 
 nl_NL:
-  tip: Tip
-  close: Dichtbij
+  tip: "Tip"
 
 pl_PL:
-  tip: Wskazówka
-  close: Zamknąć
+  tip: "Wskazówka"
 
 pt_BR:
-  tip: Dica
-  close: Fechar
+  tip: "Dica"
 
 ro_RO:
-  tip: Sfat
-  close: Aproape
+  tip: "Sfat"
 
 ru_RU:
-  tip: Кончик
-  close: Закрывать
+  tip: "Кончик"
 
 sk_SK:
-  tip: Tip
-  close: Zavrieť
+  tip: "Tip"
 
 sv_SE:
-  tip: Dricks
-  close: Nära
+  tip: "Dricks"
 
 zh_CN:
-  tip: 提示
-  close: 关闭
+  tip: "提示"
 
 zh_TW:
-  tip: 提示
-  close: 關閉
+  tip: "提示"
 
 bg_BG:
-  tip: съвет
-  close: затвори
+  tip: "съвет"
 
 bn_BD:
-  tip: টিপ
-  close: বন্ধ
+  tip: "টিপ"
 
 ca_ES:
-  tip: Consell
-  close: Tancar
+  tip: "Consell"
 
 cs_CZ:
-  tip: Tip
-  close: Blízko
+  tip: "Tip"
 
 da_DK:
-  tip: Tip
-  close: Tæt
+  tip: "Tip"
 
 fa_IR:
-  tip: نکته
-  close: بستن
+  tip: "نکته"
 
 hi_IN:
-  tip: बख्शीश
-  close: बंद करना
+  tip: "बख्शीश"
 
 hr_HR:
-  tip: Savjet
-  close: Zatvoriti
+  tip: "Savjet"
 
 hu_HU:
-  tip: Tipp
-  close: Közeli
+  tip: "Tipp"
 
 id_ID:
-  tip: Tip
-  close: Menutup
+  tip: "Tip"
 
 ms_MY:
-  tip: Petua
-  close: tutup
+  tip: "Petua"
 
 nb_NO:
-  tip: Tupp
-  close: Lukke
+  tip: "Tupp"
 
 sw_KE:
-  tip: Kidokezo
-  close: Funga
+  tip: "Kidokezo"
 
 ta_IN:
-  tip: உதவிக்குறிப்பு
-  close: மூடு
+  tip: "உதவிக்குறிப்பு"
 
 th_TH:
-  tip: เคล็ดลับ
-  close: ปิด
+  tip: "เคล็ดลับ"
 
 tr_TR:
-  tip: Uç
-  close: Kapalı
+  tip: "Uç"
 
 uk_UA:
-  tip: Підказка
-  close: Закрити
+  tip: "Підказка"
 
 ur_PK:
-  tip: ٹپ
-  close: بند
+  tip: "ٹپ"
 
 vi_VN:
-  tip: Mẹo
-  close: Đóng
+  tip: "Mẹo"
 
 af_ZA:
   tip: "Wenk"
-  close: "Maak toe"
 
 am_ET:
   tip: "ጠቃሚ ምክር"
-  close: "ገጠመ"
 
 az_AZ:
   tip: "İpucu"
-  close: "Bağlayın"
 
 et_EE:
   tip: "Vihje"
-  close: "Sule"
 
 gu_IN:
   tip: "ટીપ"
-  close: "બંધ કરો"
 
 ha_NG:
   tip: "Tukwici"
-  close: "Kusa"
 
 ka_GE:
   tip: "რჩევა"
-  close: "დახურვა"
 
 km_KH:
   tip: "ព័ត៌មានជំនួយ"
-  close: "បិទ"
 
 kn_IN:
   tip: "ಸಲಹೆ"
-  close: "ಮುಚ್ಚಿ"
 
 lt_LT:
   tip: "Patarimas"
-  close: "Uždaryti"
 
 lv_LV:
   tip: "Padoms"
-  close: "Aizvērt"
 
 ml_IN:
   tip: "നുറുങ്ങ്"
-  close: "അടയ്ക്കുക"
 
 mr_IN:
   tip: "टीप"
-  close: "बंद करा"
 
 ne_NP:
   tip: "टिप"
-  close: "बन्द गर्नुहोस्"
 
 pa_IN:
   tip: "ਟਿਪ"
-  close: "ਬੰਦ ਕਰੋ"
 
 si_LK:
   tip: "ඉඟිය"
-  close: "වසන්න"
 
 sl_SI:
   tip: "Namig"
-  close: "Zapri"
 
 sr_RS:
   tip: "Савет"
-  close: "Затвори"
 
 te_IN:
   tip: "చిట్కా"
-  close: "మూసివేయి"
 
 tl_PH:
   tip: "Tip"
-  close: "Isara"
 
 uz_UZ:
   tip: "Maslahat"
-  close: "Yopish"
 
 yo_NG:
   tip: "Imọran"
-  close: "Sunmọ"

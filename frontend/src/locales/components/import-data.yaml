@@ -7,7 +7,6 @@ en_US:
   dataFile: Data File
   fileLimits: "Max {rows} rows, {size} MB"
   headerRowNote: First row is treated as column headers.
-  delimiter: Delimiter
   delimiterAuto: Auto-detect
   delimiterComma: Comma (,)
   delimiterSemicolon: Semicolon (;)
@@ -84,10 +83,8 @@ en_US:
   previewFailed: "Preview failed: {message}"
   importSuccess: Import completed
   importFailed: "Import failed: {message}"
-  unknownError: Unknown error
   importing: Importing...
   import: Import
-  cancel: Cancel
 
 ar_AE:
   title: "استيراد البيانات"
@@ -97,7 +94,6 @@ ar_AE:
   dataFile: "ملف البيانات"
   fileLimits: "الحد الأقصى {rows} من الصفوف، {size} ميغابايت"
   headerRowNote: "يتم التعامل مع الصف الأول كرؤوس أعمدة."
-  delimiter: "محدد"
   delimiterAuto: "الكشف التلقائي"
   delimiterComma: "فاصلة (،)"
   delimiterSemicolon: "فاصلة منقوطة (;)"
@@ -168,10 +164,8 @@ ar_AE:
   previewFailed: "فشلت المعاينة: {message}"
   importSuccess: "اكتمل الاستيراد"
   importFailed: "فشل الاستيراد: {message}"
-  unknownError: "خطأ غير معروف"
   importing: "جارٍ الاستيراد..."
   import: "يستورد"
-  cancel: "يلغي"
 
 de_DE:
   title: "Daten importieren"
@@ -181,7 +175,6 @@ de_DE:
   dataFile: "Datendatei"
   fileLimits: "Max. {rows} Zeilen, {size} MB"
   headerRowNote: "Die erste Zeile wird als Spaltenüberschrift behandelt."
-  delimiter: "Trennzeichen"
   delimiterAuto: "Automatische Erkennung"
   delimiterComma: "Komma (,)"
   delimiterSemicolon: "Semikolon (;)"
@@ -252,10 +245,8 @@ de_DE:
   previewFailed: "Vorschau fehlgeschlagen: {message}"
   importSuccess: "Import abgeschlossen"
   importFailed: "Import fehlgeschlagen: {message}"
-  unknownError: "Unbekannter Fehler"
   importing: "Importieren..."
   import: "Import"
-  cancel: "Stornieren"
 
 el_GR:
   title: "Εισαγωγή δεδομένων"
@@ -265,7 +256,6 @@ el_GR:
   dataFile: "Αρχείο Δεδομένων"
   fileLimits: "Μέγιστο {rows} σειρές, {size} MB"
   headerRowNote: "Η πρώτη σειρά αντιμετωπίζεται ως κεφαλίδες στηλών."
-  delimiter: "Οριοθέτης"
   delimiterAuto: "Αυτόματος εντοπισμός"
   delimiterComma: "Κόμμα (,)"
   delimiterSemicolon: "ερωτηματικό (;)"
@@ -336,10 +326,8 @@ el_GR:
   previewFailed: "Η προεπισκόπηση απέτυχε: {message}"
   importSuccess: "Η εισαγωγή ολοκληρώθηκε"
   importFailed: "Η εισαγωγή απέτυχε: {message}"
-  unknownError: "Άγνωστο σφάλμα"
   importing: "Εισαγωγή..."
   import: "Εισαγωγή"
-  cancel: "Ματαίωση"
 
 en_GB:
   title: "Import Data"
@@ -349,7 +337,6 @@ en_GB:
   dataFile: "Data File"
   fileLimits: "Max {rows} rows, {size} MB"
   headerRowNote: "First row is treated as column headers."
-  delimiter: "Delimiter"
   delimiterAuto: "Auto-detect"
   delimiterComma: "Comma (,)"
   delimiterSemicolon: "Semicolon (;)"
@@ -420,10 +407,8 @@ en_GB:
   previewFailed: "Preview failed: {message}"
   importSuccess: "Import completed"
   importFailed: "Import failed: {message}"
-  unknownError: "Unknown error"
   importing: "Importing..."
   import: "Import"
-  cancel: "Cancel"
 
 es_ES:
   title: "Importar datos"
@@ -433,7 +418,6 @@ es_ES:
   dataFile: "Archivo de datos"
   fileLimits: "Máximo {rows} filas, {size} MB"
   headerRowNote: "La primera fila se trata como encabezados de columna."
-  delimiter: "Delimitador"
   delimiterAuto: "Detección automática"
   delimiterComma: "Coma (,)"
   delimiterSemicolon: "Punto y coma (;)"
@@ -504,10 +488,8 @@ es_ES:
   previewFailed: "Error en la vista previa: {message}"
   importSuccess: "Importación completada"
   importFailed: "Error de importación: {message}"
-  unknownError: "Error desconocido"
   importing: "Importadora..."
   import: "Importar"
-  cancel: "Cancelar"
 
 fi_FI:
   title: "Tuo tiedot"
@@ -517,7 +499,6 @@ fi_FI:
   dataFile: "Datatiedosto"
   fileLimits: "Enintään {rows} riviä, {size} Mt"
   headerRowNote: "Ensimmäistä riviä käsitellään sarakeotsikoina."
-  delimiter: "Erotin"
   delimiterAuto: "Automaattinen tunnistus"
   delimiterComma: "Pilkku (,)"
   delimiterSemicolon: "Puolipiste (;)"
@@ -588,10 +569,8 @@ fi_FI:
   previewFailed: "Esikatselu epäonnistui: {message}"
   importSuccess: "Tuonti valmis"
   importFailed: "Tuonti epäonnistui: {message}"
-  unknownError: "Tuntematon virhe"
   importing: "Tuodaan..."
   import: "Tuoda"
-  cancel: "Peruuttaa"
 
 fr_FR:
   title: "Importer des données"
@@ -601,7 +580,6 @@ fr_FR:
   dataFile: "Fichier de données"
   fileLimits: "{rows} lignes maximum, {size} Mo"
   headerRowNote: "La première ligne est traitée comme en-têtes de colonnes."
-  delimiter: "Délimiteur"
   delimiterAuto: "Détection automatique"
   delimiterComma: "Virgule (,)"
   delimiterSemicolon: "Point-virgule (;)"
@@ -672,10 +650,8 @@ fr_FR:
   previewFailed: "Échec de l'aperçu : {message}"
   importSuccess: "Importation terminée"
   importFailed: "Échec de l'importation : {message}"
-  unknownError: "Erreur inconnue"
   importing: "Importation..."
   import: "Importer"
-  cancel: "Annuler"
 
 it_IT:
   title: "Importa dati"
@@ -685,7 +661,6 @@ it_IT:
   dataFile: "File di dati"
   fileLimits: "Numero massimo di {rows} righe, {size} MB"
   headerRowNote: "La prima riga viene trattata come intestazioni di colonna."
-  delimiter: "Delimitatore"
   delimiterAuto: "Rilevamento automatico"
   delimiterComma: "Virgola (,)"
   delimiterSemicolon: "Punto e virgola (;)"
@@ -756,10 +731,8 @@ it_IT:
   previewFailed: "Anteprima non riuscita: {message}"
   importSuccess: "Importazione completata"
   importFailed: "Importazione non riuscita: {message}"
-  unknownError: "Errore sconosciuto"
   importing: "Importazione..."
   import: "Importare"
-  cancel: "Cancellare"
 
 iw_IL:
   title: "ייבוא ​​נתונים"
@@ -769,7 +742,6 @@ iw_IL:
   dataFile: "קובץ נתונים"
   fileLimits: "מקסימום {rows} שורות, {size} MB"
   headerRowNote: "השורה הראשונה מטופלת ככותרות עמודות."
-  delimiter: "תוחם"
   delimiterAuto: "זיהוי אוטומטי"
   delimiterComma: "פסיק (,)"
   delimiterSemicolon: "נקודה-פסיק (;)"
@@ -840,10 +812,8 @@ iw_IL:
   previewFailed: "התצוגה המקדימה נכשלה: {message}"
   importSuccess: "הייבוא ​​הושלם"
   importFailed: "הייבוא ​​נכשל: {message}"
-  unknownError: "שגיאה לא ידועה"
   importing: "מייבא..."
   import: "יְבוּא"
-  cancel: "לְבַטֵל"
 
 ja_JP:
   title: "データのインポート"
@@ -853,7 +823,6 @@ ja_JP:
   dataFile: "データファイル"
   fileLimits: "最大 {rows} 行、{size} MB"
   headerRowNote: "最初の行は列ヘッダーとして扱われます。"
-  delimiter: "デリミタ"
   delimiterAuto: "自動検出"
   delimiterComma: "カンマ(,)"
   delimiterSemicolon: "セミコロン(;)"
@@ -924,10 +893,8 @@ ja_JP:
   previewFailed: "プレビューに失敗しました: {message}"
   importSuccess: "インポートが完了しました"
   importFailed: "インポートに失敗しました: {message}"
-  unknownError: "不明なエラー"
   importing: "インポート中..."
   import: "輸入"
-  cancel: "キャンセル"
 
 ko_KR:
   title: "데이터 가져오기"
@@ -937,7 +904,6 @@ ko_KR:
   dataFile: "데이터 파일"
   fileLimits: "최대 {rows} 행, {size}MB"
   headerRowNote: "첫 번째 행은 열 머리글로 처리됩니다."
-  delimiter: "구분 기호"
   delimiterAuto: "자동 감지"
   delimiterComma: "쉼표(,)"
   delimiterSemicolon: "세미콜론(;)"
@@ -1008,10 +974,8 @@ ko_KR:
   previewFailed: "미리보기 실패: {message}"
   importSuccess: "가져오기 완료"
   importFailed: "가져오기 실패: {message}"
-  unknownError: "알 수 없는 오류"
   importing: "가져오는 중..."
   import: "수입"
-  cancel: "취소"
 
 nl_NL:
   title: "Gegevens importeren"
@@ -1021,7 +985,6 @@ nl_NL:
   dataFile: "Gegevensbestand"
   fileLimits: "Max. {rows} rijen, {size} MB"
   headerRowNote: "De eerste rij wordt behandeld als kolomkoppen."
-  delimiter: "Scheidingsteken"
   delimiterAuto: "Automatische detectie"
   delimiterComma: "Komma (,)"
   delimiterSemicolon: "Puntkomma (;)"
@@ -1092,10 +1055,8 @@ nl_NL:
   previewFailed: "Voorbeeld mislukt: {message}"
   importSuccess: "Importeren voltooid"
   importFailed: "Importeren mislukt: {message}"
-  unknownError: "Onbekende fout"
   importing: "Importeren..."
   import: "Importeren"
-  cancel: "Annuleren"
 
 pl_PL:
   title: "Importuj dane"
@@ -1105,7 +1066,6 @@ pl_PL:
   dataFile: "Plik danych"
   fileLimits: "Maks. {rows} wierszy, {size} MB"
   headerRowNote: "Pierwszy wiersz jest traktowany jako nagłówki kolumn."
-  delimiter: "Ogranicznik"
   delimiterAuto: "Automatyczne wykrywanie"
   delimiterComma: "Przecinek (,)"
   delimiterSemicolon: "Średnik (;)"
@@ -1176,10 +1136,8 @@ pl_PL:
   previewFailed: "Podgląd nie powiódł się: {message}"
   importSuccess: "Import zakończony"
   importFailed: "Import nie powiódł się: {message}"
-  unknownError: "Nieznany błąd"
   importing: "Importowanie..."
   import: "Import"
-  cancel: "Anulować"
 
 pt_BR:
   title: "Importar dados"
@@ -1189,7 +1147,6 @@ pt_BR:
   dataFile: "Arquivo de dados"
   fileLimits: "Máximo de {rows} linhas, {size} MB"
   headerRowNote: "A primeira linha é tratada como cabeçalhos de coluna."
-  delimiter: "Delimitador"
   delimiterAuto: "Detecção automática"
   delimiterComma: "Vírgula (,)"
   delimiterSemicolon: "Ponto e vírgula (;)"
@@ -1260,10 +1217,8 @@ pt_BR:
   previewFailed: "Falha na visualização: {message}"
   importSuccess: "Importação concluída"
   importFailed: "Falha na importação: {message}"
-  unknownError: "Erro desconhecido"
   importing: "Importando..."
   import: "Importar"
-  cancel: "Cancelar"
 
 ro_RO:
   title: "Importați date"
@@ -1273,7 +1228,6 @@ ro_RO:
   dataFile: "Fișier de date"
   fileLimits: "Max {rows} rânduri, {size} MB"
   headerRowNote: "Primul rând este tratat ca antete de coloană."
-  delimiter: "Delimitator"
   delimiterAuto: "Detectare automată"
   delimiterComma: "virgulă (,)"
   delimiterSemicolon: "punct și virgulă (;)"
@@ -1344,10 +1298,8 @@ ro_RO:
   previewFailed: "Previzualizarea a eșuat: {message}"
   importSuccess: "Import finalizat"
   importFailed: "Importarea nu a reușit: {message}"
-  unknownError: "Eroare necunoscută"
   importing: "Se importă..."
   import: "Import"
-  cancel: "Anula"
 
 ru_RU:
   title: "Импортировать данные"
@@ -1357,7 +1309,6 @@ ru_RU:
   dataFile: "Файл данных"
   fileLimits: "Максимум {rows} строк, {size} МБ"
   headerRowNote: "Первая строка рассматривается как заголовки столбцов."
-  delimiter: "Разделитель"
   delimiterAuto: "Автообнаружение"
   delimiterComma: "Запятая (,)"
   delimiterSemicolon: "Точка с запятой (;)"
@@ -1428,10 +1379,8 @@ ru_RU:
   previewFailed: "Предварительный просмотр не удался: {message}"
   importSuccess: "Импорт завершен"
   importFailed: "Не удалось импортировать: {message}"
-  unknownError: "Неизвестная ошибка"
   importing: "Импорт..."
   import: "Импорт"
-  cancel: "Отмена"
 
 sk_SK:
   title: "Importovať údaje"
@@ -1441,7 +1390,6 @@ sk_SK:
   dataFile: "Dátový súbor"
   fileLimits: "Max {rows} riadkov, {size} MB"
   headerRowNote: "Prvý riadok sa považuje za hlavičky stĺpcov."
-  delimiter: "Oddeľovač"
   delimiterAuto: "Automatická detekcia"
   delimiterComma: "čiarka (,)"
   delimiterSemicolon: "bodkočiarka (;)"
@@ -1512,10 +1460,8 @@ sk_SK:
   previewFailed: "Ukážka zlyhala: {message}"
   importSuccess: "Import dokončený"
   importFailed: "Import zlyhal: {message}"
-  unknownError: "Neznáma chyba"
   importing: "Importuje sa..."
   import: "Importovať"
-  cancel: "Zrušiť"
 
 sv_SE:
   title: "Importera data"
@@ -1525,7 +1471,6 @@ sv_SE:
   dataFile: "Datafil"
   fileLimits: "Max {rows} rader, {size} MB"
   headerRowNote: "Första raden behandlas som kolumnrubriker."
-  delimiter: "Avgränsare"
   delimiterAuto: "Automatisk upptäckt"
   delimiterComma: "Komma (,)"
   delimiterSemicolon: "Semikolon (;)"
@@ -1596,10 +1541,8 @@ sv_SE:
   previewFailed: "Förhandsgranskningen misslyckades: {message}"
   importSuccess: "Importen slutförd"
   importFailed: "Import misslyckades: {message}"
-  unknownError: "Okänt fel"
   importing: "Importerar..."
   import: "Importera"
-  cancel: "Avboka"
 
 zh_CN:
   title: "导入数据"
@@ -1609,7 +1552,6 @@ zh_CN:
   dataFile: "数据文件"
   fileLimits: "最大 {rows} 行，{size} MB"
   headerRowNote: "第一行被视为列标题。"
-  delimiter: "分隔符"
   delimiterAuto: "自动检测"
   delimiterComma: "逗号 (,)"
   delimiterSemicolon: "分号 (;)"
@@ -1680,10 +1622,8 @@ zh_CN:
   previewFailed: "预览失败：{message}"
   importSuccess: "导入完成"
   importFailed: "导入失败：{message}"
-  unknownError: "未知错误"
   importing: "输入..."
   import: "进口"
-  cancel: "取消"
 
 zh_TW:
   title: "導入數據"
@@ -1693,7 +1633,6 @@ zh_TW:
   dataFile: "資料檔案"
   fileLimits: "最大 {rows} 行，{size} MB"
   headerRowNote: "第一行被視為列標題。"
-  delimiter: "分隔符"
   delimiterAuto: "自動偵測"
   delimiterComma: "逗號 (,)"
   delimiterSemicolon: "分號 (;)"
@@ -1764,10 +1703,8 @@ zh_TW:
   previewFailed: "預覽失敗：{message}"
   importSuccess: "導入完成"
   importFailed: "導入失敗：{message}"
-  unknownError: "未知錯誤"
   importing: "輸入..."
   import: "進口"
-  cancel: "取消"
 
 bg_BG:
   title: "Импортиране на данни"
@@ -1777,7 +1714,6 @@ bg_BG:
   dataFile: "Файл с данни"
   fileLimits: "Макс {rows} редове, {size} MB"
   headerRowNote: "Първият ред се третира като заглавки на колони."
-  delimiter: "Разделител"
   delimiterAuto: "Автоматично откриване"
   delimiterComma: "запетая (,)"
   delimiterSemicolon: "точка и запетая (;)"
@@ -1848,10 +1784,8 @@ bg_BG:
   previewFailed: "Неуспешен преглед: {message}"
   importSuccess: "Импортирането завърши"
   importFailed: "Неуспешно импортиране: {message}"
-  unknownError: "Неизвестна грешка"
   importing: "Импортиране..."
   import: "Импортиране"
-  cancel: "Отказ"
 
 bn_BD:
   title: "ডেটা আমদানি করুন"
@@ -1861,7 +1795,6 @@ bn_BD:
   dataFile: "ডেটা ফাইল"
   fileLimits: "সর্বাধিক {rows} সারি, {size} MB"
   headerRowNote: "প্রথম সারিটিকে কলাম হেডার হিসাবে বিবেচনা করা হয়।"
-  delimiter: "ডিলিমিটার"
   delimiterAuto: "স্বয়ংক্রিয়ভাবে সনাক্ত করুন"
   delimiterComma: "কমা (,)"
   delimiterSemicolon: "সেমিকোলন (;)"
@@ -1932,10 +1865,8 @@ bn_BD:
   previewFailed: "পূর্বরূপ ব্যর্থ হয়েছে: {message}"
   importSuccess: "আমদানি সম্পন্ন হয়েছে"
   importFailed: "আমদানি ব্যর্থ হয়েছে: {message}"
-  unknownError: "অজানা ত্রুটি"
   importing: "আমদানি করা হচ্ছে..."
   import: "আমদানি"
-  cancel: "বাতিল করুন"
 
 ca_ES:
   title: "Importa dades"
@@ -1945,7 +1876,6 @@ ca_ES:
   dataFile: "Fitxer de dades"
   fileLimits: "Màx. {rows} files, {size} MB"
   headerRowNote: "La primera fila es tracta com a capçaleres de columna."
-  delimiter: "Delimitador"
   delimiterAuto: "Detecció automàtica"
   delimiterComma: "coma (,)"
   delimiterSemicolon: "Punt i coma (;)"
@@ -2016,10 +1946,8 @@ ca_ES:
   previewFailed: "La previsualització ha fallat: {message}"
   importSuccess: "Importació completada"
   importFailed: "La importació ha fallat: {message}"
-  unknownError: "Error desconegut"
   importing: "S'està important..."
   import: "Importar"
-  cancel: "Cancel·la"
 
 cs_CZ:
   title: "Importovat data"
@@ -2029,7 +1957,6 @@ cs_CZ:
   dataFile: "Datový soubor"
   fileLimits: "Max {rows} řádků, {size} MB"
   headerRowNote: "První řádek je považován za záhlaví sloupců."
-  delimiter: "Oddělovač"
   delimiterAuto: "Automatická detekce"
   delimiterComma: "Čárka (,)"
   delimiterSemicolon: "středník (;)"
@@ -2100,10 +2027,8 @@ cs_CZ:
   previewFailed: "Náhled se nezdařil: {message}"
   importSuccess: "Import dokončen"
   importFailed: "Import se nezdařil: {message}"
-  unknownError: "Neznámá chyba"
   importing: "Import..."
   import: "Importovat"
-  cancel: "Zrušit"
 
 da_DK:
   title: "Importer data"
@@ -2113,7 +2038,6 @@ da_DK:
   dataFile: "Datafil"
   fileLimits: "Max {rows} rækker, {size} MB"
   headerRowNote: "Første række behandles som kolonneoverskrifter."
-  delimiter: "Afgrænsning"
   delimiterAuto: "Automatisk registrering"
   delimiterComma: "Komma (,)"
   delimiterSemicolon: "Semikolon (;)"
@@ -2184,10 +2108,8 @@ da_DK:
   previewFailed: "Forhåndsvisning mislykkedes: {message}"
   importSuccess: "Import afsluttet"
   importFailed: "Import mislykkedes: {message}"
-  unknownError: "Ukendt fejl"
   importing: "Importerer..."
   import: "Importere"
-  cancel: "Ophæve"
 
 fa_IR:
   title: "وارد کردن داده ها"
@@ -2197,7 +2119,6 @@ fa_IR:
   dataFile: "فایل داده"
   fileLimits: "حداکثر {rows} ردیف، {size} مگابایت"
   headerRowNote: "سطر اول به عنوان سرصفحه ستون در نظر گرفته می شود."
-  delimiter: "جدا کننده"
   delimiterAuto: "تشخیص خودکار"
   delimiterComma: "کاما (،)"
   delimiterSemicolon: "نقطه ویرگول (;)"
@@ -2268,10 +2189,8 @@ fa_IR:
   previewFailed: "پیش‌نمایش ناموفق بود: {message}"
   importSuccess: "واردات انجام شد"
   importFailed: "واردات انجام نشد: {message}"
-  unknownError: "خطای ناشناخته"
   importing: "واردات..."
   import: "واردات"
-  cancel: "لغو کنید"
 
 hi_IN:
   title: "डेटा आयात करें"
@@ -2281,7 +2200,6 @@ hi_IN:
   dataFile: "डेटा फाइल"
   fileLimits: "अधिकतम {rows} पंक्तियाँ, {size} एमबी"
   headerRowNote: "पहली पंक्ति को कॉलम हेडर के रूप में माना जाता है।"
-  delimiter: "सीमान्तक"
   delimiterAuto: "ऑटो का पता लगाने"
   delimiterComma: "अल्पविराम (,)"
   delimiterSemicolon: "अर्धविराम (;)"
@@ -2352,10 +2270,8 @@ hi_IN:
   previewFailed: "पूर्वावलोकन विफल: {message}"
   importSuccess: "आयात पूरा हुआ"
   importFailed: "आयात विफल: {message}"
-  unknownError: "अज्ञात त्रुटि"
   importing: "आयात किया जा रहा है..."
   import: "आयात"
-  cancel: "रद्द करना"
 
 hr_HR:
   title: "Uvoz podataka"
@@ -2365,7 +2281,6 @@ hr_HR:
   dataFile: "Datoteka s podacima"
   fileLimits: "Maks {rows} redaka, {size} MB"
   headerRowNote: "Prvi red se tretira kao zaglavlja stupaca."
-  delimiter: "Razdjelnik"
   delimiterAuto: "Automatsko otkrivanje"
   delimiterComma: "zarez (,)"
   delimiterSemicolon: "Točka i zarez (;)"
@@ -2436,10 +2351,8 @@ hr_HR:
   previewFailed: "Pregled nije uspio: {message}"
   importSuccess: "Uvoz dovršen"
   importFailed: "Uvoz nije uspio: {message}"
-  unknownError: "Nepoznata greška"
   importing: "Uvoz..."
   import: "Uvoz"
-  cancel: "Otkazati"
 
 hu_HU:
   title: "Adatok importálása"
@@ -2449,7 +2362,6 @@ hu_HU:
   dataFile: "Adatfájl"
   fileLimits: "Max. {rows} sor, {size} MB"
   headerRowNote: "Az első sort oszlopfejlécként kezeli."
-  delimiter: "Határoló"
   delimiterAuto: "Automatikus felismerés"
   delimiterComma: "Vessző (,)"
   delimiterSemicolon: "Pontosvessző (;)"
@@ -2520,10 +2432,8 @@ hu_HU:
   previewFailed: "Az előnézet nem sikerült: {message}"
   importSuccess: "Az importálás befejeződött"
   importFailed: "Sikertelen importálás: {message}"
-  unknownError: "Ismeretlen hiba"
   importing: "Importálás..."
   import: "Importálás"
-  cancel: "Mégse"
 
 id_ID:
   title: "Impor Data"
@@ -2533,7 +2443,6 @@ id_ID:
   dataFile: "Berkas Data"
   fileLimits: "Maksimum {rows} baris, {size} MB"
   headerRowNote: "Baris pertama diperlakukan sebagai header kolom."
-  delimiter: "Pembatas"
   delimiterAuto: "Deteksi otomatis"
   delimiterComma: "Koma (,)"
   delimiterSemicolon: "Titik koma (;)"
@@ -2604,10 +2513,8 @@ id_ID:
   previewFailed: "Pratinjau gagal: {message}"
   importSuccess: "Impor selesai"
   importFailed: "Impor gagal: {message}"
-  unknownError: "Kesalahan tidak diketahui"
   importing: "Pengimporan..."
   import: "Impor"
-  cancel: "Membatalkan"
 
 ms_MY:
   title: "Import Data"
@@ -2617,7 +2524,6 @@ ms_MY:
   dataFile: "Fail Data"
   fileLimits: "Maksimum {rows} baris, {size} MB"
   headerRowNote: "Baris pertama dianggap sebagai pengepala lajur."
-  delimiter: "pembatas"
   delimiterAuto: "Auto-kesan"
   delimiterComma: "Koma (,)"
   delimiterSemicolon: "Titik bertitik (;)"
@@ -2688,10 +2594,8 @@ ms_MY:
   previewFailed: "Pratonton gagal: {message}"
   importSuccess: "Import selesai"
   importFailed: "Import gagal: {message}"
-  unknownError: "Ralat tidak diketahui"
   importing: "Mengimport..."
   import: "Import"
-  cancel: "Batal"
 
 nb_NO:
   title: "Importer data"
@@ -2701,7 +2605,6 @@ nb_NO:
   dataFile: "Datafil"
   fileLimits: "Maks {rows} rader, {size} MB"
   headerRowNote: "Første rad behandles som kolonneoverskrifter."
-  delimiter: "Avgrensning"
   delimiterAuto: "Automatisk gjenkjenning"
   delimiterComma: "Komma (,)"
   delimiterSemicolon: "Semikolon (;)"
@@ -2772,10 +2675,8 @@ nb_NO:
   previewFailed: "Forhåndsvisning mislyktes: {message}"
   importSuccess: "Import fullført"
   importFailed: "Import mislyktes: {message}"
-  unknownError: "Ukjent feil"
   importing: "Importerer..."
   import: "Import"
-  cancel: "Kansellere"
 
 sw_KE:
   title: "Ingiza Data"
@@ -2785,7 +2686,6 @@ sw_KE:
   dataFile: "Faili ya Data"
   fileLimits: "Upeo wa safu mlalo {rows}, MB {size}"
   headerRowNote: "Safu ya kwanza inachukuliwa kama vichwa vya safu wima."
-  delimiter: "Delimiter"
   delimiterAuto: "Gundua kiotomatiki"
   delimiterComma: "Koma (,)"
   delimiterSemicolon: "Nukta koloni (;)"
@@ -2856,10 +2756,8 @@ sw_KE:
   previewFailed: "Hakiki imeshindwa: {message}"
   importSuccess: "Uingizaji umekamilika"
   importFailed: "Imeshindwa kuleta: {message}"
-  unknownError: "Hitilafu isiyojulikana"
   importing: "Inaleta..."
   import: "Ingiza"
-  cancel: "Ghairi"
 
 ta_IN:
   title: "தரவை இறக்குமதி செய்யவும்"
@@ -2869,7 +2767,6 @@ ta_IN:
   dataFile: "தரவு கோப்பு"
   fileLimits: "அதிகபட்சம் {rows} வரிசைகள், {size} MB"
   headerRowNote: "முதல் வரிசை நெடுவரிசை தலைப்புகளாகக் கருதப்படுகிறது."
-  delimiter: "பிரிப்பான்"
   delimiterAuto: "தானாக கண்டறிதல்"
   delimiterComma: "கமா (,)"
   delimiterSemicolon: "அரைப்புள்ளி (;)"
@@ -2940,10 +2837,8 @@ ta_IN:
   previewFailed: "முன்னோட்டம் தோல்வியடைந்தது: {message}"
   importSuccess: "இறக்குமதி முடிந்தது"
   importFailed: "இறக்குமதி தோல்வி: {message}"
-  unknownError: "அறியப்படாத பிழை"
   importing: "இறக்குமதி செய்கிறது..."
   import: "இறக்குமதி"
-  cancel: "ரத்து செய்"
 
 th_TH:
   title: "นำเข้าข้อมูล"
@@ -2953,7 +2848,6 @@ th_TH:
   dataFile: "ไฟล์ข้อมูล"
   fileLimits: "สูงสุด {rows} แถว, {size} MB"
   headerRowNote: "แถวแรกจะถือเป็นส่วนหัวของคอลัมน์"
-  delimiter: "ตัวคั่น"
   delimiterAuto: "ตรวจจับอัตโนมัติ"
   delimiterComma: "จุลภาค (,)"
   delimiterSemicolon: "อัฒภาค (;)"
@@ -3024,10 +2918,8 @@ th_TH:
   previewFailed: "การแสดงตัวอย่างล้มเหลว: {message}"
   importSuccess: "การนำเข้าเสร็จสมบูรณ์"
   importFailed: "การนำเข้าล้มเหลว: {message}"
-  unknownError: "ข้อผิดพลาดที่ไม่รู้จัก"
   importing: "กำลังนำเข้า..."
   import: "นำเข้า"
-  cancel: "ยกเลิก"
 
 tr_TR:
   title: "Verileri İçe Aktar"
@@ -3037,7 +2929,6 @@ tr_TR:
   dataFile: "Veri Dosyası"
   fileLimits: "Maksimum {rows} satır, {size} MB"
   headerRowNote: "İlk satır sütun başlıkları olarak kabul edilir."
-  delimiter: "Sınırlayıcı"
   delimiterAuto: "Otomatik algılama"
   delimiterComma: "Virgül (,)"
   delimiterSemicolon: "Noktalı virgül (;)"
@@ -3108,10 +2999,8 @@ tr_TR:
   previewFailed: "Önizleme başarısız oldu: {message}"
   importSuccess: "İçe aktarma tamamlandı"
   importFailed: "İçe aktarma başarısız oldu: {message}"
-  unknownError: "Bilinmeyen hata"
   importing: "İçe aktarılıyor..."
   import: "İçe aktarmak"
-  cancel: "İptal etmek"
 
 uk_UA:
   title: "Імпорт даних"
@@ -3121,7 +3010,6 @@ uk_UA:
   dataFile: "Файл даних"
   fileLimits: "Макс. {rows} рядків, {size} МБ"
   headerRowNote: "Перший рядок розглядається як заголовки стовпців."
-  delimiter: "роздільник"
   delimiterAuto: "Автоматичне визначення"
   delimiterComma: "Кома (,)"
   delimiterSemicolon: "Крапка з комою (;)"
@@ -3192,10 +3080,8 @@ uk_UA:
   previewFailed: "Помилка попереднього перегляду: {message}"
   importSuccess: "Імпорт завершено"
   importFailed: "Помилка імпорту: {message}"
-  unknownError: "Невідома помилка"
   importing: "Імпорт..."
   import: "Імпорт"
-  cancel: "Скасувати"
 
 ur_PK:
   title: "ڈیٹا درآمد کریں۔"
@@ -3205,7 +3091,6 @@ ur_PK:
   dataFile: "ڈیٹا فائل"
   fileLimits: "زیادہ سے زیادہ {rows} قطاریں، {size} MB"
   headerRowNote: "پہلی قطار کو کالم ہیڈر کے طور پر سمجھا جاتا ہے۔"
-  delimiter: "حد بندی کرنے والا"
   delimiterAuto: "خودکار پتہ لگانا"
   delimiterComma: "کوما (،)"
   delimiterSemicolon: "سیمی کالون (؛)"
@@ -3276,10 +3161,8 @@ ur_PK:
   previewFailed: "پیش نظارہ ناکام: {message}"
   importSuccess: "درآمد مکمل"
   importFailed: "درآمد ناکام: {message}"
-  unknownError: "نامعلوم خرابی۔"
   importing: "درآمد کر رہا ہے..."
   import: "درآمد کریں۔"
-  cancel: "منسوخ کریں۔"
 
 vi_VN:
   title: "Nhập dữ liệu"
@@ -3289,7 +3172,6 @@ vi_VN:
   dataFile: "Tệp dữ liệu"
   fileLimits: "Tối đa {rows} hàng, {size} MB"
   headerRowNote: "Hàng đầu tiên được coi là tiêu đề cột."
-  delimiter: "Dấu phân cách"
   delimiterAuto: "Tự động phát hiện"
   delimiterComma: "Dấu phẩy (,)"
   delimiterSemicolon: "Dấu chấm phẩy (;)"
@@ -3360,10 +3242,8 @@ vi_VN:
   previewFailed: "Xem trước không thành công: {message}"
   importSuccess: "Đã nhập xong"
   importFailed: "Nhập không thành công: {message}"
-  unknownError: "Lỗi không xác định"
   importing: "Đang nhập khẩu..."
   import: "Nhập khẩu"
-  cancel: "Hủy bỏ"
 
 af_ZA:
   title: "Voer data in"
@@ -3373,7 +3253,6 @@ af_ZA:
   dataFile: "Data lêer"
   fileLimits: "Maksimum {rows} rye, {size} MB"
   headerRowNote: "Eerste ry word as kolomopskrifte hanteer."
-  delimiter: "Afbakener"
   delimiterAuto: "Outo-bespeur"
   delimiterComma: "Komma (,)"
   delimiterSemicolon: "Puntkomma (;)"
@@ -3444,10 +3323,8 @@ af_ZA:
   previewFailed: "Voorskou het misluk: {message}"
   importSuccess: "Invoer voltooi"
   importFailed: "Invoer het misluk: {message}"
-  unknownError: "Onbekende fout"
   importing: "Voer tans in …"
   import: "Invoer"
-  cancel: "Kanselleer"
 
 am_ET:
   title: "ውሂብ አስመጣ"
@@ -3457,7 +3334,6 @@ am_ET:
   dataFile: "የውሂብ ፋይል"
   fileLimits: "ከፍተኛ {rows} ረድፎች፣ {size} ሜባ"
   headerRowNote: "የመጀመሪያው ረድፍ እንደ አምድ ራስጌዎች ይቆጠራል."
-  delimiter: "ገዳቢ"
   delimiterAuto: "በራስ-አግኝ"
   delimiterComma: "ኮማ (,)"
   delimiterSemicolon: "ሴሚኮሎን (;)"
@@ -3528,10 +3404,8 @@ am_ET:
   previewFailed: "ቅድመ እይታ አልተሳካም፦ {message}"
   importSuccess: "ማስመጣት ተጠናቅቋል"
   importFailed: "ማስመጣት አልተሳካም፦ {message}"
-  unknownError: "ያልታወቀ ስህተት"
   importing: "በማስመጣት ላይ..."
   import: "አስመጣ"
-  cancel: "ሰርዝ"
 
 az_AZ:
   title: "Data Import"
@@ -3541,7 +3415,6 @@ az_AZ:
   dataFile: "Məlumat faylı"
   fileLimits: "Maks {rows} sıra, {size} MB"
   headerRowNote: "Birinci sıra sütun başlıqları kimi qəbul edilir."
-  delimiter: "Ayırıcı"
   delimiterAuto: "Avtomatik aşkarlama"
   delimiterComma: "vergül (,)"
   delimiterSemicolon: "Nöqtəli vergül (;)"
@@ -3612,10 +3485,8 @@ az_AZ:
   previewFailed: "Önizləmə alınmadı: {message}"
   importSuccess: "İdxal tamamlandı"
   importFailed: "Import alınmadı: {message}"
-  unknownError: "Naməlum xəta"
   importing: "Import edilir..."
   import: "İdxal"
-  cancel: "Ləğv et"
 
 et_EE:
   title: "Impordi andmed"
@@ -3625,7 +3496,6 @@ et_EE:
   dataFile: "Andmefail"
   fileLimits: "Max {rows} rida, {size} MB"
   headerRowNote: "Esimest rida käsitletakse veerupäistena."
-  delimiter: "Eraldaja"
   delimiterAuto: "Automaatne tuvastamine"
   delimiterComma: "Koma (,)"
   delimiterSemicolon: "Semikoolon (;)"
@@ -3696,10 +3566,8 @@ et_EE:
   previewFailed: "Eelvaade ebaõnnestus: {message}"
   importSuccess: "Import on lõpetatud"
   importFailed: "Import ebaõnnestus: {message}"
-  unknownError: "Tundmatu viga"
   importing: "Importimine..."
   import: "Import"
-  cancel: "Tühista"
 
 gu_IN:
   title: "ડેટા આયાત કરો"
@@ -3709,7 +3577,6 @@ gu_IN:
   dataFile: "ડેટા ફાઇલ"
   fileLimits: "મહત્તમ {rows} પંક્તિઓ, {size} MB"
   headerRowNote: "પ્રથમ પંક્તિને કૉલમ હેડર તરીકે ગણવામાં આવે છે."
-  delimiter: "ડિલિમિટર"
   delimiterAuto: "સ્વતઃ શોધ"
   delimiterComma: "અલ્પવિરામ (,)"
   delimiterSemicolon: "અર્ધવિરામ (;)"
@@ -3780,10 +3647,8 @@ gu_IN:
   previewFailed: "પૂર્વાવલોકન નિષ્ફળ થયું: {message}"
   importSuccess: "આયાત પૂર્ણ"
   importFailed: "આયાત નિષ્ફળ: {message}"
-  unknownError: "અજાણી ભૂલ"
   importing: "આયાત કરી રહ્યું છે..."
   import: "આયાત કરો"
-  cancel: "રદ કરો"
 
 ha_NG:
   title: "Shigo da Bayanai"
@@ -3793,7 +3658,6 @@ ha_NG:
   dataFile: "Fayil na bayanai"
   fileLimits: "Matsakaicin {rows} layuka, {size} MB"
   headerRowNote: "Ana ɗaukar layin farko azaman masu kai shafi."
-  delimiter: "Mai iyaka"
   delimiterAuto: "Gano kai tsaye"
   delimiterComma: "Wakafi (,)"
   delimiterSemicolon: "Semicolon (;)"
@@ -3864,10 +3728,8 @@ ha_NG:
   previewFailed: "Ba a yi nasarar samfoti ba: {message}"
   importSuccess: "An gama shigo da kaya"
   importFailed: "An kasa shigo da shi: {message}"
-  unknownError: "Kuskuren da ba a sani ba"
   importing: "Ana shigo da..."
   import: "Shigo da"
-  cancel: "Soke"
 
 ka_GE:
   title: "მონაცემების იმპორტი"
@@ -3877,7 +3739,6 @@ ka_GE:
   dataFile: "მონაცემთა ფაილი"
   fileLimits: "მაქსიმუმ {rows} მწკრივი, {size} მბაიტი"
   headerRowNote: "პირველი რიგი განიხილება, როგორც სვეტის სათაურები."
-  delimiter: "გამსაზღვრელი"
   delimiterAuto: "ავტომატური ამოცნობა"
   delimiterComma: "მძიმე (,)"
   delimiterSemicolon: "მძიმით (;)"
@@ -3948,10 +3809,8 @@ ka_GE:
   previewFailed: "გადახედვა ვერ მოხერხდა: {message}"
   importSuccess: "იმპორტი დასრულდა"
   importFailed: "იმპორტი ვერ მოხერხდა: {message}"
-  unknownError: "უცნობი შეცდომა"
   importing: "მიმდინარეობს იმპორტი..."
   import: "იმპორტი"
-  cancel: "გაუქმება"
 
 km_KH:
   title: "នាំចូលទិន្នន័យ"
@@ -3961,7 +3820,6 @@ km_KH:
   dataFile: "ឯកសារទិន្នន័យ"
   fileLimits: "ជួរអតិបរមា {rows}, {size} MB"
   headerRowNote: "ជួរទីមួយត្រូវបានចាត់ទុកជាបឋមកថាជួរឈរ។"
-  delimiter: "កំណត់ព្រំដែន"
   delimiterAuto: "រកឃើញដោយស្វ័យប្រវត្តិ"
   delimiterComma: "សញ្ញាក្បៀស (,)"
   delimiterSemicolon: "សញ្ញាសម្គាល់ (;)"
@@ -4032,10 +3890,8 @@ km_KH:
   previewFailed: "ការមើលជាមុនបានបរាជ័យ៖ {message}"
   importSuccess: "ការនាំចូលបានបញ្ចប់"
   importFailed: "ការនាំចូលបរាជ័យ៖ {message}"
-  unknownError: "កំហុសមិនស្គាល់"
   importing: "កំពុង​នាំចូល..."
   import: "នាំចូល"
-  cancel: "បោះបង់"
 
 kn_IN:
   title: "ಡೇಟಾವನ್ನು ಆಮದು ಮಾಡಿ"
@@ -4045,7 +3901,6 @@ kn_IN:
   dataFile: "ಡೇಟಾ ಫೈಲ್"
   fileLimits: "ಗರಿಷ್ಠ {rows} ಸಾಲುಗಳು, {size} MB"
   headerRowNote: "ಮೊದಲ ಸಾಲನ್ನು ಕಾಲಮ್ ಹೆಡರ್ ಎಂದು ಪರಿಗಣಿಸಲಾಗುತ್ತದೆ."
-  delimiter: "ಡಿಲಿಮಿಟರ್"
   delimiterAuto: "ಸ್ವಯಂ ಪತ್ತೆ"
   delimiterComma: "ಅಲ್ಪವಿರಾಮ (,)"
   delimiterSemicolon: "ಸೆಮಿಕೋಲನ್ (;)"
@@ -4116,10 +3971,8 @@ kn_IN:
   previewFailed: "ಪೂರ್ವವೀಕ್ಷಣೆ ವಿಫಲವಾಗಿದೆ: {message}"
   importSuccess: "ಆಮದು ಪೂರ್ಣಗೊಂಡಿದೆ"
   importFailed: "ಆಮದು ವಿಫಲವಾಗಿದೆ: {message}"
-  unknownError: "ಅಜ್ಞಾತ ದೋಷ"
   importing: "ಆಮದು ಮಾಡಲಾಗುತ್ತಿದೆ..."
   import: "ಆಮದು ಮಾಡಿಕೊಳ್ಳಿ"
-  cancel: "ರದ್ದುಮಾಡು"
 
 lt_LT:
   title: "Importuoti duomenis"
@@ -4129,7 +3982,6 @@ lt_LT:
   dataFile: "Duomenų failas"
   fileLimits: "Maks. {rows} eilučių, {size} MB"
   headerRowNote: "Pirmoji eilutė traktuojama kaip stulpelių antraštės."
-  delimiter: "Skirstytuvas"
   delimiterAuto: "Automatinis aptikimas"
   delimiterComma: "Kablelis (,)"
   delimiterSemicolon: "Kabliataškis (;)"
@@ -4200,10 +4052,8 @@ lt_LT:
   previewFailed: "Peržiūra nepavyko: {message}"
   importSuccess: "Importavimas baigtas"
   importFailed: "Importuoti nepavyko: {message}"
-  unknownError: "Nežinoma klaida"
   importing: "Importuojama..."
   import: "Importuoti"
-  cancel: "Atšaukti"
 
 lv_LV:
   title: "Importēt datus"
@@ -4213,7 +4063,6 @@ lv_LV:
   dataFile: "Datu fails"
   fileLimits: "Maks. {rows} rindas, {size} MB"
   headerRowNote: "Pirmā rinda tiek uzskatīta par kolonnu galvenes."
-  delimiter: "Atdalītājs"
   delimiterAuto: "Automātiska noteikšana"
   delimiterComma: "komats (,)"
   delimiterSemicolon: "Semikols (;)"
@@ -4284,10 +4133,8 @@ lv_LV:
   previewFailed: "Priekšskatījums neizdevās: {message}"
   importSuccess: "Importēšana pabeigta"
   importFailed: "Importēšana neizdevās: {message}"
-  unknownError: "Nezināma kļūda"
   importing: "Notiek importēšana..."
   import: "Importēt"
-  cancel: "Atcelt"
 
 ml_IN:
   title: "ഡാറ്റ ഇറക്കുമതി ചെയ്യുക"
@@ -4297,7 +4144,6 @@ ml_IN:
   dataFile: "ഡാറ്റ ഫയൽ"
   fileLimits: "പരമാവധി {rows} വരികൾ, {size} MB"
   headerRowNote: "ആദ്യ വരി നിര തലക്കെട്ടുകളായി കണക്കാക്കുന്നു."
-  delimiter: "ഡിലിമിറ്റർ"
   delimiterAuto: "സ്വയമേവ കണ്ടെത്തുക"
   delimiterComma: "കോമ (,)"
   delimiterSemicolon: "അർദ്ധവിരാമം (;)"
@@ -4368,10 +4214,8 @@ ml_IN:
   previewFailed: "പ്രിവ്യൂ പരാജയപ്പെട്ടു: {message}"
   importSuccess: "ഇറക്കുമതി പൂർത്തിയായി"
   importFailed: "ഇറക്കുമതി പരാജയപ്പെട്ടു: {message}"
-  unknownError: "അജ്ഞാത പിശക്"
   importing: "ഇറക്കുമതി ചെയ്യുന്നു..."
   import: "ഇറക്കുമതി ചെയ്യുക"
-  cancel: "റദ്ദാക്കുക"
 
 mr_IN:
   title: "डेटा आयात करा"
@@ -4381,7 +4225,6 @@ mr_IN:
   dataFile: "डेटा फाइल"
   fileLimits: "कमाल {rows} पंक्ती, {size} MB"
   headerRowNote: "पहिल्या पंक्तीला स्तंभ शीर्षलेख मानले जाते."
-  delimiter: "परिसीमक"
   delimiterAuto: "स्वयं-शोध"
   delimiterComma: "स्वल्पविराम (,)"
   delimiterSemicolon: "अर्धविराम (;)"
@@ -4452,10 +4295,8 @@ mr_IN:
   previewFailed: "पूर्वावलोकन अयशस्वी: {message}"
   importSuccess: "आयात पूर्ण झाले"
   importFailed: "आयात अयशस्वी: {message}"
-  unknownError: "अज्ञात त्रुटी"
   importing: "आयात करत आहे..."
   import: "आयात करा"
-  cancel: "रद्द करा"
 
 ne_NP:
   title: "डाटा आयात गर्नुहोस्"
@@ -4465,7 +4306,6 @@ ne_NP:
   dataFile: "डाटा फाइल"
   fileLimits: "अधिकतम {rows} पङ्क्तिहरू, {size} एमबी"
   headerRowNote: "पहिलो पङ्क्तिलाई स्तम्भ हेडरको रूपमा मानिन्छ।"
-  delimiter: "डिलिमिटर"
   delimiterAuto: "स्वतः पत्ता लगाउनुहोस्"
   delimiterComma: "अल्पविराम (,)"
   delimiterSemicolon: "अर्धविराम (;)"
@@ -4536,10 +4376,8 @@ ne_NP:
   previewFailed: "पूर्वावलोकन असफल भयो: {message}"
   importSuccess: "आयात पूरा भयो"
   importFailed: "आयात असफल भयो: {message}"
-  unknownError: "अज्ञात त्रुटि"
   importing: "आयात गर्दै..."
   import: "आयात गर्नुहोस्"
-  cancel: "रद्द गर्नुहोस्"
 
 pa_IN:
   title: "ਡਾਟਾ ਆਯਾਤ ਕਰੋ"
@@ -4549,7 +4387,6 @@ pa_IN:
   dataFile: "ਡਾਟਾ ਫਾਈਲ"
   fileLimits: "ਅਧਿਕਤਮ {rows} ਕਤਾਰਾਂ, {size} MB"
   headerRowNote: "ਪਹਿਲੀ ਕਤਾਰ ਨੂੰ ਕਾਲਮ ਹੈਡਰ ਮੰਨਿਆ ਜਾਂਦਾ ਹੈ।"
-  delimiter: "ਡੀਲੀਮੀਟਰ"
   delimiterAuto: "ਸਵੈ-ਖੋਜ"
   delimiterComma: "ਕੌਮਾ (,)"
   delimiterSemicolon: "ਅਰਧ ਵਿਰਾਮ (;)"
@@ -4620,10 +4457,8 @@ pa_IN:
   previewFailed: "ਪੂਰਵਦਰਸ਼ਨ ਅਸਫਲ: {message}"
   importSuccess: "ਆਯਾਤ ਪੂਰਾ ਹੋਇਆ"
   importFailed: "ਆਯਾਤ ਅਸਫਲ: {message}"
-  unknownError: "ਅਗਿਆਤ ਤਰੁੱਟੀ"
   importing: "ਆਯਾਤ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ..."
   import: "ਆਯਾਤ ਕਰੋ"
-  cancel: "ਰੱਦ ਕਰੋ"
 
 si_LK:
   title: "දත්ත ආනයනය කරන්න"
@@ -4633,7 +4468,6 @@ si_LK:
   dataFile: "දත්ත ගොනුව"
   fileLimits: "උපරිම {rows} පේළි, {size} MB"
   headerRowNote: "පළමු පේළිය තීරු ශීර්ෂ ලෙස සලකනු ලැබේ."
-  delimiter: "පරිසීමකය"
   delimiterAuto: "ස්වයං-අනාවරණය"
   delimiterComma: "කොමාව (,)"
   delimiterSemicolon: "අර්ධ කොලන් (;)"
@@ -4704,10 +4538,8 @@ si_LK:
   previewFailed: "පෙරදසුන අසාර්ථක විය: {message}"
   importSuccess: "ආනයනය අවසන්"
   importFailed: "ආයාත කිරීම අසාර්ථක විය: {message}"
-  unknownError: "නොදන්නා දෝෂයකි"
   importing: "ආනයනය කරමින්..."
   import: "ආනයනය කරන්න"
-  cancel: "අවලංගු කරන්න"
 
 sl_SI:
   title: "Uvoz podatkov"
@@ -4717,7 +4549,6 @@ sl_SI:
   dataFile: "Podatkovna datoteka"
   fileLimits: "Največ {rows} vrstic, {size} MB"
   headerRowNote: "Prva vrstica se obravnava kot naslovi stolpcev."
-  delimiter: "Ločilo"
   delimiterAuto: "Samodejno zaznaj"
   delimiterComma: "Vejica (,)"
   delimiterSemicolon: "Podpičje (;)"
@@ -4788,10 +4619,8 @@ sl_SI:
   previewFailed: "Predogled ni uspel: {message}"
   importSuccess: "Uvoz končan"
   importFailed: "Uvoz ni uspel: {message}"
-  unknownError: "Neznana napaka"
   importing: "Uvažanje ..."
   import: "Uvozi"
-  cancel: "Prekliči"
 
 sr_RS:
   title: "Увоз података"
@@ -4801,7 +4630,6 @@ sr_RS:
   dataFile: "Дата Филе"
   fileLimits: "Макс. {rows} редова, {size} МБ"
   headerRowNote: "Први ред се третира као заглавља колона."
-  delimiter: "Делимитер"
   delimiterAuto: "Ауто-детецт"
   delimiterComma: "Зарез (,)"
   delimiterSemicolon: "Тачка и зарез (;)"
@@ -4872,10 +4700,8 @@ sr_RS:
   previewFailed: "Преглед није успео: {message}"
   importSuccess: "Увоз је завршен"
   importFailed: "Увоз није успео: {message}"
-  unknownError: "Непозната грешка"
   importing: "Увоз..."
   import: "Увоз"
-  cancel: "Откажи"
 
 te_IN:
   title: "డేటాను దిగుమతి చేయండి"
@@ -4885,7 +4711,6 @@ te_IN:
   dataFile: "డేటా ఫైల్"
   fileLimits: "గరిష్ఠ {rows} అడ్డు వరుసలు, {size} MB"
   headerRowNote: "మొదటి అడ్డు వరుస కాలమ్ హెడర్‌లుగా పరిగణించబడుతుంది."
-  delimiter: "డీలిమిటర్"
   delimiterAuto: "స్వయంచాలకంగా గుర్తించండి"
   delimiterComma: "కామా (,)"
   delimiterSemicolon: "సెమికోలన్ (;)"
@@ -4956,10 +4781,8 @@ te_IN:
   previewFailed: "ప్రివ్యూ విఫలమైంది: {message}"
   importSuccess: "దిగుమతి పూర్తయింది"
   importFailed: "దిగుమతి విఫలమైంది: {message}"
-  unknownError: "తెలియని లోపం"
   importing: "దిగుమతి చేస్తోంది..."
   import: "దిగుమతి"
-  cancel: "రద్దు చేయి"
 
 tl_PH:
   title: "Mag-import ng Data"
@@ -4969,7 +4792,6 @@ tl_PH:
   dataFile: "File ng Data"
   fileLimits: "Max {rows} row, {size} MB"
   headerRowNote: "Ang unang hilera ay itinuturing bilang mga header ng hanay."
-  delimiter: "Delimiter"
   delimiterAuto: "Auto-detect"
   delimiterComma: "kuwit (,)"
   delimiterSemicolon: "Semicolon (;)"
@@ -5040,10 +4862,8 @@ tl_PH:
   previewFailed: "Nabigo ang preview: {message}"
   importSuccess: "Nakumpleto ang pag-import"
   importFailed: "Nabigo ang pag-import: {message}"
-  unknownError: "Hindi kilalang error"
   importing: "Ini-import..."
   import: "Mag-import"
-  cancel: "Kanselahin"
 
 uz_UZ:
   title: "Ma'lumotlarni import qilish"
@@ -5053,7 +4873,6 @@ uz_UZ:
   dataFile: "Ma'lumotlar fayli"
   fileLimits: "Maks {rows} qatorlar, {size} MB"
   headerRowNote: "Birinchi qator ustun sarlavhalari sifatida ko'rib chiqiladi."
-  delimiter: "Ajratuvchi"
   delimiterAuto: "Avtomatik aniqlash"
   delimiterComma: "Vergul (,)"
   delimiterSemicolon: "Nuqtali vergul (;)"
@@ -5124,10 +4943,8 @@ uz_UZ:
   previewFailed: "Ko‘rib chiqilmadi: {message}"
   importSuccess: "Import tugallandi"
   importFailed: "Import qilinmadi: {message}"
-  unknownError: "Noma'lum xato"
   importing: "Import qilinmoqda..."
   import: "Import"
-  cancel: "Bekor qilish"
 
 yo_NG:
   title: "Gbe Data wọle"
@@ -5137,7 +4954,6 @@ yo_NG:
   dataFile: "Faili data"
   fileLimits: "O pọju {rows} awọn ori ila, {size} MB"
   headerRowNote: "Oju ila akọkọ jẹ itọju bi awọn akọle ọwọn."
-  delimiter: "Delimiter"
   delimiterAuto: "Ṣewadii aifọwọyi"
   delimiterComma: "Koma (,)"
   delimiterSemicolon: "Semicolon (;)"
@@ -5208,7 +5024,5 @@ yo_NG:
   previewFailed: "Ikuna awotẹlẹ: {message}"
   importSuccess: "Ikowọle ti pari"
   importFailed: "Ikuna agbewọle: {message}"
-  unknownError: "Aṣiṣe aimọ"
   importing: "Nkowọle..."
   import: "gbe wọle"
-  cancel: "Fagilee"

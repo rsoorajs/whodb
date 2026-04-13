@@ -2,7 +2,6 @@ en_US:
   title: Tables
   search: Search
   searchPlaceholder: Enter Filter Value...
-  scratchpad: Scratchpad
   cardView: Card View
   listView: List View
   describe: Info
@@ -33,13 +32,11 @@ en_US:
   fieldsCannotBeEmpty: Fields Cannot Be Empty
   createSuccessMessage: "{storageUnit} Created Successfully!"
   actionsColumn: Actions
-  close: Close
 
 ar_AE:
   title: "الجداول"
   search: "يبحث"
   searchPlaceholder: "أدخل قيمة التصفية..."
-  scratchpad: "المسودة"
   cardView: "عرض البطاقة"
   listView: "عرض القائمة"
   describe: "معلومات"
@@ -69,14 +66,12 @@ ar_AE:
   fieldsCannotBeEmpty: "لا يمكن أن تكون الحقول فارغة"
   createSuccessMessage: "{storageUnit} تم الإنشاء بنجاح!"
   actionsColumn: "الإجراءات"
-  close: "يغلق"
   aggregateKeyHint: "يقوم هذا النوع بإنشاء جدول المفتاح التجميعي. تصبح الأعمدة غير المجمعة مفاتيح الأبعاد."
 
 de_DE:
   title: "Tische"
   search: "Suchen"
   searchPlaceholder: "Filterwert eingeben..."
-  scratchpad: "Notizblock"
   cardView: "Kartenansicht"
   listView: "Listenansicht"
   describe: "Info"
@@ -106,14 +101,12 @@ de_DE:
   fieldsCannotBeEmpty: "Felder dürfen nicht leer sein"
   createSuccessMessage: "{storageUnit} Erfolgreich erstellt!"
   actionsColumn: "Aktionen"
-  close: "Schließen"
   aggregateKeyHint: "Dieser Typ erstellt eine Aggregate Key-Tabelle. Nicht aggregierte Spalten werden zu Dimensionsschlüsseln."
 
 el_GR:
   title: "Πίνακες"
   search: "Ερευνα"
   searchPlaceholder: "Εισαγάγετε την τιμή φίλτρου..."
-  scratchpad: "Scratchpad"
   cardView: "Προβολή κάρτας"
   listView: "Προβολή λίστας"
   describe: "Πληροφορίες"
@@ -143,14 +136,12 @@ el_GR:
   fieldsCannotBeEmpty: "Τα πεδία δεν μπορούν να είναι άδεια"
   createSuccessMessage: "{storageUnit} Δημιουργήθηκε με επιτυχία!"
   actionsColumn: "Δράσεις"
-  close: "Κοντά"
   aggregateKeyHint: "Αυτός ο τύπος δημιουργεί έναν πίνακα συγκεντρωτικών κλειδιών. Οι μη συγκεντρωτικές στήλες γίνονται κλειδιά διαστάσεων."
 
 en_GB:
   title: "Tables"
   search: "Search"
   searchPlaceholder: "Enter Filter Value..."
-  scratchpad: "Scratchpad"
   cardView: "Card View"
   listView: "List View"
   describe: "Info"
@@ -180,14 +171,12 @@ en_GB:
   fieldsCannotBeEmpty: "Fields Cannot Be Empty"
   createSuccessMessage: "{storageUnit} Created Successfully!"
   actionsColumn: "Actions"
-  close: "Close"
   aggregateKeyHint: "This type creates an Aggregate Key table. Non-aggregate columns become dimension keys."
 
 es_ES:
   title: "Mesas"
   search: "Buscar"
   searchPlaceholder: "Introduzca el valor del filtro..."
-  scratchpad: "Bloc de notas"
   cardView: "Vista de tarjeta"
   listView: "Vista de lista"
   describe: "Información"
@@ -217,14 +206,12 @@ es_ES:
   fieldsCannotBeEmpty: "Los campos no pueden estar vacíos"
   createSuccessMessage: "{storageUnit} ¡Creado con éxito!"
   actionsColumn: "Comportamiento"
-  close: "Cerca"
   aggregateKeyHint: "Este tipo crea una tabla de claves agregadas. Las columnas no agregadas se convierten en claves de dimensión."
 
 fi_FI:
   title: "Taulukot"
   search: "Haku"
   searchPlaceholder: "Anna suodattimen arvo..."
-  scratchpad: "Scratchpad"
   cardView: "Korttinäkymä"
   listView: "Luettelonäkymä"
   describe: "Tiedot"
@@ -254,14 +241,12 @@ fi_FI:
   fieldsCannotBeEmpty: "Kentät eivät voi olla tyhjiä"
   createSuccessMessage: "{storageUnit} Luotu onnistuneesti!"
   actionsColumn: "Toiminnot"
-  close: "Lähellä"
   aggregateKeyHint: "Tämä tyyppi luo Aggregate Key -taulukon. Ei-koostetuista sarakkeista tulee ulottuvuusavaimia."
 
 fr_FR:
   title: "Tableaux"
   search: "Recherche"
   searchPlaceholder: "Entrez la valeur du filtre..."
-  scratchpad: "Bloc-notes"
   cardView: "Vue Carte"
   listView: "Vue en liste"
   describe: "Informations"
@@ -291,14 +276,12 @@ fr_FR:
   fieldsCannotBeEmpty: "Les champs ne peuvent pas être vides"
   createSuccessMessage: "{storageUnit} Création réussie !"
   actionsColumn: "Actes"
-  close: "Fermer"
   aggregateKeyHint: "Ce type crée une table de clés globales. Les colonnes non agrégées deviennent des clés de dimension."
 
 it_IT:
   title: "Tabelle"
   search: "Ricerca"
   searchPlaceholder: "Inserisci il valore del filtro..."
-  scratchpad: "Blocco note"
   cardView: "Visualizzazione scheda"
   listView: "Visualizzazione elenco"
   describe: "Informazioni"
@@ -328,14 +311,12 @@ it_IT:
   fieldsCannotBeEmpty: "I campi non possono essere vuoti"
   createSuccessMessage: "{storageUnit} Creato con successo!"
   actionsColumn: "Azioni"
-  close: "Vicina"
   aggregateKeyHint: "Questo tipo crea una tabella di chiavi aggregate. Le colonne non aggregate diventano chiavi di dimensione."
 
 iw_IL:
   title: "טבלאות"
   search: "לְחַפֵּשׂ"
   searchPlaceholder: "הזן ערך מסנן..."
-  scratchpad: "פנקס גירוד"
   cardView: "תצוגת כרטיסים"
   listView: "תצוגת רשימה"
   describe: "מידע"
@@ -365,14 +346,12 @@ iw_IL:
   fieldsCannotBeEmpty: "שדות לא יכולים להיות ריקים"
   createSuccessMessage: "{storageUnit} נוצר בהצלחה!"
   actionsColumn: "פעולות"
-  close: "לִסְגוֹר"
   aggregateKeyHint: "סוג זה יוצר טבלת מפתח מצטבר. עמודות לא מצטברות הופכות למפתחות מימדים."
 
 ja_JP:
   title: "テーブル"
   search: "検索"
   searchPlaceholder: "フィルタ値を入力してください..."
-  scratchpad: "スクラッチパッド"
   cardView: "カードビュー"
   listView: "リストビュー"
   describe: "情報"
@@ -402,14 +381,12 @@ ja_JP:
   fieldsCannotBeEmpty: "フィールドを空にすることはできません"
   createSuccessMessage: "{storageUnit} が正常に作成されました!"
   actionsColumn: "アクション"
-  close: "近い"
   aggregateKeyHint: "このタイプでは、集計キー テーブルが作成されます。 非集計列はディメンション キーになります。"
 
 ko_KR:
   title: "테이블"
   search: "찾다"
   searchPlaceholder: "필터 값 입력..."
-  scratchpad: "스크래치패드"
   cardView: "카드 보기"
   listView: "목록 보기"
   describe: "정보"
@@ -439,14 +416,12 @@ ko_KR:
   fieldsCannotBeEmpty: "필드는 비워둘 수 없습니다."
   createSuccessMessage: "{storageUnit} 성공적으로 생성되었습니다!"
   actionsColumn: "행위"
-  close: "닫다"
   aggregateKeyHint: "이 유형은 집계 키 테이블을 생성합니다. 집계되지 않은 열은 차원 키가 됩니다."
 
 nl_NL:
   title: "Tafels"
   search: "Zoekopdracht"
   searchPlaceholder: "Filterwaarde invoeren..."
-  scratchpad: "Kladblok"
   cardView: "Kaartweergave"
   listView: "Lijstweergave"
   describe: "Info"
@@ -476,14 +451,12 @@ nl_NL:
   fieldsCannotBeEmpty: "Velden mogen niet leeg zijn"
   createSuccessMessage: "{storageUnit} Succesvol aangemaakt!"
   actionsColumn: "Acties"
-  close: "Dichtbij"
   aggregateKeyHint: "Met dit type wordt een tabel met samengestelde sleutels gemaakt. Niet-geaggregeerde kolommen worden dimensiesleutels."
 
 pl_PL:
   title: "Stoły"
   search: "Szukaj"
   searchPlaceholder: "Wprowadź wartość filtra..."
-  scratchpad: "Brudnopis"
   cardView: "Widok karty"
   listView: "Widok listy"
   describe: "Informacje"
@@ -513,14 +486,12 @@ pl_PL:
   fieldsCannotBeEmpty: "Pola nie mogą być puste"
   createSuccessMessage: "{storageUnit} Utworzono pomyślnie!"
   actionsColumn: "Działania"
-  close: "Zamknąć"
   aggregateKeyHint: "Ten typ tworzy tabelę zagregowanych kluczy. Kolumny niezagregowane stają się kluczami wymiarów."
 
 pt_BR:
   title: "Tabelas"
   search: "Procurar"
   searchPlaceholder: "Insira o valor do filtro..."
-  scratchpad: "Bloco de notas"
   cardView: "Visualização de cartão"
   listView: "Visualização de lista"
   describe: "Informações"
@@ -550,14 +521,12 @@ pt_BR:
   fieldsCannotBeEmpty: "Os campos não podem ficar vazios"
   createSuccessMessage: "{storageUnit} Criado com sucesso!"
   actionsColumn: "Ações"
-  close: "Fechar"
   aggregateKeyHint: "Este tipo cria uma tabela Aggregate Key. Colunas não agregadas tornam-se chaves de dimensão."
 
 ro_RO:
   title: "Mesele"
   search: "Căutare"
   searchPlaceholder: "Introduceți valoarea filtrului..."
-  scratchpad: "Scratchpad"
   cardView: "Vizualizare card"
   listView: "Vizualizare listă"
   describe: "Info"
@@ -587,14 +556,12 @@ ro_RO:
   fieldsCannotBeEmpty: "Câmpurile nu pot fi goale"
   createSuccessMessage: "{storageUnit} Creat cu succes!"
   actionsColumn: "Acțiuni"
-  close: "Aproape"
   aggregateKeyHint: "Acest tip creează un tabel de chei agregate. Coloanele neagregate devin chei de dimensiune."
 
 ru_RU:
   title: "Таблицы"
   search: "Поиск"
   searchPlaceholder: "Введите значение фильтра..."
-  scratchpad: "Блокнот"
   cardView: "Просмотр карты"
   listView: "Просмотр списка"
   describe: "Информация"
@@ -624,14 +591,12 @@ ru_RU:
   fieldsCannotBeEmpty: "Поля не могут быть пустыми"
   createSuccessMessage: "{storageUnit} Создано успешно!"
   actionsColumn: "Действия"
-  close: "Закрывать"
   aggregateKeyHint: "Этот тип создает таблицу агрегатных ключей. Неагрегированные столбцы становятся ключами измерений."
 
 sk_SK:
   title: "Tabuľky"
   search: "Hľadať"
   searchPlaceholder: "Zadajte hodnotu filtra..."
-  scratchpad: "Zápisník"
   cardView: "Zobrazenie karty"
   listView: "Zobrazenie zoznamu"
   describe: "Info"
@@ -661,14 +626,12 @@ sk_SK:
   fieldsCannotBeEmpty: "Polia nemôžu byť prázdne"
   createSuccessMessage: "{storageUnit} Úspešne vytvorené!"
   actionsColumn: "Akcie"
-  close: "Zavrieť"
   aggregateKeyHint: "Tento typ vytvorí tabuľku súhrnných kľúčov. Neagregované stĺpce sa stanú kľúčmi dimenzií."
 
 sv_SE:
   title: "Tabeller"
   search: "Söka"
   searchPlaceholder: "Ange filtervärde..."
-  scratchpad: "Scratchpad"
   cardView: "Kortvy"
   listView: "Listvy"
   describe: "Info"
@@ -698,14 +661,12 @@ sv_SE:
   fieldsCannotBeEmpty: "Fälten får inte vara tomma"
   createSuccessMessage: "{storageUnit} Skapat framgångsrikt!"
   actionsColumn: "Åtgärder"
-  close: "Nära"
   aggregateKeyHint: "Den här typen skapar en sammanlagd nyckeltabell. Icke aggregerade kolumner blir dimensionsnycklar."
 
 zh_CN:
   title: "表格"
   search: "搜索"
   searchPlaceholder: "输入过滤值..."
-  scratchpad: "便签本"
   cardView: "卡片视图"
   listView: "列表视图"
   describe: "信息"
@@ -735,14 +696,12 @@ zh_CN:
   fieldsCannotBeEmpty: "字段不能为空"
   createSuccessMessage: "{storageUnit} 创建成功！"
   actionsColumn: "行动"
-  close: "关闭"
   aggregateKeyHint: "此类型创建一个聚合键表。 非聚合列成为维度键。"
 
 zh_TW:
   title: "表格"
   search: "搜尋"
   searchPlaceholder: "輸入過濾值..."
-  scratchpad: "便籤本"
   cardView: "卡片視圖"
   listView: "清單視圖"
   describe: "資訊"
@@ -772,14 +731,12 @@ zh_TW:
   fieldsCannotBeEmpty: "欄位不能為空"
   createSuccessMessage: "{storageUnit} 創建成功！"
   actionsColumn: "行動"
-  close: "關閉"
   aggregateKeyHint: "此類型建立一個聚合鍵表。 非聚合列成為維度鍵。"
 
 bg_BG:
   title: "Маси"
   search: "Търсене"
   searchPlaceholder: "Въведете стойност на филтъра..."
-  scratchpad: "Скречпад"
   cardView: "Изглед на карта"
   listView: "Списъчен изглед"
   describe: "Информация"
@@ -809,14 +766,12 @@ bg_BG:
   fieldsCannotBeEmpty: "Полетата не могат да бъдат празни"
   createSuccessMessage: "{storageUnit} Създаден успешно!"
   actionsColumn: "Действия"
-  close: "затвори"
   aggregateKeyHint: "Този тип създава таблица с обобщен ключ. Неагрегираните колони стават ключове за измерения."
 
 bn_BD:
   title: "টেবিল"
   search: "অনুসন্ধান করুন"
   searchPlaceholder: "ফিল্টার মান লিখুন..."
-  scratchpad: "স্ক্র্যাচপ্যাড"
   cardView: "কার্ড ভিউ"
   listView: "তালিকা দেখুন"
   describe: "তথ্য"
@@ -846,14 +801,12 @@ bn_BD:
   fieldsCannotBeEmpty: "ক্ষেত্রগুলি খালি হতে পারে না"
   createSuccessMessage: "{storageUnit} সফলভাবে তৈরি করা হয়েছে!"
   actionsColumn: "কর্ম"
-  close: "বন্ধ"
   aggregateKeyHint: "এই ধরনের একটি সমষ্টি কী টেবিল তৈরি করে। নন-এগ্রিগেট কলাম ডাইমেনশন কী হয়ে যায়।"
 
 ca_ES:
   title: "Taules"
   search: "Cerca"
   searchPlaceholder: "Introduïu el valor del filtre..."
-  scratchpad: "Bloc de notes"
   cardView: "Vista de la targeta"
   listView: "Vista de llista"
   describe: "Informació"
@@ -883,14 +836,12 @@ ca_ES:
   fieldsCannotBeEmpty: "Els camps no poden estar buits"
   createSuccessMessage: "{storageUnit} Creat correctament!"
   actionsColumn: "Accions"
-  close: "Tancar"
   aggregateKeyHint: "Aquest tipus crea una taula de claus agregades. Les columnes no agregades es converteixen en claus de dimensions."
 
 cs_CZ:
   title: "Tabulky"
   search: "Vyhledávání"
   searchPlaceholder: "Zadejte hodnotu filtru..."
-  scratchpad: "Zápisník"
   cardView: "Zobrazení karty"
   listView: "Zobrazení seznamu"
   describe: "Info"
@@ -920,14 +871,12 @@ cs_CZ:
   fieldsCannotBeEmpty: "Pole nemohou být prázdná"
   createSuccessMessage: "{storageUnit} Úspěšně vytvořeno!"
   actionsColumn: "Akce"
-  close: "Blízko"
   aggregateKeyHint: "Tento typ vytvoří tabulku Aggregate Key. Neagregované sloupce se stanou klíči dimenzí."
 
 da_DK:
   title: "Tabeller"
   search: "Søge"
   searchPlaceholder: "Indtast filterværdi..."
-  scratchpad: "Scratchpad"
   cardView: "Kortvisning"
   listView: "Listevisning"
   describe: "Info"
@@ -957,14 +906,12 @@ da_DK:
   fieldsCannotBeEmpty: "Felter må ikke være tomme"
   createSuccessMessage: "{storageUnit} Oprettet med succes!"
   actionsColumn: "Handlinger"
-  close: "Tæt"
   aggregateKeyHint: "Denne type opretter en samlet nøgletabel. Ikke-samlede kolonner bliver dimensionsnøgler."
 
 fa_IR:
   title: "جداول"
   search: "جستجو کنید"
   searchPlaceholder: "مقدار فیلتر را وارد کنید..."
-  scratchpad: "Scratchpad"
   cardView: "نمای کارت"
   listView: "نمایش لیست"
   describe: "اطلاعات"
@@ -994,14 +941,12 @@ fa_IR:
   fieldsCannotBeEmpty: "فیلدها نمی توانند خالی باشند"
   createSuccessMessage: "{storageUnit} با موفقیت ایجاد شد!"
   actionsColumn: "اقدامات"
-  close: "بستن"
   aggregateKeyHint: "این نوع یک جدول کلید جمعی ایجاد می کند. ستون های غیرمجموعه به کلیدهای ابعاد تبدیل می شوند."
 
 hi_IN:
   title: "टेबल"
   search: "खोज"
   searchPlaceholder: "फ़िल्टर मान दर्ज करें..."
-  scratchpad: "स्क्रैचपैड"
   cardView: "कार्ड दृश्य"
   listView: "लिस्ट व्यू"
   describe: "जानकारी"
@@ -1031,14 +976,12 @@ hi_IN:
   fieldsCannotBeEmpty: "फ़ील्ड ख़ाली नहीं रह सकते"
   createSuccessMessage: "{storageUnit} सफलतापूर्वक बनाया गया!"
   actionsColumn: "कार्रवाई"
-  close: "बंद करना"
   aggregateKeyHint: "यह प्रकार एक समग्र कुंजी तालिका बनाता है। गैर-एकत्रित कॉलम आयाम कुंजियाँ बन जाते हैं।"
 
 hr_HR:
   title: "Stolovi"
   search: "Pretraživanje"
   searchPlaceholder: "Unesite vrijednost filtra..."
-  scratchpad: "Scratchpad"
   cardView: "Prikaz kartice"
   listView: "Prikaz popisa"
   describe: "Info"
@@ -1068,14 +1011,12 @@ hr_HR:
   fieldsCannotBeEmpty: "Polja ne mogu biti prazna"
   createSuccessMessage: "{storageUnit} Uspješno kreirano!"
   actionsColumn: "Radnje"
-  close: "Zatvoriti"
   aggregateKeyHint: "Ova vrsta stvara tablicu skupnog ključa. Neagregirani stupci postaju ključevi dimenzija."
 
 hu_HU:
   title: "Táblázatok"
   search: "Keresés"
   searchPlaceholder: "Adja meg a szűrő értékét..."
-  scratchpad: "Firkálótömb"
   cardView: "Kártya nézet"
   listView: "Listanézet"
   describe: "Info"
@@ -1105,14 +1046,12 @@ hu_HU:
   fieldsCannotBeEmpty: "A mezők nem lehetnek üresek"
   createSuccessMessage: "{storageUnit} Sikeresen létrehozva!"
   actionsColumn: "Akciók"
-  close: "Közeli"
   aggregateKeyHint: "Ez a típus létrehoz egy összesített kulcs táblát. A nem összesített oszlopok dimenziókulcsokká válnak."
 
 id_ID:
   title: "Tabel"
   search: "Mencari"
   searchPlaceholder: "Masukkan Nilai Filter..."
-  scratchpad: "Papan penggaris"
   cardView: "Tampilan Kartu"
   listView: "Tampilan Daftar"
   describe: "Informasi"
@@ -1142,14 +1081,12 @@ id_ID:
   fieldsCannotBeEmpty: "Bidang Tidak Boleh Kosong"
   createSuccessMessage: "{storageUnit} Berhasil Dibuat!"
   actionsColumn: "Tindakan"
-  close: "Menutup"
   aggregateKeyHint: "Tipe ini membuat tabel Kunci Agregat. Kolom non-agregat menjadi kunci dimensi."
 
 ms_MY:
   title: "Meja"
   search: "Cari"
   searchPlaceholder: "Masukkan Nilai Penapis..."
-  scratchpad: "Pad conteng"
   cardView: "Paparan Kad"
   listView: "Paparan Senarai"
   describe: "info"
@@ -1179,14 +1116,12 @@ ms_MY:
   fieldsCannotBeEmpty: "Medan Tidak Boleh Kosong"
   createSuccessMessage: "{storageUnit} Berjaya Dicipta!"
   actionsColumn: "Tindakan"
-  close: "tutup"
   aggregateKeyHint: "Jenis ini mencipta jadual Kunci Agregat. Lajur bukan agregat menjadi kunci dimensi."
 
 nb_NO:
   title: "Tabeller"
   search: "Søk"
   searchPlaceholder: "Angi filterverdi..."
-  scratchpad: "Scratchpad"
   cardView: "Kortvisning"
   listView: "Listevisning"
   describe: "Info"
@@ -1216,14 +1151,12 @@ nb_NO:
   fieldsCannotBeEmpty: "Felter kan ikke være tomme"
   createSuccessMessage: "{storageUnit} Opprettet med suksess!"
   actionsColumn: "Handlinger"
-  close: "Lukke"
   aggregateKeyHint: "Denne typen oppretter en samlet nøkkeltabell. Ikke-samlede kolonner blir dimensjonsnøkler."
 
 sw_KE:
   title: "Majedwali"
   search: "Tafuta"
   searchPlaceholder: "Weka Thamani ya Kichujio..."
-  scratchpad: "Padi ya kukwaruza"
   cardView: "Mwonekano wa Kadi"
   listView: "Mwonekano wa Orodha"
   describe: "Habari"
@@ -1253,14 +1186,12 @@ sw_KE:
   fieldsCannotBeEmpty: "Sehemu Haziwezi Kuwa Tupu"
   createSuccessMessage: "{storageUnit} Imeundwa Kwa Mafanikio!"
   actionsColumn: "Vitendo"
-  close: "Funga"
   aggregateKeyHint: "Aina hii huunda jedwali la Ufunguo wa Jumla. Safu zisizojumlishwa huwa funguo za vipimo."
 
 ta_IN:
   title: "அட்டவணைகள்"
   search: "தேடு"
   searchPlaceholder: "வடிகட்டி மதிப்பை உள்ளிடவும்..."
-  scratchpad: "ஸ்க்ராட்ச்பேட்"
   cardView: "அட்டை பார்வை"
   listView: "பட்டியல் காட்சி"
   describe: "தகவல்"
@@ -1290,14 +1221,12 @@ ta_IN:
   fieldsCannotBeEmpty: "புலங்கள் காலியாக இருக்க முடியாது"
   createSuccessMessage: "{storageUnit} வெற்றிகரமாக உருவாக்கப்பட்டது!"
   actionsColumn: "செயல்கள்"
-  close: "மூடு"
   aggregateKeyHint: "இந்த வகை ஒரு மொத்த விசை அட்டவணையை உருவாக்குகிறது. மொத்தமாக இல்லாத நெடுவரிசைகள் பரிமாண விசைகளாக மாறும்."
 
 th_TH:
   title: "ตาราง"
   search: "ค้นหา"
   searchPlaceholder: "ป้อนค่าตัวกรอง..."
-  scratchpad: "สแครชแพด"
   cardView: "มุมมองการ์ด"
   listView: "มุมมองรายการ"
   describe: "ข้อมูล"
@@ -1327,14 +1256,12 @@ th_TH:
   fieldsCannotBeEmpty: "ช่องไม่สามารถเว้นว่างได้"
   createSuccessMessage: "{storageUnit} สร้างสำเร็จแล้ว!"
   actionsColumn: "การดำเนินการ"
-  close: "ปิด"
   aggregateKeyHint: "ประเภทนี้จะสร้างตารางคีย์รวม คอลัมน์ที่ไม่ได้รวมจะกลายเป็นคีย์มิติ"
 
 tr_TR:
   title: "Tablolar"
   search: "Aramak"
   searchPlaceholder: "Filtre Değerini Girin..."
-  scratchpad: "Karalama defteri"
   cardView: "Kart Görünümü"
   listView: "Liste Görünümü"
   describe: "Bilgi"
@@ -1364,14 +1291,12 @@ tr_TR:
   fieldsCannotBeEmpty: "Alanlar Boş Bırakılamaz"
   createSuccessMessage: "{storageUnit} Başarıyla Oluşturuldu!"
   actionsColumn: "Eylemler"
-  close: "Kapalı"
   aggregateKeyHint: "Bu tür bir Toplama Anahtar tablosu oluşturur. Birleştirilmemiş sütunlar boyut anahtarları haline gelir."
 
 uk_UA:
   title: "Таблиці"
   search: "Пошук"
   searchPlaceholder: "Введіть значення фільтра..."
-  scratchpad: "Блокнот"
   cardView: "Перегляд картки"
   listView: "Перегляд списку"
   describe: "Інформація"
@@ -1401,14 +1326,12 @@ uk_UA:
   fieldsCannotBeEmpty: "Поля не можуть бути порожніми"
   createSuccessMessage: "{storageUnit} Створено успішно!"
   actionsColumn: "Дії"
-  close: "Закрити"
   aggregateKeyHint: "Цей тип створює таблицю агрегатних ключів. Неагреговані стовпці стають ключами розмірів."
 
 ur_PK:
   title: "میزیں"
   search: "تلاش کریں۔"
   searchPlaceholder: "فلٹر ویلیو درج کریں..."
-  scratchpad: "سکریچ پیڈ"
   cardView: "کارڈ ویو"
   listView: "فہرست دیکھیں"
   describe: "معلومات"
@@ -1438,14 +1361,12 @@ ur_PK:
   fieldsCannotBeEmpty: "فیلڈز خالی نہیں ہو سکتے"
   createSuccessMessage: "{storageUnit} کامیابی کے ساتھ بنایا گیا!"
   actionsColumn: "اعمال"
-  close: "بند"
   aggregateKeyHint: "یہ قسم ایک مجموعی کلیدی جدول بناتی ہے۔ غیر مجموعی کالم طول و عرض کی کلید بن جاتے ہیں۔"
 
 vi_VN:
   title: "Bàn"
   search: "Tìm kiếm"
   searchPlaceholder: "Nhập giá trị bộ lọc..."
-  scratchpad: "Bàn di chuột"
   cardView: "Xem thẻ"
   listView: "Xem danh sách"
   describe: "Thông tin"
@@ -1475,14 +1396,12 @@ vi_VN:
   fieldsCannotBeEmpty: "Các trường không thể trống"
   createSuccessMessage: "{storageUnit} Đã tạo thành công!"
   actionsColumn: "hành động"
-  close: "Đóng"
   aggregateKeyHint: "Loại này tạo ra một bảng Khóa tổng hợp. Các cột không tổng hợp trở thành khóa thứ nguyên."
 
 af_ZA:
   title: "Tabelle"
   search: "Soek"
   searchPlaceholder: "Voer filterwaarde in..."
-  scratchpad: "Kladblok"
   cardView: "Kaart Aansig"
   listView: "Lys Aansig"
   describe: "Inligting"
@@ -1512,14 +1431,12 @@ af_ZA:
   fieldsCannotBeEmpty: "Velde kan nie leeg wees nie"
   createSuccessMessage: "{storageUnit} Suksesvol geskep!"
   actionsColumn: "Aksies"
-  close: "Maak toe"
   aggregateKeyHint: "Hierdie tipe skep 'n Aggregate Key-tabel. Nie-saamgestelde kolomme word dimensiesleutels."
 
 am_ET:
   title: "ጠረጴዛዎች"
   search: "ፈልግ"
   searchPlaceholder: "የማጣሪያ እሴት አስገባ..."
-  scratchpad: "መለጠፊያ"
   cardView: "የካርድ እይታ"
   listView: "የዝርዝር እይታ"
   describe: "መረጃ"
@@ -1549,14 +1466,12 @@ am_ET:
   fieldsCannotBeEmpty: "መስኮች ባዶ ሊሆኑ አይችሉም"
   createSuccessMessage: "{storageUnit} በተሳካ ሁኔታ ተፈጠረ!"
   actionsColumn: "ድርጊቶች"
-  close: "ገጠመ"
   aggregateKeyHint: "ይህ አይነት የመደመር ቁልፍ ሰንጠረዥ ይፈጥራል። ያልተዋሃዱ አምዶች የልኬት ቁልፎች ይሆናሉ።"
 
 az_AZ:
   title: "Cədvəllər"
   search: "Axtar"
   searchPlaceholder: "Filtr dəyərini daxil edin..."
-  scratchpad: "Scratchpad"
   cardView: "Kart Görünüşü"
   listView: "Siyahı Görünüşü"
   describe: "Məlumat"
@@ -1586,14 +1501,12 @@ az_AZ:
   fieldsCannotBeEmpty: "Sahələr Boş ola bilməz"
   createSuccessMessage: "{storageUnit} Uğurla Yaradıldı!"
   actionsColumn: "Fəaliyyətlər"
-  close: "Bağlayın"
   aggregateKeyHint: "Bu tip Ümumi Açar cədvəli yaradır. Ümumi olmayan sütunlar ölçü açarlarına çevrilir."
 
 et_EE:
   title: "Tabelid"
   search: "Otsi"
   searchPlaceholder: "Sisestage filtri väärtus..."
-  scratchpad: "Scratchpad"
   cardView: "Kaardivaade"
   listView: "Loendivaade"
   describe: "Info"
@@ -1623,14 +1536,12 @@ et_EE:
   fieldsCannotBeEmpty: "Väljad ei saa olla tühjad"
   createSuccessMessage: "{storageUnit} Loodud edukalt!"
   actionsColumn: "Tegevused"
-  close: "Sule"
   aggregateKeyHint: "See tüüp loob koondvõtme tabeli. Koondamata veerud muutuvad dimensioonivõtmeteks."
 
 gu_IN:
   title: "કોષ્ટકો"
   search: "શોધો"
   searchPlaceholder: "ફિલ્ટર મૂલ્ય દાખલ કરો..."
-  scratchpad: "સ્ક્રેચપેડ"
   cardView: "કાર્ડ વ્યૂ"
   listView: "સૂચિ દૃશ્ય"
   describe: "માહિતી"
@@ -1660,14 +1571,12 @@ gu_IN:
   fieldsCannotBeEmpty: "ક્ષેત્રો ખાલી ન હોઈ શકે"
   createSuccessMessage: "{storageUnit} સફળતાપૂર્વક બનાવ્યું!"
   actionsColumn: "ક્રિયાઓ"
-  close: "બંધ કરો"
   aggregateKeyHint: "આ પ્રકાર એગ્રીગેટ કી ટેબલ બનાવે છે. બિન-એગ્રિગેટ કૉલમ પરિમાણ કી બની જાય છે."
 
 ha_NG:
   title: "Tables"
   search: "Bincika"
   searchPlaceholder: "Shigar da ƙimar Tace..."
-  scratchpad: "Scratchpad"
   cardView: "Duban Kati"
   listView: "Duban Jerin"
   describe: "Bayani"
@@ -1697,14 +1606,12 @@ ha_NG:
   fieldsCannotBeEmpty: "Filaye ba za su iya zama fanko ba"
   createSuccessMessage: "{storageUnit} An Yi Nasara!"
   actionsColumn: "Ayyuka"
-  close: "Kusa"
   aggregateKeyHint: "Wannan nau'in yana ƙirƙirar Tebur Maɓalli na Tara. ginshiƙan da ba tarawa ba sun zama maɓallan girma."
 
 ka_GE:
   title: "მაგიდები"
   search: "ძიება"
   searchPlaceholder: "შეიყვანეთ ფილტრის მნიშვნელობა..."
-  scratchpad: "Scratchpad"
   cardView: "ბარათის ხედი"
   listView: "სიის ხედი"
   describe: "ინფორმაცია"
@@ -1734,14 +1641,12 @@ ka_GE:
   fieldsCannotBeEmpty: "ველები არ შეიძლება იყოს ცარიელი"
   createSuccessMessage: "{storageUnit} შეიქმნა წარმატებით!"
   actionsColumn: "მოქმედებები"
-  close: "დახურვა"
   aggregateKeyHint: "ეს ტიპი ქმნის აგრეგატული გასაღების ცხრილს. არაერთობლივი სვეტები ხდება განზომილების გასაღებები."
 
 km_KH:
   title: "តុ"
   search: "ស្វែងរក"
   searchPlaceholder: "បញ្ចូលតម្លៃតម្រង..."
-  scratchpad: "បន្ទះកោស"
   cardView: "ទិដ្ឋភាពកាត"
   listView: "ទិដ្ឋភាពបញ្ជី"
   describe: "ព័ត៌មាន"
@@ -1771,14 +1676,12 @@ km_KH:
   fieldsCannotBeEmpty: "វាលមិនអាចទទេបានទេ។"
   createSuccessMessage: "{storageUnit} បង្កើតដោយជោគជ័យ!"
   actionsColumn: "សកម្មភាព"
-  close: "បិទ"
   aggregateKeyHint: "ប្រភេទនេះបង្កើតតារាងគន្លឹះសរុប។ ជួរ​ឈរ​មិន​សរុប​ក្លាយ​ជា​គ្រាប់ចុច​វិមាត្រ។"
 
 kn_IN:
   title: "ಕೋಷ್ಟಕಗಳು"
   search: "ಹುಡುಕು"
   searchPlaceholder: "ಫಿಲ್ಟರ್ ಮೌಲ್ಯವನ್ನು ನಮೂದಿಸಿ..."
-  scratchpad: "ಸ್ಕ್ರ್ಯಾಚ್‌ಪ್ಯಾಡ್"
   cardView: "ಕಾರ್ಡ್ ವೀಕ್ಷಣೆ"
   listView: "ಪಟ್ಟಿ ವೀಕ್ಷಣೆ"
   describe: "ಮಾಹಿತಿ"
@@ -1808,14 +1711,12 @@ kn_IN:
   fieldsCannotBeEmpty: "ಕ್ಷೇತ್ರಗಳನ್ನು ಖಾಲಿ ಮಾಡಲಾಗುವುದಿಲ್ಲ"
   createSuccessMessage: "{storageUnit} ಯಶಸ್ವಿಯಾಗಿ ರಚಿಸಲಾಗಿದೆ!"
   actionsColumn: "ಕ್ರಿಯೆಗಳು"
-  close: "ಮುಚ್ಚಿ"
   aggregateKeyHint: "ಈ ಪ್ರಕಾರವು ಒಟ್ಟು ಕೀ ಟೇಬಲ್ ಅನ್ನು ರಚಿಸುತ್ತದೆ. ಒಟ್ಟು-ಅಲ್ಲದ ಕಾಲಮ್‌ಗಳು ಆಯಾಮದ ಕೀಗಳಾಗುತ್ತವೆ."
 
 lt_LT:
   title: "Lentelės"
   search: "Ieškoti"
   searchPlaceholder: "Įveskite filtro reikšmę..."
-  scratchpad: "Bloknotėlis"
   cardView: "Kortelės vaizdas"
   listView: "Sąrašo rodinys"
   describe: "Informacija"
@@ -1845,14 +1746,12 @@ lt_LT:
   fieldsCannotBeEmpty: "Laukai negali būti tušti"
   createSuccessMessage: "{storageUnit} Sukurta sėkmingai!"
   actionsColumn: "Veiksmai"
-  close: "Uždaryti"
   aggregateKeyHint: "Šis tipas sukuria bendrųjų raktų lentelę. Nesukaupti stulpeliai tampa aspektų raktais."
 
 lv_LV:
   title: "Tabulas"
   search: "Meklēt"
   searchPlaceholder: "Ievadiet filtra vērtību..."
-  scratchpad: "Scratchpad"
   cardView: "Kartes skats"
   listView: "Saraksta skats"
   describe: "Informācija"
@@ -1882,14 +1781,12 @@ lv_LV:
   fieldsCannotBeEmpty: "Lauki nevar būt tukši"
   createSuccessMessage: "{storageUnit} Izveidots veiksmīgi!"
   actionsColumn: "Darbības"
-  close: "Aizvērt"
   aggregateKeyHint: "Šis veids izveido kopsavilkuma atslēgu tabulu. Kolonnas, kas nav apkopotas, kļūst par kategoriju atslēgām."
 
 ml_IN:
   title: "പട്ടികകൾ"
   search: "തിരയുക"
   searchPlaceholder: "ഫിൽട്ടർ മൂല്യം നൽകുക..."
-  scratchpad: "സ്ക്രാച്ച്പാഡ്"
   cardView: "കാർഡ് കാഴ്ച"
   listView: "ലിസ്റ്റ് കാഴ്ച"
   describe: "വിവരം"
@@ -1919,14 +1816,12 @@ ml_IN:
   fieldsCannotBeEmpty: "വയലുകൾ ശൂന്യമാക്കാൻ കഴിയില്ല"
   createSuccessMessage: "{storageUnit} വിജയകരമായി സൃഷ്‌ടിച്ചു!"
   actionsColumn: "പ്രവർത്തനങ്ങൾ"
-  close: "അടയ്ക്കുക"
   aggregateKeyHint: "ഈ തരം ഒരു അഗ്രഗേറ്റ് കീ ടേബിൾ സൃഷ്ടിക്കുന്നു. നോൺ-അഗ്രഗേറ്റ് കോളങ്ങൾ ഡൈമൻഷൻ കീകളായി മാറുന്നു."
 
 mr_IN:
   title: "टेबल्स"
   search: "शोधा"
   searchPlaceholder: "फिल्टर मूल्य प्रविष्ट करा..."
-  scratchpad: "स्क्रॅचपॅड"
   cardView: "कार्ड दृश्य"
   listView: "सूची दृश्य"
   describe: "माहिती"
@@ -1956,14 +1851,12 @@ mr_IN:
   fieldsCannotBeEmpty: "फील्ड रिक्त असू शकत नाही"
   createSuccessMessage: "{storageUnit} यशस्वीरित्या तयार केले!"
   actionsColumn: "क्रिया"
-  close: "बंद करा"
   aggregateKeyHint: "हा प्रकार एकूण की सारणी तयार करतो. एकूण नसलेले स्तंभ परिमाण की बनतात."
 
 ne_NP:
   title: "तालिकाहरू"
   search: "खोज्नुहोस्"
   searchPlaceholder: "फिल्टर मान प्रविष्ट गर्नुहोस्..."
-  scratchpad: "स्क्र्याचप्याड"
   cardView: "कार्ड दृश्य"
   listView: "सूची दृश्य"
   describe: "जानकारी"
@@ -1993,14 +1886,12 @@ ne_NP:
   fieldsCannotBeEmpty: "क्षेत्रहरू खाली हुन सक्दैन"
   createSuccessMessage: "{storageUnit} सफलतापूर्वक सिर्जना गरियो!"
   actionsColumn: "कार्यहरू"
-  close: "बन्द गर्नुहोस्"
   aggregateKeyHint: "यस प्रकारले समग्र कुञ्जी तालिका सिर्जना गर्दछ। गैर-समग्र स्तम्भहरू आयाम कुञ्जीहरू हुन्छन्।"
 
 pa_IN:
   title: "ਟੇਬਲ"
   search: "ਖੋਜ"
   searchPlaceholder: "ਫਿਲਟਰ ਮੁੱਲ ਦਰਜ ਕਰੋ..."
-  scratchpad: "ਸਕ੍ਰੈਚਪੈਡ"
   cardView: "ਕਾਰਡ ਦ੍ਰਿਸ਼"
   listView: "ਸੂਚੀ ਦ੍ਰਿਸ਼"
   describe: "ਜਾਣਕਾਰੀ"
@@ -2030,14 +1921,12 @@ pa_IN:
   fieldsCannotBeEmpty: "ਖੇਤਰ ਖਾਲੀ ਨਹੀਂ ਹੋ ਸਕਦੇ ਹਨ"
   createSuccessMessage: "{storageUnit} ਸਫਲਤਾਪੂਰਵਕ ਬਣਾਇਆ ਗਿਆ!"
   actionsColumn: "ਕਾਰਵਾਈਆਂ"
-  close: "ਬੰਦ ਕਰੋ"
   aggregateKeyHint: "ਇਹ ਕਿਸਮ ਇੱਕ ਐਗਰੀਗੇਟ ਕੁੰਜੀ ਸਾਰਣੀ ਬਣਾਉਂਦੀ ਹੈ। ਗੈਰ-ਏਗਰੀਗੇਟ ਕਾਲਮ ਆਯਾਮ ਕੁੰਜੀਆਂ ਬਣ ਜਾਂਦੇ ਹਨ।"
 
 si_LK:
   title: "වගු"
   search: "සොයන්න"
   searchPlaceholder: "පෙරහන් අගය ඇතුලත් කරන්න..."
-  scratchpad: "Scratchpad"
   cardView: "කාඩ්පත් දර්ශනය"
   listView: "ලැයිස්තු දර්ශනය"
   describe: "තොරතුරු"
@@ -2067,14 +1956,12 @@ si_LK:
   fieldsCannotBeEmpty: "ක්ෂේත්‍ර හිස් විය නොහැක"
   createSuccessMessage: "{storageUnit} සාර්ථකව නිර්මාණය කරන ලදී!"
   actionsColumn: "ක්රියාවන්"
-  close: "වසන්න"
   aggregateKeyHint: "මෙම වර්ගය සමස්ත යතුරු වගුවක් නිර්මාණය කරයි. සමස්ථ නොවන තීරු මාන යතුරු බවට පත් වේ."
 
 sl_SI:
   title: "Mize"
   search: "Iskanje"
   searchPlaceholder: "Vnesite vrednost filtra ..."
-  scratchpad: "Scratchpad"
   cardView: "Pogled kartice"
   listView: "Pogled seznama"
   describe: "Informacije"
@@ -2104,14 +1991,12 @@ sl_SI:
   fieldsCannotBeEmpty: "Polja ne smejo biti prazna"
   createSuccessMessage: "{storageUnit} Uspešno ustvarjeno!"
   actionsColumn: "Dejanja"
-  close: "Zapri"
   aggregateKeyHint: "Ta vrsta ustvari tabelo agregatnih ključev. Nezdruženi stolpci postanejo dimenzijski ključi."
 
 sr_RS:
   title: "Табле"
   search: "Тражи"
   searchPlaceholder: "Унесите вредност филтера..."
-  scratchpad: "Сцратцхпад"
   cardView: "Цард Виев"
   listView: "Лист Виев"
   describe: "Инфо"
@@ -2141,14 +2026,12 @@ sr_RS:
   fieldsCannotBeEmpty: "Поља не могу бити празна"
   createSuccessMessage: "{storageUnit} Направљено успешно!"
   actionsColumn: "Акције"
-  close: "Затвори"
   aggregateKeyHint: "Овај тип креира табелу агрегатног кључа. Неагрегиране колоне постају кључеви димензија."
 
 te_IN:
   title: "పట్టికలు"
   search: "శోధించండి"
   searchPlaceholder: "ఫిల్టర్ విలువను నమోదు చేయండి..."
-  scratchpad: "స్క్రాచ్‌ప్యాడ్"
   cardView: "కార్డ్ వీక్షణ"
   listView: "జాబితా వీక్షణ"
   describe: "సమాచారం"
@@ -2178,14 +2061,12 @@ te_IN:
   fieldsCannotBeEmpty: "ఫీల్డ్‌లు ఖాళీగా ఉండకూడదు"
   createSuccessMessage: "{storageUnit} విజయవంతంగా సృష్టించబడింది!"
   actionsColumn: "చర్యలు"
-  close: "మూసివేయి"
   aggregateKeyHint: "ఈ రకం మొత్తం కీ పట్టికను సృష్టిస్తుంది. నాన్-అగ్రిగేట్ నిలువు వరుసలు డైమెన్షన్ కీలుగా మారతాయి."
 
 tl_PH:
   title: "Mga mesa"
   search: "Maghanap"
   searchPlaceholder: "Ilagay ang Filter Value..."
-  scratchpad: "Scratchpad"
   cardView: "Card View"
   listView: "View ng Listahan"
   describe: "Impormasyon"
@@ -2215,14 +2096,12 @@ tl_PH:
   fieldsCannotBeEmpty: "Hindi Maaaring Walang laman ang mga Field"
   createSuccessMessage: "{storageUnit} Matagumpay na Nagawa!"
   actionsColumn: "Mga aksyon"
-  close: "Isara"
   aggregateKeyHint: "Ang ganitong uri ay lumilikha ng isang pinagsama-samang talahanayan ng Key. Ang mga hindi pinagsama-samang column ay nagiging mga dimensyon na key."
 
 uz_UZ:
   title: "Jadvallar"
   search: "Qidiruv"
   searchPlaceholder: "Filtr qiymatini kiriting..."
-  scratchpad: "Scratchpad"
   cardView: "Karta ko'rinishi"
   listView: "Roʻyxat koʻrinishi"
   describe: "Ma'lumot"
@@ -2252,14 +2131,12 @@ uz_UZ:
   fieldsCannotBeEmpty: "Maydonlar bo'sh bo'lishi mumkin emas"
   createSuccessMessage: "{storageUnit} Muvaffaqiyatli yaratildi!"
   actionsColumn: "Harakatlar"
-  close: "Yopish"
   aggregateKeyHint: "Ushbu tur Aggregate Key jadvalini yaratadi. Agregat bo'lmagan ustunlar o'lchov kalitlariga aylanadi."
 
 yo_NG:
   title: "Awọn tabili"
   search: "Wa"
   searchPlaceholder: "Tẹ Iye Ajọ sii..."
-  scratchpad: "Scratchpad"
   cardView: "Wiwo kaadi"
   listView: "Akojọ Wo"
   describe: "Alaye"
@@ -2289,5 +2166,4 @@ yo_NG:
   fieldsCannotBeEmpty: "Awọn aaye Ko le Sofo"
   createSuccessMessage: "{storageUnit} Ti ṣẹda ni aṣeyọri!"
   actionsColumn: "Awọn iṣe"
-  close: "Sunmọ"
   aggregateKeyHint: "Iru yi ṣẹda Aggregate Key tabili. Awọn ọwọn ti kii ṣe apapọ di awọn bọtini iwọn."
