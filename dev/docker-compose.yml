@@ -372,6 +372,7 @@ services:
     environment:
       - discovery.type=single-node
       - plugins.security.disabled=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
       - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
       - bootstrap.memory_lock=true
       - cluster.routing.allocation.disk.threshold_enabled=false
@@ -402,43 +403,14 @@ services:
     networks:
       - db
 
-  e2e_starrocks:
-    image: starrocks/allin1-ubuntu:latest
-    container_name: e2e_starrocks
-    ports:
-      - "9030:9030"
-      - "8030:8030"
-    volumes:
-      - e2e_starrocks:/data
-    networks:
-      - db
-    healthcheck:
-      test: ["CMD-SHELL", "mysql -h 127.0.0.1 -P 9030 -u root -e 'SELECT 1' || exit 1"]
-      interval: 15s
-      timeout: 10s
-      retries: 20
-
-  starrocks-init:
-    image: mysql:latest
-    depends_on:
-      e2e_starrocks:
-        condition: service_healthy
-    volumes:
-      - ./sample-data/starrocks/data.sql:/data.sql:ro
-    entrypoint: >
-      sh -c "
-        mysql -h e2e_starrocks -P 9030 -u root < /data.sql &&
-        echo 'StarRocks data loaded'
-      "
-    networks:
-      - db
+  # StarRocks is EE-only (JDBC bridge) — see ee/dev/docker-compose-starrocks-test.yaml
 
   e2e_yugabytedb:
     image: yugabytedb/yugabyte:latest
     container_name: e2e_yugabytedb
     command: >
       bash -c "
-        bin/yugabyted start --daemon=false --tserver_flags='ysql_enable_auth=true'
+        bin/yugabyted start --daemon=false --advertise_address=0.0.0.0 --tserver_flags='ysql_enable_auth=true'
       "
     environment:
       YSQL_USER: user
@@ -883,7 +855,6 @@ volumes:
   e2e_valkey:
   e2e_dragonfly:
   e2e_opensearch:
-  e2e_starrocks:
   e2e_yugabytedb:
   e2e_questdb:
   e2e_ferretdb_pg:
