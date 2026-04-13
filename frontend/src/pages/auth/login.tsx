@@ -1040,7 +1040,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                                 .filter(([key]) => !excludedAdvancedKeys.has(key))
                                 .map(([key, value]) => (
                                 <div className="flex flex-col gap-sm" key={key}>
-                                    <Label htmlFor={`${key}-input`}>{t(`advancedFields.${camelCase(key)}`, key)}</Label>
+                                    <Label htmlFor={`${key}-input`}>{t(`advancedFields.${camelCase(key)}`)}</Label>
                                     <Input
                                         id={`${key}-input`}
                                         value={value}
