@@ -261,11 +261,15 @@ func isAllowed(r *http.Request, body []byte) bool {
 
 	switch query.OperationName {
 	case "Login", "LoginWithProfile", "GetProfiles", "UpdateSettings", "SettingsConfig", "GetVersion",
-		"GetAWSProviders", "GetDiscoveredConnections", "GetProviderConnections",
+		"GetAWSProviders", "GetCloudProviders", "GetCloudProvider",
+		"GetDiscoveredConnections", "GetProviderConnections",
 		"GetLocalAWSProfiles", "GetAWSRegions",
 		"AddAWSProvider", "TestAWSCredentials", "TestCloudProvider",
 		"RefreshCloudProvider", "RemoveCloudProvider", "UpdateAWSProvider",
-		"GenerateRDSAuthToken":
+		"GenerateRDSAuthToken",
+		"GetLocalGCPProjects", "GetGCPRegions",
+		"AddGCPProvider", "UpdateGCPProvider", "TestGCPCredentials",
+		"GenerateCloudSQLIAMAuthToken":
 		return true
 	}
 	for _, op := range additionalAllowedOps {

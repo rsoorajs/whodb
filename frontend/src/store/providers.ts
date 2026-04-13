@@ -15,13 +15,13 @@
  */
 
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
-import { AwsProvider, CloudProviderStatus, DiscoveredConnection } from '@graphql';
+import { AwsProvider, GcpProvider, CloudProviderStatus, DiscoveredConnection } from '@graphql';
 
 /**
  * Cloud Provider with local state tracking.
- * Currently supports AWS, with GCP/Azure planned.
+ * Supports AWS and GCP providers.
  */
-export type LocalCloudProvider = AwsProvider & {
+export type LocalCloudProvider = (AwsProvider | GcpProvider) & {
   /** True if provider was configured via environment variable */
   IsEnvironmentDefined?: boolean;
 };

@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-import { FC, useCallback, useEffect } from "react";
+import { FC, useCallback, useEffect, useMemo } from "react";
 import { Badge, Button, cn, toast } from "@clidey/ux";
 import {
+    AwsProvider,
     CloudProviderStatus,
+    CloudProviderType,
     useGetCloudProvidersQuery,
     useRefreshCloudProviderMutation,
     useRemoveCloudProviderMutation,
@@ -61,8 +63,14 @@ export const AwsProvidersSection: FC = () => {
     const { t } = useTranslation('components/aws-providers-section');
     const dispatch = useAppDispatch();
 
-    // Redux state
-    const cloudProviders = useAppSelector(state => state.providers.cloudProviders);
+    // Redux state - filter to AWS providers only
+    const allProviders = useAppSelector(state => state.providers.cloudProviders);
+    const cloudProviders = useMemo(() =>
+        allProviders.filter((p): p is AwsProvider & { IsEnvironmentDefined?: boolean } =>
+            p.ProviderType === CloudProviderType.Aws
+        ),
+        [allProviders]
+    );
     const isModalOpen = useAppSelector(state => state.providers.isProviderModalOpen);
 
     // GraphQL queries and mutations

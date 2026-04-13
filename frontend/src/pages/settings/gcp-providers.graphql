@@ -1,0 +1,59 @@
+query GetLocalGCPProjects {
+  LocalGCPProjects {
+    ProjectID
+    Name
+    Source
+    IsDefault
+  }
+}
+
+query GetGCPRegions {
+  GCPRegions {
+    Id
+    Description
+  }
+}
+
+mutation AddGCPProvider($input: GCPProviderInput!) {
+  AddGCPProvider(input: $input) {
+    Id
+    ProviderType
+    Name
+    Region
+    Status
+    LastDiscoveryAt
+    DiscoveredCount
+    Error
+    ProjectID
+    ServiceAccountKeyPath
+    DiscoverCloudSQL
+    DiscoverAlloyDB
+    DiscoverMemorystore
+  }
+}
+
+mutation UpdateGCPProvider($id: ID!, $input: GCPProviderInput!) {
+  UpdateGCPProvider(id: $id, input: $input) {
+    Id
+    ProviderType
+    Name
+    Region
+    Status
+    LastDiscoveryAt
+    DiscoveredCount
+    Error
+    ProjectID
+    ServiceAccountKeyPath
+    DiscoverCloudSQL
+    DiscoverAlloyDB
+    DiscoverMemorystore
+  }
+}
+
+mutation TestGCPCredentials($input: GCPProviderInput!) {
+  TestGCPCredentials(input: $input)
+}
+
+mutation GenerateCloudSQLIAMAuthToken($providerID: ID!, $username: String!) {
+  GenerateCloudSQLIAMAuthToken(providerID: $providerID, username: $username)
+}
