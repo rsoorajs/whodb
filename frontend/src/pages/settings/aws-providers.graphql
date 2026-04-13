@@ -14,6 +14,23 @@ query GetCloudProviders {
       DiscoverElastiCache
       DiscoverDocumentDB
     }
+    ... on AzureProvider {
+      Id
+      ProviderType
+      Name
+      Region
+      Status
+      LastDiscoveryAt
+      DiscoveredCount
+      Error
+      SubscriptionID
+      TenantID
+      ResourceGroup
+      DiscoverPostgreSQL
+      DiscoverMySQL
+      DiscoverRedis
+      DiscoverCosmosDB
+    }
     ... on GCPProvider {
       Id
       ProviderType
@@ -47,6 +64,23 @@ query GetCloudProvider($id: ID!) {
       DiscoverRDS
       DiscoverElastiCache
       DiscoverDocumentDB
+    }
+    ... on AzureProvider {
+      Id
+      ProviderType
+      Name
+      Region
+      Status
+      LastDiscoveryAt
+      DiscoveredCount
+      Error
+      SubscriptionID
+      TenantID
+      ResourceGroup
+      DiscoverPostgreSQL
+      DiscoverMySQL
+      DiscoverRedis
+      DiscoverCosmosDB
     }
     ... on GCPProvider {
       Id
@@ -183,6 +217,23 @@ mutation RefreshCloudProvider($id: ID!) {
       DiscoverRDS
       DiscoverElastiCache
       DiscoverDocumentDB
+    }
+    ... on AzureProvider {
+      Id
+      ProviderType
+      Name
+      Region
+      Status
+      LastDiscoveryAt
+      DiscoveredCount
+      Error
+      SubscriptionID
+      TenantID
+      ResourceGroup
+      DiscoverPostgreSQL
+      DiscoverMySQL
+      DiscoverRedis
+      DiscoverCosmosDB
     }
     ... on GCPProvider {
       Id

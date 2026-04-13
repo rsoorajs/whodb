@@ -43,6 +43,19 @@ export function isAzureHostname(hostname: string | undefined | null): boolean {
     return AZURE_HOSTNAME_PATTERNS.some(pattern => pattern.test(hostname));
 }
 
+/** Matches GCP managed database hostnames (Cloud SQL, AlloyDB, Memorystore) */
+const GCP_HOSTNAME_PATTERNS = [
+    /\.cloudsql\.goog$/i,
+    /\.alloydb\.goog$/i,
+    /\.memorystore\.goog$/i,
+];
+
+/** Checks if a hostname belongs to a GCP managed database service */
+export function isGcpHostname(hostname: string | undefined | null): boolean {
+    if (!hostname) return false;
+    return GCP_HOSTNAME_PATTERNS.some(pattern => pattern.test(hostname));
+}
+
 /**
  * Data structure for prefilling the login form from a discovered cloud connection.
  */

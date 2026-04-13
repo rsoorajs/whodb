@@ -63,16 +63,15 @@ import {v4 as uuidv4} from 'uuid';
 import {hasCompletedOnboarding, markOnboardingComplete} from '../../utils/onboarding';
 import {
     AwsConnectionPicker,
-    AwsConnectionPrefillData,
     DatabaseIconWithBadge,
     isAwsConnection
 } from '../../components/aws';
 import {AzureConnectionPicker, isAzureConnection} from '../../components/azure';
 import {
     GcpConnectionPicker,
-    GcpConnectionPrefillData,
+    isGcpConnection,
 } from '../../components/gcp';
-import {isAwsHostname, isAzureHostname} from '../../utils/cloud-connection-prefill';
+import {ConnectionPrefillData, isAwsHostname, isAzureHostname, isGcpHostname} from '../../utils/cloud-connection-prefill';
 import {SSL_KEYS, SSLConfig} from '../../components/ssl-config';
 
 /**
@@ -475,11 +474,11 @@ export const LoginForm: FC<LoginFormProps> = ({
     }, []);
 
     /**
-     * Handle prefill from AWS connection picker.
+     * Handle prefill from a cloud connection picker (AWS, Azure, GCP).
      * Updates the main login form with discovered connection details,
      * then focuses the username field for easy credential entry.
      */
-    const handleAwsConnectionPrefill = useCallback((data: AwsConnectionPrefillData) => {
+    const handleCloudConnectionPrefill = useCallback((data: ConnectionPrefillData) => {
         // Find the database type in our dropdown items
         const dbType = databaseTypeItems.find(item =>
             item.id.toLowerCase() === data.databaseType.toLowerCase()
@@ -505,38 +504,6 @@ export const LoginForm: FC<LoginFormProps> = ({
                 }
 
                 // Focus username field after form updates
-                setTimeout(() => {
-                    usernameInputRef.current?.focus();
-                }, 50);
-            }, 0);
-        }
-    }, [databaseTypeItems, handleDatabaseTypeChange]);
-
-    /**
-     * Handle prefill from GCP connection picker.
-     * Same behavior as AWS prefill -- updates the main login form.
-     */
-    const handleGcpConnectionPrefill = useCallback((data: GcpConnectionPrefillData) => {
-        const dbType = databaseTypeItems.find(item =>
-            item.id.toLowerCase() === data.databaseType.toLowerCase()
-        );
-
-        if (dbType) {
-            handleDatabaseTypeChange(dbType);
-
-            setTimeout(() => {
-                if (data.hostname) {
-                    setHostName(data.hostname);
-                }
-
-                if (data.advanced && Object.keys(data.advanced).length > 0) {
-                    setAdvancedForm(prev => ({
-                        ...prev,
-                        ...data.advanced,
-                    }));
-                    setShowAdvanced(true);
-                }
-
                 setTimeout(() => {
                     usernameInputRef.current?.focus();
                 }, 50);
@@ -630,14 +597,14 @@ export const LoginForm: FC<LoginFormProps> = ({
         return profiles?.Profiles
             .filter(profile => profile.Source !== "builtin")
             // Filter out AWS-hosted profiles when cloud providers are disabled
-            .filter(profile => cloudProvidersEnabled || (!isAwsHostname(profile.Hostname) && !isAzureHostname(profile.Hostname)))
+            .filter(profile => cloudProvidersEnabled || (!isAwsHostname(profile.Hostname) && !isAzureHostname(profile.Hostname) && !isGcpHostname(profile.Hostname)))
             .map(profile => ({
                 value: profile.Id,
                 label: profile.Alias ?? profile.Id,
                 icon: (
                     <DatabaseIconWithBadge
                         icon={(Icons.Logos as Record<string, ReactElement>)[profile.Type]}
-                        showCloudBadge={isAwsConnection(profile.Id) || isAzureConnection(profile.Id)}
+                        showCloudBadge={isAwsConnection(profile.Id) || isAzureConnection(profile.Id) || isGcpConnection(profile.Id)}
                         sslStatus={profile.SSLConfigured ? { IsEnabled: true, Mode: 'configured' } : undefined}
                         size="sm"
                     />
@@ -1145,11 +1112,11 @@ export const LoginForm: FC<LoginFormProps> = ({
                 {cloudProvidersEnabled && (
                     <>
                         <Separator className="my-8" />
-                        <AwsConnectionPicker onSelectConnection={handleAwsConnectionPrefill} />
+                        <AwsConnectionPicker onSelectConnection={handleCloudConnectionPrefill} />
                         <Separator className="my-8" />
-                        <AzureConnectionPicker onSelectConnection={handleAwsConnectionPrefill} />
+                        <AzureConnectionPicker onSelectConnection={handleCloudConnectionPrefill} />
                         <Separator className="my-8" />
-                        <GcpConnectionPicker onSelectConnection={handleGcpConnectionPrefill} />
+                        <GcpConnectionPicker onSelectConnection={handleCloudConnectionPrefill} />
                     </>
                 )}
             </div>

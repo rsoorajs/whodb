@@ -49,6 +49,11 @@ import { getAppName } from "@/config/features";
 
 export type GcpConnectionPrefillData = ConnectionPrefillData;
 
+/** Checks if a profile ID belongs to a GCP-discovered connection. */
+export function isGcpConnection(profileId: string | undefined): boolean {
+    return profileId?.startsWith("gcp-") ?? false;
+}
+
 interface GcpConnectionPickerProps {
     /** Called when user clicks a discovered connection - prefills the main login form */
     onSelectConnection?: (data: GcpConnectionPrefillData) => void;

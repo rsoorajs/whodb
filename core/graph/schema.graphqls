@@ -579,7 +579,9 @@ type Query {
   AzureSubscriptions: [AzureSubscription!]!
   AzureRegions: [AzureRegion!]!
 
-  # GCP-specific helpers
+  # GCP Provider Queries
+  GCPProviders: [GCPProvider!]!
+  GCPProvider(id: ID!): GCPProvider
   LocalGCPProjects: [LocalGCPProject!]!
   GCPRegions: [GCPRegion!]!
 }
@@ -632,6 +634,7 @@ type Mutation {
   AddGCPProvider(input: GCPProviderInput!): GCPProvider!
   UpdateGCPProvider(id: ID!, input: GCPProviderInput!): GCPProvider!
   TestGCPCredentials(input: GCPProviderInput!): CloudProviderStatus!
+  RefreshGCPProvider(id: ID!): GCPProvider!
   # Generic operations (work with any provider type)
   RemoveCloudProvider(id: ID!): StatusResponse!
   TestCloudProvider(id: ID!): CloudProviderStatus!

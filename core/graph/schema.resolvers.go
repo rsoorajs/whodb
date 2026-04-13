@@ -1103,6 +1103,20 @@ func (r *mutationResolver) TestGCPCredentials(ctx context.Context, input model.G
 	return model.CloudProviderStatusConnected, nil
 }
 
+// RefreshGCPProvider is the resolver for the RefreshGCPProvider field.
+func (r *mutationResolver) RefreshGCPProvider(ctx context.Context, id string) (*model.GCPProvider, error) {
+	if !env.IsGCPProviderEnabled {
+		return nil, gcp.ErrGCPProviderDisabled
+	}
+
+	state, err := settings.RefreshGCPProvider(id)
+	if err != nil {
+		return stateToGCPProvider(state), err
+	}
+
+	return stateToGCPProvider(state), nil
+}
+
 // RemoveCloudProvider is the resolver for the RemoveCloudProvider field.
 func (r *mutationResolver) RemoveCloudProvider(ctx context.Context, id string) (*model.StatusResponse, error) {
 	var err error
@@ -2331,29 +2345,6 @@ func (r *queryResolver) AzureProviders(ctx context.Context) ([]*model.AzureProvi
 	return result, nil
 }
 
-// LocalGCPProjects is the resolver for the LocalGCPProjects field.
-func (r *queryResolver) LocalGCPProjects(ctx context.Context) ([]*model.LocalGCPProject, error) {
-	if !env.IsGCPProviderEnabled {
-		return []*model.LocalGCPProject{}, nil
-	}
-
-	localProjects, err := gcp.DiscoverLocalProjects()
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]*model.LocalGCPProject, len(localProjects))
-	for i, project := range localProjects {
-		result[i] = &model.LocalGCPProject{
-			ProjectID: project.ProjectID,
-			Name:      project.Name,
-			Source:    project.Source,
-			IsDefault: project.IsDefault,
-		}
-	}
-	return result, nil
-}
-
 // AzureProvider is the resolver for the AzureProvider field.
 func (r *queryResolver) AzureProvider(ctx context.Context, id string) (*model.AzureProvider, error) {
 	if !env.IsAzureProviderEnabled {
@@ -2409,6 +2400,56 @@ func (r *queryResolver) AzureRegions(ctx context.Context) ([]*model.AzureRegion,
 			DisplayName: region.DisplayName,
 			Geography:   region.Geography,
 		})
+	}
+	return result, nil
+}
+
+// GCPProviders is the resolver for the GCPProviders field.
+func (r *queryResolver) GCPProviders(ctx context.Context) ([]*model.GCPProvider, error) {
+	if !env.IsGCPProviderEnabled {
+		return []*model.GCPProvider{}, nil
+	}
+
+	states := settings.GetGCPProviders()
+	result := make([]*model.GCPProvider, 0, len(states))
+	for _, state := range states {
+		result = append(result, stateToGCPProvider(state))
+	}
+	return result, nil
+}
+
+// GCPProvider is the resolver for the GCPProvider field.
+func (r *queryResolver) GCPProvider(ctx context.Context, id string) (*model.GCPProvider, error) {
+	if !env.IsGCPProviderEnabled {
+		return nil, nil
+	}
+
+	state, err := settings.GetGCPProvider(id)
+	if err != nil {
+		return nil, err
+	}
+	return stateToGCPProvider(state), nil
+}
+
+// LocalGCPProjects is the resolver for the LocalGCPProjects field.
+func (r *queryResolver) LocalGCPProjects(ctx context.Context) ([]*model.LocalGCPProject, error) {
+	if !env.IsGCPProviderEnabled {
+		return []*model.LocalGCPProject{}, nil
+	}
+
+	localProjects, err := gcp.DiscoverLocalProjects()
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*model.LocalGCPProject, len(localProjects))
+	for i, project := range localProjects {
+		result[i] = &model.LocalGCPProject{
+			ProjectID: project.ProjectID,
+			Name:      project.Name,
+			Source:    project.Source,
+			IsDefault: project.IsDefault,
+		}
 	}
 	return result, nil
 }

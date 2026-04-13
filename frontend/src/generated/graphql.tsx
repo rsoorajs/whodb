@@ -74,6 +74,54 @@ export type AtomicWhereCondition = {
   Value: Scalars['String']['input'];
 };
 
+export type AzureProvider = CloudProvider & {
+  __typename?: 'AzureProvider';
+  DiscoverCosmosDB: Scalars['Boolean']['output'];
+  DiscoverMySQL: Scalars['Boolean']['output'];
+  DiscoverPostgreSQL: Scalars['Boolean']['output'];
+  DiscoverRedis: Scalars['Boolean']['output'];
+  DiscoveredCount: Scalars['Int']['output'];
+  Error?: Maybe<Scalars['String']['output']>;
+  Id: Scalars['ID']['output'];
+  LastDiscoveryAt?: Maybe<Scalars['String']['output']>;
+  Name: Scalars['String']['output'];
+  ProviderType: CloudProviderType;
+  Region: Scalars['String']['output'];
+  ResourceGroup?: Maybe<Scalars['String']['output']>;
+  Status: CloudProviderStatus;
+  SubscriptionID: Scalars['String']['output'];
+  TenantID?: Maybe<Scalars['String']['output']>;
+};
+
+export type AzureProviderInput = {
+  AuthMethod?: InputMaybe<Scalars['String']['input']>;
+  ClientID?: InputMaybe<Scalars['String']['input']>;
+  ClientSecret?: InputMaybe<Scalars['String']['input']>;
+  DiscoverCosmosDB?: InputMaybe<Scalars['Boolean']['input']>;
+  DiscoverMySQL?: InputMaybe<Scalars['Boolean']['input']>;
+  DiscoverPostgreSQL?: InputMaybe<Scalars['Boolean']['input']>;
+  DiscoverRedis?: InputMaybe<Scalars['Boolean']['input']>;
+  Name: Scalars['String']['input'];
+  ResourceGroup?: InputMaybe<Scalars['String']['input']>;
+  SubscriptionID: Scalars['String']['input'];
+  TenantID?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type AzureRegion = {
+  __typename?: 'AzureRegion';
+  DisplayName: Scalars['String']['output'];
+  Geography: Scalars['String']['output'];
+  Id: Scalars['String']['output'];
+};
+
+export type AzureSubscription = {
+  __typename?: 'AzureSubscription';
+  DisplayName: Scalars['String']['output'];
+  Id: Scalars['String']['output'];
+  State: Scalars['String']['output'];
+  TenantID: Scalars['String']['output'];
+};
+
 export type Capabilities = {
   __typename?: 'Capabilities';
   supportsChat: Scalars['Boolean']['output'];
@@ -111,6 +159,7 @@ export enum CloudProviderStatus {
 
 export enum CloudProviderType {
   Aws = 'AWS',
+  Azure = 'Azure',
   Gcp = 'GCP'
 }
 
@@ -404,11 +453,13 @@ export type MockDataTableInfo = {
 export type Mutation = {
   __typename?: 'Mutation';
   AddAWSProvider: AwsProvider;
+  AddAzureProvider: AzureProvider;
   AddGCPProvider: GcpProvider;
   AddRow: StatusResponse;
   AddStorageUnit: StatusResponse;
   DeleteRow: StatusResponse;
   ExecuteConfirmedSQL: AiChatMessage;
+  GenerateAzureADToken: Scalars['String']['output'];
   GenerateChatTitle: GenerateChatTitleResponse;
   GenerateCloudSQLIAMAuthToken: Scalars['String']['output'];
   GenerateMockData: MockDataGenerationStatus;
@@ -419,12 +470,16 @@ export type Mutation = {
   Login: StatusResponse;
   LoginWithProfile: StatusResponse;
   Logout: StatusResponse;
+  RefreshAzureProvider: AzureProvider;
   RefreshCloudProvider: CloudProvider;
+  RefreshGCPProvider: GcpProvider;
   RemoveCloudProvider: StatusResponse;
   TestAWSCredentials: CloudProviderStatus;
+  TestAzureCredentials: CloudProviderStatus;
   TestCloudProvider: CloudProviderStatus;
   TestGCPCredentials: CloudProviderStatus;
   UpdateAWSProvider: AwsProvider;
+  UpdateAzureProvider: AzureProvider;
   UpdateGCPProvider: GcpProvider;
   UpdateSettings: StatusResponse;
   UpdateStorageUnit: StatusResponse;
@@ -433,6 +488,11 @@ export type Mutation = {
 
 export type MutationAddAwsProviderArgs = {
   input: AwsProviderInput;
+};
+
+
+export type MutationAddAzureProviderArgs = {
+  input: AzureProviderInput;
 };
 
 
@@ -465,6 +525,12 @@ export type MutationDeleteRowArgs = {
 export type MutationExecuteConfirmedSqlArgs = {
   operationType: Scalars['String']['input'];
   query: Scalars['String']['input'];
+};
+
+
+export type MutationGenerateAzureAdTokenArgs = {
+  databaseType: Scalars['String']['input'];
+  providerID: Scalars['ID']['input'];
 };
 
 
@@ -522,7 +588,17 @@ export type MutationLoginWithProfileArgs = {
 };
 
 
+export type MutationRefreshAzureProviderArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationRefreshCloudProviderArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationRefreshGcpProviderArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -534,6 +610,11 @@ export type MutationRemoveCloudProviderArgs = {
 
 export type MutationTestAwsCredentialsArgs = {
   input: AwsProviderInput;
+};
+
+
+export type MutationTestAzureCredentialsArgs = {
+  input: AzureProviderInput;
 };
 
 
@@ -550,6 +631,12 @@ export type MutationTestGcpCredentialsArgs = {
 export type MutationUpdateAwsProviderArgs = {
   id: Scalars['ID']['input'];
   input: AwsProviderInput;
+};
+
+
+export type MutationUpdateAzureProviderArgs = {
+  id: Scalars['ID']['input'];
+  input: AzureProviderInput;
 };
 
 
@@ -582,6 +669,10 @@ export type Query = {
   AIProviders: Array<AiProvider>;
   AWSRegions: Array<AwsRegion>;
   AnalyzeMockDataDependencies: MockDataDependencyAnalysis;
+  AzureProvider?: Maybe<AzureProvider>;
+  AzureProviders: Array<AzureProvider>;
+  AzureRegions: Array<AzureRegion>;
+  AzureSubscriptions: Array<AzureSubscription>;
   CloudProvider?: Maybe<CloudProvider>;
   CloudProviders: Array<CloudProvider>;
   Columns: Array<Column>;
@@ -590,6 +681,8 @@ export type Query = {
   DatabaseMetadata?: Maybe<DatabaseMetadata>;
   DatabaseQuerySuggestions: Array<DatabaseQuerySuggestion>;
   DiscoveredConnections: Array<DiscoveredConnection>;
+  GCPProvider?: Maybe<GcpProvider>;
+  GCPProviders: Array<GcpProvider>;
   GCPRegions: Array<GcpRegion>;
   Graph: Array<GraphUnit>;
   Health: HealthStatus;
@@ -633,6 +726,11 @@ export type QueryAnalyzeMockDataDependenciesArgs = {
 };
 
 
+export type QueryAzureProviderArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type QueryCloudProviderArgs = {
   id: Scalars['ID']['input'];
 };
@@ -657,6 +755,11 @@ export type QueryDatabaseArgs = {
 
 export type QueryDatabaseQuerySuggestionsArgs = {
   schema: Scalars['String']['input'];
+};
+
+
+export type QueryGcpProviderArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -989,14 +1092,14 @@ export type RawExecuteQuery = { __typename?: 'Query', RawExecute: { __typename?:
 export type GetCloudProvidersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetCloudProvidersQuery = { __typename?: 'Query', CloudProviders: Array<{ __typename?: 'AWSProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProfileName?: string | null, DiscoverRDS: boolean, DiscoverElastiCache: boolean, DiscoverDocumentDB: boolean } | { __typename?: 'GCPProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProjectID: string, ServiceAccountKeyPath?: string | null, DiscoverCloudSQL: boolean, DiscoverAlloyDB: boolean, DiscoverMemorystore: boolean }> };
+export type GetCloudProvidersQuery = { __typename?: 'Query', CloudProviders: Array<{ __typename?: 'AWSProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProfileName?: string | null, DiscoverRDS: boolean, DiscoverElastiCache: boolean, DiscoverDocumentDB: boolean } | { __typename?: 'AzureProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, SubscriptionID: string, TenantID?: string | null, ResourceGroup?: string | null, DiscoverPostgreSQL: boolean, DiscoverMySQL: boolean, DiscoverRedis: boolean, DiscoverCosmosDB: boolean } | { __typename?: 'GCPProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProjectID: string, ServiceAccountKeyPath?: string | null, DiscoverCloudSQL: boolean, DiscoverAlloyDB: boolean, DiscoverMemorystore: boolean }> };
 
 export type GetCloudProviderQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetCloudProviderQuery = { __typename?: 'Query', CloudProvider?: { __typename?: 'AWSProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProfileName?: string | null, DiscoverRDS: boolean, DiscoverElastiCache: boolean, DiscoverDocumentDB: boolean } | { __typename?: 'GCPProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProjectID: string, ServiceAccountKeyPath?: string | null, DiscoverCloudSQL: boolean, DiscoverAlloyDB: boolean, DiscoverMemorystore: boolean } | null };
+export type GetCloudProviderQuery = { __typename?: 'Query', CloudProvider?: { __typename?: 'AWSProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProfileName?: string | null, DiscoverRDS: boolean, DiscoverElastiCache: boolean, DiscoverDocumentDB: boolean } | { __typename?: 'AzureProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, SubscriptionID: string, TenantID?: string | null, ResourceGroup?: string | null, DiscoverPostgreSQL: boolean, DiscoverMySQL: boolean, DiscoverRedis: boolean, DiscoverCosmosDB: boolean } | { __typename?: 'GCPProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProjectID: string, ServiceAccountKeyPath?: string | null, DiscoverCloudSQL: boolean, DiscoverAlloyDB: boolean, DiscoverMemorystore: boolean } | null };
 
 export type GetDiscoveredConnectionsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1072,7 +1175,78 @@ export type RefreshCloudProviderMutationVariables = Exact<{
 }>;
 
 
-export type RefreshCloudProviderMutation = { __typename?: 'Mutation', RefreshCloudProvider: { __typename?: 'AWSProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProfileName?: string | null, DiscoverRDS: boolean, DiscoverElastiCache: boolean, DiscoverDocumentDB: boolean } | { __typename?: 'GCPProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProjectID: string, ServiceAccountKeyPath?: string | null, DiscoverCloudSQL: boolean, DiscoverAlloyDB: boolean, DiscoverMemorystore: boolean } };
+export type RefreshCloudProviderMutation = { __typename?: 'Mutation', RefreshCloudProvider: { __typename?: 'AWSProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProfileName?: string | null, DiscoverRDS: boolean, DiscoverElastiCache: boolean, DiscoverDocumentDB: boolean } | { __typename?: 'AzureProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, SubscriptionID: string, TenantID?: string | null, ResourceGroup?: string | null, DiscoverPostgreSQL: boolean, DiscoverMySQL: boolean, DiscoverRedis: boolean, DiscoverCosmosDB: boolean } | { __typename?: 'GCPProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProjectID: string, ServiceAccountKeyPath?: string | null, DiscoverCloudSQL: boolean, DiscoverAlloyDB: boolean, DiscoverMemorystore: boolean } };
+
+export type GetAzureProvidersQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetAzureProvidersQuery = { __typename?: 'Query', AzureProviders: Array<{ __typename?: 'AzureProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, SubscriptionID: string, TenantID?: string | null, ResourceGroup?: string | null, DiscoverPostgreSQL: boolean, DiscoverMySQL: boolean, DiscoverRedis: boolean, DiscoverCosmosDB: boolean, Status: CloudProviderStatus, DiscoveredCount: number, LastDiscoveryAt?: string | null, Error?: string | null }> };
+
+export type GetAzureProviderQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetAzureProviderQuery = { __typename?: 'Query', AzureProvider?: { __typename?: 'AzureProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, SubscriptionID: string, TenantID?: string | null, ResourceGroup?: string | null, DiscoverPostgreSQL: boolean, DiscoverMySQL: boolean, DiscoverRedis: boolean, DiscoverCosmosDB: boolean, Status: CloudProviderStatus, DiscoveredCount: number, LastDiscoveryAt?: string | null, Error?: string | null } | null };
+
+export type GetAzureSubscriptionsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetAzureSubscriptionsQuery = { __typename?: 'Query', AzureSubscriptions: Array<{ __typename?: 'AzureSubscription', Id: string, DisplayName: string, State: string, TenantID: string }> };
+
+export type GetAzureRegionsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetAzureRegionsQuery = { __typename?: 'Query', AzureRegions: Array<{ __typename?: 'AzureRegion', Id: string, DisplayName: string, Geography: string }> };
+
+export type AddAzureProviderMutationVariables = Exact<{
+  input: AzureProviderInput;
+}>;
+
+
+export type AddAzureProviderMutation = { __typename?: 'Mutation', AddAzureProvider: { __typename?: 'AzureProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, SubscriptionID: string, TenantID?: string | null, ResourceGroup?: string | null, DiscoverPostgreSQL: boolean, DiscoverMySQL: boolean, DiscoverRedis: boolean, DiscoverCosmosDB: boolean, Status: CloudProviderStatus, DiscoveredCount: number, LastDiscoveryAt?: string | null, Error?: string | null } };
+
+export type UpdateAzureProviderMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: AzureProviderInput;
+}>;
+
+
+export type UpdateAzureProviderMutation = { __typename?: 'Mutation', UpdateAzureProvider: { __typename?: 'AzureProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, SubscriptionID: string, TenantID?: string | null, ResourceGroup?: string | null, DiscoverPostgreSQL: boolean, DiscoverMySQL: boolean, DiscoverRedis: boolean, DiscoverCosmosDB: boolean, Status: CloudProviderStatus, DiscoveredCount: number, LastDiscoveryAt?: string | null, Error?: string | null } };
+
+export type TestAzureCredentialsMutationVariables = Exact<{
+  input: AzureProviderInput;
+}>;
+
+
+export type TestAzureCredentialsMutation = { __typename?: 'Mutation', TestAzureCredentials: CloudProviderStatus };
+
+export type GenerateAzureAdTokenMutationVariables = Exact<{
+  providerID: Scalars['ID']['input'];
+  databaseType: Scalars['String']['input'];
+}>;
+
+
+export type GenerateAzureAdTokenMutation = { __typename?: 'Mutation', GenerateAzureADToken: string };
+
+export type RefreshAzureProviderMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type RefreshAzureProviderMutation = { __typename?: 'Mutation', RefreshAzureProvider: { __typename?: 'AzureProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, SubscriptionID: string, TenantID?: string | null, ResourceGroup?: string | null, DiscoverPostgreSQL: boolean, DiscoverMySQL: boolean, DiscoverRedis: boolean, DiscoverCosmosDB: boolean, Status: CloudProviderStatus, DiscoveredCount: number, LastDiscoveryAt?: string | null, Error?: string | null } };
+
+export type GetGcpProvidersQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetGcpProvidersQuery = { __typename?: 'Query', GCPProviders: Array<{ __typename?: 'GCPProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProjectID: string, ServiceAccountKeyPath?: string | null, DiscoverCloudSQL: boolean, DiscoverAlloyDB: boolean, DiscoverMemorystore: boolean }> };
+
+export type GetGcpProviderQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetGcpProviderQuery = { __typename?: 'Query', GCPProvider?: { __typename?: 'GCPProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProjectID: string, ServiceAccountKeyPath?: string | null, DiscoverCloudSQL: boolean, DiscoverAlloyDB: boolean, DiscoverMemorystore: boolean } | null };
 
 export type GetLocalGcpProjectsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1105,6 +1279,13 @@ export type TestGcpCredentialsMutationVariables = Exact<{
 
 
 export type TestGcpCredentialsMutation = { __typename?: 'Mutation', TestGCPCredentials: CloudProviderStatus };
+
+export type RefreshGcpProviderMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type RefreshGcpProviderMutation = { __typename?: 'Mutation', RefreshGCPProvider: { __typename?: 'GCPProvider', Id: string, ProviderType: CloudProviderType, Name: string, Region: string, Status: CloudProviderStatus, LastDiscoveryAt?: string | null, DiscoveredCount: number, Error?: string | null, ProjectID: string, ServiceAccountKeyPath?: string | null, DiscoverCloudSQL: boolean, DiscoverAlloyDB: boolean, DiscoverMemorystore: boolean } };
 
 export type GenerateCloudSqliamAuthTokenMutationVariables = Exact<{
   providerID: Scalars['ID']['input'];
@@ -2366,6 +2547,23 @@ export const GetCloudProvidersDocument = gql`
       DiscoverElastiCache
       DiscoverDocumentDB
     }
+    ... on AzureProvider {
+      Id
+      ProviderType
+      Name
+      Region
+      Status
+      LastDiscoveryAt
+      DiscoveredCount
+      Error
+      SubscriptionID
+      TenantID
+      ResourceGroup
+      DiscoverPostgreSQL
+      DiscoverMySQL
+      DiscoverRedis
+      DiscoverCosmosDB
+    }
     ... on GCPProvider {
       Id
       ProviderType
@@ -2432,6 +2630,23 @@ export const GetCloudProviderDocument = gql`
       DiscoverRDS
       DiscoverElastiCache
       DiscoverDocumentDB
+    }
+    ... on AzureProvider {
+      Id
+      ProviderType
+      Name
+      Region
+      Status
+      LastDiscoveryAt
+      DiscoveredCount
+      Error
+      SubscriptionID
+      TenantID
+      ResourceGroup
+      DiscoverPostgreSQL
+      DiscoverMySQL
+      DiscoverRedis
+      DiscoverCosmosDB
     }
     ... on GCPProvider {
       Id
@@ -2909,6 +3124,23 @@ export const RefreshCloudProviderDocument = gql`
       DiscoverElastiCache
       DiscoverDocumentDB
     }
+    ... on AzureProvider {
+      Id
+      ProviderType
+      Name
+      Region
+      Status
+      LastDiscoveryAt
+      DiscoveredCount
+      Error
+      SubscriptionID
+      TenantID
+      ResourceGroup
+      DiscoverPostgreSQL
+      DiscoverMySQL
+      DiscoverRedis
+      DiscoverCosmosDB
+    }
     ... on GCPProvider {
       Id
       ProviderType
@@ -2953,6 +3185,504 @@ export function useRefreshCloudProviderMutation(baseOptions?: Apollo.MutationHoo
 export type RefreshCloudProviderMutationHookResult = ReturnType<typeof useRefreshCloudProviderMutation>;
 export type RefreshCloudProviderMutationResult = Apollo.MutationResult<RefreshCloudProviderMutation>;
 export type RefreshCloudProviderMutationOptions = Apollo.BaseMutationOptions<RefreshCloudProviderMutation, RefreshCloudProviderMutationVariables>;
+export const GetAzureProvidersDocument = gql`
+    query GetAzureProviders {
+  AzureProviders {
+    Id
+    ProviderType
+    Name
+    Region
+    SubscriptionID
+    TenantID
+    ResourceGroup
+    DiscoverPostgreSQL
+    DiscoverMySQL
+    DiscoverRedis
+    DiscoverCosmosDB
+    Status
+    DiscoveredCount
+    LastDiscoveryAt
+    Error
+  }
+}
+    `;
+
+/**
+ * __useGetAzureProvidersQuery__
+ *
+ * To run a query within a React component, call `useGetAzureProvidersQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetAzureProvidersQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetAzureProvidersQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetAzureProvidersQuery(baseOptions?: Apollo.QueryHookOptions<GetAzureProvidersQuery, GetAzureProvidersQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetAzureProvidersQuery, GetAzureProvidersQueryVariables>(GetAzureProvidersDocument, options);
+      }
+export function useGetAzureProvidersLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetAzureProvidersQuery, GetAzureProvidersQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetAzureProvidersQuery, GetAzureProvidersQueryVariables>(GetAzureProvidersDocument, options);
+        }
+export function useGetAzureProvidersSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetAzureProvidersQuery, GetAzureProvidersQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetAzureProvidersQuery, GetAzureProvidersQueryVariables>(GetAzureProvidersDocument, options);
+        }
+export type GetAzureProvidersQueryHookResult = ReturnType<typeof useGetAzureProvidersQuery>;
+export type GetAzureProvidersLazyQueryHookResult = ReturnType<typeof useGetAzureProvidersLazyQuery>;
+export type GetAzureProvidersSuspenseQueryHookResult = ReturnType<typeof useGetAzureProvidersSuspenseQuery>;
+export type GetAzureProvidersQueryResult = Apollo.QueryResult<GetAzureProvidersQuery, GetAzureProvidersQueryVariables>;
+export const GetAzureProviderDocument = gql`
+    query GetAzureProvider($id: ID!) {
+  AzureProvider(id: $id) {
+    Id
+    ProviderType
+    Name
+    Region
+    SubscriptionID
+    TenantID
+    ResourceGroup
+    DiscoverPostgreSQL
+    DiscoverMySQL
+    DiscoverRedis
+    DiscoverCosmosDB
+    Status
+    DiscoveredCount
+    LastDiscoveryAt
+    Error
+  }
+}
+    `;
+
+/**
+ * __useGetAzureProviderQuery__
+ *
+ * To run a query within a React component, call `useGetAzureProviderQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetAzureProviderQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetAzureProviderQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetAzureProviderQuery(baseOptions: Apollo.QueryHookOptions<GetAzureProviderQuery, GetAzureProviderQueryVariables> & ({ variables: GetAzureProviderQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetAzureProviderQuery, GetAzureProviderQueryVariables>(GetAzureProviderDocument, options);
+      }
+export function useGetAzureProviderLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetAzureProviderQuery, GetAzureProviderQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetAzureProviderQuery, GetAzureProviderQueryVariables>(GetAzureProviderDocument, options);
+        }
+export function useGetAzureProviderSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetAzureProviderQuery, GetAzureProviderQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetAzureProviderQuery, GetAzureProviderQueryVariables>(GetAzureProviderDocument, options);
+        }
+export type GetAzureProviderQueryHookResult = ReturnType<typeof useGetAzureProviderQuery>;
+export type GetAzureProviderLazyQueryHookResult = ReturnType<typeof useGetAzureProviderLazyQuery>;
+export type GetAzureProviderSuspenseQueryHookResult = ReturnType<typeof useGetAzureProviderSuspenseQuery>;
+export type GetAzureProviderQueryResult = Apollo.QueryResult<GetAzureProviderQuery, GetAzureProviderQueryVariables>;
+export const GetAzureSubscriptionsDocument = gql`
+    query GetAzureSubscriptions {
+  AzureSubscriptions {
+    Id
+    DisplayName
+    State
+    TenantID
+  }
+}
+    `;
+
+/**
+ * __useGetAzureSubscriptionsQuery__
+ *
+ * To run a query within a React component, call `useGetAzureSubscriptionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetAzureSubscriptionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetAzureSubscriptionsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetAzureSubscriptionsQuery(baseOptions?: Apollo.QueryHookOptions<GetAzureSubscriptionsQuery, GetAzureSubscriptionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetAzureSubscriptionsQuery, GetAzureSubscriptionsQueryVariables>(GetAzureSubscriptionsDocument, options);
+      }
+export function useGetAzureSubscriptionsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetAzureSubscriptionsQuery, GetAzureSubscriptionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetAzureSubscriptionsQuery, GetAzureSubscriptionsQueryVariables>(GetAzureSubscriptionsDocument, options);
+        }
+export function useGetAzureSubscriptionsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetAzureSubscriptionsQuery, GetAzureSubscriptionsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetAzureSubscriptionsQuery, GetAzureSubscriptionsQueryVariables>(GetAzureSubscriptionsDocument, options);
+        }
+export type GetAzureSubscriptionsQueryHookResult = ReturnType<typeof useGetAzureSubscriptionsQuery>;
+export type GetAzureSubscriptionsLazyQueryHookResult = ReturnType<typeof useGetAzureSubscriptionsLazyQuery>;
+export type GetAzureSubscriptionsSuspenseQueryHookResult = ReturnType<typeof useGetAzureSubscriptionsSuspenseQuery>;
+export type GetAzureSubscriptionsQueryResult = Apollo.QueryResult<GetAzureSubscriptionsQuery, GetAzureSubscriptionsQueryVariables>;
+export const GetAzureRegionsDocument = gql`
+    query GetAzureRegions {
+  AzureRegions {
+    Id
+    DisplayName
+    Geography
+  }
+}
+    `;
+
+/**
+ * __useGetAzureRegionsQuery__
+ *
+ * To run a query within a React component, call `useGetAzureRegionsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetAzureRegionsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetAzureRegionsQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetAzureRegionsQuery(baseOptions?: Apollo.QueryHookOptions<GetAzureRegionsQuery, GetAzureRegionsQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetAzureRegionsQuery, GetAzureRegionsQueryVariables>(GetAzureRegionsDocument, options);
+      }
+export function useGetAzureRegionsLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetAzureRegionsQuery, GetAzureRegionsQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetAzureRegionsQuery, GetAzureRegionsQueryVariables>(GetAzureRegionsDocument, options);
+        }
+export function useGetAzureRegionsSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetAzureRegionsQuery, GetAzureRegionsQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetAzureRegionsQuery, GetAzureRegionsQueryVariables>(GetAzureRegionsDocument, options);
+        }
+export type GetAzureRegionsQueryHookResult = ReturnType<typeof useGetAzureRegionsQuery>;
+export type GetAzureRegionsLazyQueryHookResult = ReturnType<typeof useGetAzureRegionsLazyQuery>;
+export type GetAzureRegionsSuspenseQueryHookResult = ReturnType<typeof useGetAzureRegionsSuspenseQuery>;
+export type GetAzureRegionsQueryResult = Apollo.QueryResult<GetAzureRegionsQuery, GetAzureRegionsQueryVariables>;
+export const AddAzureProviderDocument = gql`
+    mutation AddAzureProvider($input: AzureProviderInput!) {
+  AddAzureProvider(input: $input) {
+    Id
+    ProviderType
+    Name
+    Region
+    SubscriptionID
+    TenantID
+    ResourceGroup
+    DiscoverPostgreSQL
+    DiscoverMySQL
+    DiscoverRedis
+    DiscoverCosmosDB
+    Status
+    DiscoveredCount
+    LastDiscoveryAt
+    Error
+  }
+}
+    `;
+export type AddAzureProviderMutationFn = Apollo.MutationFunction<AddAzureProviderMutation, AddAzureProviderMutationVariables>;
+
+/**
+ * __useAddAzureProviderMutation__
+ *
+ * To run a mutation, you first call `useAddAzureProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useAddAzureProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [addAzureProviderMutation, { data, loading, error }] = useAddAzureProviderMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useAddAzureProviderMutation(baseOptions?: Apollo.MutationHookOptions<AddAzureProviderMutation, AddAzureProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<AddAzureProviderMutation, AddAzureProviderMutationVariables>(AddAzureProviderDocument, options);
+      }
+export type AddAzureProviderMutationHookResult = ReturnType<typeof useAddAzureProviderMutation>;
+export type AddAzureProviderMutationResult = Apollo.MutationResult<AddAzureProviderMutation>;
+export type AddAzureProviderMutationOptions = Apollo.BaseMutationOptions<AddAzureProviderMutation, AddAzureProviderMutationVariables>;
+export const UpdateAzureProviderDocument = gql`
+    mutation UpdateAzureProvider($id: ID!, $input: AzureProviderInput!) {
+  UpdateAzureProvider(id: $id, input: $input) {
+    Id
+    ProviderType
+    Name
+    Region
+    SubscriptionID
+    TenantID
+    ResourceGroup
+    DiscoverPostgreSQL
+    DiscoverMySQL
+    DiscoverRedis
+    DiscoverCosmosDB
+    Status
+    DiscoveredCount
+    LastDiscoveryAt
+    Error
+  }
+}
+    `;
+export type UpdateAzureProviderMutationFn = Apollo.MutationFunction<UpdateAzureProviderMutation, UpdateAzureProviderMutationVariables>;
+
+/**
+ * __useUpdateAzureProviderMutation__
+ *
+ * To run a mutation, you first call `useUpdateAzureProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useUpdateAzureProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [updateAzureProviderMutation, { data, loading, error }] = useUpdateAzureProviderMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useUpdateAzureProviderMutation(baseOptions?: Apollo.MutationHookOptions<UpdateAzureProviderMutation, UpdateAzureProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<UpdateAzureProviderMutation, UpdateAzureProviderMutationVariables>(UpdateAzureProviderDocument, options);
+      }
+export type UpdateAzureProviderMutationHookResult = ReturnType<typeof useUpdateAzureProviderMutation>;
+export type UpdateAzureProviderMutationResult = Apollo.MutationResult<UpdateAzureProviderMutation>;
+export type UpdateAzureProviderMutationOptions = Apollo.BaseMutationOptions<UpdateAzureProviderMutation, UpdateAzureProviderMutationVariables>;
+export const TestAzureCredentialsDocument = gql`
+    mutation TestAzureCredentials($input: AzureProviderInput!) {
+  TestAzureCredentials(input: $input)
+}
+    `;
+export type TestAzureCredentialsMutationFn = Apollo.MutationFunction<TestAzureCredentialsMutation, TestAzureCredentialsMutationVariables>;
+
+/**
+ * __useTestAzureCredentialsMutation__
+ *
+ * To run a mutation, you first call `useTestAzureCredentialsMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useTestAzureCredentialsMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [testAzureCredentialsMutation, { data, loading, error }] = useTestAzureCredentialsMutation({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useTestAzureCredentialsMutation(baseOptions?: Apollo.MutationHookOptions<TestAzureCredentialsMutation, TestAzureCredentialsMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<TestAzureCredentialsMutation, TestAzureCredentialsMutationVariables>(TestAzureCredentialsDocument, options);
+      }
+export type TestAzureCredentialsMutationHookResult = ReturnType<typeof useTestAzureCredentialsMutation>;
+export type TestAzureCredentialsMutationResult = Apollo.MutationResult<TestAzureCredentialsMutation>;
+export type TestAzureCredentialsMutationOptions = Apollo.BaseMutationOptions<TestAzureCredentialsMutation, TestAzureCredentialsMutationVariables>;
+export const GenerateAzureAdTokenDocument = gql`
+    mutation GenerateAzureADToken($providerID: ID!, $databaseType: String!) {
+  GenerateAzureADToken(providerID: $providerID, databaseType: $databaseType)
+}
+    `;
+export type GenerateAzureAdTokenMutationFn = Apollo.MutationFunction<GenerateAzureAdTokenMutation, GenerateAzureAdTokenMutationVariables>;
+
+/**
+ * __useGenerateAzureAdTokenMutation__
+ *
+ * To run a mutation, you first call `useGenerateAzureAdTokenMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useGenerateAzureAdTokenMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [generateAzureAdTokenMutation, { data, loading, error }] = useGenerateAzureAdTokenMutation({
+ *   variables: {
+ *      providerID: // value for 'providerID'
+ *      databaseType: // value for 'databaseType'
+ *   },
+ * });
+ */
+export function useGenerateAzureAdTokenMutation(baseOptions?: Apollo.MutationHookOptions<GenerateAzureAdTokenMutation, GenerateAzureAdTokenMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<GenerateAzureAdTokenMutation, GenerateAzureAdTokenMutationVariables>(GenerateAzureAdTokenDocument, options);
+      }
+export type GenerateAzureAdTokenMutationHookResult = ReturnType<typeof useGenerateAzureAdTokenMutation>;
+export type GenerateAzureAdTokenMutationResult = Apollo.MutationResult<GenerateAzureAdTokenMutation>;
+export type GenerateAzureAdTokenMutationOptions = Apollo.BaseMutationOptions<GenerateAzureAdTokenMutation, GenerateAzureAdTokenMutationVariables>;
+export const RefreshAzureProviderDocument = gql`
+    mutation RefreshAzureProvider($id: ID!) {
+  RefreshAzureProvider(id: $id) {
+    Id
+    ProviderType
+    Name
+    Region
+    SubscriptionID
+    TenantID
+    ResourceGroup
+    DiscoverPostgreSQL
+    DiscoverMySQL
+    DiscoverRedis
+    DiscoverCosmosDB
+    Status
+    DiscoveredCount
+    LastDiscoveryAt
+    Error
+  }
+}
+    `;
+export type RefreshAzureProviderMutationFn = Apollo.MutationFunction<RefreshAzureProviderMutation, RefreshAzureProviderMutationVariables>;
+
+/**
+ * __useRefreshAzureProviderMutation__
+ *
+ * To run a mutation, you first call `useRefreshAzureProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRefreshAzureProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [refreshAzureProviderMutation, { data, loading, error }] = useRefreshAzureProviderMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useRefreshAzureProviderMutation(baseOptions?: Apollo.MutationHookOptions<RefreshAzureProviderMutation, RefreshAzureProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<RefreshAzureProviderMutation, RefreshAzureProviderMutationVariables>(RefreshAzureProviderDocument, options);
+      }
+export type RefreshAzureProviderMutationHookResult = ReturnType<typeof useRefreshAzureProviderMutation>;
+export type RefreshAzureProviderMutationResult = Apollo.MutationResult<RefreshAzureProviderMutation>;
+export type RefreshAzureProviderMutationOptions = Apollo.BaseMutationOptions<RefreshAzureProviderMutation, RefreshAzureProviderMutationVariables>;
+export const GetGcpProvidersDocument = gql`
+    query GetGCPProviders {
+  GCPProviders {
+    Id
+    ProviderType
+    Name
+    Region
+    Status
+    LastDiscoveryAt
+    DiscoveredCount
+    Error
+    ProjectID
+    ServiceAccountKeyPath
+    DiscoverCloudSQL
+    DiscoverAlloyDB
+    DiscoverMemorystore
+  }
+}
+    `;
+
+/**
+ * __useGetGcpProvidersQuery__
+ *
+ * To run a query within a React component, call `useGetGcpProvidersQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetGcpProvidersQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetGcpProvidersQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetGcpProvidersQuery(baseOptions?: Apollo.QueryHookOptions<GetGcpProvidersQuery, GetGcpProvidersQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetGcpProvidersQuery, GetGcpProvidersQueryVariables>(GetGcpProvidersDocument, options);
+      }
+export function useGetGcpProvidersLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetGcpProvidersQuery, GetGcpProvidersQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetGcpProvidersQuery, GetGcpProvidersQueryVariables>(GetGcpProvidersDocument, options);
+        }
+export function useGetGcpProvidersSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetGcpProvidersQuery, GetGcpProvidersQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetGcpProvidersQuery, GetGcpProvidersQueryVariables>(GetGcpProvidersDocument, options);
+        }
+export type GetGcpProvidersQueryHookResult = ReturnType<typeof useGetGcpProvidersQuery>;
+export type GetGcpProvidersLazyQueryHookResult = ReturnType<typeof useGetGcpProvidersLazyQuery>;
+export type GetGcpProvidersSuspenseQueryHookResult = ReturnType<typeof useGetGcpProvidersSuspenseQuery>;
+export type GetGcpProvidersQueryResult = Apollo.QueryResult<GetGcpProvidersQuery, GetGcpProvidersQueryVariables>;
+export const GetGcpProviderDocument = gql`
+    query GetGCPProvider($id: ID!) {
+  GCPProvider(id: $id) {
+    Id
+    ProviderType
+    Name
+    Region
+    Status
+    LastDiscoveryAt
+    DiscoveredCount
+    Error
+    ProjectID
+    ServiceAccountKeyPath
+    DiscoverCloudSQL
+    DiscoverAlloyDB
+    DiscoverMemorystore
+  }
+}
+    `;
+
+/**
+ * __useGetGcpProviderQuery__
+ *
+ * To run a query within a React component, call `useGetGcpProviderQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetGcpProviderQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetGcpProviderQuery({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useGetGcpProviderQuery(baseOptions: Apollo.QueryHookOptions<GetGcpProviderQuery, GetGcpProviderQueryVariables> & ({ variables: GetGcpProviderQueryVariables; skip?: boolean; } | { skip: boolean; }) ) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetGcpProviderQuery, GetGcpProviderQueryVariables>(GetGcpProviderDocument, options);
+      }
+export function useGetGcpProviderLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetGcpProviderQuery, GetGcpProviderQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetGcpProviderQuery, GetGcpProviderQueryVariables>(GetGcpProviderDocument, options);
+        }
+export function useGetGcpProviderSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetGcpProviderQuery, GetGcpProviderQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetGcpProviderQuery, GetGcpProviderQueryVariables>(GetGcpProviderDocument, options);
+        }
+export type GetGcpProviderQueryHookResult = ReturnType<typeof useGetGcpProviderQuery>;
+export type GetGcpProviderLazyQueryHookResult = ReturnType<typeof useGetGcpProviderLazyQuery>;
+export type GetGcpProviderSuspenseQueryHookResult = ReturnType<typeof useGetGcpProviderSuspenseQuery>;
+export type GetGcpProviderQueryResult = Apollo.QueryResult<GetGcpProviderQuery, GetGcpProviderQueryVariables>;
 export const GetLocalGcpProjectsDocument = gql`
     query GetLocalGCPProjects {
   LocalGCPProjects {
@@ -3157,6 +3887,51 @@ export function useTestGcpCredentialsMutation(baseOptions?: Apollo.MutationHookO
 export type TestGcpCredentialsMutationHookResult = ReturnType<typeof useTestGcpCredentialsMutation>;
 export type TestGcpCredentialsMutationResult = Apollo.MutationResult<TestGcpCredentialsMutation>;
 export type TestGcpCredentialsMutationOptions = Apollo.BaseMutationOptions<TestGcpCredentialsMutation, TestGcpCredentialsMutationVariables>;
+export const RefreshGcpProviderDocument = gql`
+    mutation RefreshGCPProvider($id: ID!) {
+  RefreshGCPProvider(id: $id) {
+    Id
+    ProviderType
+    Name
+    Region
+    Status
+    LastDiscoveryAt
+    DiscoveredCount
+    Error
+    ProjectID
+    ServiceAccountKeyPath
+    DiscoverCloudSQL
+    DiscoverAlloyDB
+    DiscoverMemorystore
+  }
+}
+    `;
+export type RefreshGcpProviderMutationFn = Apollo.MutationFunction<RefreshGcpProviderMutation, RefreshGcpProviderMutationVariables>;
+
+/**
+ * __useRefreshGcpProviderMutation__
+ *
+ * To run a mutation, you first call `useRefreshGcpProviderMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useRefreshGcpProviderMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [refreshGcpProviderMutation, { data, loading, error }] = useRefreshGcpProviderMutation({
+ *   variables: {
+ *      id: // value for 'id'
+ *   },
+ * });
+ */
+export function useRefreshGcpProviderMutation(baseOptions?: Apollo.MutationHookOptions<RefreshGcpProviderMutation, RefreshGcpProviderMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<RefreshGcpProviderMutation, RefreshGcpProviderMutationVariables>(RefreshGcpProviderDocument, options);
+      }
+export type RefreshGcpProviderMutationHookResult = ReturnType<typeof useRefreshGcpProviderMutation>;
+export type RefreshGcpProviderMutationResult = Apollo.MutationResult<RefreshGcpProviderMutation>;
+export type RefreshGcpProviderMutationOptions = Apollo.BaseMutationOptions<RefreshGcpProviderMutation, RefreshGcpProviderMutationVariables>;
 export const GenerateCloudSqliamAuthTokenDocument = gql`
     mutation GenerateCloudSQLIAMAuthToken($providerID: ID!, $username: String!) {
   GenerateCloudSQLIAMAuthToken(providerID: $providerID, username: $username)

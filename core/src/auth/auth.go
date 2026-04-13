@@ -267,9 +267,14 @@ func isAllowed(r *http.Request, body []byte) bool {
 		"AddAWSProvider", "TestAWSCredentials", "TestCloudProvider",
 		"RefreshCloudProvider", "RemoveCloudProvider", "UpdateAWSProvider",
 		"GenerateRDSAuthToken",
+		"GetAzureProviders", "GetAzureProvider",
+		"GetAzureSubscriptions", "GetAzureRegions",
+		"AddAzureProvider", "UpdateAzureProvider", "TestAzureCredentials",
+		"RefreshAzureProvider", "GenerateAzureADToken",
 		"GetLocalGCPProjects", "GetGCPRegions",
+		"GetGCPProviders", "GetGCPProvider",
 		"AddGCPProvider", "UpdateGCPProvider", "TestGCPCredentials",
-		"GenerateCloudSQLIAMAuthToken":
+		"RefreshGCPProvider", "GenerateCloudSQLIAMAuthToken":
 		return true
 	}
 	for _, op := range additionalAllowedOps {
