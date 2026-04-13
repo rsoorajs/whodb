@@ -235,6 +235,33 @@ READ-ONLY MODE
   ALTER, CREATE, TRUNCATE) are blocked. A [READ-ONLY] badge
   appears in the status bar. Persists across sessions.
 
+DATA QUALITY AUDIT
+──────────────────
+  Ctrl+U      Open audit view (TUI)
+
+  Scans tables and reports:
+    - Null rates per column (configurable thresholds)
+    - Duplicate rows on unique-looking columns
+    - Orphaned foreign key references
+    - Low cardinality columns
+    - Missing primary keys
+    - Type mismatches (e.g. _id column with TEXT type)
+
+  Each issue is color-coded: ✓ green (ok), ⚠ yellow (warning),
+  ✗ red (error). Press Enter on an issue to see the actual rows.
+
+  CLI usage:
+    whodb-cli audit --type sqlite3 --database ./app.db
+    whodb-cli audit --type postgres --host localhost --user alice --database mydb
+    whodb-cli audit --connection mydb --table users
+    whodb-cli audit --connection mydb --format json
+
+  Custom thresholds:
+    whodb-cli audit --connection mydb --null-warning 20 --null-error 70
+
+  Default thresholds: >10% null = warning, >50% null = error,
+  <5 distinct values = low cardinality warning.
+
 PROGRAMMATIC USAGE
 ──────────────────
   The CLI supports non-interactive commands for scripting:

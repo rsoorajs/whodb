@@ -31,6 +31,7 @@ type GlobalKeys struct {
 	ReadOnly    key.Binding
 	CmdLog      key.Binding
 	ERDiagram   key.Binding
+	Audit       key.Binding
 	Profiles    key.Binding
 }
 
@@ -193,6 +194,13 @@ type BookmarksKeys struct {
 	Delete key.Binding
 }
 
+// AuditKeys contains keybindings for the data quality audit view
+type AuditKeys struct {
+	Up        key.Binding
+	Down      key.Binding
+	DrillDown key.Binding
+}
+
 // ERDKeys contains keybindings for the ER diagram view
 type ERDKeys struct {
 	NextTable  key.Binding
@@ -227,6 +235,7 @@ type Keymap struct {
 	Filter         FilterKeys
 	SchemaSelect   SchemaSelectKeys
 	Bookmarks      BookmarksKeys
+	Audit          AuditKeys
 	ERD            ERDKeys
 	Profiles       ProfilesKeys
 }
@@ -273,6 +282,10 @@ var Keys = Keymap{
 		ERDiagram: key.NewBinding(
 			key.WithKeys("ctrl+k"),
 			key.WithHelp("ctrl+k", "ER diagram"),
+		),
+		Audit: key.NewBinding(
+			key.WithKeys("ctrl+u"),
+			key.WithHelp("ctrl+u", "audit"),
 		),
 		Profiles: key.NewBinding(
 			key.WithKeys("ctrl+p"),
@@ -693,6 +706,20 @@ var Keys = Keymap{
 		Delete: key.NewBinding(
 			key.WithKeys("d"),
 			key.WithHelp("[d]", "delete"),
+		),
+	},
+	Audit: AuditKeys{
+		Up: key.NewBinding(
+			key.WithKeys("up", "k"),
+			key.WithHelp("up/k", "prev issue"),
+		),
+		Down: key.NewBinding(
+			key.WithKeys("down", "j"),
+			key.WithHelp("down/j", "next issue"),
+		),
+		DrillDown: key.NewBinding(
+			key.WithKeys("enter"),
+			key.WithHelp("enter", "drill down"),
 		),
 	},
 	ERD: ERDKeys{
