@@ -31,8 +31,7 @@ import {useAppSelector} from "@/store/hooks";
 import {getKeyDisplay} from "@/utils/platform";
 import {matchesShortcut, resolveShortcut, SHORTCUTS} from "@/utils/shortcuts";
 import {useEffectiveIsMac} from "@/hooks/useEffectiveIsMac";
-import {isNoSQL} from "@/utils/functions";
-import {databaseSupportsScratchpad} from "@/utils/database-features";
+import {useDatabaseTraits} from "@/hooks/useDatabaseTraits";
 import {InternalRoutes} from "@/config/routes";
 import {
     ArrowLeftStartOnRectangleIcon,
@@ -67,6 +66,7 @@ const CommandPalette: FC<CommandPaletteProps> = ({open, onOpenChange}) => {
     const isEmbedded = useAppSelector(state => state.auth.isEmbedded);
     const isMac = useEffectiveIsMac();
     const [availableColumns, setAvailableColumns] = useState<string[]>([]);
+    const { isNoSQL, supportsScratchpad } = useDatabaseTraits(current?.Type);
 
     // Listen for columns broadcast from storage unit page
     useEffect(() => {
@@ -88,7 +88,7 @@ const CommandPalette: FC<CommandPaletteProps> = ({open, onOpenChange}) => {
         // Navigation actions - only show relevant ones based on database type
         const navDefs = [SHORTCUTS.navFirst, SHORTCUTS.navSecond, SHORTCUTS.navThird, SHORTCUTS.navFourth];
 
-        if (!isNoSQL(current.Type)) {
+        if (!isNoSQL) {
             navigationActions.push({
                 id: "nav-chat",
                 label: t('goToChat'),
@@ -105,7 +105,7 @@ const CommandPalette: FC<CommandPaletteProps> = ({open, onOpenChange}) => {
             id: "nav-storage-units",
             label: t('goToStorageUnits'),
             icon: <RectangleGroupIcon className="w-4 h-4" />,
-            shortcut: resolveShortcut(isNoSQL(current.Type) ? navDefs[0] : navDefs[1]).displayKeys,
+            shortcut: resolveShortcut(isNoSQL ? navDefs[0] : navDefs[1]).displayKeys,
             onSelect: () => {
                 navigate(InternalRoutes.Dashboard.StorageUnit.path);
                 onOpenChange(false);
@@ -116,19 +116,19 @@ const CommandPalette: FC<CommandPaletteProps> = ({open, onOpenChange}) => {
             id: "nav-graph",
             label: t('goToGraph'),
             icon: <ShareIcon className="w-4 h-4" />,
-            shortcut: resolveShortcut(isNoSQL(current.Type) ? navDefs[1] : navDefs[2]).displayKeys,
+            shortcut: resolveShortcut(isNoSQL ? navDefs[1] : navDefs[2]).displayKeys,
             onSelect: () => {
                 navigate(InternalRoutes.Graph.path);
                 onOpenChange(false);
             },
         });
 
-        if (databaseSupportsScratchpad(current.Type)) {
+        if (supportsScratchpad) {
             navigationActions.push({
                 id: "nav-scratchpad",
                 label: t('goToScratchpad'),
                 icon: <CommandLineIcon className="w-4 h-4" />,
-                shortcut: resolveShortcut(isNoSQL(current.Type) ? navDefs[2] : navDefs[3]).displayKeys,
+                shortcut: resolveShortcut(isNoSQL ? navDefs[2] : navDefs[3]).displayKeys,
                 onSelect: () => {
                     navigate(InternalRoutes.RawExecute.path);
                     onOpenChange(false);

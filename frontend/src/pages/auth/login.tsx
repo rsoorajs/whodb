@@ -46,9 +46,10 @@ import {Icons} from "../../components/icons";
 import {Loading} from "../../components/loading";
 import {Container} from "../../components/page";
 import {updateProfileLastAccessed} from "../../components/profile-info-tooltip";
-import {getDatabaseTypeDropdownItems, getDatabaseTypeDropdownItemsSync, IDatabaseDropdownItem} from "../../config/database-types";
+import {IDatabaseDropdownItem} from "../../config/database-types";
 import {extensions, featureFlags, getAppName, sources} from '../../config/features';
 import {InternalRoutes} from "../../config/routes";
+import {useDatabaseTypeDropdownItems} from "../../hooks/useDatabaseCatalog";
 import {useDesktopFile} from '../../hooks/useDesktop';
 import {useTranslation} from '@/hooks/use-translation';
 import {AuthActions} from "../../store/auth";
@@ -195,25 +196,22 @@ export const LoginForm: FC<LoginFormProps> = ({
     const cloudProvidersEnabled = settingsData?.SettingsConfig?.CloudProvidersEnabled ?? false;
     const disableCredentialForm = settingsData?.SettingsConfig?.DisableCredentialForm ?? false;
     const maxPageSize = settingsData?.SettingsConfig?.MaxPageSize ?? 10000;
-
-    useEffect(() => {
-        dispatch(SettingsActions.setCloudProvidersEnabled(cloudProvidersEnabled));
-        dispatch(SettingsActions.setMaxPageSize(maxPageSize));
-    }, [cloudProvidersEnabled, maxPageSize, dispatch]);
-
+    const {
+        items: databaseTypeItems,
+        loading: databaseTypesLoading,
+        error: databaseTypesError,
+    } = useDatabaseTypeDropdownItems({ cloudProvidersEnabled });
     const [searchParams, setSearchParams] = useSearchParams();
 
-    const initialDatabaseTypeItems = getDatabaseTypeDropdownItemsSync({ cloudProvidersEnabled });
-    const [databaseTypeItems, setDatabaseTypeItems] = useState<IDatabaseDropdownItem[]>(initialDatabaseTypeItems);
-    const [databaseTypesLoaded, setDatabaseTypesLoaded] = useState(initialDatabaseTypeItems.length > 0);
-    const [databaseType, setDatabaseType] = useState<IDatabaseDropdownItem>(initialDatabaseTypeItems[0] ?? EMPTY_DATABASE_TYPE);
+    const databaseTypesLoaded = !databaseTypesLoading;
+    const [databaseType, setDatabaseType] = useState<IDatabaseDropdownItem>(EMPTY_DATABASE_TYPE);
     const [hostName, setHostName] = useState("");
     const [database, setDatabase] = useState("");
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string>();
     const [missingDriver, setMissingDriver] = useState<string | null>(null);
-    const [advancedForm, setAdvancedForm] = useState<Record<string, string>>(initialDatabaseTypeItems[0]?.extra ?? {});
+    const [advancedForm, setAdvancedForm] = useState<Record<string, string>>({});
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [formResetKey, setFormResetKey] = useState(0);
     const [selectedAvailableProfile, setSelectedAvailableProfile] = useState<string>();
@@ -224,8 +222,30 @@ export const LoginForm: FC<LoginFormProps> = ({
     const [isEmbedded] = useState(() => {
         return searchParams.has("credentials") || searchParams.has("resource") || searchParams.has("login");
     });
-
     const { isDesktop, selectDatabaseFile } = useDesktopFile();
+
+    useEffect(() => {
+        dispatch(SettingsActions.setCloudProvidersEnabled(cloudProvidersEnabled));
+        dispatch(SettingsActions.setMaxPageSize(maxPageSize));
+    }, [cloudProvidersEnabled, maxPageSize, dispatch]);
+
+    useEffect(() => {
+        if (databaseTypeItems.length === 0) {
+            return;
+        }
+
+        const nextType = databaseTypeItems.find(item => item.id === databaseType.id) ?? databaseTypeItems[0];
+        if (databaseType.id !== nextType.id) {
+            setDatabaseType(nextType);
+            setAdvancedForm(nextType.extra ?? {});
+        }
+    }, [databaseType.id, databaseTypeItems]);
+
+    useEffect(() => {
+        if (databaseTypesError) {
+            console.error('Failed to load connectable database catalog:', databaseTypesError);
+        }
+    }, [databaseTypesError]);
 
     const loading = useMemo(() => {
         return loginLoading || loginWithProfileLoading || isAutoLoggingIn;
@@ -604,26 +624,6 @@ export const LoginForm: FC<LoginFormProps> = ({
             }
         }
     }, [searchParams, dispatch]);
-
-    // Load database types before allowing auto-login
-    useEffect(() => {
-        getDatabaseTypeDropdownItems({ cloudProvidersEnabled })
-            .then(items => {
-                setDatabaseTypeItems(items);
-                setDatabaseTypesLoaded(true);
-
-                setDatabaseType(currentType => {
-                    const nextType = items.find(item => item.id === currentType.id) ?? items[0] ?? EMPTY_DATABASE_TYPE;
-                    if (currentType.id !== nextType.id) {
-                        setAdvancedForm(nextType.extra ?? {});
-                    }
-                    return nextType;
-                });
-            })
-            .catch(error => {
-                console.error('Failed to load connectable database catalog:', error);
-            });
-    }, [cloudProvidersEnabled]);
 
     // Update last accessed time when a new profile is created during login
     useEffect(() => {

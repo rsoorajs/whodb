@@ -62,15 +62,9 @@ import {LoginForm} from "../../pages/auth/login";
 import {AuthActions, LocalLoginProfile} from "../../store/auth";
 import {DatabaseActions} from "../../store/database";
 import {useAppSelector} from "../../store/hooks";
-import {
-    databaseSupportsDatabaseSwitching,
-    databaseSupportsSchema,
-    databaseSupportsScratchpad,
-    databaseTypesThatUseDatabaseInsteadOfSchema
-} from "../../utils/database-features";
 import {featureFlags} from "../../config/features";
-import {getDatabaseStorageUnitLabel, isNoSQL} from "../../utils/functions";
 import {isAwsHostname} from "../../utils/cloud-connection-prefill";
+import {useDatabaseTraits} from "../../hooks/useDatabaseTraits";
 import {
     ArrowLeftStartOnRectangleIcon,
     ChevronDownIcon,
@@ -109,14 +103,22 @@ export const Sidebar: FC = () => {
     const current = useAppSelector(state => state.auth.current);
     const profiles = useAppSelector(state => state.auth.profiles);
     const sslStatus = useAppSelector(state => state.auth.sslStatus);
+    const {
+        isNoSQL,
+        storageUnitLabel,
+        supportsScratchpad,
+        supportsSchema,
+        supportsDatabaseSwitching,
+        usesDatabaseInsteadOfSchema,
+    } = useDatabaseTraits(current?.Type);
     const {data: availableDatabases, loading: availableDatabasesLoading, refetch: getDatabases} = useGetDatabaseQuery({
         variables: {
             type: current?.Type as DatabaseType,
         },
-        skip: current == null || !databaseSupportsDatabaseSwitching(current?.Type),
+        skip: current == null || !supportsDatabaseSwitching,
     });
     const { data: availableSchemas, loading: availableSchemasLoading, refetch: getSchemas } = useGetSchemaQuery({
-        skip: current == null || !databaseSupportsSchema(current?.Type),
+        skip: current == null || !supportsSchema,
     });
 
     // Default schema selection: prefer Search Path from login config, fall back to first schema
@@ -221,7 +223,7 @@ export const Sidebar: FC = () => {
         if (!current) return [];
         const routes = [
             {
-                title: getDatabaseStorageUnitLabel(current.Type),
+                title: storageUnitLabel,
                 icon: <TableCellsIcon className="w-4 h-4" />,
                 path: InternalRoutes.Dashboard.StorageUnit.path,
             },
@@ -231,14 +233,14 @@ export const Sidebar: FC = () => {
                 path: InternalRoutes.Graph.path,
             },
         ];
-        if (!isNoSQL(current.Type)) {
+        if (!isNoSQL) {
             routes.unshift({
                 title: t('chat'),
                 icon: <SparklesIcon className="w-4 h-4" />,
                 path: InternalRoutes.Chat.path,
             });
         }
-        if (databaseSupportsScratchpad(current.Type)) {
+        if (supportsScratchpad) {
             routes.push({
                 title: t('scratchpad'),
                 icon: <CommandLineIcon className="w-4 h-4" />,
@@ -246,7 +248,7 @@ export const Sidebar: FC = () => {
             });
         }
         return routes;
-    }, [current, t]);
+    }, [current, isNoSQL, storageUnitLabel, supportsScratchpad, t]);
 
     // Logout single profile — show dialog first, remove after switch
     const handleLogoutProfile = useCallback(() => {
@@ -309,12 +311,12 @@ export const Sidebar: FC = () => {
     // Compute the label for the database dropdown based on the database type and user terminology preference
     const databaseDropdownLabel = useMemo(() => {
         // For databases where database=schema (MySQL, MariaDB, ClickHouse, MongoDB, Redis), allow user to choose terminology
-        if (databaseTypesThatUseDatabaseInsteadOfSchema(current?.Type)) {
+        if (usesDatabaseInsteadOfSchema) {
             return databaseSchemaTerminology === 'schema' ? t('schema') : t('database');
         }
         // For all other databases, use "Database"
         return t('database');
-    }, [current?.Type, databaseSchemaTerminology, t]);
+    }, [databaseSchemaTerminology, t, usesDatabaseInsteadOfSchema]);
 
     useEffect(() => {
         if (pathname.includes(InternalRoutes.Dashboard.ExploreStorageUnit.path) && open) {
@@ -330,10 +332,10 @@ export const Sidebar: FC = () => {
             return;
         }
         if (!current) return;
-        if (databaseSupportsDatabaseSwitching(current.Type)) {
+        if (supportsDatabaseSwitching) {
             getDatabases();
         }
-        if (databaseSupportsSchema(current.Type)) {
+        if (supportsSchema) {
             getSchemas();
         }
         refetchSslStatus().then(({ data }) => {
@@ -341,7 +343,7 @@ export const Sidebar: FC = () => {
                 dispatch(AuthActions.setSSLStatus(data.SSLStatus));
             }
         });
-    }, [current?.Id, current?.Database]);
+    }, [current, dispatch, getDatabases, getSchemas, refetchSslStatus, supportsDatabaseSwitching, supportsSchema]);
 
     // Listen for menu event to open add profile form
     useEffect(() => {
@@ -422,7 +424,7 @@ export const Sidebar: FC = () => {
                                         }}
                                     />
                                 </div>
-                                {databaseSupportsDatabaseSwitching(current?.Type) && (
+                                {supportsDatabaseSwitching && (
                                     <div className={cn("flex flex-col gap-sm w-full", {
                                         "opacity-0 pointer-events-none": !open,
                                     })}>
@@ -432,8 +434,8 @@ export const Sidebar: FC = () => {
                                             options={databaseOptions}
                                             value={current?.Database}
                                             onChange={handleDatabaseChange}
-                                            placeholder={databaseSchemaTerminology === 'schema' && databaseTypesThatUseDatabaseInsteadOfSchema(current?.Type) ? t('selectSchema') : t('selectDatabase')}
-                                            searchPlaceholder={databaseSchemaTerminology === 'schema' && databaseTypesThatUseDatabaseInsteadOfSchema(current?.Type) ? t('searchSchema') : t('searchDatabase')}
+                                            placeholder={databaseSchemaTerminology === 'schema' && usesDatabaseInsteadOfSchema ? t('selectSchema') : t('selectDatabase')}
+                                            searchPlaceholder={databaseSchemaTerminology === 'schema' && usesDatabaseInsteadOfSchema ? t('searchSchema') : t('searchDatabase')}
                                             side="left" align="start"
                                             buttonProps={{
                                                 "data-testid": "sidebar-database",
@@ -441,7 +443,7 @@ export const Sidebar: FC = () => {
                                         />
                                     </div>
                                 )}
-                                {databaseSupportsSchema(current?.Type) && (
+                                {supportsSchema && (
                                     <div className={cn("flex flex-col gap-sm w-full", {
                                         "opacity-0 pointer-events-none": !open || pathname.includes(InternalRoutes.RawExecute.path),
                                     })}>

@@ -15,7 +15,7 @@
  */
 
 import { DatabaseType } from '@graphql';
-import { getDatabaseTypeDropdownItemSync, TypeDefinition } from '../config/database-types';
+import { TypeDefinition } from '../config/database-types';
 import { reduxStore } from '../store';
 
 /**
@@ -113,18 +113,6 @@ export function findTypeDefinition(typeId: string, databaseType: DatabaseType | 
     }
 
     return typeDef;
-}
-
-/**
- * Check if a database supports field modifiers (primary, nullable)
- * @param databaseType The database type (can be any registered type)
- * @returns boolean indicating if the database supports modifiers
- */
-export function databaseSupportsModifiers(databaseType: DatabaseType | string): boolean {
-    const dbConfig = getDatabaseTypeDropdownItemSync(databaseType);
-
-    // Return from config if defined, otherwise false
-    return dbConfig?.supportsModifiers ?? false;
 }
 
 /**

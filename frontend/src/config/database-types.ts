@@ -15,13 +15,9 @@
  */
 
 import { ComponentType, ReactElement, createElement } from "react";
-import {
-    GetConnectableDatabasesDocument,
-    GetConnectableDatabasesQuery,
-} from "@graphql";
+import { GetConnectableDatabasesQuery } from "@graphql";
 import { Icons } from "../components/icons";
 import { getEdition } from "./edition";
-import { graphqlClient } from "./graphql-client";
 import { getRegisteredDatabaseTypeOverrides } from "./database-registry";
 
 /**
@@ -144,18 +140,23 @@ export interface DatabaseTypeFilterOptions {
     cloudProvidersEnabled?: boolean;
 }
 
-type BackendConnectableDatabase = GetConnectableDatabasesQuery['ConnectableDatabases'][number];
+/**
+ * Raw backend catalog entry returned by the GraphQL catalog query.
+ */
+export type BackendConnectableDatabase = GetConnectableDatabasesQuery['ConnectableDatabases'][number];
 
 const shouldUseCatalogCache = !import.meta.env.DEV;
-
-let cachedDatabaseCatalog: BackendConnectableDatabase[] = [];
-let catalogCacheLoaded = false;
 
 function getCatalogCacheKey(): string {
     return `whodb_database_catalog_${getEdition()}_${__APP_VERSION__}`;
 }
 
-function readCachedDatabaseCatalog(): BackendConnectableDatabase[] {
+/**
+ * Reads the persisted backend catalog cache for the current edition/version.
+ *
+ * @returns Cached raw backend catalog entries.
+ */
+export function readCachedDatabaseCatalog(): BackendConnectableDatabase[] {
     if (!shouldUseCatalogCache) {
         return [];
     }
@@ -173,7 +174,12 @@ function readCachedDatabaseCatalog(): BackendConnectableDatabase[] {
     }
 }
 
-function writeCachedDatabaseCatalog(items: BackendConnectableDatabase[]): void {
+/**
+ * Persists the backend catalog cache for the current edition/version.
+ *
+ * @param items Raw backend catalog entries to cache.
+ */
+export function writeCachedDatabaseCatalog(items: BackendConnectableDatabase[]): void {
     if (!shouldUseCatalogCache) {
         return;
     }
@@ -181,17 +187,8 @@ function writeCachedDatabaseCatalog(items: BackendConnectableDatabase[]): void {
     try {
         localStorage.setItem(getCatalogCacheKey(), JSON.stringify(items));
     } catch {
-        // Ignore storage failures; the in-memory cache is still valid.
+        // Ignore storage failures; the live query result is still valid.
     }
-}
-
-function ensureCatalogCacheLoaded(): void {
-    if (catalogCacheLoaded) {
-        return;
-    }
-
-    cachedDatabaseCatalog = readCachedDatabaseCatalog();
-    catalogCacheLoaded = true;
 }
 
 function mapExtra(extra: BackendConnectableDatabase['extra']): Record<string, string> {
@@ -241,11 +238,6 @@ function decorateDatabaseType(item: BackendConnectableDatabase): IDatabaseDropdo
     };
 }
 
-function getDecoratedBaseDatabaseTypes(): IDatabaseDropdownItem[] {
-    ensureCatalogCacheLoaded();
-    return cachedDatabaseCatalog.map(decorateDatabaseType);
-}
-
 function filterDatabaseTypes(
     items: IDatabaseDropdownItem[],
     options: DatabaseTypeFilterOptions = {}
@@ -285,80 +277,52 @@ function withRegisteredDatabaseTypes(baseTypes: IDatabaseDropdownItem[]): IDatab
 }
 
 /**
- * Preloads the backend catalog and returns decorated database types.
- */
-export const preloadDatabaseTypeDropdownItems = async (): Promise<IDatabaseDropdownItem[]> => {
-    ensureCatalogCacheLoaded();
-
-    if (cachedDatabaseCatalog.length === 0) {
-        const { data } = await graphqlClient.query<GetConnectableDatabasesQuery>({
-            query: GetConnectableDatabasesDocument,
-        });
-
-        cachedDatabaseCatalog = data.ConnectableDatabases;
-        catalogCacheLoaded = true;
-        writeCachedDatabaseCatalog(cachedDatabaseCatalog);
-    }
-
-    return withRegisteredDatabaseTypes(getDecoratedBaseDatabaseTypes());
-};
-
-/**
- * Get all database types (backend catalog + registered extension types),
- * optionally filtered.
+ * Decorates raw backend catalog data with frontend-only presentation details.
  *
- * @param options Filter options for database types.
- * @returns Filtered list of database types.
+ * @param catalog Raw backend catalog entries.
+ * @param options Optional UI filters for the resulting list.
+ * @returns Decorated database type items ready for rendering.
  */
-export const getDatabaseTypeDropdownItems = async (
+export function resolveDatabaseTypeDropdownItems(
+    catalog: BackendConnectableDatabase[],
     options: DatabaseTypeFilterOptions = {}
-): Promise<IDatabaseDropdownItem[]> => {
-    const items = await preloadDatabaseTypeDropdownItems();
+): IDatabaseDropdownItem[] {
+    const items = withRegisteredDatabaseTypes(catalog.map(decorateDatabaseType));
     return filterDatabaseTypes(items, options);
-};
+}
 
 /**
- * Synchronous version that reads the in-memory or cached backend catalog.
+ * Finds a single decorated database type entry by id.
  *
- * @param options Filter options for database types.
- * @returns Filtered list of database types.
- */
-export const getDatabaseTypeDropdownItemsSync = (
-    options: DatabaseTypeFilterOptions = {}
-): IDatabaseDropdownItem[] => {
-    const items = withRegisteredDatabaseTypes(getDecoratedBaseDatabaseTypes());
-    return filterDatabaseTypes(items, options);
-};
-
-/**
- * Get a single database type configuration from the cached catalog.
- *
+ * @param items Decorated database type items.
  * @param databaseType Database type identifier.
- * @returns The cached database type config, if present.
+ * @returns Matching catalog item, if present.
  */
-export const getDatabaseTypeDropdownItemSync = (
+export function findDatabaseTypeDropdownItem(
+    items: IDatabaseDropdownItem[],
     databaseType: string | undefined
-): IDatabaseDropdownItem | undefined => {
+): IDatabaseDropdownItem | undefined {
     if (!databaseType) {
         return undefined;
     }
 
-    return getDatabaseTypeDropdownItemsSync().find(item => item.id === databaseType);
-};
+    return items.find(item => item.id === databaseType);
+}
 
 /**
- * Resolve a database type to its underlying plugin type using the cached
- * backend catalog.
+ * Resolves a displayed database type to its underlying plugin type.
  *
  * @param databaseType Database type identifier.
- * @returns The resolved plugin type, or the original type when not cached.
+ * @param item Decorated catalog entry for the database type.
+ * @returns The resolved plugin type, or the original type when no catalog item is available.
  */
-export const getResolvedDatabasePluginTypeSync = (
-    databaseType: string | undefined
-): string | undefined => {
+export function resolveDatabasePluginType(
+    databaseType: string | undefined,
+    item: IDatabaseDropdownItem | undefined
+): string | undefined {
     if (!databaseType) {
         return undefined;
     }
 
-    return getDatabaseTypeDropdownItemSync(databaseType)?.pluginType ?? databaseType;
-};
+    return item?.pluginType ?? databaseType;
+}

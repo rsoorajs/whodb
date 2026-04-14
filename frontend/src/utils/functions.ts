@@ -16,7 +16,6 @@
 
 import sampleSize from "lodash/sampleSize";
 import {DatabaseType} from '@graphql';
-import { getResolvedDatabasePluginTypeSync } from '../config/database-types';
 
 /**
  * Formats a number using locale-aware grouping separators (e.g. 1,000,000 in en-US, 10,00,000 in hi-IN).
@@ -40,16 +39,21 @@ export function isNumeric(str: string) {
 let isExtNoSQLDatabase: ((databaseType: string) => boolean) | null = null;
 
 /**
- * Determines if a database type is a NoSQL database.
- * @param databaseType - The database type string to check
- * @returns True for MongoDB, Redis, ElasticSearch, and extension NoSQL databases
+ * Determines if a database type resolves to a NoSQL plugin.
+ *
+ * @param databaseType The displayed database type identifier.
+ * @param pluginType The resolved backend plugin type for the database.
+ * @returns True for NoSQL plugins and registered extension database types.
  */
-export function isNoSQL(databaseType: string) {
-    if (isExtNoSQLDatabase && isExtNoSQLDatabase(databaseType)) {
+export function isNoSQLDatabaseType(
+    databaseType: string | undefined,
+    pluginType: string | undefined
+): boolean {
+    if (databaseType && isExtNoSQLDatabase && isExtNoSQLDatabase(databaseType)) {
         return true;
     }
 
-    switch (getResolvedDatabasePluginTypeSync(databaseType)) {
+    switch (pluginType ?? databaseType) {
         case DatabaseType.MongoDb:
         case DatabaseType.Redis:
         case DatabaseType.ElasticSearch:
@@ -76,12 +80,18 @@ export function registerDatabaseFunctions(fns: {
 }
 
 /**
- * Returns the appropriate label for storage units based on database type.
- * @param databaseType - The database type
- * @param singular - Whether to return singular form (default: false)
- * @returns The label (e.g., "Tables", "Collections", "Indices")
+ * Returns the appropriate storage-unit label for a database type.
+ *
+ * @param databaseType The displayed database type identifier.
+ * @param pluginType The resolved backend plugin type for the database.
+ * @param singular Whether to return the singular form.
+ * @returns The label (for example "Tables", "Collections", or "Indices").
  */
-export function getDatabaseStorageUnitLabel(databaseType: string | undefined, singular: boolean = false) {
+export function getDatabaseStorageUnitLabelForDatabaseType(
+    databaseType: string | undefined,
+    pluginType: string | undefined,
+    singular: boolean = false
+) {
     if (getExtDatabaseStorageUnitLabel) {
         const extLabel = getExtDatabaseStorageUnitLabel(databaseType, singular);
         if (extLabel !== null) {
@@ -89,7 +99,7 @@ export function getDatabaseStorageUnitLabel(databaseType: string | undefined, si
         }
     }
 
-    switch(getResolvedDatabasePluginTypeSync(databaseType)) {
+    switch(pluginType ?? databaseType) {
         case DatabaseType.ElasticSearch:
             return singular ? "Index" : "Indices";
         case DatabaseType.MongoDb:

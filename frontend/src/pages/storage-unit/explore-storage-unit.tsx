@@ -78,11 +78,10 @@ import {SchemaViewer} from "../../components/schema-viewer";
 import {getColumnIcons, getInputPropsForColumnType, StorageUnitTable} from "../../components/table";
 import {Tip} from "../../components/tip";
 import {InternalRoutes} from "../../config/routes";
+import {useDatabaseTraits} from "../../hooks/useDatabaseTraits";
 import {useAppDispatch, useAppSelector} from "../../store/hooks";
 import {ExploreConditionsActions} from "../../store/explore-conditions";
-import {databaseSupportsScratchpad, databaseTypesThatUseDatabaseInsteadOfSchema} from "../../utils/database-features";
 import {getDatabaseOperators} from "../../utils/database-operators";
-import {getDatabaseStorageUnitLabel, isNoSQL} from "../../utils/functions";
 import {usePageSize} from "../../hooks/use-page-size";
 import {ExploreStorageUnitWhereCondition} from "./explore-storage-unit-where-condition";
 import {ExploreStorageUnitWhereConditionSheet} from "./explore-storage-unit-where-condition-sheet";
@@ -130,12 +129,18 @@ export const ExploreStorageUnit: FC = () => {
 
     let schema = useAppSelector(state => state.database.schema);
     const current = useAppSelector(state => state.auth.current);
+    const {
+        isNoSQL,
+        storageUnitLabel,
+        supportsScratchpad,
+        usesDatabaseInsteadOfSchema,
+    } = useDatabaseTraits(current?.Type);
     const whereConditionMode = useAppSelector(state => state.settings.whereConditionMode);
     const unit: StorageUnit = useLocation().state?.unit;
     const navigate = useNavigate();
 
     // TODO: ClickHouse/MongoDB use database name as schema parameter since they lack traditional schemas
-    if (databaseTypesThatUseDatabaseInsteadOfSchema(current?.Type) && current?.Database) {
+    if (usesDatabaseInsteadOfSchema && current?.Database) {
         schema = current.Database;
     }
 
@@ -298,13 +303,13 @@ export const ExploreStorageUnit: FC = () => {
         if (rows?.Columns == null || rows?.Columns.length === 0 || rows == null || rows.Rows.length === 0) {
             return {whereColumns: [], whereColumnTypes: []};
         }
-        if (rows?.Columns.length === 1 && rows?.Columns[0].Type === "Document" && isNoSQL(current?.Type as DatabaseType)) {
+        if (rows?.Columns.length === 1 && rows?.Columns[0].Type === "Document" && isNoSQL) {
             const whereColumns = Object.keys(JSON.parse(rows?.Rows[0][0]));
             const whereColumnTypes = whereColumns.map(() => "string");
             return {whereColumns, whereColumnTypes}
         }
         return {whereColumns: columns, whereColumnTypes: columnTypes}
-    }, [rows?.Columns, rows?.Rows, current?.Type, columns, columnTypes]);
+    }, [rows?.Columns, rows?.Rows, isNoSQL, columns, columnTypes]);
 
     const handleSubmitRequest = useCallback((pageOffset: number | null = null) => {
         const tableNameToUse = unitName || currentTableName;
@@ -474,15 +479,14 @@ export const ExploreStorageUnit: FC = () => {
     }, [pageSize]);
 
     const routes = useMemo(() => {
-        const name = getDatabaseStorageUnitLabel(current?.Type);
         return [
             {
                 ...InternalRoutes.Dashboard.StorageUnit,
-                name,
+                name: storageUnitLabel,
             },
             InternalRoutes.Dashboard.ExploreStorageUnit,
         ];
-    }, [current]);
+    }, [storageUnitLabel]);
 
     // Broadcast available columns for Command Palette sorting
     useEffect(() => {
@@ -601,7 +605,7 @@ export const ExploreStorageUnit: FC = () => {
     const handleAddRowSubmit = useCallback(() => {
         if (rows?.Columns == null) return;
         let values: RecordInput[] = [];
-        if (isNoSQL(current?.Type as DatabaseType) && rows.Columns.length === 1 && rows.Columns[0].Type === "Document") {
+        if (isNoSQL && rows.Columns.length === 1 && rows.Columns[0].Type === "Document") {
             try {
                 const json = JSON.parse(addRowData.document);
                 for (const key of Object.keys(json)) {
@@ -653,7 +657,7 @@ export const ExploreStorageUnit: FC = () => {
                 toast.error(errorMessage);
             },
         });
-    }, [addRow, addRowData, handleSubmitRequest, rows?.Columns, schema, t, unit?.Name, current?.Type]);
+    }, [addRow, addRowData, currentTableName, handleSubmitRequest, isNoSQL, rows?.Columns, schema, t, unit?.Name, unitName]);
 
     const [pendingScratchpadQuery, setPendingScratchpadQuery] = useState<string | null>(null);
 
@@ -896,7 +900,7 @@ export const ExploreStorageUnit: FC = () => {
                     </div>
                     <Button onClick={handleOpenScratchpad} data-testid="embedded-scratchpad-button" variant="secondary"
                         className={cn({
-                            "hidden": !databaseSupportsScratchpad(current?.Type),
+                            "hidden": !supportsScratchpad,
                         })}>
                         <CommandLineIcon className="w-4 h-4" /> {t('scratchpad')}
                     </Button>
@@ -916,7 +920,7 @@ export const ExploreStorageUnit: FC = () => {
                         <SheetTitle className="flex items-center gap-2"><TableCellsIcon className="w-5 h-5" /> {t('addRowTitle')}</SheetTitle>
                         <div className="flex-1 overflow-y-auto pr-2">
                             {/* NoSQL Document input - show JSON editor */}
-                            {isNoSQL(current?.Type as DatabaseType) && rows?.Columns?.length === 1 && rows?.Columns?.[0]?.Type === "Document" ? (
+                            {isNoSQL && rows?.Columns?.length === 1 && rows?.Columns?.[0]?.Type === "Document" ? (
                                 <div className="flex flex-col gap-4" data-testid="add-row-field-document">
                                     <Label>{t('documentJson')}</Label>
                                     <p className="text-xs text-muted-foreground">{t('documentJsonHelp')}</p>

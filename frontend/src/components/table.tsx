@@ -79,6 +79,7 @@ import {Export} from "./export";
 import {ImportData} from "./import-data";
 import {useTranslation} from '@/hooks/use-translation';
 import {copyToClipboard} from '@/services/clipboard';
+import {useDatabaseTraits} from "@/hooks/useDatabaseTraits";
 import {
     ArrowDownCircleIcon,
     ArrowDownTrayIcon,
@@ -110,8 +111,7 @@ import {
 import {Tip} from "./tip";
 import {formatShortcut} from "@/utils/platform";
 import {matchesShortcut, SHORTCUTS} from "@/utils/shortcuts";
-import {formatNumber, isNoSQL} from "@/utils/functions";
-import {databaseSupportsMockData} from "@/utils/database-features";
+import {formatNumber} from "@/utils/functions";
 
 
 // Dynamically load Export component
@@ -378,9 +378,10 @@ export const StorageUnitTable: FC<TableProps> = ({
     const [mockDataOverwriteExisting, setMockDataOverwriteExisting] = useState("append");
     const [mockDataFkDensityRatio, setMockDataFkDensityRatio] = useState("20");
     const [showMockDataConfirmation, setShowMockDataConfirmation] = useState(false);
-    const isMockDataSupported = databaseSupportsMockData(databaseType) && isMockDataGenerationAllowed;
+    const { isNoSQL, supportsMockData } = useDatabaseTraits(databaseType);
+    const isMockDataSupported = supportsMockData && isMockDataGenerationAllowed;
     const isClickHouse = databaseType === "ClickHouse";
-    const isImportSupported = !isNoSQL(databaseType ?? "");
+    const isImportSupported = !isNoSQL;
     const { data: maxRowData } = useMockDataMaxRowCountQuery();
     const maxRowCount = maxRowData?.MockDataMaxRowCount || 200;
     

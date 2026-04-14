@@ -19,20 +19,21 @@ import { DatabaseType, useGetAiModelsQuery } from '@graphql';
 import { Loading } from "../../components/loading";
 import { Navigate } from "react-router-dom";
 import { InternalRoutes } from "../../config/routes";
+import { useDatabaseTraits } from "../../hooks/useDatabaseTraits";
 import { InternalPage } from "../../components/page";
 import { useAppSelector } from "../../store/hooks";
-import { isNoSQL } from "../../utils/functions";
 import { availableInternalModelTypes } from "../../store/ai-models";
 
 export const NavigateToDefault: FC = () => {
     const current = useAppSelector(state => state.auth.current);
+    const { isNoSQL } = useDatabaseTraits(current?.Type);
     const { data, error } = useGetAiModelsQuery({
         variables: {
             modelType: availableInternalModelTypes[0],
         }
     });
 
-    if (isNoSQL(current?.Type as DatabaseType) ||  error != null) {
+    if (isNoSQL ||  error != null) {
         return <Navigate to={InternalRoutes.Dashboard.StorageUnit.path} />
     }
 

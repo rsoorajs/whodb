@@ -74,7 +74,7 @@ import {ScratchpadActions} from "../../store/scratchpad";
 import {featureFlags} from "../../config/features";
 import {chooseRandomItems} from "../../utils/functions";
 import {getComponent} from "../../config/component-registry";
-import {databaseSupportsScratchpad, databaseTypesThatUseDatabaseInsteadOfSchema} from "../../utils/database-features";
+import {useDatabaseTraits} from "../../hooks/useDatabaseTraits";
 import {useNavigate} from "react-router-dom";
 import {useChatExamples} from "./examples";
 import {useTranslation} from '@/hooks/use-translation';
@@ -131,6 +131,7 @@ const TablePreview: FC<{ type: string, data: TableData, text: string, containerW
     const navigate = useNavigate();
     const current = useAppSelector(state => state.auth.current);
     const { pages, activePageId } = useAppSelector(state => state.scratchpad);
+    const { supportsScratchpad } = useDatabaseTraits(current?.Type);
 
     const handleCodeToggle = useCallback(() => {
         setShowSQL(status => !status);
@@ -145,7 +146,7 @@ const TablePreview: FC<{ type: string, data: TableData, text: string, containerW
     }, [pages, activePageId, t]);
 
     const handleMoveToScratchpad = useCallback(() => {
-        if (!databaseSupportsScratchpad(current?.Type)) {
+        if (!supportsScratchpad) {
             toast.error(t('scratchpadNotSupported'));
             return;
         }
@@ -154,7 +155,7 @@ const TablePreview: FC<{ type: string, data: TableData, text: string, containerW
             dispatch(ScratchpadActions.ensurePagesHaveCells());
         }
         setShowScratchpadDialog(true);
-    }, [current?.Type, pages.length, dispatch, t]);
+    }, [dispatch, pages.length, supportsScratchpad, t]);
 
     const handleScratchpadConfirm = useCallback(() => {
         if (selectedPage === "new") {
@@ -194,8 +195,8 @@ const TablePreview: FC<{ type: string, data: TableData, text: string, containerW
     }, [data, type, t]);
 
     const canMoveToScratchpad = useMemo(() => {
-        return databaseSupportsScratchpad(current?.Type) && type.startsWith("sql:");
-    }, [current?.Type, type]);
+        return supportsScratchpad && type.startsWith("sql:");
+    }, [supportsScratchpad, type]);
 
     return <div className="flex gap-2 w-[calc(100%-50px)] max-w-full min-w-0 group/table-preview">
         <div className={cn("transition-all shrink-0 pt-1", {
@@ -335,6 +336,7 @@ export const ChatPage: FC = () => {
     const containerWidth = useContainerWidth(scrollContainerRef);
     const schemaFromState = useAppSelector(state => state.database.schema);
     const authProfile = useAppSelector(state => state.auth.current);
+    const { usesDatabaseInsteadOfSchema } = useDatabaseTraits(authProfile?.Type);
     const [executingConfirmedId, setExecutingConfirmedId] = useState<number | null>(null);
     const [showQueryForId, setShowQueryForId] = useState<number | null>(null);
     const [copiedSqlId, setCopiedSqlId] = useState<number | null>(null);
@@ -343,11 +345,11 @@ export const ChatPage: FC = () => {
     // For databases that use "database" instead of "schema" (MySQL, MariaDB, etc.),
     // we need to pass the database value where the backend expects "schema"
     const schema = useMemo(() => {
-        if (databaseTypesThatUseDatabaseInsteadOfSchema(authProfile?.Type)) {
+        if (usesDatabaseInsteadOfSchema) {
             return authProfile?.Database || '';
         }
         return schemaFromState;
-    }, [authProfile?.Type, authProfile?.Database, schemaFromState]);
+    }, [authProfile?.Database, schemaFromState, usesDatabaseInsteadOfSchema]);
     const [currentSearchIndex, setCurrentSearchIndex] = useState<number>();
 
     const dispatch = useAppDispatch();

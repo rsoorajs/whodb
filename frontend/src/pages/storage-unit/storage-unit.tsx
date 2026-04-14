@@ -71,11 +71,9 @@ import {IGraphCardProps} from "../../components/graph/graph";
 import {Loading, LoadingPage} from "../../components/loading";
 import {InternalPage} from "../../components/page";
 import {InternalRoutes} from "../../config/routes";
+import {useDatabaseTraits} from "../../hooks/useDatabaseTraits";
 import {trackFrontendEvent} from "../../config/posthog";
 import {useAppDispatch, useAppSelector} from "../../store/hooks";
-import {databaseSupportsModifiers} from "../../utils/database-data-types";
-import {databaseSupportsScratchpad, databaseTypesThatUseDatabaseInsteadOfSchema} from "../../utils/database-features";
-import {getDatabaseStorageUnitLabel, isNoSQL} from "../../utils/functions";
 import {Tip} from '../../components/tip';
 import {SettingsActions} from '../../store/settings';
 import {useTranslation} from '../../hooks/use-translation';
@@ -85,6 +83,7 @@ const StorageUnitCard: FC<{ unit: StorageUnit, schema: string }> = ({ unit, sche
     const navigate = useNavigate();
     const { t } = useTranslation('pages/storage-unit');
     const current = useAppSelector(state => state.auth.current);
+    const { pluginType } = useDatabaseTraits(current?.Type);
     const [columns, setColumns] = useState<any[] | undefined>(undefined);
     const [columnsLoading, setColumnsLoading] = useState(false);
     const [fetchColumnsBatch] = useGetColumnsBatchLazyQuery();
@@ -166,7 +165,7 @@ const StorageUnitCard: FC<{ unit: StorageUnit, schema: string }> = ({ unit, sche
                 <TableCellsIcon className="w-5 h-5" />
                 {unit.Name}
             </SheetTitle>
-            {(current?.Type === DatabaseType.MongoDb || current?.Type === DatabaseType.ElasticSearch) && (
+            {(pluginType === DatabaseType.MongoDb || pluginType === DatabaseType.ElasticSearch) && (
                 <div className="mb-2" data-testid="sampled-schema-warning">
                     <div className="flex items-center gap-xs text-sm">
                         <InformationCircleIcon className="w-4 h-4" />
@@ -240,6 +239,14 @@ export const StorageUnitPage: FC = () => {
     const [error, setError] = useState<string>();
     let schema = useAppSelector(state => state.database.schema);
     const current = useAppSelector(state => state.auth.current);
+    const {
+        isNoSQL,
+        singularStorageUnitLabel,
+        storageUnitLabel,
+        supportsModifiers,
+        supportsScratchpad,
+        usesDatabaseInsteadOfSchema,
+    } = useDatabaseTraits(current?.Type);
     const view = useAppSelector(state => state.settings.storageUnitView);
     const [addStorageUnit,] = useAddStorageUnitMutation();
     const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
@@ -257,7 +264,7 @@ export const StorageUnitPage: FC = () => {
     }, [current?.Type, trackFrontendEvent, view]);
 
     // Databases like MySQL, MariaDB, ClickHouse, MongoDB use database name as schema parameter since they treat database=schema
-    if (databaseTypesThatUseDatabaseInsteadOfSchema(current?.Type)) {
+    if (usesDatabaseInsteadOfSchema) {
         schema = current?.Database ?? '';
     }
 
@@ -300,14 +307,13 @@ export const StorageUnitPage: FC = () => {
     const [filterValue, setFilterValue] = useState("");
 
     const routes = useMemo(() => {
-        const name = getDatabaseStorageUnitLabel(current?.Type);
         return [
             {
                 ...InternalRoutes.Dashboard.StorageUnit,
-                name,
+                name: storageUnitLabel,
             },
         ];
-    }, [current]);
+    }, [storageUnitLabel]);
 
     const handleCreate = useCallback(() => {
         const next = !create;
@@ -322,7 +328,7 @@ export const StorageUnitPage: FC = () => {
         if (storageUnitName.length === 0) {
             return setError(t('nameRequired'));
         }
-        if (!isNoSQL(current?.Type as DatabaseType) && fields.some(field => field.Key.length === 0 || field.Value.length === 0)) {
+        if (!isNoSQL && fields.some(field => field.Key.length === 0 || field.Value.length === 0)) {
             return setError(t('fieldsCannotBeEmpty'));
         }
         setError(undefined);
@@ -333,7 +339,7 @@ export const StorageUnitPage: FC = () => {
                 fields,
             },
             onCompleted() {
-                const message = t('createSuccessMessage').replace('{storageUnit}', `${getDatabaseStorageUnitLabel(current?.Type, true)} ${storageUnitName}`);
+                const message = t('createSuccessMessage').replace('{storageUnit}', `${singularStorageUnitLabel} ${storageUnitName}`);
                 toast.success(message);
                 void trackFrontendEvent('ui.storage_unit_created', {
                     database_type: current?.Type ?? 'unknown',
@@ -348,7 +354,7 @@ export const StorageUnitPage: FC = () => {
                 toast.error(e.message);
             },
         });
-    }, [addStorageUnit, current?.Type, fields, refetch, schema, storageUnitName, t, trackFrontendEvent]);
+    }, [addStorageUnit, current?.Type, fields, isNoSQL, refetch, schema, singularStorageUnitLabel, storageUnitName, t, trackFrontendEvent]);
 
     const handleAddField = useCallback(() => {
         setFields(f => [...f, { Key: "", Value: "", Extra: [] }]);
@@ -395,11 +401,8 @@ export const StorageUnitPage: FC = () => {
     }, [data?.StorageUnit, filterValue]);
 
     const showModifiers = useMemo(() => {
-        if (!current?.Type) {
-            return false;
-        }
-        return databaseSupportsModifiers(current.Type);
-    }, [current?.Type]);
+        return supportsModifiers;
+    }, [supportsModifiers]);
 
     const sharedAttributeKeys = useMemo(() => {
         if (!data?.StorageUnit || data.StorageUnit.length === 0) {
@@ -430,7 +433,7 @@ export const StorageUnitPage: FC = () => {
             </div>
             <div className="flex items-center gap-2">
                 {
-                    databaseSupportsScratchpad(current?.Type) &&
+                    supportsScratchpad &&
                     <Button onClick={() => navigate(InternalRoutes.RawExecute.path)} data-testid="scratchpad-button" variant="secondary">
                         <CommandLineIcon className="w-4 h-4" /> {t('scratchpad')}
                     </Button>
@@ -454,7 +457,7 @@ export const StorageUnitPage: FC = () => {
         })} data-testid="storage-unit-card-list">
             {current?.Type !== DatabaseType.Memcached && <ExpandableCard className="overflow-visible min-w-[200px] max-w-[700px] h-full" icon={<PlusCircleIcon className="w-4 h-4" />} isExpanded={create} setExpanded={setCreate} tag={<Badge variant="destructive">{error}</Badge>}>
                 <div className="flex flex-col grow h-full justify-between mt-2 gap-2" data-testid="create-storage-unit-card">
-                    <h1 className="text-lg"><span className="prefix-create-storage-unit">{t('createTitle', { storageUnit: getDatabaseStorageUnitLabel(current?.Type, true) })}</span></h1>
+                    <h1 className="text-lg"><span className="prefix-create-storage-unit">{t('createTitle', { storageUnit: singularStorageUnitLabel })}</span></h1>
                     <Button className="self-end" onClick={e => { e.stopPropagation(); handleCreate(); }} variant="secondary">
                         <PlusCircleIcon  className='w-4 h-4' /> {t('create')}
                     </Button>
@@ -463,14 +466,14 @@ export const StorageUnitPage: FC = () => {
                     <div className="flex flex-col gap-4">
                         <SheetTitle className="flex items-center gap-2">
                             <PlusCircleIcon className="w-5 h-5" />
-                            {t('createTitle', { storageUnit: getDatabaseStorageUnitLabel(current?.Type, true) })}
+                            {t('createTitle', { storageUnit: singularStorageUnitLabel })}
                         </SheetTitle>
                         <div className="flex flex-col gap-2">
                             <Label>{t('nameLabel')}</Label>
                             <Input value={storageUnitName} onChange={e => setStorageUnitName(e.target.value)} placeholder={t('namePlaceholder')} />
                         </div>
                         <div className={classNames("flex flex-col gap-sm overflow-y-auto max-h-[75vh]", {
-                            "hidden": isNoSQL(current?.Type as DatabaseType),
+                            "hidden": isNoSQL,
                         })}>
                             <div className="flex flex-col gap-4">
                                 {

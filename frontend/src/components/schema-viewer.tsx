@@ -29,9 +29,8 @@ import {FolderIcon, TableCellsIcon} from "./heroicons";
 import {FC, useCallback, useEffect, useMemo, useState} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
 import {InternalRoutes} from "../config/routes";
+import {useDatabaseTraits} from "../hooks/useDatabaseTraits";
 import {useAppSelector} from "../store/hooks";
-import {databaseTypesThatUseDatabaseInsteadOfSchema} from "../utils/database-features";
-import {getDatabaseStorageUnitLabel} from "../utils/functions";
 import {Loading} from "./loading";
 import {useTranslation} from "@/hooks/use-translation";
 
@@ -50,6 +49,7 @@ export const SchemaViewer: FC = () => {
     const { t } = useTranslation('components/schema-viewer');
     const current = useAppSelector(state => state.auth.current);
     const selectedSchema = useAppSelector(state => state.database.schema);
+    const { storageUnitLabel, usesDatabaseInsteadOfSchema } = useDatabaseTraits(current?.Type);
     const navigate = useNavigate();
     const state = useLocation().state as { unit: StorageUnit } | undefined;
 
@@ -57,8 +57,7 @@ export const SchemaViewer: FC = () => {
     const [search, setSearch] = useState("");
 
     // For databases that use database instead of schema, determine the schema value
-    const usesDatabase = databaseTypesThatUseDatabaseInsteadOfSchema(current?.Type);
-    const schemaValue = usesDatabase ? (current?.Database ?? '') : selectedSchema;
+    const schemaValue = usesDatabaseInsteadOfSchema ? (current?.Database ?? '') : selectedSchema;
 
     // Query for storage units (tables, views, etc.)
     const {data, loading, refetch} = useGetStorageUnitsQuery({
@@ -145,7 +144,7 @@ export const SchemaViewer: FC = () => {
                 <SidebarContent>
                     <SidebarHeader>
                         <h1 className="text-lg font-semibold pt-8 px-4">
-                            {getDatabaseStorageUnitLabel(current?.Type)}
+                            {storageUnitLabel}
                         </h1>
                     </SidebarHeader>
                     <div className="px-4">

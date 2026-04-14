@@ -33,7 +33,7 @@ import {useExportToCSV} from "./hooks";
 import {ShareIcon} from "./heroicons";
 import {VisuallyHidden} from "@radix-ui/react-visually-hidden";
 import {useTranslation} from "@/hooks/use-translation";
-import {isNoSQL} from "@/utils/functions";
+import {useDatabaseTraits} from "@/hooks/useDatabaseTraits";
 
 interface IExportProps {
     open: boolean;
@@ -64,7 +64,8 @@ export const Export: FC<IExportProps> = ({
                                          }) => {
     const { t } = useTranslation('components/export');
     const [exportDelimiter, setExportDelimiter] = useState(',');
-    const defaultFormat = useMemo(() => isNoSQL(databaseType ?? '') ? 'ndjson' : 'csv', [databaseType]);
+    const { isNoSQL } = useDatabaseTraits(databaseType);
+    const defaultFormat = useMemo(() => isNoSQL ? 'ndjson' : 'csv', [isNoSQL]);
     const [exportFormat, setExportFormat] = useState<'csv' | 'excel' | 'ndjson'>(defaultFormat);
 
     useEffect(() => {
@@ -77,11 +78,11 @@ export const Export: FC<IExportProps> = ({
             {value: 'csv', label: t('formatCsv')},
             {value: 'excel', label: t('formatExcel')},
         ];
-        if (isNoSQL(databaseType ?? '')) {
+        if (isNoSQL) {
             options.push({value: 'ndjson', label: t('formatJson')});
         }
         return options;
-    }, [t, databaseType]);
+    }, [isNoSQL, t]);
 
     const exportDelimiterOptions = useMemo(() => [
         {value: ',', label: t('delimiterComma')},
