@@ -60,6 +60,72 @@ func TestGetCurrentConnection_NotConnected(t *testing.T) {
 	}
 }
 
+func TestGetSSLStatusSummary_NotConnected(t *testing.T) {
+	setupTestEnv(t)
+
+	mgr, err := NewManager()
+	if err != nil {
+		t.Fatalf("NewManager failed: %v", err)
+	}
+
+	_, err = mgr.GetSSLStatusSummary()
+	if err == nil {
+		t.Error("Expected error when not connected")
+	}
+}
+
+func TestFormatSSLStatusSummary(t *testing.T) {
+	tests := []struct {
+		name   string
+		status *engine.SSLStatus
+		want   string
+	}{
+		{
+			name:   "nil",
+			status: nil,
+			want:   "",
+		},
+		{
+			name: "enabled without mode",
+			status: &engine.SSLStatus{
+				IsEnabled: true,
+			},
+			want: "SSL/TLS: enabled",
+		},
+		{
+			name: "enabled with mode",
+			status: &engine.SSLStatus{
+				IsEnabled: true,
+				Mode:      "verify-full",
+			},
+			want: "SSL/TLS: enabled (verify-full)",
+		},
+		{
+			name: "disabled without mode",
+			status: &engine.SSLStatus{
+				IsEnabled: false,
+			},
+			want: "SSL/TLS: disabled",
+		},
+		{
+			name: "disabled with mode",
+			status: &engine.SSLStatus{
+				IsEnabled: false,
+				Mode:      "required",
+			},
+			want: "SSL/TLS: required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := formatSSLStatusSummary(tt.status); got != tt.want {
+				t.Fatalf("formatSSLStatusSummary() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestDisconnect(t *testing.T) {
 	setupTestEnv(t)
 

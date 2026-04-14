@@ -68,6 +68,17 @@ type connectionPingMsg struct {
 	online bool
 }
 
+func buildConnectionStatusMessage(conn *config.Connection, sslSummary string) string {
+	parts := make([]string, 0, 2)
+	if conn != nil {
+		parts = append(parts, fmt.Sprintf("Connected to %s@%s", conn.Type, conn.Host))
+	}
+	if sslSummary != "" {
+		parts = append(parts, sslSummary)
+	}
+	return strings.Join(parts, " • ")
+}
+
 type connectionDelegate struct {
 	pingResults map[string]connectionPingResult
 }
@@ -301,9 +312,9 @@ func (v *ConnectionView) updateList(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 		v.parent.mode = ViewBrowser
 		v.parent.initLayout()
 		conn := v.parent.dbManager.GetCurrentConnection()
-		connDesc := ""
-		if conn != nil {
-			connDesc = fmt.Sprintf("Connected to %s@%s", conn.Type, conn.Host)
+		connDesc := msg.statusMessage
+		if connDesc == "" {
+			connDesc = buildConnectionStatusMessage(conn, "")
 		}
 		return v, tea.Batch(v.parent.browserView.Init(), v.parent.SetStatus(connDesc))
 
@@ -359,7 +370,14 @@ func (v *ConnectionView) updateList(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 					if err := v.parent.dbManager.Connect(&conn); err != nil {
 						return connectionResultMsg{err: err}
 					}
-					return connectionResultMsg{err: nil}
+					sslSummary, err := v.parent.dbManager.GetSSLStatusSummary()
+					if err != nil {
+						sslSummary = ""
+					}
+					return connectionResultMsg{
+						err:           nil,
+						statusMessage: buildConnectionStatusMessage(&conn, sslSummary),
+					}
 				}
 			}
 
@@ -463,9 +481,9 @@ func (v *ConnectionView) updateForm(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 			v.parent.mode = ViewBrowser
 			v.parent.initLayout()
 			conn := v.parent.dbManager.GetCurrentConnection()
-			connDesc := ""
-			if conn != nil {
-				connDesc = fmt.Sprintf("Connected to %s@%s", conn.Type, conn.Host)
+			connDesc := msg.statusMessage
+			if connDesc == "" {
+				connDesc = buildConnectionStatusMessage(conn, "")
 			}
 			return v, tea.Batch(v.parent.browserView.Init(), v.parent.SetStatus(connDesc))
 		}
@@ -1177,12 +1195,20 @@ func (v *ConnectionView) connect() tea.Cmd {
 			return connectionResultMsg{err: err}
 		}
 
+		sslSummary, err := dbManager.GetSSLStatusSummary()
+		if err != nil {
+			sslSummary = ""
+		}
+
 		// Save connection if name is provided
 		if name != "" {
 			cfg.AddConnection(conn)
 			cfg.Save()
 		}
 
-		return connectionResultMsg{err: nil}
+		return connectionResultMsg{
+			err:           nil,
+			statusMessage: buildConnectionStatusMessage(&conn, sslSummary),
+		}
 	}
 }

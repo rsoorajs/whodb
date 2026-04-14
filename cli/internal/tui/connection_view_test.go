@@ -689,6 +689,24 @@ func TestConnectionView_ConnectionResultMsg_Success(t *testing.T) {
 	}
 }
 
+func TestConnectionView_ConnectionResultMsg_UsesProvidedStatusMessage(t *testing.T) {
+	v, cleanup := setupConnectionViewTest(t)
+	defer cleanup()
+
+	v.mode = "form"
+	v.connecting = true
+
+	msg := connectionResultMsg{
+		err:           nil,
+		statusMessage: "Connected to Postgres@localhost • SSL/TLS: enabled (verify-full)",
+	}
+	v, _ = v.Update(msg)
+
+	if v.parent.statusMessage != msg.statusMessage {
+		t.Fatalf("Expected status message %q, got %q", msg.statusMessage, v.parent.statusMessage)
+	}
+}
+
 func TestConnectionView_ConnectionResultMsg_Error(t *testing.T) {
 	v, cleanup := setupConnectionViewTest(t)
 	defer cleanup()

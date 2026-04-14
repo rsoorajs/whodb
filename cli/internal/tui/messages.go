@@ -108,7 +108,8 @@ type modelsLoadedMsg struct {
 
 // connectionResultMsg is sent when a connection attempt completes
 type connectionResultMsg struct {
-	err error
+	err           error
+	statusMessage string
 }
 
 // escTimeoutTickMsg is sent to tick the ESC quit confirmation timer

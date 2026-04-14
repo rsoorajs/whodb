@@ -27,6 +27,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/clidey/whodb/cli/internal/bootstrap"
 	"github.com/clidey/whodb/cli/internal/config"
 	tunnelpkg "github.com/clidey/whodb/cli/internal/ssh"
 	"github.com/clidey/whodb/core/graph/model"
@@ -263,6 +264,8 @@ func (m *Manager) buildCredentials(conn *Connection) *engine.Credentials {
 }
 
 func NewManager() (*Manager, error) {
+	bootstrap.Ensure()
+
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		return nil, fmt.Errorf("error loading config: %w", err)
@@ -496,6 +499,53 @@ func (m *Manager) GetQueryLog() []QueryLogEntry {
 
 func (m *Manager) GetCurrentConnection() *Connection {
 	return m.currentConnection
+}
+
+// GetSSLStatus returns the verified SSL/TLS status for the current connection.
+// It returns nil when the connected database does not expose applicable SSL/TLS
+// status information.
+func (m *Manager) GetSSLStatus() (*engine.SSLStatus, error) {
+	if m.currentConnection == nil {
+		return nil, fmt.Errorf("not connected to any database")
+	}
+
+	dbType := engine.DatabaseType(m.currentConnection.Type)
+	plugin := m.engine.Choose(dbType)
+	if plugin == nil {
+		return nil, fmt.Errorf("plugin not found")
+	}
+
+	credentials := m.buildCredentials(m.currentConnection)
+	return plugin.GetSSLStatus(engine.NewPluginConfig(credentials))
+}
+
+// GetSSLStatusSummary returns a human-readable SSL/TLS summary for the current
+// connection. It returns an empty string when SSL/TLS status is not applicable.
+func (m *Manager) GetSSLStatusSummary() (string, error) {
+	status, err := m.GetSSLStatus()
+	if err != nil {
+		return "", err
+	}
+	return formatSSLStatusSummary(status), nil
+}
+
+func formatSSLStatusSummary(status *engine.SSLStatus) string {
+	if status == nil {
+		return ""
+	}
+
+	mode := strings.TrimSpace(status.Mode)
+	if status.IsEnabled {
+		if mode == "" || strings.EqualFold(mode, "enabled") {
+			return "SSL/TLS: enabled"
+		}
+		return fmt.Sprintf("SSL/TLS: enabled (%s)", mode)
+	}
+
+	if mode == "" {
+		mode = "disabled"
+	}
+	return fmt.Sprintf("SSL/TLS: %s", mode)
 }
 
 func (m *Manager) loadSavedConnections() []Connection {

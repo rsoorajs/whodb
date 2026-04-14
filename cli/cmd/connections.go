@@ -290,19 +290,31 @@ var connectionsTestCmd = &cobra.Command{
 		var spinner *output.Spinner
 		if !connectionsQuiet {
 			spinner = output.NewSpinner(fmt.Sprintf("Testing connection to %s...", conn.Type))
+			spinner.Start()
 		}
-		spinner.Start()
 
 		if err := mgr.Connect(conn); err != nil {
-			spinner.StopWithError("Connection failed")
+			if spinner != nil {
+				spinner.StopWithError("Connection failed")
+			}
 			analytics.TrackConnectionTest(ctx, conn.Type, false, time.Since(startTime).Milliseconds())
 			return fmt.Errorf("connection test failed: %w", err)
 		}
 		defer mgr.Disconnect()
 
+		sslSummary, sslErr := mgr.GetSSLStatusSummary()
+		if sslErr != nil {
+			sslSummary = ""
+		}
+
 		analytics.TrackConnectionTest(ctx, conn.Type, true, time.Since(startTime).Milliseconds())
-		spinner.StopWithSuccess("Connection successful")
+		if spinner != nil {
+			spinner.StopWithSuccess("Connection successful")
+		}
 		out.Success("Successfully connected to %s (%s)", name, conn.Type)
+		if sslSummary != "" {
+			out.Info(sslSummary)
+		}
 		return nil
 	},
 }
