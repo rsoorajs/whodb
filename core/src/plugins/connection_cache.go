@@ -38,6 +38,8 @@ type cachedConnection struct {
 	sslStatus *engine.SSLStatus
 }
 
+type connectionCacheBucket map[string]*cachedConnection
+
 // connectionCacheTTL is how long unused connections stay in cache before cleanup.
 const connectionCacheTTL = 5 * time.Minute
 
@@ -45,8 +47,9 @@ const connectionCacheTTL = 5 * time.Minute
 const maxCachedConnections = 50
 
 var (
-	// connectionCache stores cached GORM instances keyed by config hash.
-	connectionCache   = make(map[string]*cachedConnection)
+	// connectionCache stores cached GORM instances keyed by non-password config fields,
+	// with password-specific entries inside each bucket.
+	connectionCache   = make(map[string]connectionCacheBucket)
 	connectionCacheMu sync.Mutex
 	stopCleanup       = make(chan struct{})
 )
@@ -79,11 +82,16 @@ func cleanupStaleConnections() {
 	connectionCacheMu.Lock()
 	defer connectionCacheMu.Unlock()
 
-	for key, cached := range connectionCache {
-		if cached.lastUsed.Before(staleThreshold) {
+	for key, bucket := range connectionCache {
+		for secret, cached := range bucket {
+			if cached.lastUsed.Before(staleThreshold) {
+				delete(bucket, secret)
+				closeGormDB(cached.db)
+				log.Debug("Closed stale database connection")
+			}
+		}
+		if len(bucket) == 0 {
 			delete(connectionCache, key)
-			closeGormDB(cached.db)
-			log.Debug("Closed stale database connection")
 		}
 	}
 }
@@ -105,23 +113,18 @@ func connIdentifier(config *engine.PluginConfig) string {
 	return fmt.Sprintf("%s:%s:%s", config.Credentials.Type, config.Credentials.Hostname, config.Credentials.Database)
 }
 
-// shortKey returns first 8 chars of cache key for logging
+// shortKey returns a short digest of the cache key for logging.
 func shortKey(key string) string {
-	if len(key) > 8 {
-		return key[:8]
-	}
-	return key
+	sum := sha256.Sum256([]byte(key))
+	return hex.EncodeToString(sum[:4])
 }
 
-// getConnectionCacheKey generates a unique hash key for a connection config.
-// Uses SHA256 to avoid exposing raw credentials in memory.
-// codeql[go/weak-crypto-algorithm]: SHA256 is intentional for cache key generation, not used for password storage
+// getConnectionCacheKey generates a unique bucket key for non-password connection config fields.
 func getConnectionCacheKey(config *engine.PluginConfig) string {
 	parts := []string{
 		config.Credentials.Type,
 		config.Credentials.Hostname,
 		config.Credentials.Username,
-		config.Credentials.Password,
 		config.Credentials.Database,
 		strconv.FormatBool(config.Credentials.IsProfile),
 	}
@@ -131,22 +134,66 @@ func getConnectionCacheKey(config *engine.PluginConfig) string {
 	for _, adv := range config.Credentials.Advanced {
 		parts = append(parts, adv.Key, adv.Value)
 	}
-	data := strings.Join(parts, "\x00")
-	hash := sha256.Sum256([]byte(data))
-	return hex.EncodeToString(hash[:])
+	return strings.Join(parts, "\x00")
+}
+
+func getConnectionCacheSecret(config *engine.PluginConfig) string {
+	return config.Credentials.Password
+}
+
+func getCachedConnectionLocked(key string, secret string) (*cachedConnection, bool) {
+	bucket, found := connectionCache[key]
+	if !found {
+		return nil, false
+	}
+	cached, found := bucket[secret]
+	return cached, found
+}
+
+func setCachedConnectionLocked(key string, secret string, cached *cachedConnection) {
+	bucket, found := connectionCache[key]
+	if !found {
+		bucket = make(connectionCacheBucket)
+		connectionCache[key] = bucket
+	}
+	bucket[secret] = cached
+}
+
+func deleteCachedConnectionLocked(key string, secret string) *cachedConnection {
+	bucket, found := connectionCache[key]
+	if !found {
+		return nil
+	}
+	cached, found := bucket[secret]
+	if !found {
+		return nil
+	}
+	delete(bucket, secret)
+	if len(bucket) == 0 {
+		delete(connectionCache, key)
+	}
+	return cached
+}
+
+func connectionCacheEntryCountLocked() int {
+	count := 0
+	for _, bucket := range connectionCache {
+		count += len(bucket)
+	}
+	return count
 }
 
 // RemoveConnection removes a specific connection from cache and closes it (call on logout).
 func RemoveConnection(config *engine.PluginConfig) {
 	connID := connIdentifier(config)
 	key := getConnectionCacheKey(config)
+	secret := getConnectionCacheSecret(config)
 	l := log.WithFields(map[string]any{"conn_id": connID, "cache_key": shortKey(key)})
 	l.Debug("RemoveConnection called")
 
 	connectionCacheMu.Lock()
-	cached, found := connectionCache[key]
-	if found {
-		delete(connectionCache, key)
+	cached := deleteCachedConnectionLocked(key, secret)
+	if cached != nil {
 		connectionCacheMu.Unlock()
 		closeGormDB(cached.db)
 		l.Debug("Connection removed and closed")
@@ -166,11 +213,14 @@ func CloseAllConnections(_ context.Context) {
 
 	// Close all cached connections
 	connectionCacheMu.Lock()
-	connCount := len(connectionCache)
+	connCount := connectionCacheEntryCountLocked()
 	l.WithField("conn_count", connCount).Info("Closing cached connections")
-	for key, cached := range connectionCache {
-		l.WithField("cache_key", shortKey(key)).Debug("Closing connection")
-		closeGormDB(cached.db)
+	for key, bucket := range connectionCache {
+		for secret, cached := range bucket {
+			l.WithField("cache_key", shortKey(key)).Debug("Closing connection")
+			closeGormDB(cached.db)
+			delete(bucket, secret)
+		}
 		delete(connectionCache, key)
 	}
 	connectionCacheMu.Unlock()
@@ -183,11 +233,12 @@ func CloseAllConnections(_ context.Context) {
 func getOrCreateConnection(config *engine.PluginConfig, createDB DBCreationFunc) (*gorm.DB, error) {
 	connID := connIdentifier(config)
 	key := getConnectionCacheKey(config)
+	secret := getConnectionCacheSecret(config)
 	l := log.WithFields(map[string]any{"conn_id": connID, "cache_key": shortKey(key)})
 
 	// First, check cache (with lock)
 	connectionCacheMu.Lock()
-	if cached, found := connectionCache[key]; found && cached != nil && cached.db != nil {
+	if cached, found := getCachedConnectionLocked(key, secret); found && cached != nil && cached.db != nil {
 		cached.lastUsed = time.Now()
 		db := cached.db
 		connectionCacheMu.Unlock()
@@ -203,8 +254,8 @@ func getOrCreateConnection(config *engine.PluginConfig, createDB DBCreationFunc)
 
 		// Connection is stale - remove from cache
 		connectionCacheMu.Lock()
-		if existingCached, stillExists := connectionCache[key]; stillExists && existingCached.db == db {
-			delete(connectionCache, key)
+		if existingCached, stillExists := getCachedConnectionLocked(key, secret); stillExists && existingCached.db == db {
+			deleteCachedConnectionLocked(key, secret)
 		}
 		connectionCacheMu.Unlock()
 	} else {
@@ -227,7 +278,7 @@ func getOrCreateConnection(config *engine.PluginConfig, createDB DBCreationFunc)
 	defer connectionCacheMu.Unlock()
 
 	// Check if another goroutine created a connection while we were creating ours
-	if cached, found := connectionCache[key]; found && cached != nil && cached.db != nil {
+	if cached, found := getCachedConnectionLocked(key, secret); found && cached != nil && cached.db != nil {
 		// Another goroutine won the race - use their connection, close ours
 		if sqlDB, err := cached.db.DB(); err == nil && sqlDB != nil {
 			if err := sqlDB.Ping(); err == nil {
@@ -239,17 +290,17 @@ func getOrCreateConnection(config *engine.PluginConfig, createDB DBCreationFunc)
 			}
 		}
 		// Their connection is stale - remove it, use ours
-		delete(connectionCache, key)
+		deleteCachedConnectionLocked(key, secret)
 	}
 
-	connectionCache[key] = &cachedConnection{
+	setCachedConnectionLocked(key, secret, &cachedConnection{
 		db:       db,
 		lastUsed: time.Now(),
-	}
+	})
 
 	// Evict oldest connection if we exceed the limit
-	if len(connectionCache) > maxCachedConnections {
-		evictOldestConnection(key)
+	if connectionCacheEntryCountLocked() > maxCachedConnections {
+		evictOldestConnection(key, secret)
 	}
 
 	return db, nil
@@ -257,23 +308,26 @@ func getOrCreateConnection(config *engine.PluginConfig, createDB DBCreationFunc)
 
 // evictOldestConnection removes the oldest connection to stay under maxCachedConnections.
 // Must be called while holding connectionCacheMu.
-func evictOldestConnection(excludeKey string) {
+func evictOldestConnection(excludeKey string, excludeSecret string) {
 	var oldestKey string
+	var oldestSecret string
 	var oldestTime = time.Now().Add(time.Hour) // future time as initial value
 
-	for key, cached := range connectionCache {
-		if key == excludeKey {
-			continue
-		}
-		if cached.lastUsed.Before(oldestTime) {
-			oldestTime = cached.lastUsed
-			oldestKey = key
+	for key, bucket := range connectionCache {
+		for secret, cached := range bucket {
+			if key == excludeKey && secret == excludeSecret {
+				continue
+			}
+			if cached.lastUsed.Before(oldestTime) {
+				oldestTime = cached.lastUsed
+				oldestKey = key
+				oldestSecret = secret
+			}
 		}
 	}
 
 	if oldestKey != "" {
-		cached := connectionCache[oldestKey]
-		delete(connectionCache, oldestKey)
+		cached := deleteCachedConnectionLocked(oldestKey, oldestSecret)
 		closeGormDB(cached.db)
 		log.WithField("cache_key", shortKey(oldestKey)).Debug("Evicted oldest connection to stay under limit")
 	}
