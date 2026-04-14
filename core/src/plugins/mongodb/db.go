@@ -19,7 +19,6 @@ package mongodb
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -88,8 +87,8 @@ func DB(config *engine.PluginConfig) (*mongo.Client, error) {
 	clientOptions.SetMaxConnIdleTime(5 * time.Minute)
 	if config.Credentials.Username != "" || config.Credentials.Password != "" {
 		clientOptions.SetAuth(options.Credential{
-			Username: url.QueryEscape(config.Credentials.Username),
-			Password: url.QueryEscape(config.Credentials.Password),
+			Username: config.Credentials.Username,
+			Password: config.Credentials.Password,
 		})
 	}
 
