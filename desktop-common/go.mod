@@ -3,6 +3,7 @@ module github.com/clidey/whodb/desktop-common
 go 1.26.1
 
 require (
+	github.com/99designs/gqlgen v0.17.89
 	github.com/clidey/whodb/core v0.0.0
 	github.com/wailsapp/wails/v2 v2.12.0
 )
@@ -17,7 +18,6 @@ require (
 	cloud.google.com/go/memcache v1.13.0 // indirect
 	cloud.google.com/go/redis v1.20.0 // indirect
 	git.sr.ht/~jackmordaunt/go-toast/v2 v2.0.3 // indirect
-	github.com/99designs/gqlgen v0.17.89 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.20.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.11.2 // indirect
