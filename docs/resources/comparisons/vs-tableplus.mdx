@@ -171,21 +171,7 @@ For most operations (queries, editing, browsing), both are similarly fast. Diffe
 
 ### WhoDB Support
 
-**Community Edition:**
-- PostgreSQL 10+
-- MySQL 5.7+ / MariaDB
-- SQLite 3
-- MongoDB 4.0+
-- Redis 5.0+
-- ElasticSearch
-
-**Enterprise Edition adds:**
-- Oracle
-- SQL Server
-- DynamoDB
-- Cassandra
-- Snowflake
-- And more
+The current CE catalog includes PostgreSQL, MySQL, MariaDB, CockroachDB, SQLite3, MongoDB, Redis, ElasticSearch, ClickHouse, DuckDB, Memcached, TiDB, Valkey, Dragonfly, OpenSearch, YugabyteDB, QuestDB, and FerretDB, plus compatible managed variants surfaced through provider discovery.
 
 ### TablePlus Support
 
@@ -492,7 +478,7 @@ Both tools support secure database access:
 | Feature | WhoDB | TablePlus |
 |---------|:----:|:--------:|
 | **SSL/TLS** | Yes | Yes |
-| **SSH Tunnel** | Yes | Yes |
+| **SSH / Bastion Workflow** | External tunnel in web, built-in in CLI | Yes |
 | **Certificate Support** | Yes | Yes |
 | **Custom Certs** | Yes | Yes |
 </Accordion>

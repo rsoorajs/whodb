@@ -1,0 +1,110 @@
+---
+title: "Importing Data"
+description: "Import CSV, Excel, or SQL into a table using the current WhoDB import flow"
+---
+
+# Importing Data
+
+WhoDB's current import flow lives inside the table view and supports two paths:
+
+- structured file import for CSV and Excel
+- SQL import from a pasted script or `.sql` file
+
+## Open The Import Flow
+
+Use the import action from the current table or the `Mod + I` shortcut.
+
+<Note>
+Imports target the currently selected table and schema context.
+</Note>
+
+## Supported Modes
+
+<CardGroup cols={2}>
+<Card title="Data Import" icon="table">
+Upload CSV or Excel files, preview the mapping, and import rows into the current table.
+</Card>
+<Card title="SQL Import" icon="code">
+Paste SQL or upload a `.sql` file and run it through the import panel.
+</Card>
+</CardGroup>
+
+## CSV And Excel Import
+
+<Steps>
+<Step title="Choose The File Type">
+The current UI supports:
+
+- `.csv`
+- `.xlsx`
+- `.xlsm`
+</Step>
+<Step title="Review The Preview">
+WhoDB requests a preview before import and shows:
+
+- detected columns
+- sample rows
+- mapping to the target table
+- validation errors
+- detected Excel sheet name when applicable
+</Step>
+<Step title="Adjust File Options">
+The current import panel supports:
+
+- automatic or manual CSV delimiter selection
+- automatic Excel sheet detection
+- append, overwrite, and upsert import modes
+- a toggle for allowing auto-generated columns when required by validation
+</Step>
+<Step title="Run The Import">
+Once the preview is valid, submit the import to write the rows into the current table.
+</Step>
+</Steps>
+
+## SQL Import
+
+SQL import can start from either:
+
+- a pasted SQL script
+- an uploaded SQL file
+
+The current flow requires an explicit confirmation checkbox before execution.
+
+## Current Limits
+
+The current frontend import flow enforces these limits:
+
+- maximum file size: `50 MB`
+- maximum row count: `100000`
+- preview rows shown in the UI: `3`
+
+## Validation Behavior
+
+Before import, the app can block execution for issues such as:
+
+- invalid or missing column mapping
+- auto-generated columns that require explicit consent
+- parser or file-format errors
+
+Use the preview result to fix the file or adjust the import mode before retrying.
+
+## Related Tools
+
+If you need scriptable or terminal-based imports, the CLI also provides:
+
+```bash
+whodb-cli import --connection mydb --file data.csv --table users
+```
+
+See [CLI & MCP](/features/cli-and-mcp) for the current command surface.
+
+## Related Pages
+
+<CardGroup cols={2}>
+<Card title="Viewing Data" icon="table" href="/data/viewing-data">
+Return to the table view after importing.
+</Card>
+<Card title="CLI & MCP" icon="code" href="/features/cli-and-mcp">
+Use terminal import commands and other scripted workflows.
+</Card>
+</CardGroup>

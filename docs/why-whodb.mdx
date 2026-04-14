@@ -118,8 +118,8 @@ NoSQL document databases
 <Card title="Redis" icon="database">
 Key-value data stores
 </Card>
-<Card title="More Coming" icon="plus">
-Additional databases in development
+<Card title="ClickHouse, DuckDB & More" icon="plus">
+Additional support for ClickHouse, DuckDB, OpenSearch, Memcached, and compatible managed variants
 </Card>
 </CardGroup>
 
@@ -328,14 +328,10 @@ We've created detailed comparison guides:
 The short answer: WhoDB is faster, simpler, and more modern while supporting multiple database types.
 </Accordion>
 <Accordion title="Can I use WhoDB in production?">
-Absolutely! WhoDB is production-ready and used by thousands of developers worldwide. We recommend using read-only database accounts for production access and enabling SSL/TLS for security.
-
-For production use with sensitive data, consider WhoDB Enterprise Edition for additional security features like audit logging and SSO.
+Yes. For production access, use read-only database accounts where possible, enable SSL/TLS, and put the app behind your normal network and authentication controls.
 </Accordion>
 <Accordion title="Does WhoDB store my database credentials?">
-No. WhoDB does not store database credentials by default. Each session is temporary and credentials are cleared when you close the browser.
-
-For convenience, you can optionally configure connection profiles (stored locally in your browser) or use environment variables for automated connections.
+Recent connection profiles can be persisted locally in your browser for faster reconnection. On shared machines, use a dedicated browser profile or clear saved connections when you are done. Environment-defined profiles are another option when you want connection details supplied by the server environment instead of typed manually.
 </Accordion>
 <Accordion title="Can I self-host WhoDB?">
 Yes! WhoDB is designed for self-hosting. You can run it on your own servers, in Docker containers, on Kubernetes, or even on your local machine. You have complete control over where your data goes.
@@ -350,7 +346,7 @@ WhoDB Community Edition supports:
 - MongoDB 4.0+
 - Redis 5.0+
 
-WhoDB Enterprise Edition includes additional databases like Oracle, SQL Server, Cassandra, and more. See the [full list](/resources/supported-databases).
+The current CE catalog also covers engines and compatible variants such as CockroachDB, TiDB, DuckDB, OpenSearch, Memcached, Valkey, Dragonfly, YugabyteDB, QuestDB, and FerretDB. See the [full list](/resources/supported-databases).
 </Accordion>
 <Accordion title="How do I migrate from my current tool?">
 Migration is simple because WhoDB works with your existing databases - no data migration required! Just:

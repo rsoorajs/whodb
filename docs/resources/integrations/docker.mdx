@@ -40,7 +40,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - WHODB_PORT=8080
+      - PORT=8080
       - WHODB_LOG_LEVEL=info
     restart: unless-stopped
     volumes:
@@ -77,8 +77,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - WHODB_PORT=8080
-      - WHODB_HOST=0.0.0.0
+      - PORT=8080
       - WHODB_LOG_LEVEL=warn
       - WHODB_LOG_FILE=default
       - WHODB_ACCESS_LOG_FILE=default
@@ -303,8 +302,7 @@ Configure WhoDB behavior through environment variables:
 
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
-| `WHODB_PORT` | HTTP server port | `8080` | `3000` |
-| `WHODB_HOST` | Bind address | `0.0.0.0` | `127.0.0.1` |
+| `PORT` | HTTP server port | `8080` | `3000` |
 | `WHODB_LOG_LEVEL` | Logging verbosity (case-insensitive) | `info` | `debug`, `warn`, `error`, `none` |
 | `WHODB_LOG_FORMAT` | Log output format | `text` | `json` |
 | `WHODB_LOG_FILE` | Redirect all non-HTTP logs to a file. Use `default` for `/var/log/whodb/whodb.log`, or specify a custom path | unset (stdout) | `default`, `/var/log/whodb/whodb.log` |
@@ -323,16 +321,16 @@ Create a `.env` file for sensitive configuration:
 
 ```bash
 # .env
-WHODB_PORT=8080
+PORT=8080
 WHODB_LOG_LEVEL=info
 
 # AI Integration
-ANTHROPIC_API_KEY=sk-ant-api03-xxx
-OPENAI_API_KEY=sk-xxx
+WHODB_ANTHROPIC_API_KEY=sk-ant-api03-xxx
+WHODB_OPENAI_API_KEY=sk-xxx
 
 # Ollama Configuration
-OLLAMA_HOST=ollama-server
-OLLAMA_PORT=11434
+WHODB_OLLAMA_HOST=ollama-server
+WHODB_OLLAMA_PORT=11434
 ```
 
 Reference in `docker-compose.yml`:
@@ -591,7 +589,7 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
     environment:
-      - WHODB_PORT=8080
+      - PORT=8080
       - WHODB_LOG_LEVEL=warn
       - WHODB_LOG_FILE=default
       - WHODB_ACCESS_LOG_FILE=default

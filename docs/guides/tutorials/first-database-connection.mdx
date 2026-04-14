@@ -40,12 +40,12 @@ The login page is designed with simplicity in mind. You'll notice several key el
 
 **Connection Fields**: Below the database type, you'll see fields for entering connection details. These fields change based on the database type you select.
 
-**Advanced Options**: An expandable section for SSL certificates, SSH tunnels, and connection pooling settings.
+**Advanced Options**: An expandable section for SSL/TLS certificates and database-specific connection settings.
 
 **Connect Button**: Once your details are entered, this button establishes the connection.
 
 <Tip>
-WhoDB doesn't store your credentials by default. You'll need to enter them each time you connect, ensuring better security for sensitive environments.
+Recent connection profiles can be persisted locally in your browser for faster reconnection. On shared machines, use a dedicated browser profile or clear saved connections when you're finished.
 </Tip>
 
 ## Step 2: Selecting Your Database Type
@@ -72,8 +72,8 @@ Document-oriented NoSQL database
 <Card title="Redis" icon="database">
 In-memory data structure store
 </Card>
-<Card title="Additional Types" icon="plus">
-Enterprise Edition includes support for Oracle, SQL Server, and more
+<Card title="Additional Engines" icon="plus">
+ClickHouse, DuckDB, Memcached, OpenSearch, CockroachDB, TiDB, Valkey, Dragonfly, and more are also available in the current catalog
 </Card>
 </CardGroup>
 
@@ -173,38 +173,29 @@ Enable encrypted connections for production databases:
 - `verify-ca`: Use SSL and verify the certificate authority
 - `verify-full`: Use SSL and verify the entire certificate chain (most secure)
 
-**Certificate Files**: If your database requires client certificates, provide:
-- SSL Certificate: Your client certificate file
-- SSL Key: Your private key file
-- SSL Root Certificate: The CA certificate to verify the server
+**Certificate Fields**: If your database requires client certificates, provide:
+- SSL CA Content: The CA certificate used to verify the server
+- SSL Client Cert Content: Your client certificate
+- SSL Client Key Content: Your client private key
+- SSL Server Name: Optional hostname override for certificate validation
 
 <Tip>
 Many cloud database providers (AWS RDS, Google Cloud SQL, Azure) require or recommend SSL connections. Check your provider's documentation for certificate files.
 </Tip>
 </Accordion>
-<Accordion title="SSH Tunnel">
-Connect through an SSH bastion host for added security:
-
-**When to use**: When your database isn't directly accessible but you can SSH to a jump host
-
-**Required Fields**:
-- SSH Host: The bastion/jump server address
-- SSH Port: Usually `22`
-- SSH Username: Your SSH username
-- SSH Private Key: Path to your SSH private key file
-
-This creates an encrypted tunnel through the SSH server to reach your database.
-</Accordion>
-<Accordion title="Connection Pooling">
-Optimize performance for high-traffic applications:
-
-- **Max Connections**: Maximum simultaneous connections (default: 10)
-- **Max Idle**: Maximum idle connections to keep open (default: 5)
-- **Connection Lifetime**: How long connections stay open (default: 1 hour)
+<Accordion title="Database-Specific Fields">
+Some database types expose a slightly different set of advanced fields. Common examples include file paths for embedded databases, schema defaults, or provider-specific connection options.
 
 <Note>
-Most users can leave these at default values. Adjust only if you're experiencing connection issues or have specific performance requirements.
+If you are unsure which advanced fields matter for your database, start with the minimum required host, port, username, password, and database values, then add SSL/TLS only when your provider or administrator asks for it.
 </Note>
+</Accordion>
+<Accordion title="Private Networks And Bastions">
+WhoDB needs a network path from the machine running the app to the database.
+
+- If the database is directly reachable, connect to it normally with its host and port.
+- If it sits behind a bastion or VPN, use that private network path first.
+- If you need an SSH tunnel, create it externally or use the [CLI & MCP](/features/cli-and-mcp) tooling, which includes built-in SSH tunneling.
 </Accordion>
 </AccordionGroup>
 
@@ -418,7 +409,7 @@ In this tutorial, you learned how to:
 - Navigate the WhoDB login interface
 - Select the appropriate database type
 - Enter connection details correctly
-- Configure advanced options for SSL and SSH
+- Configure advanced options for SSL/TLS and network reachability
 - Troubleshoot common connection issues
 - Verify a successful connection
 - Follow security best practices

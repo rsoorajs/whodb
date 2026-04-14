@@ -144,7 +144,7 @@ Fill in the required information. Here's what each field means:
 - **Host**: The computer address where your database lives (often "localhost" for local databases)
 - **Port**: The communication channel number (default: 5432 for PostgreSQL, 3306 for MySQL)
 - **Username**: Your database account name
-- **Password**: Your database password (kept secure and not stored)
+- **Password**: Your database password
 - **Database**: The specific database name you want to access
 
 <Tip>
@@ -152,13 +152,13 @@ If you're practicing, ask your instructor or team lead for these connection deta
 </Tip>
 </Step>
 <Step title="Advanced Options (Optional)">
-Click "Advanced Options" if you need special settings like SSL or SSH tunnels.
+Click "Advanced Options" if you need special settings such as SSL/TLS certificates or database-specific options.
 
 ![Advanced Options](/images/04-login-advanced-options.png)
 
 **For beginners:** You can usually skip advanced options for local or development databases.
 
-**For production databases:** Your administrator will tell you if you need SSL or other security settings.
+**For production databases:** Your administrator may ask you to set an SSL mode, provide certificates, or use a private network path to the database.
 </Step>
 <Step title="Connect">
 Click the "Connect" button. WhoDB will verify your credentials and connect to the database.

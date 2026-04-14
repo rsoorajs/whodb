@@ -1,49 +1,38 @@
 ---
 title: "Installation"
-description: "Get WhoDB installed and running on your system"
+description: "Install, run, and configure WhoDB using the current repository layout"
 ---
 
 # Installation Guide
 
-WhoDB can be installed and run in multiple ways depending on your environment and preferences. Choose the method that best suits your needs.
+WhoDB can run as a container, a standalone binary, a desktop app, or a local source checkout.
 
 ## Installation Methods
 
 <CardGroup cols={2}>
 <Card title="Docker" icon="container">
-Quick start with Docker for any platform
+Run the published image and expose the web UI on port 8080.
 </Card>
-<Card title="Binary Download" icon="file-zipper">
-Download pre-compiled binaries for your OS
+<Card title="Binary" icon="file-zipper">
+Download a release binary and run it directly.
 </Card>
-<Card title="Build from Source" icon="code-branch">
-Compile WhoDB from source code
+<Card title="Build From Source" icon="code-branch">
+Build the frontend and backend from this repository.
 </Card>
 <Card title="Desktop App" icon="desktop">
-Native desktop application (Community & Enterprise)
+Use the Wails desktop shell around the same core app.
 </Card>
 </CardGroup>
 
-## Docker Installation (Recommended)
-
-<Tip>
-Docker is the fastest and easiest way to get started with WhoDB
-</Tip>
-
-### Prerequisites
-
-- Docker installed on your system ([Get Docker](https://docs.docker.com/get-docker/))
-- Access to a database you want to connect to
-
-### Quick Start with Docker
+## Docker (Recommended)
 
 <Steps>
-<Step title="Pull the Docker Image">
+<Step title="Pull The Image">
 ```bash
 docker pull clidey/whodb:latest
 ```
 </Step>
-<Step title="Run WhoDB Container">
+<Step title="Run The Container">
 ```bash
 docker run -d \
   --name whodb \
@@ -51,119 +40,73 @@ docker run -d \
   clidey/whodb:latest
 ```
 </Step>
-<Step title="Access WhoDB">
-Open your browser and navigate to `http://localhost:8080`
+<Step title="Open The UI">
+Visit `http://localhost:8080`.
 </Step>
 </Steps>
 
-<Note>
-WhoDB will be accessible on port 8080. You can change the port by modifying the `-p` flag (e.g., `-p 3000:8080` for port 3000)
-</Note>
-
 ### Docker Compose
 
-For a more robust setup, use Docker Compose:
-
 ```yaml
-version: '3.8'
+version: "3.8"
+
 services:
   whodb:
     image: clidey/whodb:latest
     ports:
       - "8080:8080"
     environment:
-      - WHODB_PORT=8080
+      - PORT=8080
+      - WHODB_LOG_LEVEL=info
     restart: unless-stopped
     volumes:
       - whodb-data:/data
+
 volumes:
   whodb-data:
 ```
 
-Save this as `docker-compose.yml` and run:
-
-```bash
-docker-compose up -d
-```
-
 ## Binary Installation
 
-<Warning>
-Pre-compiled binaries are platform-specific. Make sure to download the correct version for your operating system.
-</Warning>
+Download the appropriate release artifact from GitHub Releases, make it executable if needed, and run it:
 
-### Download Pre-Compiled Binaries
-
-<AccordionGroup>
-<Accordion title="Linux">
 ```bash
-# Download the latest Linux binary
-curl -L https://github.com/clidey/whodb/releases/latest/download/whodb-linux-amd64 -o whodb
-
-# Make it executable
 chmod +x whodb
-
-# Run WhoDB
 ./whodb
 ```
-</Accordion>
-<Accordion title="macOS">
-```bash
-# Download the latest macOS binary
-curl -L https://github.com/clidey/whodb/releases/latest/download/whodb-darwin-amd64 -o whodb
 
-# Make it executable
-chmod +x whodb
+<Note>
+The default port is `8080`. Override it with `PORT=3000 ./whodb` if you want a different listener port.
+</Note>
 
-# Run WhoDB
-./whodb
-```
-</Accordion>
-<Accordion title="Windows">
-1. Download `whodb-windows-amd64.exe` from the [releases page](https://github.com/clidey/whodb/releases/latest)
-2. Double-click the executable to run WhoDB
-3. Access via browser at `http://localhost:8080`
-</Accordion>
-</AccordionGroup>
-
-## Build from Source
-
-For developers who want to customize WhoDB or contribute to the project:
+## Build From Source
 
 ### Prerequisites
 
-<AccordionGroup>
-<Accordion title="Backend Requirements">
-- Go 1.21 or higher
-- Git
-</Accordion>
-<Accordion title="Frontend Requirements">
-- Node.js 18 or higher
-- pnpm package manager
-</Accordion>
-</AccordionGroup>
+- Go `1.26.1` or newer
+- Node.js and `pnpm`
 
 ### Build Steps
 
 <Steps>
-<Step title="Clone the Repository">
+<Step title="Clone The Repository">
 ```bash
 git clone https://github.com/clidey/whodb.git
 cd whodb
 ```
 </Step>
-<Step title="Build the Frontend">
+<Step title="Build The Frontend">
 ```bash
 cd frontend
 pnpm install
-pnpm run build
+pnpm run build:ce
 cd ..
 ```
 </Step>
-<Step title="Build the Backend">
+<Step title="Build The Backend">
 ```bash
 cd core
-go build -o whodb .
+go build ./cmd/whodb
 ```
 </Step>
 <Step title="Run WhoDB">
@@ -173,145 +116,130 @@ go build -o whodb .
 </Step>
 </Steps>
 
-<Info>
-The built binary will embed the frontend assets, creating a single executable file
-</Info>
-
 ### Development Mode
 
-For active development with hot-reload:
+Use two terminals:
 
-<CodeGroup>
 ```bash Backend
 cd core
-go run .
+go run ./cmd/whodb
 ```
+
 ```bash Frontend
 cd frontend
 pnpm start
 ```
-</CodeGroup>
 
-Run both commands in separate terminals. The frontend will be available at `http://localhost:5173` and will proxy API requests to the backend.
+The frontend dev server runs on `http://localhost:3000` and proxies API requests to the backend.
 
-## Configuration Options
+## Desktop App
 
-WhoDB can be configured using environment variables or command-line flags:
+The desktop app lives in `desktop-ce/` and uses the same frontend and backend codepaths. See [Desktop App](/features/desktop-app) for the current behavior and [desktop-common/README.md](/Users/ah/Documents/whodb/desktop-common/README.md) for the build workflow used in this repository.
 
-### Environment Variables
+## Common Environment Variables
 
-#### Server
+### Server
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `PORT` | TCP port WhoDB listens on | `8080` |
-| `WHODB_LOG_LEVEL` | Logging level (case-insensitive): `debug`, `info`, `warn`, `error`, `none` | `info` |
-| `WHODB_LOG_FORMAT` | Log output format: `json` or `text` | `text` |
-| `WHODB_LOG_FILE` | Redirect all non-HTTP logs to a file. `default` uses `/var/log/whodb/whodb.log`, or specify a custom path | unset (stdout) |
-| `WHODB_ACCESS_LOG_FILE` | Redirect HTTP access logs to a file. `default` uses `/var/log/whodb/whodb.access.log`, or specify a custom path | unset (disabled) |
-| `WHODB_TOKENS` | Comma-separated static tokens to restrict API/UI access | unset |
-| `WHODB_ALLOWED_ORIGINS` | Comma-separated CORS origins (defaults to all origins) | unset |
-| `WHODB_DISABLE_CREDENTIAL_FORM` | Set `true` to hide the database credential form on the login page | `false` |
-| `WHODB_MAX_PAGE_SIZE` | Maximum number of rows returned per page | `10000` |
-| `WHODB_DISABLE_MOCK_DATA_GENERATION` | Disable mock data generation. `*` disables for all tables, or a comma-separated list of table names to disable selectively (e.g., `logs, metrics`) | unset |
-| `WHODB_DISABLE_UPDATE_CHECK` | Set `true` to disable the automatic update availability check | `false` |
+| `PORT` | HTTP port WhoDB listens on | `8080` |
+| `WHODB_LOG_LEVEL` | Logging level: `debug`, `info`, `warn`, `error`, `none` | `info` |
+| `WHODB_LOG_FORMAT` | Log format: `text` or `json` | `text` |
+| `WHODB_LOG_FILE` | Redirect non-HTTP logs to a file. `default` means `/var/log/whodb/whodb.log` | unset |
+| `WHODB_ACCESS_LOG_FILE` | Redirect HTTP access logs to a file. `default` means `/var/log/whodb/whodb.access.log` | unset |
+| `WHODB_TOKENS` | Comma-separated static access tokens for gating the app/API | unset |
+| `WHODB_ALLOWED_ORIGINS` | Comma-separated CORS allowlist | unset |
+| `WHODB_DISABLE_CREDENTIAL_FORM` | Hide the manual credential form and require managed profiles/providers | `false` |
+| `WHODB_MAX_PAGE_SIZE` | Maximum rows allowed per page request | `10000` |
+| `WHODB_DISABLE_MOCK_DATA_GENERATION` | Disable mock data globally or for named tables | unset |
+| `WHODB_DISABLE_UPDATE_CHECK` | Disable release availability checks | `false` |
 
 <Note>
-The `default` log paths write to `/var/log/whodb/`, which requires root access. This works out of the box in Docker (which runs as root by default) but not for local development. For local use, specify a custom path instead (e.g., `WHODB_LOG_FILE=./whodb.log`).
+The `default` log paths write to `/var/log/whodb/`. That works naturally in Docker but usually requires a custom path for local development.
 </Note>
 
-#### Database Connection Profiles
-
-| Variable | Description |
-|----------|-------------|
-| `WHODB_POSTGRES` | Pre-configure PostgreSQL connection profiles (JSON array) |
-| `WHODB_MYSQL` | Pre-configure MySQL connection profiles (JSON array) |
-| `WHODB_MARIADB` | Pre-configure MariaDB connection profiles (JSON array) |
-| `WHODB_SQLITE3` | Pre-configure SQLite connection profiles (JSON array) |
-| `WHODB_MONGODB` | Pre-configure MongoDB connection profiles (JSON array) |
-| `WHODB_REDIS` | Pre-configure Redis connection profiles (JSON array) |
-| `WHODB_CLICKHOUSE` | Pre-configure ClickHouse connection profiles (JSON array) |
-| `WHODB_ELASTICSEARCH` | Pre-configure Elasticsearch connection profiles (JSON array) |
-
-See [Database Connection Profiles](#database-connection-profiles) below for JSON format details.
-
-#### AI Providers
+### AI Providers
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `WHODB_OLLAMA_HOST` | Ollama server hostname | `localhost` (`host.docker.internal` in Docker) |
-| `WHODB_OLLAMA_PORT` | Ollama server port | `11434` |
-| `WHODB_OLLAMA_NAME` | Display name for Ollama in the provider dropdown | unset |
+| `WHODB_OLLAMA_HOST` | Ollama host | `localhost` (resolved for Docker/WSL when needed) |
+| `WHODB_OLLAMA_PORT` | Ollama port | `11434` |
+| `WHODB_OLLAMA_NAME` | Display name for Ollama | unset |
 | `WHODB_OPENAI_API_KEY` | OpenAI API key | unset |
-| `WHODB_OPENAI_ENDPOINT` | OpenAI API endpoint | `https://api.openai.com/v1` |
-| `WHODB_OPENAI_NAME` | Display name for OpenAI in the provider dropdown | unset |
+| `WHODB_OPENAI_ENDPOINT` | OpenAI API base URL | `https://api.openai.com/v1` |
+| `WHODB_OPENAI_NAME` | Display name for OpenAI | unset |
 | `WHODB_ANTHROPIC_API_KEY` | Anthropic API key | unset |
-| `WHODB_ANTHROPIC_ENDPOINT` | Anthropic API endpoint | `https://api.anthropic.com/v1` |
-| `WHODB_ANTHROPIC_NAME` | Display name for Anthropic in the provider dropdown | unset |
+| `WHODB_ANTHROPIC_ENDPOINT` | Anthropic API base URL | `https://api.anthropic.com/v1` |
+| `WHODB_ANTHROPIC_NAME` | Display name for Anthropic | unset |
+| `WHODB_LMSTUDIO_BASE_URL` | LM Studio base URL | `http://localhost:1234/v1` |
+| `WHODB_LMSTUDIO_API_KEY` | LM Studio API key | unset |
+| `WHODB_LMSTUDIO_NAME` | Display name for LM Studio | unset |
 
-#### Generic AI Providers
+Generic OpenAI-compatible providers can be added with the `WHODB_AI_GENERIC_<ID>_*` pattern. See [Setting Up AI Providers](/ai/setup-providers).
 
-Connect any OpenAI-compatible provider using `WHODB_AI_GENERIC_<ID>_*` variables, where `<ID>` is a unique identifier (e.g., `LMSTUDIO`, `OPENROUTER`).
-
-| Variable | Required | Description | Default |
-|----------|----------|-------------|---------|
-| `WHODB_AI_GENERIC_<ID>_NAME` | No | Display name in provider dropdown | `<ID>` |
-| `WHODB_AI_GENERIC_<ID>_TYPE` | No | Client type | `openai-generic` |
-| `WHODB_AI_GENERIC_<ID>_BASE_URL` | Yes | API base URL | |
-| `WHODB_AI_GENERIC_<ID>_API_KEY` | No | API key | |
-| `WHODB_AI_GENERIC_<ID>_MODELS` | Yes | Comma-separated list of model names | |
-
-See [Setting Up AI Providers](/ai/setup-providers#custom-providers-via-environment-variables) for examples.
-
-#### Cloud Providers
+### Cloud Providers
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `WHODB_ENABLE_AWS_PROVIDER` | Set `true` to enable AWS provider (RDS, ElastiCache, DocumentDB discovery) | `false` |
-| `WHODB_AWS_PROVIDER` | JSON array of AWS provider configurations | unset |
+| `WHODB_ENABLE_AWS_PROVIDER` | Enable AWS provider support | `false` |
+| `WHODB_AWS_PROVIDER` | JSON array of AWS provider definitions | unset |
+| `WHODB_ENABLE_AZURE_PROVIDER` | Enable Azure provider support | `false` |
+| `WHODB_AZURE_PROVIDER` | JSON array of Azure provider definitions | unset |
+| `WHODB_ENABLE_GCP_PROVIDER` | Enable GCP provider support | `false` |
+| `WHODB_GCP_PROVIDER` | JSON array of GCP provider definitions | unset |
 
-### Database Connection Profiles
+See [Cloud Providers](/features/cloud-providers) for examples and discovery details.
 
-You can preconfigure database connections via environment variables so they appear as login profiles in the WhoDB UI. This is useful for Docker and production deployments where you want connections ready without manual entry.
+## Database Connection Profiles
 
-Two JSON formats are supported:
+WhoDB can preload connection profiles from environment variables so they appear on the login page.
+
+Supported core profile prefixes in the current CE build are:
+
+- `WHODB_POSTGRES`
+- `WHODB_COCKROACHDB`
+- `WHODB_MYSQL`
+- `WHODB_MARIADB`
+- `WHODB_TIDB`
+- `WHODB_SQLITE3`
+- `WHODB_MONGODB`
+- `WHODB_REDIS`
+- `WHODB_ELASTICSEARCH`
+- `WHODB_CLICKHOUSE`
+- `WHODB_DUCKDB`
+- `WHODB_MEMCACHED`
+
+Two formats are supported:
 
 <CodeGroup>
-```bash
-# Array format
-# Multiple connections in a single variable
+```bash Array Format
 export WHODB_POSTGRES='[
-  {"alias":"prod","host":"db.example.com","user":"postgres","password":"secret","database":"mydb","port":"5432"},
-  {"alias":"staging","host":"staging.example.com","user":"postgres","password":"secret","database":"mydb","port":"5432"}
+  {"alias":"prod","host":"db.example.com","user":"postgres","password":"secret","database":"app","port":"5432"},
+  {"alias":"staging","host":"staging.example.com","user":"postgres","password":"secret","database":"app","port":"5432"}
 ]'
 ```
-```bash
-# Numbered format
-# One connection per variable
-export WHODB_POSTGRES_1='{"alias":"prod","host":"db.example.com","user":"postgres","password":"secret","database":"mydb","port":"5432"}'
-export WHODB_POSTGRES_2='{"alias":"staging","host":"staging.example.com","user":"postgres","password":"secret","database":"mydb","port":"5432"}'
+
+```bash Numbered Format
+export WHODB_POSTGRES_1='{"alias":"prod","host":"db.example.com","user":"postgres","password":"secret","database":"app","port":"5432"}'
+export WHODB_POSTGRES_2='{"alias":"staging","host":"staging.example.com","user":"postgres","password":"secret","database":"app","port":"5432"}'
 ```
 </CodeGroup>
 
-Supported variable prefixes: `WHODB_POSTGRES`, `WHODB_MYSQL`, `WHODB_MARIADB`, `WHODB_MONGODB`, `WHODB_REDIS`, `WHODB_CLICKHOUSE`, `WHODB_ELASTICSEARCH`, `WHODB_SQLITE3`
+Each profile object supports these common fields:
 
-Each JSON object supports these fields:
+| Field | Description |
+|-------|-------------|
+| `alias` | Label shown on the login page |
+| `host` | Database hostname or IP |
+| `user` | Username |
+| `password` | Password |
+| `database` | Database name or file path |
+| `port` | Port number as a string |
+| `advanced` | Key/value map of advanced options |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `alias` | string | Display name shown on the login page |
-| `host` | string | Database hostname or IP address |
-| `user` | string | Username |
-| `password` | string | Password |
-| `database` | string | Database name |
-| `port` | string | Port number |
-| `advanced` | object | Key-value map of advanced options (see [Advanced Options Reference](/features/database-connectivity#advanced-options-reference)) |
+### SSL Example
 
-<Info>
-The `advanced` field accepts SSL, timeout, and database-specific settings. See the [Advanced Options Reference](/features/database-connectivity#advanced-options-reference) for all supported keys.
-</Info>
-
-#### Example with SSL
+For profile-based connections, the backend accepts both certificate content keys and server-side file-path keys:
 
 ```bash
 export WHODB_POSTGRES_1='{
@@ -319,35 +247,29 @@ export WHODB_POSTGRES_1='{
   "host": "db.example.com",
   "user": "postgres",
   "password": "secret",
-  "database": "mydb",
-  "port": "5433",
+  "database": "app",
+  "port": "5432",
   "advanced": {
     "SSL Mode": "verify-ca",
-    "SSL CA Path": "/path/to/ca.pem",
-    "SSL Client Cert Path": "/path/to/client-cert.pem",
-    "SSL Client Key Path": "/path/to/client-key.pem"
+    "SSL CA Path": "/etc/certs/ca.pem",
+    "SSL Client Cert Path": "/etc/certs/client.pem",
+    "SSL Client Key Path": "/etc/certs/client-key.pem"
   }
 }'
 ```
 
-#### Docker Compose Example
+<Note>
+Cloud-managed variants such as `DocumentDB` and `ElastiCache` are typically introduced through provider discovery rather than `WHODB_<TYPE>` profile prefixes.
+</Note>
 
-```yaml
-version: '3.8'
-services:
-  whodb:
-    image: clidey/whodb:latest
-    ports:
-      - "8080:8080"
-    environment:
-      - WHODB_POSTGRES_1={"alias":"prod","host":"postgres","user":"postgres","password":"secret","database":"mydb","port":"5432"}
-      - WHODB_REDIS_1={"alias":"cache","host":"redis","password":"secret","database":"0","port":"6379"}
-```
+<Note>
+Those provider-discovery paths are still not production-ready in the current CE build, which is why the provider integrations stay disabled unless you explicitly turn them on.
+</Note>
 
-### Example with Custom Port
+## Custom Port Example
 
 ```bash
-WHODB_PORT=3000 ./whodb
+PORT=3000 ./whodb
 ```
 
 Or with Docker:
@@ -355,82 +277,52 @@ Or with Docker:
 ```bash
 docker run -d \
   -p 3000:3000 \
-  -e WHODB_PORT=3000 \
+  -e PORT=3000 \
   clidey/whodb:latest
 ```
 
-## Verifying Installation
-
-<Check>
-After installation, verify WhoDB is running correctly
-</Check>
+## Verify The Install
 
 <Steps>
-<Step title="Check the Service">
-Open your browser and navigate to `http://localhost:8080` (or your configured port)
+<Step title="Open The UI">
+Visit `http://localhost:8080` or your configured port.
 </Step>
-<Step title="Verify Login Page">
-You should see the WhoDB login page with database connection options
+<Step title="Check The Login Page">
+You should see the login page with the current database catalog.
 </Step>
-<Step title="Test Connection">
-Try connecting to a test database to ensure everything works properly
+<Step title="Test A Connection">
+Connect to a known local or development database to confirm network reachability and credentials.
 </Step>
 </Steps>
-
-![WhoDB Login Page](/images/01-login-page.png)
 
 ## Troubleshooting
 
 <AccordionGroup>
-<Accordion title="Port Already in Use">
-If port 8080 is already in use, either:
-- Stop the service using that port
-- Use a different port with `-p 3000:8080` (Docker) or `WHODB_PORT=3000` (binary)
+<Accordion title="Port already in use">
+Use a different external port mapping in Docker or run the binary with `PORT=3000`.
 </Accordion>
-<Accordion title="Permission Denied (Linux/macOS)">
-Make sure the binary is executable:
+<Accordion title="Permission denied on the binary">
 ```bash
 chmod +x whodb
 ```
 </Accordion>
-<Accordion title="Docker Container Exits Immediately">
-Check the logs to see what went wrong:
-```bash
-docker logs whodb
-```
-</Accordion>
-<Accordion title="Cannot Connect to Database">
-Ensure:
-- The database is accessible from WhoDB's network
-- Firewall rules allow the connection
-- Credentials are correct
-- For Docker: use host.docker.internal instead of localhost for databases on the host
+<Accordion title="Cannot reach the database">
+Verify:
+
+- the database is reachable from the WhoDB process
+- firewall rules allow the connection
+- credentials are correct
+- Docker deployments use the correct host naming (`host.docker.internal` for host services when appropriate)
 </Accordion>
 </AccordionGroup>
 
-## Network Considerations
-
-<Warning>
-By default, WhoDB binds to `0.0.0.0`, making it accessible from any network interface. For production deployments, consider:
-</Warning>
-
-- Running behind a reverse proxy (Nginx, Caddy)
-- Enabling HTTPS/TLS
-- Implementing authentication and authorization
-- Restricting network access with firewall rules
-- Using a VPN or SSH tunnel for remote access
-
-## Next Steps
+## Related Pages
 
 <CardGroup cols={2}>
 <Card title="First Login" icon="right-to-bracket" href="/first-login">
-Connect to your first database
+Walk through the connection flow after WhoDB is running.
 </Card>
-<Card title="Quick Start Guide" icon="rocket" href="/quick-start">
-Learn the basics in minutes
+<Card title="Cloud Providers" icon="cloud" href="/features/cloud-providers">
+Enable managed discovery for AWS, Azure, and GCP.
 </Card>
 </CardGroup>
-
-<Tip>
-Now that WhoDB is installed, proceed to the **First Login** guide to connect to your database and start exploring your data
-</Tip>

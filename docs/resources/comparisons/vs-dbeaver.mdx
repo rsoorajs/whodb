@@ -60,24 +60,15 @@ This is where DBeaver truly shines—it supports more databases than any other t
 
 ### WhoDB Database Support
 
-**Community Edition (6 databases):**
-- PostgreSQL 10+
-- MySQL 5.7+ / MariaDB
-- SQLite 3
-- MongoDB 4.0+
-- Redis 5.0+
-- ElasticSearch
+The current CE catalog covers:
 
-**Enterprise Edition adds:**
-- Oracle
-- SQL Server
-- DynamoDB
-- Cassandra
-- Snowflake
-- Athena
-- And more
-
-**Total:** 12+ databases (Community) to 20+ (Enterprise)
+- PostgreSQL-compatible databases such as PostgreSQL, CockroachDB, and YugabyteDB
+- MySQL-compatible databases such as MySQL, MariaDB, and TiDB
+- SQLite3 and DuckDB
+- MongoDB-compatible systems such as MongoDB, FerretDB, and DocumentDB
+- Redis-compatible systems such as Redis, Valkey, Dragonfly, and ElastiCache
+- ElasticSearch and OpenSearch
+- ClickHouse, Memcached, and QuestDB
 
 ### DBeaver Database Support
 
@@ -319,7 +310,7 @@ If you need support for 20+ different database types, DBeaver is necessary. WhoD
 - Browser-based, works anywhere
 - Laptop, desktop, even tablet browser
 - Consistent experience
-- SSH tunneling support
+- Direct connectivity plus external or CLI tunnel workflows
 - VPN friendly
 
 **DBeaver:**
@@ -327,7 +318,7 @@ If you need support for 20+ different database types, DBeaver is necessary. WhoD
 - Windows, Mac, Linux versions differ
 - Can't use on iPad, Android
 - Requires installation on each device
-- SSH tunneling available
+- Built-in SSH tunneling in the main client
 
 **Verdict:** WhoDB wins decisively for remote/mobile
 </Accordion>
@@ -356,8 +347,8 @@ If you need support for 20+ different database types, DBeaver is necessary. WhoD
 **Scenario:** Working with niche databases (Neo4j, Cassandra, Trino, etc.)
 
 **WhoDB:**
-- Limited support (maybe 1-2 of these)
-- Would need different tools
+- Strong coverage across the databases WhoDB targets, but not a universal JDBC client
+- If you need Neo4j, Cassandra, Trino, or long-tail engines, you will likely need another tool
 
 **DBeaver:**
 - Excellent support for niche databases
@@ -602,28 +593,28 @@ Most teams choose hybrid approach.
 
 <AccordionGroup>
 <Accordion title="Connection Security">
-Both support SSL/TLS, SSH tunneling, and certificate management.
-- WhoDB: Cleaner certificate interface
-- DBeaver: More configuration options  
-**Winner:** Tie (both adequate)
+Both support SSL/TLS and certificate-based connections.
+- WhoDB: Cleaner web certificate flow, with external or CLI tunnel workflows when a bastion is required
+- DBeaver: More built-in connection and tunnel options
+**Winner:** DBeaver for tunnel flexibility; WhoDB for simpler web deployment
 </Accordion>
 
 <Accordion title="Authentication">
-- WhoDB: Database auth, HTTP basic auth, plus OAuth/LDAP in Enterprise Edition
+- WhoDB: Database auth plus whatever authentication you place in front of the web deployment
 - DBeaver: Database auth, extensive options, more built-in integrations  
 **Winner:** DBeaver (more options), but most users only need basic auth
 </Accordion>
 
 <Accordion title="Credentials Storage">
-- WhoDB: Browser-based (default), optional server storage
+- WhoDB: Browser-local storage for recent web profiles, plus environment-defined profiles for managed deployments
 - DBeaver: Desktop-based local storage  
 **Winner:** Tie (different approaches, both secure when configured properly)
 </Accordion>
 
 <Accordion title="Audit Logging">
-- WhoDB: Built-in query/change logging, better in Enterprise Edition
-- DBeaver: Limited logging  
-**Winner:** WhoDB (better audit support)
+- WhoDB: Best paired with reverse-proxy logs, database-native audit logs, and CLI audit tooling
+- DBeaver: Mostly local client history plus whatever the database logs itself
+**Winner:** Depends on deployment; rigorous auditing usually comes from the database and surrounding infrastructure
 </Accordion>
 </AccordionGroup>
 

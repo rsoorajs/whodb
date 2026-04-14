@@ -10,7 +10,7 @@ Choosing the right database management tool can significantly impact your produc
 ## Quick Comparison Table
 
 <Note>
-This comparison reflects the Community Edition of WhoDB. Enterprise Edition includes additional features not shown here.
+This comparison reflects the current CE build in this repository.
 </Note>
 
 | Feature | WhoDB | phpMyAdmin | pgAdmin | DBeaver | TablePlus |
@@ -19,7 +19,7 @@ This comparison reflects the Community Edition of WhoDB. Enterprise Edition incl
 | **Memory Usage** | ~50MB | ~100MB | ~300MB | ~500MB+ | ~150MB |
 | **Startup Time** | \<1 second | 2-3 seconds | 5-8 seconds | 10-15 seconds | 2-3 seconds |
 | **Web-Based** | Yes | Yes | Desktop/Web | Desktop | Desktop |
-| **Multi-Database** | Yes (6+) | MySQL only | PostgreSQL only | Yes (50+) | Yes (15+) |
+| **Multi-Database** | Yes (broad CE catalog) | MySQL only | PostgreSQL only | Yes (50+) | Yes (15+) |
 | **Schema Visualization** | Interactive Graph | No | Basic ERD | Basic ERD | Basic ERD |
 | **Modern UI** | Yes | No | No | Mixed | Yes |
 | **Query History** | Built-in | Basic | Basic | Advanced | Advanced |
@@ -164,21 +164,7 @@ MySQL Legacy → phpMyAdmin
 
 <AccordionGroup>
 <Accordion title="WhoDB">
-**Community Edition:**
-- PostgreSQL 10+
-- MySQL 5.7+ / MariaDB
-- SQLite 3
-- MongoDB 4.0+
-- Redis 5.0+
-- ElasticSearch
-
-**Enterprise Edition adds:**
-- Oracle
-- SQL Server
-- DynamoDB
-- Cassandra
-- Snowflake
-- Athena
+The current CE catalog includes PostgreSQL, MySQL, MariaDB, CockroachDB, SQLite3, MongoDB, Redis, ElasticSearch, ClickHouse, DuckDB, Memcached, TiDB, Valkey, Dragonfly, OpenSearch, YugabyteDB, QuestDB, and FerretDB, plus compatible managed variants surfaced through provider discovery.
 </Accordion>
 
 <Accordion title="phpMyAdmin">

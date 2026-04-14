@@ -30,11 +30,11 @@ Grant read-only, editing, or admin access per user
 <Card title="Connection Profiles" icon="link">
 Save multiple database connections for easy team access
 </Card>
-<Card title="Audit-Ready" icon="eye">
-Query history and actions are logged for compliance
+<Card title="Operational Visibility" icon="eye">
+Combine reverse-proxy logs, database-native auditing, and CLI checks in team workflows
 </Card>
 <Card title="Secure" icon="shield">
-SSL encryption, SSH tunnels, and credential isolation
+SSL/TLS encryption, reverse proxies, and network isolation
 </Card>
 </CardGroup>
 
@@ -59,17 +59,10 @@ services:
     image: clidey/whodb:latest
     container_name: whodb
     ports:
-      - "3000:3000"
+      - "3000:8080"
     environment:
-      # Optional: Configure default database
-      DB_HOST: ${DB_HOST:-localhost}
-      DB_PORT: ${DB_PORT:-5432}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
-    volumes:
-      # Optional: Persist query history
-      - whodb_data:/app/data
+      PORT: 8080
+      WHODB_LOG_LEVEL: info
     restart: unless-stopped
     networks:
       - whodb_network
@@ -90,7 +83,6 @@ services:
     #   - "5432:5432"
 
 volumes:
-  whodb_data:
   postgres_data:
 
 networks:
@@ -120,7 +112,7 @@ Navigate to `http://your_server:3000` in your browser. WhoDB is now accessible t
 Use `http://localhost:3000` for local testing, or replace with your server's IP/hostname for team access.
 </Tip>
 
-### Option 2: Kubernetes Deployment (Enterprise)
+### Option 2: Kubernetes Deployment
 
 For large teams with Kubernetes infrastructure:
 
@@ -144,7 +136,7 @@ spec:
       - name: whodb
         image: clidey/whodb:latest
         ports:
-        - containerPort: 3000
+        - containerPort: 8080
         resources:
           requests:
             memory: "512Mi"
@@ -155,7 +147,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 3000
+            port: 8080
           initialDelaySeconds: 30
           periodSeconds: 10
 ---
@@ -169,7 +161,7 @@ spec:
   ports:
   - protocol: TCP
     port: 80
-    targetPort: 3000
+    targetPort: 8080
   type: LoadBalancer
 ```
 
@@ -184,13 +176,13 @@ For teams without Docker or Kubernetes:
 
 **Download and Install:**
 ```bash
-# Download the latest WhoDB binary
-wget https://github.com/clidey/whodb/releases/latest/download/whodb-server
-
-chmod +x whodb-server
+# Build the server from source
+git clone https://github.com/clidey/whodb.git
+cd whodb/core
+go build ./cmd/whodb
 
 # Run as background service
-./whodb-server &
+./whodb &
 
 # Or use systemd
 sudo systemctl start whodb
@@ -620,8 +612,8 @@ docker ps | grep whodb
 1. Check database server load: `top`, `htop`
 2. Analyze slow queries: `EXPLAIN ANALYZE`
 3. Verify indexes exist on frequently queried columns
-4. Add connection pooling
-5. Consider database optimization or scaling
+4. Reduce result sizes or lower the default page size in [Settings](/features/settings)
+5. Consider database optimization, database-side pooling, or scaling
 </Accordion>
 
 <Accordion title="Team Member Can't See All Tables">
@@ -661,11 +653,11 @@ mysql -u root -p myapp_prod < backup_20240115.sql
 
 <Accordion title="Security Concern: Unauthorized Query Detected">
 **Immediate Actions:**
-1. Review query history: which user ran it, what did it access
-2. Check recent connections: who accessed production
+1. Review reverse-proxy or access logs to identify who reached the app
+2. Check database-native audit or statement logs for the actual query
 3. Disable suspicious user account
 4. Rotate production database credentials
-5. Audit all recent queries
+5. Review saved browser profiles on shared machines if applicable
 </Accordion>
 </AccordionGroup>
 
@@ -727,13 +719,13 @@ Quarterly review of who has access to what
 - Multiple databases (dev, staging, prod)
 - Role-based access control
 - Regular backups
-- Query auditing
+- Database-native audit logging
 
 ### Team of 50+
 
 - High-availability setup (multiple instances)
 - Kubernetes deployment
-- Database connection pooling
+- Database-side pooling or proxies where needed
 - Advanced monitoring and alerting
 - Compliance and audit logging
 - Dedicated database admin support

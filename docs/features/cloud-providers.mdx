@@ -1,0 +1,157 @@
+---
+title: "Cloud Providers"
+description: "Enable AWS, Azure, and GCP discovery in WhoDB"
+---
+
+# Cloud Providers
+
+WhoDB can discover managed database resources from AWS, Azure, and GCP, then prefill the standard login form from those discovered endpoints.
+
+<Warning>
+Cloud provider discovery is still not production-ready in the current CE build. That is why these integrations are disabled by default. If you want to experiment with them, you can enable the provider flags and try them in a non-production environment.
+</Warning>
+
+## Enable Provider Support
+
+Cloud discovery is opt-in, disabled by default, and controlled with environment flags:
+
+| Variable | Purpose |
+|----------|---------|
+| `WHODB_ENABLE_AWS_PROVIDER=true` | Enable AWS provider management and discovery |
+| `WHODB_ENABLE_AZURE_PROVIDER=true` | Enable Azure provider management and discovery |
+| `WHODB_ENABLE_GCP_PROVIDER=true` | Enable GCP provider management and discovery |
+
+Once enabled:
+
+- the login page can show cloud connection pickers
+- the settings page adds provider management sections
+- provider-backed credential helpers become available for supported platforms
+
+<Note>
+Treat provider discovery as an experimental workflow for now. It is available for testing, but it should not be treated as a production-ready path in the current CE build.
+</Note>
+
+## AWS
+
+AWS provider configuration is supplied through `WHODB_AWS_PROVIDER` as a JSON array.
+
+```bash
+export WHODB_ENABLE_AWS_PROVIDER=true
+export WHODB_AWS_PROVIDER='[
+  {
+    "name": "Production AWS",
+    "region": "us-west-2",
+    "profileName": "production",
+    "discoverRDS": true,
+    "discoverElastiCache": true,
+    "discoverDocumentDB": true
+  }
+]'
+```
+
+The AWS provider code discovers:
+
+- RDS
+- ElastiCache
+- DocumentDB
+- OpenSearch
+
+It can also generate short-lived RDS IAM authentication tokens for supported flows.
+
+## Azure
+
+Azure provider configuration is supplied through `WHODB_AZURE_PROVIDER`.
+
+```bash
+export WHODB_ENABLE_AZURE_PROVIDER=true
+export WHODB_AZURE_PROVIDER='[
+  {
+    "name": "Production Azure",
+    "subscriptionId": "12345678-1234-1234-1234-123456789012",
+    "authMethod": "default",
+    "discoverPostgreSQL": true,
+    "discoverMySQL": true,
+    "discoverRedis": true,
+    "discoverCosmosDB": true
+  }
+]'
+```
+
+The Azure provider supports:
+
+- default credential chain auth
+- service principal auth
+
+It discovers Azure Database for PostgreSQL, Azure Database for MySQL, Azure Cache for Redis, and Azure Cosmos DB for MongoDB-compatible flows. It can also generate Azure AD database tokens for supported connections.
+
+## GCP
+
+GCP provider configuration is supplied through `WHODB_GCP_PROVIDER`.
+
+```bash
+export WHODB_ENABLE_GCP_PROVIDER=true
+export WHODB_GCP_PROVIDER='[
+  {
+    "name": "Production GCP",
+    "projectId": "my-project-123",
+    "region": "us-central1",
+    "serviceAccountKeyPath": "/path/to/key.json",
+    "discoverCloudSQL": true,
+    "discoverAlloyDB": true,
+    "discoverMemorystore": true
+  }
+]'
+```
+
+The GCP provider supports:
+
+- Application Default Credentials
+- service account key files
+
+It discovers Cloud SQL, AlloyDB, and Memorystore. It can also generate Cloud SQL IAM auth tokens for supported login flows.
+
+## How Discovery Appears In The UI
+
+### Login Page
+
+When providers are enabled, the login page can show:
+
+- AWS connection picker
+- Azure connection picker
+- GCP connection picker
+
+Selecting a discovered connection prefills the same standard login form used for manual connections.
+
+### Settings Page
+
+The settings page becomes the management surface for providers:
+
+- add a provider
+- edit a provider
+- refresh discovery
+- remove a provider
+
+Environment-defined providers are shown, but the UI does not allow deleting them.
+
+## Reachability Still Matters
+
+Discovery does not tunnel or proxy traffic for you. The WhoDB process still needs network access to the discovered endpoint.
+
+- web deployments need direct network reachability
+- the desktop app needs local reachability
+- the CLI can add built-in SSH tunneling if needed
+
+<Warning>
+Even if discovery works for your account, keep it in test or evaluation environments for now. The provider integrations are intentionally off by default because they are not yet positioned as production-ready.
+</Warning>
+
+## Related Pages
+
+<CardGroup cols={2}>
+<Card title="Settings" icon="cog" href="/features/settings">
+Manage providers from the settings page.
+</Card>
+<Card title="First Login" icon="right-to-bracket" href="/first-login">
+See where the cloud pickers appear in the login flow.
+</Card>
+</CardGroup>
