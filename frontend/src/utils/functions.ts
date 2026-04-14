@@ -16,6 +16,7 @@
 
 import sampleSize from "lodash/sampleSize";
 import {DatabaseType} from '@graphql';
+import { getResolvedDatabasePluginTypeSync } from '../config/database-types';
 
 /**
  * Formats a number using locale-aware grouping separators (e.g. 1,000,000 in en-US, 10,00,000 in hi-IN).
@@ -48,15 +49,11 @@ export function isNoSQL(databaseType: string) {
         return true;
     }
 
-    switch (databaseType) {
+    switch (getResolvedDatabasePluginTypeSync(databaseType)) {
         case DatabaseType.MongoDb:
         case DatabaseType.Redis:
         case DatabaseType.ElasticSearch:
         case DatabaseType.Memcached:
-        case DatabaseType.Valkey:
-        case DatabaseType.Dragonfly:
-        case DatabaseType.OpenSearch:
-        case DatabaseType.FerretDb:
             return true;
     }
     return false;
@@ -92,16 +89,12 @@ export function getDatabaseStorageUnitLabel(databaseType: string | undefined, si
         }
     }
 
-    switch(databaseType) {
+    switch(getResolvedDatabasePluginTypeSync(databaseType)) {
         case DatabaseType.ElasticSearch:
-        case DatabaseType.OpenSearch:
             return singular ? "Index" : "Indices";
         case DatabaseType.MongoDb:
-        case DatabaseType.FerretDb:
             return singular ? "Collection" : "Collections";
         case DatabaseType.Redis:
-        case DatabaseType.Valkey:
-        case DatabaseType.Dragonfly:
             return singular ? "Key" : "Keys";
         case DatabaseType.Memcached:
             return singular ? "Item" : "Items";
@@ -112,8 +105,6 @@ export function getDatabaseStorageUnitLabel(databaseType: string | undefined, si
         case DatabaseType.Sqlite3:
         case DatabaseType.DuckDb:
         case DatabaseType.ClickHouse:
-        case DatabaseType.YugabyteDb:
-        case DatabaseType.QuestDb:
             return singular ? "Table" : "Tables";
     }
     return singular ? "Storage Unit" : "Storage Units";

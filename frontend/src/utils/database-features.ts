@@ -15,7 +15,7 @@
  */
 
 import {DatabaseType} from '@graphql';
-import {getDatabaseTypeDropdownItemsSync} from '../config/database-types';
+import {getDatabaseTypeDropdownItemSync} from '../config/database-types';
 import {reduxStore} from '../store';
 
 /**
@@ -40,20 +40,11 @@ export function databaseSupportsScratchpad(databaseType: DatabaseType | string |
         return capabilities.supportsScratchpad;
     }
 
-    // Fallback: check database configuration
-    const dbTypeItems = getDatabaseTypeDropdownItemsSync();
-    const dbConfig = dbTypeItems.find(item => item.id === databaseType);
+    const dbConfig = getDatabaseTypeDropdownItemSync(databaseType);
     if (dbConfig?.supportsScratchpad != null) {
         return dbConfig.supportsScratchpad;
     }
-
-    const databasesThatDontSupportScratchpad = [
-        DatabaseType.MongoDb,
-        DatabaseType.Redis,
-        DatabaseType.ElasticSearch,
-        DatabaseType.Memcached,
-    ];
-    return !databasesThatDontSupportScratchpad.includes(databaseType as DatabaseType);
+    return false;
 }
 
 /**
@@ -70,25 +61,11 @@ export function databaseSupportsSchema(databaseType: DatabaseType | string | und
         return capabilities.supportsSchema;
     }
 
-    // Fallback: check database configuration
-    const dbTypeItems = getDatabaseTypeDropdownItemsSync();
-    const dbConfig = dbTypeItems.find(item => item.id === databaseType);
+    const dbConfig = getDatabaseTypeDropdownItemSync(databaseType);
     if (dbConfig?.supportsSchema != null) {
         return dbConfig.supportsSchema;
     }
-
-    const databasesThatDontSupportSchema = [
-        DatabaseType.Sqlite3,
-        DatabaseType.Redis,
-        DatabaseType.ElasticSearch,
-        DatabaseType.MongoDb,
-        DatabaseType.ClickHouse,
-        DatabaseType.MySql,
-        DatabaseType.MariaDb,
-        DatabaseType.Memcached,
-        DatabaseType.TiDb,
-    ];
-    return !databasesThatDontSupportSchema.includes(databaseType as DatabaseType);
+    return false;
 }
 
 /**
@@ -105,23 +82,11 @@ export function databaseSupportsDatabaseSwitching(databaseType: DatabaseType | s
         return capabilities.supportsDatabaseSwitch;
     }
 
-    // Fallback: check database configuration
-    const dbTypeItems = getDatabaseTypeDropdownItemsSync();
-    const dbConfig = dbTypeItems.find(item => item.id === databaseType);
+    const dbConfig = getDatabaseTypeDropdownItemSync(databaseType);
     if (dbConfig?.supportsDatabaseSwitching !== undefined) {
         return dbConfig.supportsDatabaseSwitching;
     }
-
-    const databasesThatSupportDatabaseSwitching = [
-        DatabaseType.MongoDb,
-        DatabaseType.ClickHouse,
-        DatabaseType.Postgres,
-        DatabaseType.MySql,
-        DatabaseType.MariaDb,
-        DatabaseType.TiDb,
-        DatabaseType.Redis,
-    ];
-    return databasesThatSupportDatabaseSwitching.includes(databaseType as DatabaseType);
+    return false;
 }
 
 /**
@@ -132,13 +97,12 @@ export function databaseUsesSchemaForGraph(databaseType: DatabaseType | string |
         return true;
     }
 
-    const dbTypeItems = getDatabaseTypeDropdownItemsSync();
-    const dbConfig = dbTypeItems.find(item => item.id === databaseType);
+    const dbConfig = getDatabaseTypeDropdownItemSync(databaseType);
     if (dbConfig?.usesSchemaForGraph !== undefined) {
         return dbConfig.usesSchemaForGraph;
     }
 
-    return !databaseSupportsDatabaseSwitching(databaseType);
+    return true;
 }
 
 /**
@@ -149,18 +113,12 @@ export function databaseTypesThatUseDatabaseInsteadOfSchema(databaseType: Databa
         return false;
     }
 
-    const databasesThatUseDatabaseInsteadOfSchema: string[] = [
-        DatabaseType.MongoDb,
-        DatabaseType.ClickHouse,
-        DatabaseType.MySql,
-        DatabaseType.MariaDb,
-        DatabaseType.TiDb,
-        DatabaseType.Redis,
-        DatabaseType.FerretDb,
-        DatabaseType.Valkey,
-        DatabaseType.Dragonfly,
-    ];
-    return databasesThatUseDatabaseInsteadOfSchema.includes(databaseType);
+    const dbConfig = getDatabaseTypeDropdownItemSync(databaseType);
+    if (dbConfig?.usesDatabaseInsteadOfSchema !== undefined) {
+        return dbConfig.usesDatabaseInsteadOfSchema;
+    }
+
+    return false;
 }
 
 /**
@@ -171,10 +129,10 @@ export function databaseSupportsMockData(databaseType: DatabaseType | string | u
         return false;
     }
 
-    const databasesThatDontSupportMockData = [
-        DatabaseType.Redis,
-        DatabaseType.ElasticSearch,
-        DatabaseType.Memcached,
-    ];
-    return !databasesThatDontSupportMockData.includes(databaseType as DatabaseType);
+    const dbConfig = getDatabaseTypeDropdownItemSync(databaseType);
+    if (dbConfig?.supportsMockData !== undefined) {
+        return dbConfig.supportsMockData;
+    }
+
+    return false;
 }

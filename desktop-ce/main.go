@@ -19,12 +19,32 @@ package main
 import (
 	"embed"
 
+	"github.com/clidey/whodb/core/graph"
+	"github.com/clidey/whodb/core/src"
 	"github.com/clidey/whodb/desktop-common"
+
+	// CE plugins — each registers itself via init().
+	_ "github.com/clidey/whodb/core/src/plugins/clickhouse"
+	_ "github.com/clidey/whodb/core/src/plugins/elasticsearch"
+	_ "github.com/clidey/whodb/core/src/plugins/memcached"
+	_ "github.com/clidey/whodb/core/src/plugins/mongodb"
+	_ "github.com/clidey/whodb/core/src/plugins/mysql"
+	_ "github.com/clidey/whodb/core/src/plugins/postgres"
+	_ "github.com/clidey/whodb/core/src/plugins/redis"
+	_ "github.com/clidey/whodb/core/src/plugins/sqlite3"
 )
 
 //go:embed all:frontend/dist/*
 var assets embed.FS
 
 func main() {
-	common.RunApp("ce", "WhoDB", assets)
+	common.RunApp(common.RunConfig{
+		Edition: "ce",
+		Title:   "WhoDB",
+		Assets:  assets,
+		Schema:  graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}),
+		InitializeEngine: func() {
+			src.InitializeEngine()
+		},
+	})
 }

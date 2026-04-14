@@ -11,6 +11,8 @@ enum DatabaseType {
   DuckDB,
   Memcached,
   TiDB,
+  ElastiCache,
+  DocumentDB,
   Valkey,
   Dragonfly,
   OpenSearch,
@@ -315,6 +317,44 @@ type DatabaseMetadata {
   capabilities: Capabilities!
 }
 
+type ConnectableDatabaseFields {
+  hostname: Boolean!
+  username: Boolean!
+  password: Boolean!
+  database: Boolean!
+  searchPath: Boolean!
+}
+
+type ConnectableDatabaseRequiredFields {
+  hostname: Boolean!
+  username: Boolean!
+  password: Boolean!
+  database: Boolean!
+}
+
+type ConnectableDatabaseSSLMode {
+  value: String!
+  aliases: [String!]!
+}
+
+type ConnectableDatabase {
+  id: String!
+  label: String!
+  pluginType: String!
+  extra: [Record!]!
+  fields: ConnectableDatabaseFields!
+  requiredFields: ConnectableDatabaseRequiredFields!
+  supportsModifiers: Boolean!
+  supportsScratchpad: Boolean!
+  supportsSchema: Boolean!
+  supportsDatabaseSwitching: Boolean!
+  usesSchemaForGraph: Boolean!
+  usesDatabaseInsteadOfSchema: Boolean!
+  supportsMockData: Boolean!
+  isAwsManaged: Boolean!
+  sslModes: [ConnectableDatabaseSSLMode!]!
+}
+
 type DatabaseQuerySuggestion {
   description: String!
   category: String!
@@ -565,6 +605,7 @@ type Query {
   SettingsConfig: SettingsConfig!
   MockDataMaxRowCount: Int!
   AnalyzeMockDataDependencies(schema: String!, storageUnit: String!, rowCount: Int!, fkDensityRatio: Int): MockDataDependencyAnalysis!
+  ConnectableDatabases: [ConnectableDatabase!]!
   DatabaseMetadata: DatabaseMetadata
   SSLStatus: SSLStatus
   DatabaseQuerySuggestions(schema: String!): [DatabaseQuerySuggestion!]!

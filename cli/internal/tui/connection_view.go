@@ -33,6 +33,7 @@ import (
 	dbmgr "github.com/clidey/whodb/cli/internal/database"
 	"github.com/clidey/whodb/cli/internal/docker"
 	"github.com/clidey/whodb/cli/pkg/styles"
+	"github.com/clidey/whodb/core/src/dbcatalog"
 )
 
 type connectionItem struct {
@@ -240,7 +241,7 @@ func NewConnectionView(parent *MainModel) *ConnectionView {
 	prompt.EchoMode = textinput.EchoPassword
 	prompt.EchoCharacter = '•'
 
-	dbTypes := []string{"Postgres", "MySQL", "Sqlite3", "DuckDB", "MongoDB", "Redis", "MariaDB", "ClickHouse", "ElasticSearch", "TiDB"}
+	dbTypes := dbcatalog.IDs()
 
 	return &ConnectionView{
 		parent:           parent,
@@ -542,8 +543,9 @@ func (v *ConnectionView) updateForm(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 				break
 			}
 			if v.focusIndex == focusConnect {
-				// If password field is visible and empty, prompt securely before connecting
-				if v.isFieldVisible(fieldPassword) && v.inputs[fieldPassword].Value() == "" {
+				// If this database requires a password and the field is empty,
+				// prompt securely before connecting.
+				if passwordRequired(v.dbTypes[v.dbTypeIndex]) && v.isFieldVisible(fieldPassword) && v.inputs[fieldPassword].Value() == "" {
 					v.awaitingPassword = true
 					v.passwordPrompt.SetValue("")
 					v.passwordPrompt.Focus()
@@ -1029,61 +1031,57 @@ func (v *ConnectionView) prefillFromConnection(conn config.Connection) {
 
 func (v *ConnectionView) updatePortPlaceholder() {
 	defaultPort := v.getDefaultPort(v.dbTypes[v.dbTypeIndex])
+	if defaultPort <= 0 {
+		v.inputs[fieldPort].Placeholder = ""
+		return
+	}
 	v.inputs[fieldPort].Placeholder = strconv.Itoa(defaultPort)
 }
 
 func (v *ConnectionView) getDefaultPort(dbType string) int {
-	switch dbType {
-	case "Postgres":
-		return 5432
-	case "MySQL", "MariaDB":
-		return 3306
-	case "TiDB":
-		return 4000
-	case "MongoDB":
-		return 27017
-	case "Redis":
-		return 6379
-	case "ClickHouse":
-		return 9000
-	case "ElasticSearch":
-		return 9200
-	case "Sqlite3", "DuckDB":
-		return 0
-	default:
+	port, ok := dbcatalog.DefaultPort(dbType)
+	if !ok {
 		return 5432
 	}
+	return port
 }
 
 // isNetworkDatabase returns true for database types that connect over a network,
 // i.e. those where SSH tunneling is applicable.
 func isNetworkDatabase(dbType string) bool {
-	switch dbType {
-	case "Sqlite3", "DuckDB":
-		return false
-	default:
-		return true
-	}
+	return dbcatalog.IsNetworkDatabase(dbType)
 }
 
 // getVisibleFields returns the input field indices visible for the given database type.
 // SSH fields are not included here; they are managed separately via the SSH toggle.
 func getVisibleFields(dbType string) []int {
-	switch dbType {
-	case "Sqlite3", "DuckDB":
-		return []int{fieldName, fieldDatabase}
-	case "MongoDB":
-		return []int{fieldName, fieldHost, fieldPort, fieldUsername, fieldPassword, fieldDatabase}
-	case "Redis":
-		return []int{fieldName, fieldHost, fieldPort, fieldPassword, fieldDatabase}
-	case "ElasticSearch":
-		return []int{fieldName, fieldHost, fieldPort, fieldUsername, fieldPassword}
-	case "Postgres":
-		return []int{fieldName, fieldHost, fieldPort, fieldUsername, fieldPassword, fieldDatabase, fieldSchema}
-	default:
-		// MySQL, MariaDB, TiDB, ClickHouse
+	entry, ok := dbcatalog.Find(dbType)
+	if !ok {
 		return []int{fieldName, fieldHost, fieldPort, fieldUsername, fieldPassword, fieldDatabase}
 	}
+
+	fields := []int{fieldName}
+	if entry.Fields.Hostname {
+		fields = append(fields, fieldHost, fieldPort)
+	}
+	if entry.Fields.Username {
+		fields = append(fields, fieldUsername)
+	}
+	if entry.Fields.Password {
+		fields = append(fields, fieldPassword)
+	}
+	if entry.Fields.Database {
+		fields = append(fields, fieldDatabase)
+	}
+	if entry.Fields.SearchPath {
+		fields = append(fields, fieldSchema)
+	}
+	return fields
+}
+
+func passwordRequired(dbType string) bool {
+	entry, ok := dbcatalog.Find(dbType)
+	return ok && entry.RequiredFields.Password
 }
 
 func (v *ConnectionView) isFieldVisible(index int) bool {
@@ -1100,7 +1098,7 @@ func (v *ConnectionView) onDbTypeChanged() {
 	v.visibleFields = getVisibleFields(v.dbTypes[v.dbTypeIndex])
 
 	// Update database placeholder for file-based databases
-	if v.dbTypes[v.dbTypeIndex] == "Sqlite3" || v.dbTypes[v.dbTypeIndex] == "DuckDB" {
+	if !isNetworkDatabase(v.dbTypes[v.dbTypeIndex]) {
 		v.inputs[fieldDatabase].Placeholder = "/path/to/database.db"
 	} else {
 		v.inputs[fieldDatabase].Placeholder = "mydb"
@@ -1127,7 +1125,11 @@ func (v *ConnectionView) connect() tea.Cmd {
 		host = v.inputs[fieldHost].Value()
 	}
 	if host == "" {
-		host = "localhost"
+		if database := v.inputs[fieldDatabase].Value(); !isNetworkDatabase(dbType) && database != "" {
+			host = database
+		} else {
+			host = "localhost"
+		}
 	}
 
 	var port int

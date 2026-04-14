@@ -166,10 +166,7 @@ var connectionsAddCmd = &cobra.Command{
 	Short:         "Add a new connection",
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	Long: `Add a new database connection.
-
-Supported database types:
-  Postgres, MySQL, MariaDB, TiDB, SQLite, MongoDB, Redis, ClickHouse, ElasticSearch`,
+	Long:          `Add a new database connection.`,
 	Example: `  # Add a PostgreSQL connection
   whodb-cli connections add --name mydb --type Postgres --host localhost --port 5432 --user admin --password secret --database myapp
 
@@ -184,10 +181,15 @@ Supported database types:
 		if connAddType == "" {
 			return fmt.Errorf("--type is required")
 		}
-		if connAddHost == "" && connAddType != "SQLite" {
+
+		resolvedType, ok := lookupDatabaseType(connAddType)
+		if !ok {
+			return fmt.Errorf("unsupported database type %q", connAddType)
+		}
+		if resolvedType.RequiredFields.Hostname && connAddHost == "" {
 			return fmt.Errorf("--host is required")
 		}
-		if connAddDatabase == "" {
+		if resolvedType.RequiredFields.Database && connAddDatabase == "" {
 			return fmt.Errorf("--database is required")
 		}
 
@@ -198,9 +200,18 @@ Supported database types:
 			return fmt.Errorf("cannot load config: %w", err)
 		}
 
+		if connAddHost == "" && isFileBasedDatabaseType(string(resolvedType.ID)) {
+			connAddHost = connAddDatabase
+		}
+		if connAddPort == 0 {
+			connAddPort = getDefaultPort(string(resolvedType.ID))
+		} else if connAddPort < 1024 || connAddPort > 65535 {
+			return fmt.Errorf("invalid port number %d: must be between 1024 and 65535 (ports below 1024 are system reserved)", connAddPort)
+		}
+
 		conn := config.Connection{
 			Name:     connAddName,
-			Type:     connAddType,
+			Type:     string(resolvedType.ID),
 			Host:     connAddHost,
 			Port:     connAddPort,
 			Username: connAddUser,
@@ -214,7 +225,7 @@ Supported database types:
 			return fmt.Errorf("failed to save connection: %w", err)
 		}
 
-		analytics.TrackConnectionAdd(ctx, connAddType)
+		analytics.TrackConnectionAdd(ctx, conn.Type)
 		out.Success("Connection %q saved", connAddName)
 		return nil
 	},

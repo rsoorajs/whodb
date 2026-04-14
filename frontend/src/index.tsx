@@ -31,6 +31,7 @@ import {ThemeProvider} from '@clidey/ux'
 import {isDesktopApp} from './utils/external-links';
 import {PosthogConsentBanner} from './components/analytics/posthog-consent-banner';
 import {ErrorBoundary} from './components/error-boundary';
+import { preloadDatabaseTypeDropdownItems } from './config/database-types';
 
 // Detect desktop Linux and add a class for CSS-based overrides (e.g., fonts)
 try {
@@ -61,6 +62,10 @@ const AppWithProviders = () => {
             .then(client => setPosthogClient(client))
             .catch(() => setPosthogClient(null));
     }, [initialized]);
+
+    useEffect(() => {
+        preloadDatabaseTypeDropdownItems().catch(() => undefined);
+    }, []);
 
     const app = (
         <ThemeProvider>

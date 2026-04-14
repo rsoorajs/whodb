@@ -138,6 +138,15 @@ var (
 	configDirErr  error
 )
 
+// ResetPathsForTesting resets cached CLI config path state after tests change
+// environment variables such as HOME. It is intended for tests only.
+func ResetPathsForTesting() {
+	configDir = ""
+	configDirErr = nil
+	configDirOnce = sync.Once{}
+	config.ResetConfigPath()
+}
+
 func getConfigOptions() datadir.Options {
 	return datadir.Options{
 		AppName:           "whodb",

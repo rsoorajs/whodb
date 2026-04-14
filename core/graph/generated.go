@@ -124,6 +124,44 @@ type ComplexityRoot struct {
 		Type             func(childComplexity int) int
 	}
 
+	ConnectableDatabase struct {
+		Extra                       func(childComplexity int) int
+		Fields                      func(childComplexity int) int
+		ID                          func(childComplexity int) int
+		IsAWSManaged                func(childComplexity int) int
+		Label                       func(childComplexity int) int
+		PluginType                  func(childComplexity int) int
+		RequiredFields              func(childComplexity int) int
+		SslModes                    func(childComplexity int) int
+		SupportsDatabaseSwitching   func(childComplexity int) int
+		SupportsMockData            func(childComplexity int) int
+		SupportsModifiers           func(childComplexity int) int
+		SupportsSchema              func(childComplexity int) int
+		SupportsScratchpad          func(childComplexity int) int
+		UsesDatabaseInsteadOfSchema func(childComplexity int) int
+		UsesSchemaForGraph          func(childComplexity int) int
+	}
+
+	ConnectableDatabaseFields struct {
+		Database   func(childComplexity int) int
+		Hostname   func(childComplexity int) int
+		Password   func(childComplexity int) int
+		SearchPath func(childComplexity int) int
+		Username   func(childComplexity int) int
+	}
+
+	ConnectableDatabaseRequiredFields struct {
+		Database func(childComplexity int) int
+		Hostname func(childComplexity int) int
+		Password func(childComplexity int) int
+		Username func(childComplexity int) int
+	}
+
+	ConnectableDatabaseSSLMode struct {
+		Aliases func(childComplexity int) int
+		Value   func(childComplexity int) int
+	}
+
 	DatabaseMetadata struct {
 		AliasMap        func(childComplexity int) int
 		Capabilities    func(childComplexity int) int
@@ -312,6 +350,7 @@ type ComplexityRoot struct {
 		CloudProviders              func(childComplexity int) int
 		Columns                     func(childComplexity int, schema string, storageUnit string) int
 		ColumnsBatch                func(childComplexity int, schema string, storageUnits []string) int
+		ConnectableDatabases        func(childComplexity int) int
 		Database                    func(childComplexity int, typeArg string) int
 		DatabaseMetadata            func(childComplexity int) int
 		DatabaseQuerySuggestions    func(childComplexity int, schema string) int
@@ -447,6 +486,7 @@ type QueryResolver interface {
 	SettingsConfig(ctx context.Context) (*model.SettingsConfig, error)
 	MockDataMaxRowCount(ctx context.Context) (int, error)
 	AnalyzeMockDataDependencies(ctx context.Context, schema string, storageUnit string, rowCount int, fkDensityRatio *int) (*model.MockDataDependencyAnalysis, error)
+	ConnectableDatabases(ctx context.Context) ([]*model.ConnectableDatabase, error)
 	DatabaseMetadata(ctx context.Context) (*model.DatabaseMetadata, error)
 	SSLStatus(ctx context.Context) (*model.SSLStatus, error)
 	DatabaseQuerySuggestions(ctx context.Context, schema string) ([]*model.DatabaseQuerySuggestion, error)
@@ -854,6 +894,166 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Column.Type(childComplexity), true
+
+	case "ConnectableDatabase.extra":
+		if e.ComplexityRoot.ConnectableDatabase.Extra == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabase.Extra(childComplexity), true
+	case "ConnectableDatabase.fields":
+		if e.ComplexityRoot.ConnectableDatabase.Fields == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabase.Fields(childComplexity), true
+	case "ConnectableDatabase.id":
+		if e.ComplexityRoot.ConnectableDatabase.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabase.ID(childComplexity), true
+	case "ConnectableDatabase.isAwsManaged":
+		if e.ComplexityRoot.ConnectableDatabase.IsAWSManaged == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabase.IsAWSManaged(childComplexity), true
+	case "ConnectableDatabase.label":
+		if e.ComplexityRoot.ConnectableDatabase.Label == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabase.Label(childComplexity), true
+	case "ConnectableDatabase.pluginType":
+		if e.ComplexityRoot.ConnectableDatabase.PluginType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabase.PluginType(childComplexity), true
+	case "ConnectableDatabase.requiredFields":
+		if e.ComplexityRoot.ConnectableDatabase.RequiredFields == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabase.RequiredFields(childComplexity), true
+	case "ConnectableDatabase.sslModes":
+		if e.ComplexityRoot.ConnectableDatabase.SslModes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabase.SslModes(childComplexity), true
+	case "ConnectableDatabase.supportsDatabaseSwitching":
+		if e.ComplexityRoot.ConnectableDatabase.SupportsDatabaseSwitching == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabase.SupportsDatabaseSwitching(childComplexity), true
+	case "ConnectableDatabase.supportsMockData":
+		if e.ComplexityRoot.ConnectableDatabase.SupportsMockData == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabase.SupportsMockData(childComplexity), true
+	case "ConnectableDatabase.supportsModifiers":
+		if e.ComplexityRoot.ConnectableDatabase.SupportsModifiers == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabase.SupportsModifiers(childComplexity), true
+	case "ConnectableDatabase.supportsSchema":
+		if e.ComplexityRoot.ConnectableDatabase.SupportsSchema == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabase.SupportsSchema(childComplexity), true
+	case "ConnectableDatabase.supportsScratchpad":
+		if e.ComplexityRoot.ConnectableDatabase.SupportsScratchpad == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabase.SupportsScratchpad(childComplexity), true
+	case "ConnectableDatabase.usesDatabaseInsteadOfSchema":
+		if e.ComplexityRoot.ConnectableDatabase.UsesDatabaseInsteadOfSchema == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabase.UsesDatabaseInsteadOfSchema(childComplexity), true
+	case "ConnectableDatabase.usesSchemaForGraph":
+		if e.ComplexityRoot.ConnectableDatabase.UsesSchemaForGraph == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabase.UsesSchemaForGraph(childComplexity), true
+
+	case "ConnectableDatabaseFields.database":
+		if e.ComplexityRoot.ConnectableDatabaseFields.Database == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabaseFields.Database(childComplexity), true
+	case "ConnectableDatabaseFields.hostname":
+		if e.ComplexityRoot.ConnectableDatabaseFields.Hostname == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabaseFields.Hostname(childComplexity), true
+	case "ConnectableDatabaseFields.password":
+		if e.ComplexityRoot.ConnectableDatabaseFields.Password == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabaseFields.Password(childComplexity), true
+	case "ConnectableDatabaseFields.searchPath":
+		if e.ComplexityRoot.ConnectableDatabaseFields.SearchPath == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabaseFields.SearchPath(childComplexity), true
+	case "ConnectableDatabaseFields.username":
+		if e.ComplexityRoot.ConnectableDatabaseFields.Username == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabaseFields.Username(childComplexity), true
+
+	case "ConnectableDatabaseRequiredFields.database":
+		if e.ComplexityRoot.ConnectableDatabaseRequiredFields.Database == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabaseRequiredFields.Database(childComplexity), true
+	case "ConnectableDatabaseRequiredFields.hostname":
+		if e.ComplexityRoot.ConnectableDatabaseRequiredFields.Hostname == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabaseRequiredFields.Hostname(childComplexity), true
+	case "ConnectableDatabaseRequiredFields.password":
+		if e.ComplexityRoot.ConnectableDatabaseRequiredFields.Password == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabaseRequiredFields.Password(childComplexity), true
+	case "ConnectableDatabaseRequiredFields.username":
+		if e.ComplexityRoot.ConnectableDatabaseRequiredFields.Username == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabaseRequiredFields.Username(childComplexity), true
+
+	case "ConnectableDatabaseSSLMode.aliases":
+		if e.ComplexityRoot.ConnectableDatabaseSSLMode.Aliases == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabaseSSLMode.Aliases(childComplexity), true
+	case "ConnectableDatabaseSSLMode.value":
+		if e.ComplexityRoot.ConnectableDatabaseSSLMode.Value == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectableDatabaseSSLMode.Value(childComplexity), true
 
 	case "DatabaseMetadata.aliasMap":
 		if e.ComplexityRoot.DatabaseMetadata.AliasMap == nil {
@@ -1822,6 +2022,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.ColumnsBatch(childComplexity, args["schema"].(string), args["storageUnits"].([]string)), true
+	case "Query.ConnectableDatabases":
+		if e.ComplexityRoot.Query.ConnectableDatabases == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.ConnectableDatabases(childComplexity), true
 	case "Query.Database":
 		if e.ComplexityRoot.Query.Database == nil {
 			break
@@ -4838,6 +5044,794 @@ func (ec *executionContext) fieldContext_Column_Scale(_ context.Context, field g
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabase_id(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabase_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabase_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabase",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabase_label(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabase_label,
+		func(ctx context.Context) (any, error) {
+			return obj.Label, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabase_label(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabase",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabase_pluginType(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabase_pluginType,
+		func(ctx context.Context) (any, error) {
+			return obj.PluginType, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabase_pluginType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabase",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabase_extra(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabase_extra,
+		func(ctx context.Context) (any, error) {
+			return obj.Extra, nil
+		},
+		nil,
+		ec.marshalNRecord2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRecordᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabase_extra(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabase",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Key":
+				return ec.fieldContext_Record_Key(ctx, field)
+			case "Value":
+				return ec.fieldContext_Record_Value(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Record", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabase_fields(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabase_fields,
+		func(ctx context.Context) (any, error) {
+			return obj.Fields, nil
+		},
+		nil,
+		ec.marshalNConnectableDatabaseFields2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseFields,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabase_fields(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabase",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hostname":
+				return ec.fieldContext_ConnectableDatabaseFields_hostname(ctx, field)
+			case "username":
+				return ec.fieldContext_ConnectableDatabaseFields_username(ctx, field)
+			case "password":
+				return ec.fieldContext_ConnectableDatabaseFields_password(ctx, field)
+			case "database":
+				return ec.fieldContext_ConnectableDatabaseFields_database(ctx, field)
+			case "searchPath":
+				return ec.fieldContext_ConnectableDatabaseFields_searchPath(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ConnectableDatabaseFields", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabase_requiredFields(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabase_requiredFields,
+		func(ctx context.Context) (any, error) {
+			return obj.RequiredFields, nil
+		},
+		nil,
+		ec.marshalNConnectableDatabaseRequiredFields2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseRequiredFields,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabase_requiredFields(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabase",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hostname":
+				return ec.fieldContext_ConnectableDatabaseRequiredFields_hostname(ctx, field)
+			case "username":
+				return ec.fieldContext_ConnectableDatabaseRequiredFields_username(ctx, field)
+			case "password":
+				return ec.fieldContext_ConnectableDatabaseRequiredFields_password(ctx, field)
+			case "database":
+				return ec.fieldContext_ConnectableDatabaseRequiredFields_database(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ConnectableDatabaseRequiredFields", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabase_supportsModifiers(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabase_supportsModifiers,
+		func(ctx context.Context) (any, error) {
+			return obj.SupportsModifiers, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabase_supportsModifiers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabase",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabase_supportsScratchpad(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabase_supportsScratchpad,
+		func(ctx context.Context) (any, error) {
+			return obj.SupportsScratchpad, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabase_supportsScratchpad(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabase",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabase_supportsSchema(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabase_supportsSchema,
+		func(ctx context.Context) (any, error) {
+			return obj.SupportsSchema, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabase_supportsSchema(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabase",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabase_supportsDatabaseSwitching(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabase_supportsDatabaseSwitching,
+		func(ctx context.Context) (any, error) {
+			return obj.SupportsDatabaseSwitching, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabase_supportsDatabaseSwitching(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabase",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabase_usesSchemaForGraph(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabase_usesSchemaForGraph,
+		func(ctx context.Context) (any, error) {
+			return obj.UsesSchemaForGraph, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabase_usesSchemaForGraph(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabase",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabase_usesDatabaseInsteadOfSchema(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabase_usesDatabaseInsteadOfSchema,
+		func(ctx context.Context) (any, error) {
+			return obj.UsesDatabaseInsteadOfSchema, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabase_usesDatabaseInsteadOfSchema(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabase",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabase_supportsMockData(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabase_supportsMockData,
+		func(ctx context.Context) (any, error) {
+			return obj.SupportsMockData, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabase_supportsMockData(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabase",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabase_isAwsManaged(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabase_isAwsManaged,
+		func(ctx context.Context) (any, error) {
+			return obj.IsAWSManaged, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabase_isAwsManaged(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabase",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabase_sslModes(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabase_sslModes,
+		func(ctx context.Context) (any, error) {
+			return obj.SslModes, nil
+		},
+		nil,
+		ec.marshalNConnectableDatabaseSSLMode2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseSSLModeᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabase_sslModes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabase",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "value":
+				return ec.fieldContext_ConnectableDatabaseSSLMode_value(ctx, field)
+			case "aliases":
+				return ec.fieldContext_ConnectableDatabaseSSLMode_aliases(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ConnectableDatabaseSSLMode", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabaseFields_hostname(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseFields) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabaseFields_hostname,
+		func(ctx context.Context) (any, error) {
+			return obj.Hostname, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabaseFields_hostname(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabaseFields",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabaseFields_username(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseFields) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabaseFields_username,
+		func(ctx context.Context) (any, error) {
+			return obj.Username, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabaseFields_username(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabaseFields",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabaseFields_password(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseFields) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabaseFields_password,
+		func(ctx context.Context) (any, error) {
+			return obj.Password, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabaseFields_password(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabaseFields",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabaseFields_database(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseFields) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabaseFields_database,
+		func(ctx context.Context) (any, error) {
+			return obj.Database, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabaseFields_database(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabaseFields",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabaseFields_searchPath(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseFields) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabaseFields_searchPath,
+		func(ctx context.Context) (any, error) {
+			return obj.SearchPath, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabaseFields_searchPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabaseFields",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabaseRequiredFields_hostname(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseRequiredFields) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabaseRequiredFields_hostname,
+		func(ctx context.Context) (any, error) {
+			return obj.Hostname, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabaseRequiredFields_hostname(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabaseRequiredFields",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabaseRequiredFields_username(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseRequiredFields) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabaseRequiredFields_username,
+		func(ctx context.Context) (any, error) {
+			return obj.Username, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabaseRequiredFields_username(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabaseRequiredFields",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabaseRequiredFields_password(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseRequiredFields) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabaseRequiredFields_password,
+		func(ctx context.Context) (any, error) {
+			return obj.Password, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabaseRequiredFields_password(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabaseRequiredFields",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabaseRequiredFields_database(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseRequiredFields) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabaseRequiredFields_database,
+		func(ctx context.Context) (any, error) {
+			return obj.Database, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabaseRequiredFields_database(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabaseRequiredFields",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabaseSSLMode_value(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseSSLMode) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabaseSSLMode_value,
+		func(ctx context.Context) (any, error) {
+			return obj.Value, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabaseSSLMode_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabaseSSLMode",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectableDatabaseSSLMode_aliases(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseSSLMode) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ConnectableDatabaseSSLMode_aliases,
+		func(ctx context.Context) (any, error) {
+			return obj.Aliases, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ConnectableDatabaseSSLMode_aliases(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectableDatabaseSSLMode",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -9695,6 +10689,67 @@ func (ec *executionContext) fieldContext_Query_AnalyzeMockDataDependencies(ctx c
 	if fc.Args, err = ec.field_Query_AnalyzeMockDataDependencies_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_ConnectableDatabases(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_ConnectableDatabases,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().ConnectableDatabases(ctx)
+		},
+		nil,
+		ec.marshalNConnectableDatabase2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_ConnectableDatabases(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ConnectableDatabase_id(ctx, field)
+			case "label":
+				return ec.fieldContext_ConnectableDatabase_label(ctx, field)
+			case "pluginType":
+				return ec.fieldContext_ConnectableDatabase_pluginType(ctx, field)
+			case "extra":
+				return ec.fieldContext_ConnectableDatabase_extra(ctx, field)
+			case "fields":
+				return ec.fieldContext_ConnectableDatabase_fields(ctx, field)
+			case "requiredFields":
+				return ec.fieldContext_ConnectableDatabase_requiredFields(ctx, field)
+			case "supportsModifiers":
+				return ec.fieldContext_ConnectableDatabase_supportsModifiers(ctx, field)
+			case "supportsScratchpad":
+				return ec.fieldContext_ConnectableDatabase_supportsScratchpad(ctx, field)
+			case "supportsSchema":
+				return ec.fieldContext_ConnectableDatabase_supportsSchema(ctx, field)
+			case "supportsDatabaseSwitching":
+				return ec.fieldContext_ConnectableDatabase_supportsDatabaseSwitching(ctx, field)
+			case "usesSchemaForGraph":
+				return ec.fieldContext_ConnectableDatabase_usesSchemaForGraph(ctx, field)
+			case "usesDatabaseInsteadOfSchema":
+				return ec.fieldContext_ConnectableDatabase_usesDatabaseInsteadOfSchema(ctx, field)
+			case "supportsMockData":
+				return ec.fieldContext_ConnectableDatabase_supportsMockData(ctx, field)
+			case "isAwsManaged":
+				return ec.fieldContext_ConnectableDatabase_isAwsManaged(ctx, field)
+			case "sslModes":
+				return ec.fieldContext_ConnectableDatabase_sslModes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ConnectableDatabase", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -14580,6 +15635,272 @@ func (ec *executionContext) _Column(ctx context.Context, sel ast.SelectionSet, o
 	return out
 }
 
+var connectableDatabaseImplementors = []string{"ConnectableDatabase"}
+
+func (ec *executionContext) _ConnectableDatabase(ctx context.Context, sel ast.SelectionSet, obj *model.ConnectableDatabase) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, connectableDatabaseImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ConnectableDatabase")
+		case "id":
+			out.Values[i] = ec._ConnectableDatabase_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "label":
+			out.Values[i] = ec._ConnectableDatabase_label(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pluginType":
+			out.Values[i] = ec._ConnectableDatabase_pluginType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "extra":
+			out.Values[i] = ec._ConnectableDatabase_extra(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "fields":
+			out.Values[i] = ec._ConnectableDatabase_fields(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "requiredFields":
+			out.Values[i] = ec._ConnectableDatabase_requiredFields(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "supportsModifiers":
+			out.Values[i] = ec._ConnectableDatabase_supportsModifiers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "supportsScratchpad":
+			out.Values[i] = ec._ConnectableDatabase_supportsScratchpad(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "supportsSchema":
+			out.Values[i] = ec._ConnectableDatabase_supportsSchema(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "supportsDatabaseSwitching":
+			out.Values[i] = ec._ConnectableDatabase_supportsDatabaseSwitching(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "usesSchemaForGraph":
+			out.Values[i] = ec._ConnectableDatabase_usesSchemaForGraph(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "usesDatabaseInsteadOfSchema":
+			out.Values[i] = ec._ConnectableDatabase_usesDatabaseInsteadOfSchema(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "supportsMockData":
+			out.Values[i] = ec._ConnectableDatabase_supportsMockData(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "isAwsManaged":
+			out.Values[i] = ec._ConnectableDatabase_isAwsManaged(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sslModes":
+			out.Values[i] = ec._ConnectableDatabase_sslModes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var connectableDatabaseFieldsImplementors = []string{"ConnectableDatabaseFields"}
+
+func (ec *executionContext) _ConnectableDatabaseFields(ctx context.Context, sel ast.SelectionSet, obj *model.ConnectableDatabaseFields) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, connectableDatabaseFieldsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ConnectableDatabaseFields")
+		case "hostname":
+			out.Values[i] = ec._ConnectableDatabaseFields_hostname(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "username":
+			out.Values[i] = ec._ConnectableDatabaseFields_username(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "password":
+			out.Values[i] = ec._ConnectableDatabaseFields_password(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "database":
+			out.Values[i] = ec._ConnectableDatabaseFields_database(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "searchPath":
+			out.Values[i] = ec._ConnectableDatabaseFields_searchPath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var connectableDatabaseRequiredFieldsImplementors = []string{"ConnectableDatabaseRequiredFields"}
+
+func (ec *executionContext) _ConnectableDatabaseRequiredFields(ctx context.Context, sel ast.SelectionSet, obj *model.ConnectableDatabaseRequiredFields) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, connectableDatabaseRequiredFieldsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ConnectableDatabaseRequiredFields")
+		case "hostname":
+			out.Values[i] = ec._ConnectableDatabaseRequiredFields_hostname(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "username":
+			out.Values[i] = ec._ConnectableDatabaseRequiredFields_username(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "password":
+			out.Values[i] = ec._ConnectableDatabaseRequiredFields_password(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "database":
+			out.Values[i] = ec._ConnectableDatabaseRequiredFields_database(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var connectableDatabaseSSLModeImplementors = []string{"ConnectableDatabaseSSLMode"}
+
+func (ec *executionContext) _ConnectableDatabaseSSLMode(ctx context.Context, sel ast.SelectionSet, obj *model.ConnectableDatabaseSSLMode) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, connectableDatabaseSSLModeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ConnectableDatabaseSSLMode")
+		case "value":
+			out.Values[i] = ec._ConnectableDatabaseSSLMode_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "aliases":
+			out.Values[i] = ec._ConnectableDatabaseSSLMode_aliases(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var databaseMetadataImplementors = []string{"DatabaseMetadata"}
 
 func (ec *executionContext) _DatabaseMetadata(ctx context.Context, sel ast.SelectionSet, obj *model.DatabaseMetadata) graphql.Marshaler {
@@ -16267,6 +17588,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "ConnectableDatabases":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_ConnectableDatabases(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "DatabaseMetadata":
 			field := field
 
@@ -17727,6 +19070,78 @@ func (ec *executionContext) marshalNColumn2ᚖgithubᚗcomᚋclideyᚋwhodbᚋco
 		return graphql.Null
 	}
 	return ec._Column(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNConnectableDatabase2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ConnectableDatabase) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNConnectableDatabase2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabase(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNConnectableDatabase2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabase(ctx context.Context, sel ast.SelectionSet, v *model.ConnectableDatabase) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ConnectableDatabase(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNConnectableDatabaseFields2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseFields(ctx context.Context, sel ast.SelectionSet, v *model.ConnectableDatabaseFields) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ConnectableDatabaseFields(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNConnectableDatabaseRequiredFields2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseRequiredFields(ctx context.Context, sel ast.SelectionSet, v *model.ConnectableDatabaseRequiredFields) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ConnectableDatabaseRequiredFields(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNConnectableDatabaseSSLMode2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseSSLModeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ConnectableDatabaseSSLMode) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNConnectableDatabaseSSLMode2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseSSLMode(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNConnectableDatabaseSSLMode2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseSSLMode(ctx context.Context, sel ast.SelectionSet, v *model.ConnectableDatabaseSSLMode) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ConnectableDatabaseSSLMode(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNConnectionStatus2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectionStatus(ctx context.Context, v any) (model.ConnectionStatus, error) {

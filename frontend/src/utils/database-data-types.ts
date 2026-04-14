@@ -15,7 +15,7 @@
  */
 
 import { DatabaseType } from '@graphql';
-import { getDatabaseTypeDropdownItemsSync, TypeDefinition } from '../config/database-types';
+import { getDatabaseTypeDropdownItemSync, TypeDefinition } from '../config/database-types';
 import { reduxStore } from '../store';
 
 /**
@@ -121,8 +121,7 @@ export function findTypeDefinition(typeId: string, databaseType: DatabaseType | 
  * @returns boolean indicating if the database supports modifiers
  */
 export function databaseSupportsModifiers(databaseType: DatabaseType | string): boolean {
-    const dbTypeItems = getDatabaseTypeDropdownItemsSync();
-    const dbConfig = dbTypeItems.find(item => item.id === databaseType);
+    const dbConfig = getDatabaseTypeDropdownItemSync(databaseType);
 
     // Return from config if defined, otherwise false
     return dbConfig?.supportsModifiers ?? false;

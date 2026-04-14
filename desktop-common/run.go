@@ -23,14 +23,13 @@ import (
 	"os"
 	"strings"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/mac"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 
-	"github.com/clidey/whodb/core/graph"
-	"github.com/clidey/whodb/core/src"
 	"github.com/clidey/whodb/core/src/analytics"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/log"
@@ -38,8 +37,18 @@ import (
 	"github.com/clidey/whodb/core/src/settings"
 )
 
-// RunApp starts the Wails application with the given configuration
-func RunApp(edition string, title string, assets embed.FS) error {
+// RunConfig describes the edition-specific dependencies needed to run a
+// desktop build.
+type RunConfig struct {
+	Edition          string
+	Title            string
+	Assets           embed.FS
+	Schema           graphql.ExecutableSchema
+	InitializeEngine func()
+}
+
+// RunApp starts the Wails application with the given configuration.
+func RunApp(config RunConfig) error {
 	defer log.CloseLogFile()
 	os.Setenv("WHODB_DESKTOP", "true")
 	os.Setenv("WHODB_DISABLE_UPDATE_CHECK", "true")
@@ -56,21 +65,20 @@ func RunApp(edition string, title string, assets embed.FS) error {
 	}
 	analytics.SetEnabled(settingsCfg.MetricsEnabled)
 
-	src.InitializeEngine()
-	log.Infof("Running WhoDB Desktop %s Edition", strings.ToUpper(edition))
+	config.InitializeEngine()
+	log.Infof("Running WhoDB Desktop %s Edition", strings.ToUpper(config.Edition))
 
-	schema := graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}})
-	r := router.InitializeRouter(schema, nil, nil, nil, assets)
-	app := NewApp(edition)
+	r := router.InitializeRouter(config.Schema, nil, nil, nil, config.Assets)
+	app := NewApp(config.Edition)
 
 	err := wails.Run(&options.App{
-		Title:     title,
+		Title:     config.Title,
 		Width:     1400,
 		Height:    900,
 		MinWidth:  1024,
 		MinHeight: 768,
 		AssetServer: &assetserver.Options{
-			Assets:  assets,
+			Assets:  config.Assets,
 			Handler: r, // Pass entire Chi router - handles GraphQL and all routes
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},

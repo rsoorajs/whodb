@@ -32,6 +32,7 @@ import (
 	tunnelpkg "github.com/clidey/whodb/cli/internal/ssh"
 	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src"
+	"github.com/clidey/whodb/core/src/dbcatalog"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/envconfig"
 	"github.com/clidey/whodb/core/src/llm"
@@ -565,8 +566,7 @@ func (m *Manager) getEnvConnections() []Connection {
 	typeCounts := make(map[string]int)
 	var connections []Connection
 
-	for _, plugin := range m.engine.Plugins {
-		dbType := string(plugin.Type)
+	for _, dbType := range dbcatalog.IDs() {
 		profiles := envconfig.GetDefaultDatabaseCredentials(dbType)
 		for _, profile := range profiles {
 			typeCounts[dbType]++

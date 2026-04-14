@@ -102,14 +102,18 @@ Usage modes:
 			return nil
 		}
 
+		resolvedType, typeKnown := lookupDatabaseType(dbType)
+		if dbType != "" && !typeKnown {
+			return fmt.Errorf("unsupported database type %q", dbType)
+		}
+
 		// If type and database are provided, connect directly.
 		// Username is optional for file-based databases (SQLite, DuckDB) and
 		// some NoSQL databases (Redis, MongoDB).
-		if dbType != "" && database != "" {
+		if typeKnown && (database != "" || !resolvedType.RequiredFields.Database) {
 			// Use defaults if not provided
 			if host == "" {
-				normalizedCheck := strings.ToLower(dbType)
-				if normalizedCheck == "sqlite3" || normalizedCheck == "sqlite" || normalizedCheck == "duckdb" {
+				if isFileBasedDatabaseType(string(resolvedType.ID)) {
 					// File-based databases use the database path as host
 					host = database
 				} else {
@@ -122,12 +126,9 @@ Usage modes:
 				return fmt.Errorf("invalid port number %d: must be between 1024 and 65535 (ports below 1024 are system reserved)", port)
 			}
 
-			// Normalize database type to match plugin names
-			normalizedType := normalizeDBType(dbType)
-
 			// Secure password prompt — skip for databases that don't need credentials
 			var password string
-			needsPassword := username != ""
+			needsPassword := username != "" && resolvedType.RequiredFields.Password
 			if needsPassword {
 				if term.IsTerminal(int(os.Stdin.Fd())) {
 					fmt.Fprint(os.Stderr, "Password: ")
@@ -153,7 +154,7 @@ Usage modes:
 
 			conn := config.Connection{
 				Name:     name,
-				Type:     normalizedType,
+				Type:     string(resolvedType.ID),
 				Host:     host,
 				Port:     port,
 				Username: username,
@@ -195,52 +196,6 @@ Usage modes:
 
 		return nil
 	},
-}
-
-func normalizeDBType(dbType string) string {
-	switch strings.ToLower(dbType) {
-	case "postgres", "postgresql":
-		return "Postgres"
-	case "mysql":
-		return "MySQL"
-	case "mariadb":
-		return "MariaDB"
-	case "tidb":
-		return "TiDB"
-	case "mongodb":
-		return "MongoDB"
-	case "redis":
-		return "Redis"
-	case "clickhouse":
-		return "ClickHouse"
-	case "elasticsearch":
-		return "ElasticSearch"
-	case "sqlite", "sqlite3":
-		return "Sqlite3"
-	case "duckdb":
-		return "DuckDB"
-	default:
-		return dbType
-	}
-}
-
-func getDefaultPort(dbType string) int {
-	switch strings.ToLower(dbType) {
-	case "postgres", "postgresql":
-		return 5432
-	case "mysql", "mariadb":
-		return 3306
-	case "mongodb":
-		return 27017
-	case "redis":
-		return 6379
-	case "clickhouse":
-		return 9000
-	case "elasticsearch":
-		return 9200
-	default:
-		return 5432
-	}
 }
 
 func init() {

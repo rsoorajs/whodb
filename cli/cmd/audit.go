@@ -81,13 +81,20 @@ Checks performed:
 			return fmt.Errorf("cannot initialize database manager: %w", err)
 		}
 
+		resolvedType, typeKnown := lookupDatabaseType(auditType)
+		if auditType != "" && !typeKnown {
+			return fmt.Errorf("unsupported database type %q", auditType)
+		}
+		if auditType != "" && typeKnown && resolvedType.RequiredFields.Database && auditDatabase == "" && auditConnection == "" {
+			return fmt.Errorf("--database is required for %s", resolvedType.Label)
+		}
+
 		var conn *dbmgr.Connection
-		if auditType != "" && auditDatabase != "" {
+		if typeKnown && (auditDatabase != "" || !resolvedType.RequiredFields.Database) {
 			// Inline connection from flags
-			normalizedType := normalizeDBType(auditType)
 			h := auditHost
 			if h == "" {
-				if strings.ToLower(auditType) == "sqlite3" || strings.ToLower(auditType) == "sqlite" || strings.ToLower(auditType) == "duckdb" {
+				if isFileBasedDatabaseType(string(resolvedType.ID)) {
 					h = auditDatabase
 				} else {
 					h = "localhost"
@@ -95,10 +102,10 @@ Checks performed:
 			}
 			p := auditPort
 			if p == 0 {
-				p = getDefaultPort(normalizedType)
+				p = getDefaultPort(string(resolvedType.ID))
 			}
 			conn = &dbmgr.Connection{
-				Type:     normalizedType,
+				Type:     string(resolvedType.ID),
 				Host:     h,
 				Port:     p,
 				Username: auditUser,
@@ -122,12 +129,18 @@ Checks performed:
 		if !auditQuiet {
 			spinner = output.NewSpinner(fmt.Sprintf("Connecting to %s...", conn.Type))
 		}
-		spinner.Start()
+		if spinner != nil {
+			spinner.Start()
+		}
 		if err := mgr.Connect(conn); err != nil {
-			spinner.StopWithError("Connection failed")
+			if spinner != nil {
+				spinner.StopWithError("Connection failed")
+			}
 			return fmt.Errorf("cannot connect to database: %w", err)
 		}
-		spinner.StopWithSuccess("Connected")
+		if spinner != nil {
+			spinner.StopWithSuccess("Connected")
+		}
 		defer mgr.Disconnect()
 
 		// Resolve schema
@@ -157,25 +170,33 @@ Checks performed:
 		if !auditQuiet {
 			spinner = output.NewSpinner("Running audit...")
 		}
-		spinner.Start()
+		if spinner != nil {
+			spinner.Start()
+		}
 
 		var results []*dbmgr.TableAudit
 		if auditTable != "" {
 			result, err := mgr.AuditTable(schema, auditTable, config)
 			if err != nil {
-				spinner.StopWithError("Audit failed")
+				if spinner != nil {
+					spinner.StopWithError("Audit failed")
+				}
 				return fmt.Errorf("audit failed: %w", err)
 			}
 			results = []*dbmgr.TableAudit{result}
 		} else {
 			results, err = mgr.AuditSchema(schema, config)
 			if err != nil {
-				spinner.StopWithError("Audit failed")
+				if spinner != nil {
+					spinner.StopWithError("Audit failed")
+				}
 				return fmt.Errorf("audit failed: %w", err)
 			}
 		}
 
-		spinner.StopWithSuccess("Audit complete")
+		if spinner != nil {
+			spinner.StopWithSuccess("Audit complete")
+		}
 
 		if auditFormat == "json" {
 			return printAuditJSON(results)

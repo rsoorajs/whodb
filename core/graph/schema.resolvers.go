@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/clidey/whodb/core/src/azure"
 	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/common/ssl"
+	"github.com/clidey/whodb/core/src/dbcatalog"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/envconfig"
@@ -2026,6 +2028,67 @@ func (r *queryResolver) AnalyzeMockDataDependencies(ctx context.Context, schema 
 		Warnings:        analysis.Warnings,
 		Error:           errorPtr,
 	}, nil
+}
+
+// ConnectableDatabases is the resolver for the ConnectableDatabases field.
+func (r *queryResolver) ConnectableDatabases(ctx context.Context) ([]*model.ConnectableDatabase, error) {
+	entries := dbcatalog.All()
+	databases := make([]*model.ConnectableDatabase, 0, len(entries))
+
+	for _, entry := range entries {
+		extraKeys := make([]string, 0, len(entry.Extra))
+		for key := range entry.Extra {
+			extraKeys = append(extraKeys, key)
+		}
+		sort.Strings(extraKeys)
+
+		extra := make([]*model.Record, 0, len(extraKeys))
+		for _, key := range extraKeys {
+			extra = append(extra, &model.Record{
+				Key:   key,
+				Value: entry.Extra[key],
+			})
+		}
+
+		sslModes := make([]*model.ConnectableDatabaseSSLMode, 0, len(entry.SSLModes))
+		for _, sslMode := range entry.SSLModes {
+			sslModes = append(sslModes, &model.ConnectableDatabaseSSLMode{
+				Value:   string(sslMode.Value),
+				Aliases: ssl.GetSSLModeAliases(entry.PluginType, sslMode.Value),
+			})
+		}
+
+		databases = append(databases, &model.ConnectableDatabase{
+			ID:         string(entry.ID),
+			Label:      entry.Label,
+			PluginType: string(entry.PluginType),
+			Extra:      extra,
+			Fields: &model.ConnectableDatabaseFields{
+				Hostname:   entry.Fields.Hostname,
+				Username:   entry.Fields.Username,
+				Password:   entry.Fields.Password,
+				Database:   entry.Fields.Database,
+				SearchPath: entry.Fields.SearchPath,
+			},
+			RequiredFields: &model.ConnectableDatabaseRequiredFields{
+				Hostname: entry.RequiredFields.Hostname,
+				Username: entry.RequiredFields.Username,
+				Password: entry.RequiredFields.Password,
+				Database: entry.RequiredFields.Database,
+			},
+			SupportsModifiers:           entry.SupportsModifiers,
+			SupportsScratchpad:          entry.SupportsScratchpad,
+			SupportsSchema:              entry.SupportsSchema,
+			SupportsDatabaseSwitching:   entry.SupportsDatabaseSwitching,
+			UsesSchemaForGraph:          entry.UsesSchemaForGraph,
+			UsesDatabaseInsteadOfSchema: entry.UsesDatabaseInsteadOfSchema,
+			SupportsMockData:            entry.SupportsMockData,
+			IsAWSManaged:                entry.IsAWSManaged,
+			SslModes:                    sslModes,
+		})
+	}
+
+	return databases, nil
 }
 
 // DatabaseMetadata is the resolver for the DatabaseMetadata field.

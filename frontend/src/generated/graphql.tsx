@@ -176,6 +176,48 @@ export type Column = {
   Type: Scalars['String']['output'];
 };
 
+export type ConnectableDatabase = {
+  __typename?: 'ConnectableDatabase';
+  extra: Array<Record>;
+  fields: ConnectableDatabaseFields;
+  id: Scalars['String']['output'];
+  isAwsManaged: Scalars['Boolean']['output'];
+  label: Scalars['String']['output'];
+  pluginType: Scalars['String']['output'];
+  requiredFields: ConnectableDatabaseRequiredFields;
+  sslModes: Array<ConnectableDatabaseSslMode>;
+  supportsDatabaseSwitching: Scalars['Boolean']['output'];
+  supportsMockData: Scalars['Boolean']['output'];
+  supportsModifiers: Scalars['Boolean']['output'];
+  supportsSchema: Scalars['Boolean']['output'];
+  supportsScratchpad: Scalars['Boolean']['output'];
+  usesDatabaseInsteadOfSchema: Scalars['Boolean']['output'];
+  usesSchemaForGraph: Scalars['Boolean']['output'];
+};
+
+export type ConnectableDatabaseFields = {
+  __typename?: 'ConnectableDatabaseFields';
+  database: Scalars['Boolean']['output'];
+  hostname: Scalars['Boolean']['output'];
+  password: Scalars['Boolean']['output'];
+  searchPath: Scalars['Boolean']['output'];
+  username: Scalars['Boolean']['output'];
+};
+
+export type ConnectableDatabaseRequiredFields = {
+  __typename?: 'ConnectableDatabaseRequiredFields';
+  database: Scalars['Boolean']['output'];
+  hostname: Scalars['Boolean']['output'];
+  password: Scalars['Boolean']['output'];
+  username: Scalars['Boolean']['output'];
+};
+
+export type ConnectableDatabaseSslMode = {
+  __typename?: 'ConnectableDatabaseSSLMode';
+  aliases: Array<Scalars['String']['output']>;
+  value: Scalars['String']['output'];
+};
+
 export enum ConnectionStatus {
   Available = 'Available',
   Deleting = 'Deleting',
@@ -203,8 +245,10 @@ export type DatabaseQuerySuggestion = {
 export enum DatabaseType {
   ClickHouse = 'ClickHouse',
   CockroachDb = 'CockroachDB',
+  DocumentDb = 'DocumentDB',
   Dragonfly = 'Dragonfly',
   DuckDb = 'DuckDB',
+  ElastiCache = 'ElastiCache',
   ElasticSearch = 'ElasticSearch',
   FerretDb = 'FerretDB',
   MariaDb = 'MariaDB',
@@ -683,6 +727,7 @@ export type Query = {
   CloudProviders: Array<CloudProvider>;
   Columns: Array<Column>;
   ColumnsBatch: Array<StorageUnitColumns>;
+  ConnectableDatabases: Array<ConnectableDatabase>;
   Database: Array<Scalars['String']['output']>;
   DatabaseMetadata?: Maybe<DatabaseMetadata>;
   DatabaseQuerySuggestions: Array<DatabaseQuerySuggestion>;
@@ -927,6 +972,11 @@ export type GetVersionQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type GetVersionQuery = { __typename?: 'Query', Version: string };
+
+export type GetConnectableDatabasesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetConnectableDatabasesQuery = { __typename?: 'Query', ConnectableDatabases: Array<{ __typename?: 'ConnectableDatabase', id: string, label: string, pluginType: string, supportsModifiers: boolean, supportsScratchpad: boolean, supportsSchema: boolean, supportsDatabaseSwitching: boolean, usesSchemaForGraph: boolean, usesDatabaseInsteadOfSchema: boolean, supportsMockData: boolean, isAwsManaged: boolean, extra: Array<{ __typename?: 'Record', Key: string, Value: string }>, fields: { __typename?: 'ConnectableDatabaseFields', hostname: boolean, username: boolean, password: boolean, database: boolean, searchPath: boolean }, requiredFields: { __typename?: 'ConnectableDatabaseRequiredFields', hostname: boolean, username: boolean, password: boolean, database: boolean }, sslModes: Array<{ __typename?: 'ConnectableDatabaseSSLMode', value: string, aliases: Array<string> }> }> };
 
 export type GetDatabaseMetadataQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1540,6 +1590,76 @@ export type GetVersionQueryHookResult = ReturnType<typeof useGetVersionQuery>;
 export type GetVersionLazyQueryHookResult = ReturnType<typeof useGetVersionLazyQuery>;
 export type GetVersionSuspenseQueryHookResult = ReturnType<typeof useGetVersionSuspenseQuery>;
 export type GetVersionQueryResult = Apollo.QueryResult<GetVersionQuery, GetVersionQueryVariables>;
+export const GetConnectableDatabasesDocument = gql`
+    query GetConnectableDatabases {
+  ConnectableDatabases {
+    id
+    label
+    pluginType
+    extra {
+      Key
+      Value
+    }
+    fields {
+      hostname
+      username
+      password
+      database
+      searchPath
+    }
+    requiredFields {
+      hostname
+      username
+      password
+      database
+    }
+    supportsModifiers
+    supportsScratchpad
+    supportsSchema
+    supportsDatabaseSwitching
+    usesSchemaForGraph
+    usesDatabaseInsteadOfSchema
+    supportsMockData
+    isAwsManaged
+    sslModes {
+      value
+      aliases
+    }
+  }
+}
+    `;
+
+/**
+ * __useGetConnectableDatabasesQuery__
+ *
+ * To run a query within a React component, call `useGetConnectableDatabasesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetConnectableDatabasesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetConnectableDatabasesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetConnectableDatabasesQuery(baseOptions?: Apollo.QueryHookOptions<GetConnectableDatabasesQuery, GetConnectableDatabasesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetConnectableDatabasesQuery, GetConnectableDatabasesQueryVariables>(GetConnectableDatabasesDocument, options);
+      }
+export function useGetConnectableDatabasesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetConnectableDatabasesQuery, GetConnectableDatabasesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetConnectableDatabasesQuery, GetConnectableDatabasesQueryVariables>(GetConnectableDatabasesDocument, options);
+        }
+export function useGetConnectableDatabasesSuspenseQuery(baseOptions?: Apollo.SkipToken | Apollo.SuspenseQueryHookOptions<GetConnectableDatabasesQuery, GetConnectableDatabasesQueryVariables>) {
+          const options = baseOptions === Apollo.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return Apollo.useSuspenseQuery<GetConnectableDatabasesQuery, GetConnectableDatabasesQueryVariables>(GetConnectableDatabasesDocument, options);
+        }
+export type GetConnectableDatabasesQueryHookResult = ReturnType<typeof useGetConnectableDatabasesQuery>;
+export type GetConnectableDatabasesLazyQueryHookResult = ReturnType<typeof useGetConnectableDatabasesLazyQuery>;
+export type GetConnectableDatabasesSuspenseQueryHookResult = ReturnType<typeof useGetConnectableDatabasesSuspenseQuery>;
+export type GetConnectableDatabasesQueryResult = Apollo.QueryResult<GetConnectableDatabasesQuery, GetConnectableDatabasesQueryVariables>;
 export const GetDatabaseMetadataDocument = gql`
     query GetDatabaseMetadata {
   DatabaseMetadata {

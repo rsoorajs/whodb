@@ -54,6 +54,7 @@ func setupTestEnv(t *testing.T) {
 		t.Fatalf("Failed to set APPDATA: %v", err)
 	}
 
+	config.ResetPathsForTesting()
 	cleanupConfigFiles(t)
 }
 

@@ -18,11 +18,13 @@ package database
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/clidey/whodb/cli/internal/config"
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/types"
 )
 
 func TestNewManager(t *testing.T) {
@@ -124,6 +126,34 @@ func TestFormatSSLStatusSummary(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetEnvConnectionsIncludesCatalogAlias(t *testing.T) {
+	setupTestEnv(t)
+
+	envCreds := []types.DatabaseCredentials{{
+		Hostname: "ferret-host",
+		Username: "ferret-user",
+		Database: "ferret-db",
+		Port:     "27017",
+	}}
+	envValue, err := json.Marshal(envCreds)
+	if err != nil {
+		t.Fatalf("failed to marshal env credentials: %v", err)
+	}
+	t.Setenv("WHODB_FERRETDB", string(envValue))
+
+	mgr := &Manager{engine: &engine.Engine{}}
+	for _, conn := range mgr.getEnvConnections() {
+		if conn.Type == string(engine.DatabaseType_FerretDB) &&
+			conn.Host == "ferret-host" &&
+			conn.Port == 27017 &&
+			conn.IsProfile {
+			return
+		}
+	}
+
+	t.Fatal("expected FerretDB env connection to be discovered from the shared catalog")
 }
 
 func TestDisconnect(t *testing.T) {

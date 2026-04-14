@@ -78,22 +78,62 @@ func TestGetLoginProfilesMergesSources(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to marshal env credentials: %v", err)
 	}
-	t.Setenv("WHODB_TEST", string(envValue))
+	t.Setenv("WHODB_POSTGRES", string(envValue))
 
 	profiles := GetLoginProfiles()
-	if len(profiles) != 3 {
-		t.Fatalf("expected 3 profiles (stored + retriever + env), got %d", len(profiles))
-	}
-
 	foundEnvProfile := false
+	foundSavedProfile := false
+	foundRetrievedProfile := false
 	for _, profile := range profiles {
 		if profile.Hostname == "env-host" && profile.IsProfile {
 			foundEnvProfile = true
+		}
+		if profile.Alias == "saved-profile" {
+			foundSavedProfile = true
+		}
+		if profile.Hostname == "host2" && profile.Username == "retrieved" {
+			foundRetrievedProfile = true
 		}
 	}
 	if !foundEnvProfile {
 		t.Fatalf("expected env-provided profile to be marked as profile and returned")
 	}
+	if !foundSavedProfile {
+		t.Fatalf("expected stored profile to be returned")
+	}
+	if !foundRetrievedProfile {
+		t.Fatalf("expected retriever profile to be returned")
+	}
+}
+
+func TestGetLoginProfilesIncludesCatalogAliasesFromEnv(t *testing.T) {
+	t.Cleanup(func() {
+		MainEngine = nil
+	})
+
+	MainEngine = &engine.Engine{}
+
+	envCreds := []types.DatabaseCredentials{{
+		Hostname: "ferret-host",
+		Username: "ferret-user",
+		Database: "ferret-db",
+	}}
+	envValue, err := json.Marshal(envCreds)
+	if err != nil {
+		t.Fatalf("failed to marshal env credentials: %v", err)
+	}
+	t.Setenv("WHODB_FERRETDB", string(envValue))
+
+	profiles := GetLoginProfiles()
+	for _, profile := range profiles {
+		if profile.Type == string(engine.DatabaseType_FerretDB) &&
+			profile.Hostname == "ferret-host" &&
+			profile.IsProfile {
+			return
+		}
+	}
+
+	t.Fatal("expected FerretDB env profile to be returned from the shared catalog")
 }
 
 func TestGetLoginProfileIdPrioritizesFields(t *testing.T) {

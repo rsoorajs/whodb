@@ -168,6 +168,44 @@ type Column struct {
 	Scale            *int    `json:"Scale,omitempty"`
 }
 
+type ConnectableDatabase struct {
+	ID                          string                             `json:"id"`
+	Label                       string                             `json:"label"`
+	PluginType                  string                             `json:"pluginType"`
+	Extra                       []*Record                          `json:"extra"`
+	Fields                      *ConnectableDatabaseFields         `json:"fields"`
+	RequiredFields              *ConnectableDatabaseRequiredFields `json:"requiredFields"`
+	SupportsModifiers           bool                               `json:"supportsModifiers"`
+	SupportsScratchpad          bool                               `json:"supportsScratchpad"`
+	SupportsSchema              bool                               `json:"supportsSchema"`
+	SupportsDatabaseSwitching   bool                               `json:"supportsDatabaseSwitching"`
+	UsesSchemaForGraph          bool                               `json:"usesSchemaForGraph"`
+	UsesDatabaseInsteadOfSchema bool                               `json:"usesDatabaseInsteadOfSchema"`
+	SupportsMockData            bool                               `json:"supportsMockData"`
+	IsAWSManaged                bool                               `json:"isAwsManaged"`
+	SslModes                    []*ConnectableDatabaseSSLMode      `json:"sslModes"`
+}
+
+type ConnectableDatabaseFields struct {
+	Hostname   bool `json:"hostname"`
+	Username   bool `json:"username"`
+	Password   bool `json:"password"`
+	Database   bool `json:"database"`
+	SearchPath bool `json:"searchPath"`
+}
+
+type ConnectableDatabaseRequiredFields struct {
+	Hostname bool `json:"hostname"`
+	Username bool `json:"username"`
+	Password bool `json:"password"`
+	Database bool `json:"database"`
+}
+
+type ConnectableDatabaseSSLMode struct {
+	Value   string   `json:"value"`
+	Aliases []string `json:"aliases"`
+}
+
 type DatabaseMetadata struct {
 	DatabaseType    string            `json:"databaseType"`
 	TypeDefinitions []*TypeDefinition `json:"typeDefinitions"`
@@ -674,6 +712,8 @@ const (
 	DatabaseTypeDuckDb        DatabaseType = "DuckDB"
 	DatabaseTypeMemcached     DatabaseType = "Memcached"
 	DatabaseTypeTiDb          DatabaseType = "TiDB"
+	DatabaseTypeElastiCache   DatabaseType = "ElastiCache"
+	DatabaseTypeDocumentDb    DatabaseType = "DocumentDB"
 	DatabaseTypeValkey        DatabaseType = "Valkey"
 	DatabaseTypeDragonfly     DatabaseType = "Dragonfly"
 	DatabaseTypeOpenSearch    DatabaseType = "OpenSearch"
@@ -695,6 +735,8 @@ var AllDatabaseType = []DatabaseType{
 	DatabaseTypeDuckDb,
 	DatabaseTypeMemcached,
 	DatabaseTypeTiDb,
+	DatabaseTypeElastiCache,
+	DatabaseTypeDocumentDb,
 	DatabaseTypeValkey,
 	DatabaseTypeDragonfly,
 	DatabaseTypeOpenSearch,
@@ -705,7 +747,7 @@ var AllDatabaseType = []DatabaseType{
 
 func (e DatabaseType) IsValid() bool {
 	switch e {
-	case DatabaseTypePostgres, DatabaseTypeMySQL, DatabaseTypeSqlite3, DatabaseTypeMongoDb, DatabaseTypeRedis, DatabaseTypeElasticSearch, DatabaseTypeMariaDb, DatabaseTypeCockroachDb, DatabaseTypeClickHouse, DatabaseTypeDuckDb, DatabaseTypeMemcached, DatabaseTypeTiDb, DatabaseTypeValkey, DatabaseTypeDragonfly, DatabaseTypeOpenSearch, DatabaseTypeYugabyteDb, DatabaseTypeQuestDb, DatabaseTypeFerretDb:
+	case DatabaseTypePostgres, DatabaseTypeMySQL, DatabaseTypeSqlite3, DatabaseTypeMongoDb, DatabaseTypeRedis, DatabaseTypeElasticSearch, DatabaseTypeMariaDb, DatabaseTypeCockroachDb, DatabaseTypeClickHouse, DatabaseTypeDuckDb, DatabaseTypeMemcached, DatabaseTypeTiDb, DatabaseTypeElastiCache, DatabaseTypeDocumentDb, DatabaseTypeValkey, DatabaseTypeDragonfly, DatabaseTypeOpenSearch, DatabaseTypeYugabyteDb, DatabaseTypeQuestDb, DatabaseTypeFerretDb:
 		return true
 	}
 	return false
