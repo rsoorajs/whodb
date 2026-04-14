@@ -95,6 +95,7 @@ func (p *MongoDBPlugin) UpdateStorageUnit(config *engine.PluginConfig, database 
 		objectIDLog = fmt.Sprintf("%v", v)
 	}
 
+	// codeql[go/sql-injection]: MongoDB row updates intentionally apply the user-authored document body to the selected document.
 	result, err := collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		log.WithError(err).WithFields(map[string]any{

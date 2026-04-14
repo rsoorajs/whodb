@@ -312,6 +312,7 @@ func (p *ClickHousePlugin) executeRawSQL(config *engine.PluginConfig, query stri
 			return nil, engine.ErrMultiStatementUnsupported
 		}
 
+		// codeql[go/sql-injection]: RawExecute intentionally runs user-authored SQL from the query editor/import flow.
 		rows, err := db.Raw(query, params...).Rows()
 		if err != nil {
 			// ClickHouse mutations (ALTER TABLE UPDATE/DELETE, INSERT, etc.) execute successfully

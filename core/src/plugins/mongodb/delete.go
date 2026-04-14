@@ -85,6 +85,7 @@ func (p *MongoDBPlugin) DeleteRow(config *engine.PluginConfig, database string, 
 
 	filter := bson.M{"_id": objectID}
 
+	// codeql[go/sql-injection]: MongoDB row deletion intentionally uses the selected document _id as the delete filter.
 	result, err := collection.DeleteOne(ctx, filter)
 	if err != nil {
 		log.WithError(err).WithFields(map[string]any{
