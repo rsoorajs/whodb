@@ -4,12 +4,7 @@ Before marking any task as complete, run through this verification checklist.
 
 ## Frontend (TypeScript/React)
 
-### Type Checking
-```bash
-cd frontend && pnpm run typecheck
-```
-
-### Build Verification
+### Type Checking and Build Verification
 ```bash
 cd frontend && pnpm run build:ce
 ```
@@ -24,7 +19,7 @@ After adding new code, verify it's actually used:
 
 ### Build Verification
 ```bash
-cd core && go build .
+cd core && go build ./cmd/whodb
 ```
 
 ### Vet Check
@@ -49,10 +44,10 @@ cd core && go vet ./...
 
 ```bash
 # Frontend full check
-cd frontend && pnpm run typecheck && pnpm run build:ce
+cd frontend && pnpm run build:ce
 
 # Backend full check
-cd core && go build . && go vet ./...
+cd core && go build ./cmd/whodb && go vet ./...
 
 # Search for unused exports (manual)
 # Use grep to search for function/type names and verify usage

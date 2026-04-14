@@ -12,7 +12,7 @@ If the `ee/` directory is present, read `ee/CLAUDE.md` for additional context. D
 4. **Plugin architecture** - Never use `switch dbType` or `if dbType ==` in shared code. All database-specific logic goes in plugins. See `.claude/docs/plugin-architecture.md`
 5. **Documentation requirements** - All exported Go functions/types need doc comments. All exported TypeScript functions/components need JSDoc. See `.claude/docs/documentation.md`
 6. **Localization requirements** - All user-facing strings must use `t()` with YAML keys. No fallback strings. No hardcoded UI text. See `.claude/docs/localization.md`
-7. **Verify before completing** - After finishing any task, verify: (1) type checks pass (`pnpm run typecheck` for frontend, `go build` for backend), (2) no linting errors, (3) all added code is actually used (no dead code). See `.claude/docs/verification.md`
+7. **Verify before completing** - After finishing any task, verify: (1) type checks pass (`pnpm run build:ce` for frontend, `go build ./cmd/whodb` for backend), (2) no linting errors, (3) all added code is actually used (no dead code). See `.claude/docs/verification.md`
 8. **Fallback clarification** - Do not include fallback logic UNLESS you were asked to. If you think the project could benefit from fallback logic, first ask and clarify
 9. **Show proof** - When making a claim about how something outside of our codebase works, for example a 3rd party library or function, always provide official documentation or the actual code to back that up. Check online if you have to.
 10. **No defensive code** - Do not program defensively. If there is an edge or use case that you think needs to be handled, first ask.
@@ -29,6 +29,8 @@ core/                   # Backend (Go)
   src/env/              # Environment variable declarations (pure, no log dependency)
   src/envconfig/        # Config-loading functions that need both env and log
   src/plugins/          # Database connectors (each has init() calling engine.RegisterPlugin)
+                        # Includes: postgres, mysql, sqlite3, mongodb, redis, elasticsearch,
+                        #           clickhouse, duckdb, memcached (+ mariadb via mysql)
   graph/schema.graphqls # GraphQL schema
   graph/*.resolvers.go  # GraphQL resolvers
 

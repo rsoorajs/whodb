@@ -58,15 +58,17 @@ Tests are organized by database category:
 
 | Category | Databases |
 |----------|-----------|
-| `sql` | PostgreSQL, MySQL, MySQL8, MariaDB, SQLite, ClickHouse |
-| `document` | MongoDB, Elasticsearch |
-| `keyvalue` | Redis |
+| `sql` | PostgreSQL, MySQL, MySQL8, MariaDB, SQLite, ClickHouse, CockroachDB, DuckDB, TiDB, YugabyteDB, QuestDB |
+| `document` | MongoDB, Elasticsearch, OpenSearch, FerretDB |
+| `keyvalue` | Redis, Valkey, Dragonfly, Memcached |
 
 ### Database Fixtures
 
 Located in `frontend/e2e/fixtures/databases/`:
 - `postgres.json`, `mysql.json`, `mysql8.json`, `mariadb.json`, `sqlite.json`
 - `mongodb.json`, `elasticsearch.json`, `clickhouse.json`, `redis.json`
+- `cockroachdb.json`, `duckdb.json`, `tidb.json`, `yugabytedb.json`, `questdb.json`
+- `opensearch.json`, `ferretdb.json`, `valkey.json`, `dragonfly.json`, `memcached.json`
 
 Each fixture defines: connection details, expected schemas, test data, and feature flags.
 
@@ -90,47 +92,45 @@ pnpm e2e:ce:headless:debug              # With Playwright debug logging
 ```
 
 
-```bash
-# Interactive mode
-
-# Headless mode
-```
-
 ### Feature Test Files
 
 Located in `frontend/e2e/tests/features/`:
 
 | File | Tests |
 |------|-------|
-| `login.spec.mjs` | Authentication flow |
-| `crud.spec.mjs` | Create, Read, Update, Delete operations |
-| `query-history.spec.mjs` | Query history tracking |
-| `scratchpad.spec.mjs` | SQL/query editor |
-| `explore.spec.mjs` | Database exploration |
-| `graph.spec.mjs` | Entity relationship graphs |
-| `export.spec.mjs` | Data export functionality |
-| `pagination.spec.mjs` | Pagination controls |
-| `sorting.spec.mjs` | Column sorting |
-| `search.spec.mjs` | Search functionality |
-| `where-conditions.spec.mjs` | SQL WHERE clause building |
-| `schema-management.spec.mjs` | Schema operations |
-| `data-types.spec.mjs` | Data type handling |
-| `type-casting.spec.mjs` | Data type conversion |
-| `mock-data.spec.mjs` | Mock data generation |
-| `error-handling.spec.mjs` | Error scenarios |
-| `loading-states.spec.mjs` | Loading state display |
-| `keyboard-shortcuts.spec.mjs` | Keyboard navigation |
-| `sidebar.spec.mjs` | Sidebar navigation |
-| `tables-list.spec.mjs` | Table listing |
-| `data-view.spec.mjs` | Data view UI |
-| `profiles.spec.mjs` | User profiles |
-| `settings.spec.mjs` | User settings |
-| `storage.spec.mjs` | Browser storage/persistence |
-| `tour.spec.mjs` | User onboarding tour |
+| `accessibility.spec.mjs` | Accessibility compliance |
 | `chat.spec.mjs` | AI chat functionality |
+| `cloud-providers.spec.mjs` | Cloud provider integration |
+| `crud.spec.mjs` | Create, Read, Update, Delete operations |
+| `data-types.spec.mjs` | Data type handling |
+| `data-view.spec.mjs` | Data view UI |
+| `error-handling.spec.mjs` | Error scenarios |
+| `explore.spec.mjs` | Database exploration |
+| `export.spec.mjs` | Data export functionality |
+| `graph.spec.mjs` | Entity relationship graphs |
+| `health-overlays.spec.mjs` | Health check overlays |
+| `import.spec.mjs` | Data import functionality |
 | `key-types.spec.mjs` | Redis key types |
+| `keyboard-shortcuts.spec.mjs` | Keyboard navigation |
+| `loading-states.spec.mjs` | Loading state display |
+| `login.spec.mjs` | Authentication flow |
+| `mock-data.spec.mjs` | Mock data generation |
+| `pagination.spec.mjs` | Pagination controls |
+| `profiles.spec.mjs` | User profiles |
+| `query-history.spec.mjs` | Query history tracking |
+| `schema-management.spec.mjs` | Schema operations |
+| `scratchpad.spec.mjs` | SQL/query editor |
+| `search.spec.mjs` | Search functionality |
+| `settings.spec.mjs` | User settings |
+| `sidebar.spec.mjs` | Sidebar navigation |
+| `sorting.spec.mjs` | Column sorting |
 | `ssl-config.spec.mjs` | SSL configuration |
 | `ssl-modes.spec.mjs` | SSL modes |
+| `storage.spec.mjs` | Browser storage/persistence |
+| `tables-list.spec.mjs` | Table listing |
+| `tour.spec.mjs` | User onboarding tour |
+| `type-casting.spec.mjs` | Data type conversion |
+| `where-conditions.spec.mjs` | SQL WHERE clause building |
 
 ### Screenshot Tests
 
@@ -264,6 +264,7 @@ core/
 │   ├── graphql_integration_test.go     # Integration tests
 │   ├── resolver_mutation_test.go       # Mutation tests
 │   ├── http_resolvers_test.go          # HTTP resolver tests
+│   ├── import_helpers_test.go          # Import helper tests
 │   └── mockdata_resolver_test.go       # Mock data tests
 ├── src/
 │   ├── settings/*_test.go              # Settings tests
@@ -276,7 +277,8 @@ core/
 └── test/integration/
     ├── main_test.go                    # Integration setup
     ├── roundtrip_test.go               # Basic roundtrip
-    └── full_roundtrip_test.go          # Full roundtrip
+    ├── full_roundtrip_test.go          # Full roundtrip
+    └── ssl_test.go                     # SSL integration tests
 ```
 
 ### Running Backend Tests
