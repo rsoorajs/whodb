@@ -272,11 +272,11 @@ docker run -p 8080:8080 clidey/whodb:latest
 ### WhoDB - Multi-Database Advantage
 
 <CardGroup cols={2}>
-<Card title="Community Edition" icon="database">
-PostgreSQL, MySQL, MariaDB, SQLite, MongoDB, Redis, ElasticSearch
+<Card title="Current CE Catalog" icon="database">
+PostgreSQL, MySQL, MariaDB, CockroachDB, SQLite3, MongoDB, Redis, ElasticSearch, ClickHouse, DuckDB, Memcached, TiDB, Valkey, Dragonfly, OpenSearch, YugabyteDB, QuestDB, and FerretDB
 </Card>
-<Card title="Enterprise Edition" icon="star">
-All above + Oracle, SQL Server, DynamoDB, Cassandra, Snowflake, Athena
+<Card title="Managed Variants" icon="star">
+Compatible managed and cloud-discovered variants such as DocumentDB and ElastiCache are also part of the current catalog
 </Card>
 </CardGroup>
 
@@ -302,7 +302,7 @@ phpMyAdmin exclusively supports:
 | Feature | WhoDB | phpMyAdmin |
 |---------|:----:|:---------:|
 | **SSL/TLS Support** | Yes | Yes |
-| **SSH Tunneling** | Yes | Yes |
+| **SSH / Bastion Workflow** | External tunnel in web, built-in in CLI | Limited |
 | **Certificate Verification** | Yes | Yes |
 | **Custom Certificates** | Yes | Yes |
 

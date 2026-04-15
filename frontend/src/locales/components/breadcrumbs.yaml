@@ -1,247 +1,185 @@
 en_US:
   home: Home
-  back: Back
 
 ar_AE:
-  home: بيت
-  back: خلف
+  home: "بيت"
 
 de_DE:
-  home: Heim
-  back: Zurück
+  home: "Heim"
 
 el_GR:
-  home: Σπίτι
-  back: Πίσω
+  home: "Σπίτι"
 
 en_GB:
-  home: Home
-  back: Back
+  home: "Home"
 
 es_ES:
-  home: Hogar
-  back: Atrás
+  home: "Hogar"
 
 fi_FI:
-  home: Kotiin
-  back: Takaisin
+  home: "Kotiin"
 
 fr_FR:
-  home: Maison
-  back: Dos
+  home: "Maison"
 
 it_IT:
-  home: Casa
-  back: Indietro
+  home: "Casa"
 
 iw_IL:
-  home: בַּיִת
-  back: בְּחֲזָרָה
+  home: "בַּיִת"
 
 ja_JP:
-  home: 家
-  back: 戻る
+  home: "家"
 
 ko_KR:
-  home: 집
-  back: 뒤쪽에
+  home: "집"
 
 nl_NL:
-  home: Thuis
-  back: Rug
+  home: "Thuis"
 
 pl_PL:
-  home: Dom
-  back: Z powrotem
+  home: "Dom"
 
 pt_BR:
-  home: Lar
-  back: Voltar
+  home: "Lar"
 
 ro_RO:
-  home: Acasă
-  back: Spate
+  home: "Acasă"
 
 ru_RU:
-  home: Дом
-  back: Назад
+  home: "Дом"
 
 sk_SK:
-  home: Domov
-  back: Späť
+  home: "Domov"
 
 sv_SE:
-  home: Hem
-  back: Tillbaka
+  home: "Hem"
 
 zh_CN:
-  home: 家
-  back: 后退
+  home: "家"
 
 zh_TW:
-  home: 家
-  back: 後退
+  home: "家"
 
 bg_BG:
-  home: Начало
-  back: Назад
+  home: "Начало"
 
 bn_BD:
-  home: বাড়ি
-  back: ব্যাক
+  home: "বাড়ি"
 
 ca_ES:
-  home: Casa
-  back: Enrere
+  home: "Casa"
 
 cs_CZ:
-  home: Domov
-  back: Zadní
+  home: "Domov"
 
 da_DK:
-  home: Hjem
-  back: Tilbage
+  home: "Hjem"
 
 fa_IR:
-  home: صفحه اصلی
-  back: برگشت
+  home: "صفحه اصلی"
 
 hi_IN:
-  home: घर
-  back: पीछे
+  home: "घर"
 
 hr_HR:
-  home: Dom
-  back: Nazad
+  home: "Dom"
 
 hu_HU:
-  home: Otthon
-  back: Vissza
+  home: "Otthon"
 
 id_ID:
-  home: Rumah
-  back: Kembali
+  home: "Rumah"
 
 ms_MY:
-  home: Rumah
-  back: belakang
+  home: "Rumah"
 
 nb_NO:
-  home: Hjem
-  back: Tilbake
+  home: "Hjem"
 
 sw_KE:
-  home: Nyumbani
-  back: Nyuma
+  home: "Nyumbani"
 
 ta_IN:
-  home: வீடு
-  back: மீண்டும்
+  home: "வீடு"
 
 th_TH:
-  home: บ้าน
-  back: กลับ
+  home: "บ้าน"
 
 tr_TR:
-  home: Ev
-  back: Geri
+  home: "Ev"
 
 uk_UA:
-  home: додому
-  back: Назад
+  home: "додому"
 
 ur_PK:
-  home: گھر
-  back: پیچھے
+  home: "گھر"
 
 vi_VN:
-  home: Trang chủ
-  back: Mặt sau
+  home: "Trang chủ"
 
 af_ZA:
   home: "Tuis"
-  back: "Terug"
 
 am_ET:
   home: "ቤት"
-  back: "ተመለስ"
 
 az_AZ:
   home: "Ev"
-  back: "Geri"
 
 et_EE:
   home: "Kodu"
-  back: "Tagasi"
 
 gu_IN:
   home: "ઘર"
-  back: "પાછળ"
 
 ha_NG:
   home: "Gida"
-  back: "Baya"
 
 ka_GE:
   home: "მთავარი"
-  back: "უკან"
 
 km_KH:
   home: "ផ្ទះ"
-  back: "ត្រឡប់មកវិញ"
 
 kn_IN:
   home: "ಮುಖಪುಟ"
-  back: "ಹಿಂದೆ"
 
 lt_LT:
   home: "Pradžia"
-  back: "Atgal"
 
 lv_LV:
   home: "Sākums"
-  back: "Atpakaļ"
 
 ml_IN:
   home: "വീട്"
-  back: "തിരികെ"
 
 mr_IN:
   home: "घर"
-  back: "मागे"
 
 ne_NP:
   home: "घर"
-  back: "पछाडि"
 
 pa_IN:
   home: "ਘਰ"
-  back: "ਵਾਪਸ"
 
 si_LK:
   home: "නිවස"
-  back: "ආපසු"
 
 sl_SI:
   home: "domov"
-  back: "Nazaj"
 
 sr_RS:
   home: "Хоме"
-  back: "Назад"
 
 te_IN:
   home: "హోమ్"
-  back: "వెనుకకు"
 
 tl_PH:
   home: "Bahay"
-  back: "Bumalik"
 
 uz_UZ:
   home: "Uy"
-  back: "Orqaga"
 
 yo_NG:
   home: "Ile"
-  back: "Pada"

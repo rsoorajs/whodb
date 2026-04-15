@@ -19,6 +19,7 @@ package src
 import (
 	"fmt"
 
+	"github.com/clidey/whodb/core/src/dbcatalog"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/envconfig"
 	"github.com/clidey/whodb/core/src/llm"
@@ -72,10 +73,10 @@ func GetLoginProfiles() []types.DatabaseCredentials {
 		profiles = append(profiles, retrievedProfiles...)
 	}
 
-	for _, plugin := range MainEngine.Plugins {
-		databaseProfiles := envconfig.GetDefaultDatabaseCredentials(string(plugin.Type))
+	for _, databaseType := range dbcatalog.IDs() {
+		databaseProfiles := envconfig.GetDefaultDatabaseCredentials(databaseType)
 		for _, databaseProfile := range databaseProfiles {
-			databaseProfile.Type = string(plugin.Type)
+			databaseProfile.Type = databaseType
 			databaseProfile.IsProfile = true
 			profiles = append(profiles, databaseProfile)
 		}

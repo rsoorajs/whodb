@@ -130,6 +130,10 @@ var (
 			Foreground(Success).
 			Bold(true)
 
+	WarningStyle = lipgloss.NewStyle().
+			Foreground(Warning).
+			Bold(true)
+
 	MutedStyle = lipgloss.NewStyle().
 			Foreground(Muted)
 
@@ -262,15 +266,16 @@ func RenderHelpPartsWidth(parts []string, maxWidth int) string {
 		lines = append(lines, currentLine)
 	}
 
+	// Apply HelpStyle once to the entire block so MarginTop is not
+	// repeated per wrapped line.
 	result := ""
 	for i, line := range lines {
 		if i > 0 {
 			result += "\n"
 		}
-		result += HelpStyle.Render(line)
+		result += line
 	}
-
-	return result
+	return HelpStyle.Render(result)
 }
 
 func RenderHelpWithMaxItems(maxPerLine int, keys ...string) string {
@@ -393,3 +398,5 @@ func RenderErr(s string) string { return ErrorStyle.Render(s) }
 // RenderOk renders text in success style.
 func RenderOk(s string) string { return SuccessStyle.Render(s) }
 
+// RenderWarn renders text in warning style.
+func RenderWarn(s string) string { return WarningStyle.Render(s) }

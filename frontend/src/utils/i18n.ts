@@ -26,23 +26,24 @@ const translationCache: TranslationCache = {};
 // The yamlPlugin in vite.config.ts transforms these to pre-parsed JSON at build time.
 const ceModules = import.meta.glob<ParsedYaml>('/src/locales/**/*.yaml', { import: 'default', eager: true });
 
+/** Build a component-path → module index from raw glob results. */
+const buildIndex = (modules: Record<string, ParsedYaml>): Map<string, ParsedYaml> => {
+    const index = new Map<string, ParsedYaml>();
+    for (const [key, mod] of Object.entries(modules)) {
+        const match = key.match(/\/locales\/(.+)\.yaml$/);
+        if (match) index.set(match[1], mod);
+    }
+    return index;
+};
+
+const ceIndex = buildIndex(ceModules);
+
 // Extension locale modules — populated by registerLocaleModules()
-let extensionModules: Record<string, ParsedYaml> = {};
+let extensionIndex = new Map<string, ParsedYaml>();
 
 /** Register additional locale modules (called by extensions at boot). */
 export const registerLocaleModules = (modules: Record<string, ParsedYaml>) => {
-    extensionModules = { ...extensionModules, ...modules };
-};
-
-// Helper function to find module by component path
-const findModule = (modules: Record<string, ParsedYaml>, componentPath: string): ParsedYaml | undefined => {
-    // Try exact match first
-    for (const key in modules) {
-        if (key.endsWith(`/${componentPath}.yaml`)) {
-            return modules[key];
-        }
-    }
-    return undefined;
+    extensionIndex = buildIndex(modules);
 };
 
 /**
@@ -75,16 +76,20 @@ export const loadTranslationsSync = (
     }
 
     try {
-        let translations: TranslationMap | undefined;
+        // Start with shared common translations as the base layer
+        const commonParsed = ceIndex.get('common');
+        let translations: TranslationMap = commonParsed
+            ? { ...(commonParsed[language] || commonParsed[DEFAULT_LANGUAGE]) }
+            : {};
 
-        // Load CE locale files as the base
-        const ceParsed = findModule(ceModules, componentPath);
+        // Merge component-specific translations on top
+        const ceParsed = ceIndex.get(componentPath);
         if (ceParsed) {
-            translations = ceParsed[language] || ceParsed[DEFAULT_LANGUAGE];
+            translations = { ...translations, ...(ceParsed[language] || ceParsed[DEFAULT_LANGUAGE]) };
         }
 
         // Merge extension translations on top (overrides CE keys if present)
-        const extParsed = findModule(extensionModules, componentPath);
+        const extParsed = extensionIndex.get(componentPath);
         if (extParsed) {
             const extTranslations = extParsed[language] || extParsed[DEFAULT_LANGUAGE];
             if (extTranslations) {
@@ -92,12 +97,12 @@ export const loadTranslationsSync = (
             }
         }
 
-        if (!translations) {
+        if (!ceParsed && !extParsed) {
             console.error(`Translation file not found for ${componentPath}`, {
-                availableCE: Object.keys(ceModules),
+                availableCE: [...ceIndex.keys()],
                 language
             });
-            return {};
+            return translations;
         }
 
         translationCache[cacheKey] = translations;
@@ -106,13 +111,6 @@ export const loadTranslationsSync = (
         console.error(`Failed to load translations for ${componentPath}:`, error);
         return {};
     }
-};
-
-export const loadTranslations = async (
-    componentPath: string,
-    language: SupportedLanguage
-): Promise<TranslationMap> => {
-    return loadTranslationsSync(componentPath, language);
 };
 
 /**
@@ -129,25 +127,25 @@ export const getTranslation = (
     translations: TranslationMap,
     key: string,
     language: SupportedLanguage,
-    fallbackOrParams?: string | Record<string, any>
+    params?: Record<string, any>
 ): string => {
     let resolvedKey = key;
 
     // Pluralization: if params has a numeric `count`, resolve the plural form
-    if (typeof fallbackOrParams === 'object' && fallbackOrParams !== null && typeof fallbackOrParams.count === 'number') {
-        const category = getPluralCategory(language, fallbackOrParams.count);
+    if (params != null && typeof params.count === 'number') {
+        const category = getPluralCategory(language, params.count);
         const pluralKey = `${key}_${category}`;
         if (translations[pluralKey]) {
             resolvedKey = pluralKey;
         }
     }
 
-    const template = translations[resolvedKey] || (typeof fallbackOrParams === 'string' ? fallbackOrParams : resolvedKey);
+    const template = translations[resolvedKey] || resolvedKey;
 
     // Skip regex when the template has no placeholders
-    if (typeof fallbackOrParams === 'object' && fallbackOrParams !== null && template.includes('{')) {
+    if (params != null && template.includes('{')) {
         return template.replace(/\{(\w+)\}/g, (match, paramKey) => {
-            return String(fallbackOrParams[paramKey] ?? match);
+            return String(params[paramKey] ?? match);
         });
     }
 

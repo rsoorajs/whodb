@@ -251,3 +251,25 @@ func TestImportData_ReadOnlyBlocks(t *testing.T) {
 		t.Errorf("ImportData with read-only ON: got err=%v, want ErrReadOnly", err)
 	}
 }
+
+func TestGenerateMockData_ReadOnlyBlocks(t *testing.T) {
+	setupTestEnv(t)
+
+	mgr, err := NewManager()
+	if err != nil {
+		t.Fatalf("NewManager failed: %v", err)
+	}
+
+	mgr.currentConnection = &Connection{
+		Name: "test",
+		Type: "postgres",
+		Host: "localhost",
+	}
+
+	mgr.config.SetReadOnly(true)
+
+	_, err = mgr.GenerateMockData("public", "users", 10, false, 0)
+	if !errors.Is(err, ErrReadOnly) {
+		t.Errorf("GenerateMockData with read-only ON: got err=%v, want ErrReadOnly", err)
+	}
+}

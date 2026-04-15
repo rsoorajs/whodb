@@ -59,7 +59,7 @@ func NewGraphQLServer(es graphql.ExecutableSchema) *handler.Server {
 	return srv
 }
 
-func setupServer(router *chi.Mux, schema graphql.ExecutableSchema, httpHandlers map[string]http.HandlerFunc, staticFiles embed.FS) {
+func setupServer(router *chi.Mux, schema graphql.ExecutableSchema, httpHandlers map[string]http.Handler, staticFiles embed.FS) {
 	if !env.IsAPIGatewayEnabled {
 		fileServer(router, staticFiles)
 	}
@@ -70,8 +70,8 @@ func setupServer(router *chi.Mux, schema graphql.ExecutableSchema, httpHandlers 
 	setupPlaygroundHandler(router, server)
 
 	// Register additional HTTP handlers
-	for path, handler := range httpHandlers {
-		router.HandleFunc(path, handler)
+	for path, h := range httpHandlers {
+		router.Handle(path, h)
 	}
 }
 
@@ -116,7 +116,7 @@ func accessLogMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func setupMiddlewares(router *chi.Mux) {
+func setupMiddlewares(router *chi.Mux, additionalMiddlewares []func(http.Handler) http.Handler, publicPaths []string) {
 	allowedOrigins := env.AllowedOrigins
 	if len(allowedOrigins) == 0 {
 		allowedOrigins = append(allowedOrigins, "https://*", "http://*")
@@ -140,17 +140,37 @@ func setupMiddlewares(router *chi.Mux) {
 			MaxAge:           300,
 		}),
 		contextMiddleware,
-		auth.AuthMiddleware,
+	}
+	// Additional middlewares run before CE credential auth so that
+	// a bypass registered via auth.RegisterAuthBypass can see context they set.
+	middlewares = append(middlewares, additionalMiddlewares...)
+	if len(publicPaths) > 0 {
+		bypassSet := make(map[string]struct{}, len(publicPaths))
+		for _, p := range publicPaths {
+			bypassSet[p] = struct{}{}
+		}
+		middlewares = append(middlewares, func(next http.Handler) http.Handler {
+			authNext := auth.AuthMiddleware(next)
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if _, ok := bypassSet[r.URL.Path]; ok {
+					next.ServeHTTP(w, r)
+					return
+				}
+				authNext.ServeHTTP(w, r)
+			})
+		})
+	} else {
+		middlewares = append(middlewares, auth.AuthMiddleware)
 	}
 
 	router.Use(middlewares...)
 }
 
 // InitializeRouter creates the chi router with all middleware, GraphQL server, and additional HTTP handlers.
-func InitializeRouter(schema graphql.ExecutableSchema, httpHandlers map[string]http.HandlerFunc, staticFiles embed.FS) *chi.Mux {
+func InitializeRouter(schema graphql.ExecutableSchema, httpHandlers map[string]http.Handler, additionalMiddlewares []func(http.Handler) http.Handler, publicPaths []string, staticFiles embed.FS) *chi.Mux {
 	router := chi.NewRouter()
 
-	setupMiddlewares(router)
+	setupMiddlewares(router, additionalMiddlewares, publicPaths)
 	setupServer(router, schema, httpHandlers, staticFiles)
 
 	return router

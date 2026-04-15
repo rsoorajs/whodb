@@ -19,7 +19,6 @@ package mongodb
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -28,8 +27,8 @@ import (
 	"github.com/clidey/whodb/core/src/common/ssl"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // DefaultOperationTimeout is the default timeout for MongoDB operations.
@@ -88,8 +87,8 @@ func DB(config *engine.PluginConfig) (*mongo.Client, error) {
 	clientOptions.SetMaxConnIdleTime(5 * time.Minute)
 	if config.Credentials.Username != "" || config.Credentials.Password != "" {
 		clientOptions.SetAuth(options.Credential{
-			Username: url.QueryEscape(config.Credentials.Username),
-			Password: url.QueryEscape(config.Credentials.Password),
+			Username: config.Credentials.Username,
+			Password: config.Credentials.Password,
 		})
 	}
 
@@ -111,7 +110,9 @@ func DB(config *engine.PluginConfig) (*mongo.Client, error) {
 		}
 	}
 
-	client, err := mongo.Connect(ctx, clientOptions)
+	clientOptions.SetBSONOptions(&options.BSONOptions{DefaultDocumentMap: true})
+
+	client, err := mongo.Connect(clientOptions)
 	if err != nil {
 		log.WithError(err).WithFields(map[string]any{
 			"hostname":   config.Credentials.Hostname,

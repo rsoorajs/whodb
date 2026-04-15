@@ -18,11 +18,13 @@ package database
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/clidey/whodb/cli/internal/config"
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/types"
 )
 
 func TestNewManager(t *testing.T) {
@@ -58,6 +60,100 @@ func TestGetCurrentConnection_NotConnected(t *testing.T) {
 	if conn != nil {
 		t.Error("Expected nil connection when not connected")
 	}
+}
+
+func TestGetSSLStatusSummary_NotConnected(t *testing.T) {
+	setupTestEnv(t)
+
+	mgr, err := NewManager()
+	if err != nil {
+		t.Fatalf("NewManager failed: %v", err)
+	}
+
+	_, err = mgr.GetSSLStatusSummary()
+	if err == nil {
+		t.Error("Expected error when not connected")
+	}
+}
+
+func TestFormatSSLStatusSummary(t *testing.T) {
+	tests := []struct {
+		name   string
+		status *engine.SSLStatus
+		want   string
+	}{
+		{
+			name:   "nil",
+			status: nil,
+			want:   "",
+		},
+		{
+			name: "enabled without mode",
+			status: &engine.SSLStatus{
+				IsEnabled: true,
+			},
+			want: "SSL/TLS: enabled",
+		},
+		{
+			name: "enabled with mode",
+			status: &engine.SSLStatus{
+				IsEnabled: true,
+				Mode:      "verify-full",
+			},
+			want: "SSL/TLS: enabled (verify-full)",
+		},
+		{
+			name: "disabled without mode",
+			status: &engine.SSLStatus{
+				IsEnabled: false,
+			},
+			want: "SSL/TLS: disabled",
+		},
+		{
+			name: "disabled with mode",
+			status: &engine.SSLStatus{
+				IsEnabled: false,
+				Mode:      "required",
+			},
+			want: "SSL/TLS: required",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := formatSSLStatusSummary(tt.status); got != tt.want {
+				t.Fatalf("formatSSLStatusSummary() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetEnvConnectionsIncludesCatalogAlias(t *testing.T) {
+	setupTestEnv(t)
+
+	envCreds := []types.DatabaseCredentials{{
+		Hostname: "ferret-host",
+		Username: "ferret-user",
+		Database: "ferret-db",
+		Port:     "27017",
+	}}
+	envValue, err := json.Marshal(envCreds)
+	if err != nil {
+		t.Fatalf("failed to marshal env credentials: %v", err)
+	}
+	t.Setenv("WHODB_FERRETDB", string(envValue))
+
+	mgr := &Manager{engine: &engine.Engine{}}
+	for _, conn := range mgr.getEnvConnections() {
+		if conn.Type == string(engine.DatabaseType_FerretDB) &&
+			conn.Host == "ferret-host" &&
+			conn.Port == 27017 &&
+			conn.IsProfile {
+			return
+		}
+	}
+
+	t.Fatal("expected FerretDB env connection to be discovered from the shared catalog")
 }
 
 func TestDisconnect(t *testing.T) {

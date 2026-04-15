@@ -317,7 +317,7 @@ func (v *BrowserView) Update(msg tea.Msg) (*BrowserView, tea.Cmd) {
 					v.parent.connectionView.connecting = false
 					v.parent.connectionView.connError = nil
 					v.parent.connectionView.refreshList()
-					return v, nil
+					return v, v.parent.connectionView.pingAllConnections()
 				}
 				// First press — show confirmation
 				v.escConfirm = true
@@ -471,6 +471,7 @@ func (v *BrowserView) View() string {
 				Keys.Browser.Editor,
 				Keys.Browser.AIChat,
 				Keys.Browser.History,
+				Keys.Global.MockData,
 				Keys.Browser.Refresh,
 				Keys.Global.NextView,
 				Keys.Browser.Disconnect,

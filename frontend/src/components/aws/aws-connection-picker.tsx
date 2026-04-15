@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { FC, useCallback, useEffect } from "react";
+import { FC, useCallback, useEffect, useMemo } from "react";
 import {
     Badge,
     Button,
@@ -26,6 +26,7 @@ import {
     toast,
 } from "@clidey/ux";
 import {
+    CloudProviderType,
     useGetCloudProvidersQuery,
     useGetDiscoveredConnectionsQuery,
     useRefreshCloudProviderMutation,
@@ -65,10 +66,19 @@ export const AwsConnectionPicker: FC<AwsConnectionPickerProps> = ({
     const appName = getAppName();
     const dispatch = useAppDispatch();
 
-    // Redux state
-    const cloudProviders = useAppSelector(state => state.providers.cloudProviders);
-    const discoveredConnections = useAppSelector(state => state.providers.discoveredConnections);
+    // Redux state — filter to AWS only
+    const allProviders = useAppSelector(state => state.providers.cloudProviders);
+    const allConnections = useAppSelector(state => state.providers.discoveredConnections);
     const isModalOpen = useAppSelector(state => state.providers.isProviderModalOpen);
+
+    const cloudProviders = useMemo(() =>
+        allProviders.filter(p => p.ProviderType === CloudProviderType.Aws),
+        [allProviders]
+    );
+    const discoveredConnections = useMemo(() =>
+        allConnections.filter(c => c.ProviderType === CloudProviderType.Aws),
+        [allConnections]
+    );
 
     // GraphQL - these operations are on the auth allowlist, so no skip needed
     const { data: providersData, loading: providersLoading, refetch: refetchProviders } = useGetCloudProvidersQuery();
@@ -93,10 +103,11 @@ export const AwsConnectionPicker: FC<AwsConnectionPickerProps> = ({
     }, [dispatch]);
 
     const handleRefresh = useCallback(async () => {
-        // Refresh all providers to trigger fresh discovery
+        // Refresh AWS providers only to trigger fresh discovery
         const providers = providersData?.CloudProviders ?? [];
+        const awsOnly = providers.filter(p => p.ProviderType === CloudProviderType.Aws);
         let hasErrors = false;
-        for (const provider of providers) {
+        for (const provider of awsOnly) {
             try {
                 const result = await refreshProvider({ variables: { id: provider.Id } });
                 // Check if there was a partial error (some services failed)
@@ -200,8 +211,8 @@ export const AwsConnectionPicker: FC<AwsConnectionPickerProps> = ({
                                         <p className="font-medium text-foreground">{t('helpServices')}</p>
                                         <ul className="list-disc list-inside space-y-1 pl-1">
                                             <li><span className="font-medium">RDS</span> – {t('helpRdsDesc')}</li>
-                                            <li><span className="font-medium">ElastiCache</span> – {t('helpElasticacheDesc')}</li>
-                                            <li><span className="font-medium">DocumentDB</span> – {t('helpDocumentdbDesc')}</li>
+                                            <li><span className="font-medium">ElastiCache</span> – {t('elasticacheDesc')}</li>
+                                            <li><span className="font-medium">DocumentDB</span> – {t('documentdbDesc')}</li>
                                         </ul>
                                     </div>
                                     <p className="pt-1 border-t">{t('helpCredentialNote', { appName })}</p>

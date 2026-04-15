@@ -1,0 +1,62 @@
+---
+title: "API Development"
+description: "Use WhoDB to inspect schemas, validate data, and support API workflows"
+---
+
+# API Development
+
+WhoDB is useful when you are building or debugging an API layer on top of a database and need fast visibility into schema shape, live data, and query behavior.
+
+## Where It Helps
+
+<CardGroup cols={2}>
+<Card title="Schema Inspection" icon="database">
+Check tables, columns, relationships, and field types before you change your API contracts.
+</Card>
+<Card title="Query Prototyping" icon="code">
+Use Scratchpad to validate the SQL behind new endpoints and compare result shapes quickly.
+</Card>
+<Card title="Seed And Fixture Data" icon="table">
+Import CSV, Excel, or SQL when you need repeatable local API test data.
+</Card>
+<Card title="Tool Integration" icon="cloud">
+Use the CLI or MCP server in local workflows and AI-assisted tooling.
+</Card>
+</CardGroup>
+
+## Typical Workflow
+
+<Steps>
+<Step title="Inspect The Schema">
+Use the schema explorer and graph view to verify table names, keys, and relationships before writing a new endpoint or query.
+</Step>
+<Step title="Prototype The Query">
+Use Scratchpad to iterate on joins, filters, and pagination logic before committing it to application code.
+</Step>
+<Step title="Check Real Data">
+Open the table view to confirm nullability, outliers, and the actual values your API will have to serialize.
+</Step>
+<Step title="Load Test Fixtures">
+Use the in-app import flow or `whodb-cli import` to load fixtures for local endpoint development.
+</Step>
+<Step title="Automate With MCP Or CLI">
+Expose `whodb-cli mcp serve` to local tooling when you want agentic or scripted workflows on top of saved connections.
+</Step>
+</Steps>
+
+## Related Pages
+
+<CardGroup cols={2}>
+<Card title="Scratchpad Introduction" icon="code" href="/query/scratchpad-intro">
+Prototype queries before turning them into endpoint code.
+</Card>
+<Card title="CLI & MCP" icon="code" href="/features/cli-and-mcp">
+Use the terminal client and MCP server in development workflows.
+</Card>
+<Card title="Importing Data" icon="table" href="/data/importing">
+Load fixtures and sample data for endpoint validation.
+</Card>
+<Card title="Schema Explorer" icon="database" href="/features/schema-explorer">
+Inspect tables and relationships before changing API contracts.
+</Card>
+</CardGroup>

@@ -31,7 +31,7 @@ export const ContactUsPage: FC = () => {
                     <div className="flex flex-col gap-sm mb-4">
                         <div className="text-2xl font-bold flex items-center gap-2">
                             <EnvelopeIcon className="w-6 h-6"/>
-                            {t('title')}
+                            {t('contactUs')}
                         </div>
                         <p className="mt-2">{t('description')}</p>
                     </div>

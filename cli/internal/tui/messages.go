@@ -88,6 +88,18 @@ type chatResponseMsg struct {
 	err      error
 }
 
+// chatStreamChunkMsg is sent for each streaming chunk during AI chat.
+type chatStreamChunkMsg struct {
+	text string // accumulated text so far
+}
+
+// chatStreamDoneMsg is sent when the AI chat stream completes.
+type chatStreamDoneMsg struct {
+	messages []*database.ChatMessage
+	query    string
+	err      error
+}
+
 // modelsLoadedMsg is sent when AI models are loaded
 type modelsLoadedMsg struct {
 	models []string
@@ -96,7 +108,8 @@ type modelsLoadedMsg struct {
 
 // connectionResultMsg is sent when a connection attempt completes
 type connectionResultMsg struct {
-	err error
+	err           error
+	statusMessage string
 }
 
 // escTimeoutTickMsg is sent to tick the ESC quit confirmation timer

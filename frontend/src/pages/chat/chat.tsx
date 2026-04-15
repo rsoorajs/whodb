@@ -74,11 +74,11 @@ import {ScratchpadActions} from "../../store/scratchpad";
 import {featureFlags} from "../../config/features";
 import {chooseRandomItems} from "../../utils/functions";
 import {getComponent} from "../../config/component-registry";
-import {databaseSupportsScratchpad, databaseTypesThatUseDatabaseInsteadOfSchema} from "../../utils/database-features";
+import {useDatabaseTraits} from "../../hooks/useDatabaseTraits";
 import {useNavigate} from "react-router-dom";
 import {useChatExamples} from "./examples";
 import {useTranslation} from '@/hooks/use-translation';
-import {addAuthHeader, isDesktopScheme} from "../../utils/auth-headers";
+import {addAuthHeader} from "../../utils/auth-headers";
 import {matchesShortcut, SHORTCUTS} from "../../utils/shortcuts";
 import {useContainerWidth} from "../../hooks/use-container-width";
 
@@ -131,6 +131,7 @@ const TablePreview: FC<{ type: string, data: TableData, text: string, containerW
     const navigate = useNavigate();
     const current = useAppSelector(state => state.auth.current);
     const { pages, activePageId } = useAppSelector(state => state.scratchpad);
+    const { supportsScratchpad } = useDatabaseTraits(current?.Type);
 
     const handleCodeToggle = useCallback(() => {
         setShowSQL(status => !status);
@@ -145,7 +146,7 @@ const TablePreview: FC<{ type: string, data: TableData, text: string, containerW
     }, [pages, activePageId, t]);
 
     const handleMoveToScratchpad = useCallback(() => {
-        if (!databaseSupportsScratchpad(current?.Type)) {
+        if (!supportsScratchpad) {
             toast.error(t('scratchpadNotSupported'));
             return;
         }
@@ -154,7 +155,7 @@ const TablePreview: FC<{ type: string, data: TableData, text: string, containerW
             dispatch(ScratchpadActions.ensurePagesHaveCells());
         }
         setShowScratchpadDialog(true);
-    }, [current?.Type, pages.length, dispatch, t]);
+    }, [dispatch, pages.length, supportsScratchpad, t]);
 
     const handleScratchpadConfirm = useCallback(() => {
         if (selectedPage === "new") {
@@ -194,8 +195,8 @@ const TablePreview: FC<{ type: string, data: TableData, text: string, containerW
     }, [data, type, t]);
 
     const canMoveToScratchpad = useMemo(() => {
-        return databaseSupportsScratchpad(current?.Type) && type.startsWith("sql:");
-    }, [current?.Type, type]);
+        return supportsScratchpad && type.startsWith("sql:");
+    }, [supportsScratchpad, type]);
 
     return <div className="flex gap-2 w-[calc(100%-50px)] max-w-full min-w-0 group/table-preview">
         <div className={cn("transition-all shrink-0 pt-1", {
@@ -268,7 +269,7 @@ const TablePreview: FC<{ type: string, data: TableData, text: string, containerW
         <Dialog open={showScratchpadDialog} onOpenChange={setShowScratchpadDialog}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>{t('dialogTitle')}</DialogTitle>
+                    <DialogTitle>{t('moveToScratchpad')}</DialogTitle>
                     <DialogDescription>
                         {t('dialogDescription')}
                     </DialogDescription>
@@ -335,6 +336,7 @@ export const ChatPage: FC = () => {
     const containerWidth = useContainerWidth(scrollContainerRef);
     const schemaFromState = useAppSelector(state => state.database.schema);
     const authProfile = useAppSelector(state => state.auth.current);
+    const { usesDatabaseInsteadOfSchema } = useDatabaseTraits(authProfile?.Type);
     const [executingConfirmedId, setExecutingConfirmedId] = useState<number | null>(null);
     const [showQueryForId, setShowQueryForId] = useState<number | null>(null);
     const [copiedSqlId, setCopiedSqlId] = useState<number | null>(null);
@@ -343,11 +345,11 @@ export const ChatPage: FC = () => {
     // For databases that use "database" instead of "schema" (MySQL, MariaDB, etc.),
     // we need to pass the database value where the backend expects "schema"
     const schema = useMemo(() => {
-        if (databaseTypesThatUseDatabaseInsteadOfSchema(authProfile?.Type)) {
+        if (usesDatabaseInsteadOfSchema) {
             return authProfile?.Database || '';
         }
         return schemaFromState;
-    }, [authProfile?.Type, authProfile?.Database, schemaFromState]);
+    }, [authProfile?.Database, schemaFromState, usesDatabaseInsteadOfSchema]);
     const [currentSearchIndex, setCurrentSearchIndex] = useState<number>();
 
     const dispatch = useAppDispatch();
@@ -463,30 +465,25 @@ export const ChatPage: FC = () => {
         }, 250);
 
         try {
-            const isDesktop = isDesktopScheme();
-            const endpoint = '/api/ai-chat/stream';
-
-            const requestBody = {
-                schema,
-                modelType: modelType.modelType,
-                providerId: modelType.id || '',
-                token: modelType.token || '',
-                model: currentModel ?? '',
-                input: {
-                    Query: sanitizedQuery,
-                    PreviousConversation: chats.map(chat =>
-                        `${chat.isUserInput ? "<User>" : "<System>"}${chat.Text}${chat.isUserInput ? "</User>" : "</System>"}`
-                    ).join("\n"),
-                },
-            };
-
-            const response = await fetch(endpoint, {
+            const response = await fetch('/api/ai-chat/stream', {
                 method: 'POST',
                 credentials: 'include',
                 headers: addAuthHeader({
                     'Content-Type': 'application/json',
                 }),
-                body: JSON.stringify(requestBody),
+                body: JSON.stringify({
+                    schema,
+                    modelType: modelType.modelType,
+                    providerId: modelType.id || '',
+                    token: modelType.token || '',
+                    model: currentModel ?? '',
+                    input: {
+                        Query: sanitizedQuery,
+                        PreviousConversation: chats.map(chat =>
+                            `${chat.isUserInput ? "<User>" : "<System>"}${chat.Text}${chat.isUserInput ? "</User>" : "</System>"}`
+                        ).join("\n"),
+                    },
+                }),
             });
 
             if (!response.ok) {
@@ -494,53 +491,6 @@ export const ChatPage: FC = () => {
                 return;
             }
 
-            // Check response type - server returns JSON for non-streaming (Wails), SSE for streaming
-            const contentType = response.headers.get('Content-Type') || '';
-            const isNonStreaming = contentType.includes('application/json') || isDesktop;
-
-            // Non-streaming mode (desktop/Wails) - server returns JSON
-            if (isNonStreaming) {
-                const data = await response.json();
-                // Server returns { messages: [...], done: true }
-                const messages = data.messages || data;
-
-                // Remove the placeholder streaming message
-                dispatch(HoudiniActions.removeChatMessage(streamingMessageId));
-
-                // Add all messages from the response
-                if (Array.isArray(messages)) {
-                    for (const msg of messages) {
-                        const messageId = getUniqueMessageId();
-                        dispatch(HoudiniActions.addChatMessage({
-                            Type: msg.Type,
-                            Text: msg.Text,
-                            Result: msg.Result,
-                            RequiresConfirmation: msg.RequiresConfirmation || false,
-                            id: messageId,
-                        }));
-                    }
-                }
-
-                setLoading(false);
-
-                // Try to generate title if session still has default name
-                if (shouldTryTitle) {
-                    generateChatTitle(sanitizedQuery);
-                }
-
-                // Scroll to bottom
-                setTimeout(() => {
-                    if (scrollContainerRef.current != null) {
-                        scrollContainerRef.current.scroll({
-                            top: scrollContainerRef.current.scrollHeight,
-                            behavior: "smooth",
-                        });
-                    }
-                }, 100);
-                return;
-            }
-
-            // SSE streaming mode (browser)
             if (!response.body) {
                 setLoading(false);
                 return;
@@ -551,6 +501,7 @@ export const ChatPage: FC = () => {
             let streamingText = '';
             let currentEventType = '';
             let addedSqlMessages = new Set<string>(); // Track added SQL to avoid duplicates
+            let streamDone = false;
 
             while (true) {
                 const { done, value } = await reader.read();
@@ -638,6 +589,7 @@ export const ChatPage: FC = () => {
                                 if (shouldTryTitle) {
                                     generateChatTitle(sanitizedQuery);
                                 }
+                                streamDone = true;
                             } else if (currentEventType === 'error') {
                                 dispatch(HoudiniActions.removeChatMessage(streamingMessageId));
                                 const errorMessage = typeof parsed.error === 'string'
@@ -645,11 +597,18 @@ export const ChatPage: FC = () => {
                                     : parsed.error?.message || parsed.message || 'Unknown error';
                                 toast.error(t('unableToQuery') + " " + errorMessage);
                                 setLoading(false);
+                                streamDone = true;
                             }
                         } catch (e) {
                             console.error('Failed to parse SSE data:', e);
                         }
                     }
+                }
+
+                // Stop reading after done/error — avoids WebKit throwing on post-EOF read in Wails
+                if (streamDone) {
+                    reader.cancel();
+                    break;
                 }
             }
         } catch (error) {

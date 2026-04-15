@@ -465,7 +465,7 @@ export const ImportData: FC<ImportDataProps> = ({
         className="max-w-lg w-full p-8 flex flex-col h-full"
         data-testid="import-dialog"
       >
-        <SheetTitle>{t("title")}</SheetTitle>
+        <SheetTitle>{t("importData")}</SheetTitle>
         <div className="flex-1 overflow-y-auto mt-4">
           <div className="flex flex-col gap-lg pr-2">
             <div className="space-y-4">
@@ -559,7 +559,7 @@ export const ImportData: FC<ImportDataProps> = ({
 
                   {dataFormat === "excel" && (
                     <div className="space-y-2">
-                      <Label>{t("sheetAutoLabel")}</Label>
+                      <Label>{t("sheet")}</Label>
                       <p className="text-sm text-muted-foreground">
                         {loadingPreview
                           ? t("sheetAutoLoading")
@@ -753,11 +753,11 @@ export const ImportData: FC<ImportDataProps> = ({
               }
               data-testid="import-submit-button"
             >
-              {loadingImport ? t("importing") : t("import")}
+              {loadingImport ? t("importing") : t("importAction")}
             </Button>
           ) : (
             <Button onClick={handleImportSQL} disabled={loadingSQL || !sqlConfirmed} data-testid="import-submit-button">
-              {loadingSQL ? t("importing") : t("import")}
+              {loadingSQL ? t("importing") : t("importAction")}
             </Button>
           )}
         </SheetFooter>

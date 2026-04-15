@@ -2,7 +2,7 @@ import classNames from "classnames";
 import { FC, useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { LocalLoginProfile } from "../store/auth";
-import { getDatabaseTypeDropdownItemsSync } from "../config/database-types";
+import { useDatabaseTypeDropdownItem } from "../hooks/useDatabaseCatalog";
 import { InformationCircleIcon } from "./heroicons";
 import { useTranslation } from "@/hooks/use-translation";
 
@@ -21,10 +21,7 @@ const isValidProfileId = (profileId: string): boolean =>
   profileId.length <= PROFILE_ID_MAX_LENGTH && 
   PROFILE_ID_REGEX.test(profileId);
 
-const getPortFromAdvanced = (profile: LocalLoginProfile): string | null => {
-  const defaultPortItem = getDatabaseTypeDropdownItemsSync().find(item => item.id === profile.Type);
-  const defaultPort = defaultPortItem?.extra?.Port;
-  
+const getPortFromAdvanced = (profile: LocalLoginProfile, defaultPort: string | undefined): string | null => {
   if (!defaultPort) return null;
   
   if (profile.Advanced) {
@@ -74,13 +71,19 @@ const TOOLTIP_CLASSES = {
   button: "flex items-center justify-center w-4 h-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full transition-colors"
 };
 
+/**
+ * Displays contextual profile details such as the effective port and last login time.
+ */
 export const ProfileInfoTooltip: FC<ProfileInfoTooltipProps> = ({ profile, className }) => {
   const { t } = useTranslation('components/profile-info-tooltip');
   const [isVisible, setIsVisible] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement | null>(null);
+  const { item: databaseTypeItem } = useDatabaseTypeDropdownItem(profile.Type);
 
-  const port = getPortFromAdvanced(profile);
+  const port = useMemo(() => {
+    return getPortFromAdvanced(profile, databaseTypeItem?.extra?.Port);
+  }, [databaseTypeItem?.extra?.Port, profile]);
   const lastAccessed = getLastAccessedTime(profile.Id);
 
   if (!port && !lastAccessed) return null;
@@ -171,6 +174,11 @@ export const ProfileInfoTooltip: FC<ProfileInfoTooltipProps> = ({ profile, class
   );
 };
 
+/**
+ * Stores the latest successful login timestamp for a saved profile.
+ *
+ * @param profileId The saved profile identifier.
+ */
 export const updateProfileLastAccessed = (profileId: string): void => {
   if (!isValidProfileId(profileId)) return;
   

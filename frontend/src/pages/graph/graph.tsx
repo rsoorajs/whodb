@@ -31,8 +31,8 @@ import {
     useGetColumnsBatchLazyQuery,
     useGetStorageUnitsQuery
 } from '@graphql';
+import {useDatabaseTraits} from "../../hooks/useDatabaseTraits";
 import {useAppSelector} from "../../store/hooks";
-import {getDatabaseStorageUnitLabel} from "../../utils/functions";
 import {StorageUnitGraphCard} from "../storage-unit/storage-unit";
 import {useTranslation} from '@/hooks/use-translation';
 import {
@@ -48,7 +48,6 @@ import {
 } from "@clidey/ux";
 import {useNavigate} from "react-router-dom";
 import {FolderIcon, RectangleGroupIcon, TableCellsIcon} from "../../components/heroicons";
-import {databaseUsesSchemaForGraph} from "../../utils/database-features";
 
 // Helper function to group storage units by type
 function groupByType(units: StorageUnit[]) {
@@ -84,6 +83,7 @@ const GraphSidebar: FC<GraphSidebarProps> = ({
     unitsLoading
 }) => {
     const { t } = useTranslation('pages/graph');
+    const { storageUnitLabel } = useDatabaseTraits(current?.Type);
     const children = useMemo(() => {
         const units: StorageUnit[] = (storageUnitsData?.StorageUnit ?? [])
             .filter((u: StorageUnit) => u.Name.toLowerCase().includes(search.trim().toLowerCase()));
@@ -125,15 +125,15 @@ const GraphSidebar: FC<GraphSidebarProps> = ({
                 <SidebarContent data-testid="graph-sidebar-content">
                     <SidebarHeader>
                         <h1 className="text-lg font-semibold pt-8 px-4">
-                            {getDatabaseStorageUnitLabel(current?.Type)}
+                            {storageUnitLabel}
                         </h1>
                     </SidebarHeader>
                     <div className="px-4">
                         <SearchInput
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            placeholder={t('searchPlaceholder')}
-                            aria-label={t('searchAriaLabel')}
+                            placeholder={t('searchTables')}
+                            aria-label={t('searchTables')}
                         />
                     </div>
                     <SidebarGroup>
@@ -158,6 +158,7 @@ export const GraphPage: FC = () => {
     const reactFlowRef = useRef<IGraphInstance>();
     const schema = useAppSelector(state => state.database.schema);
     const current = useAppSelector(state => state.auth.current);
+    const { singularStorageUnitLabel, storageUnitLabel, usesSchemaForGraph } = useDatabaseTraits(current?.Type);
     const navigate = useNavigate();
     const [search, setSearch] = useState("");
     const [selectedUnits, setSelectedUnits] = useState<Set<string>>(new Set());
@@ -172,7 +173,7 @@ export const GraphPage: FC = () => {
         refetch: refetchGraph
     } = useQuery<GetGraphQuery, GetGraphQueryVariables>(GetGraphDocument, {
         variables: {
-            schema: databaseUsesSchemaForGraph(current?.Type) ? schema : current?.Database ?? "",
+            schema: usesSchemaForGraph ? schema : current?.Database ?? "",
         },
         onCompleted(data) {
             setGraphData(data.Graph);
@@ -182,7 +183,7 @@ export const GraphPage: FC = () => {
     // Fetch all storage units for sidebar selection
     const {data: storageUnitsData, loading: unitsLoading, refetch: refetchStorageUnits} = useGetStorageUnitsQuery({
         variables: {
-            schema: databaseUsesSchemaForGraph(current?.Type) ? schema : current?.Database ?? "",
+            schema: usesSchemaForGraph ? schema : current?.Database ?? "",
         },
         skip: !current,
         fetchPolicy: "cache-and-network",
@@ -214,7 +215,7 @@ export const GraphPage: FC = () => {
         if (selectedUnits.size === 0) return;
         const needed = [...selectedUnits].filter(name => !(name in tableColumns));
         if (needed.length === 0) return;
-        const graphSchema = databaseUsesSchemaForGraph(current?.Type) ? schema : current?.Database ?? "";
+        const graphSchema = usesSchemaForGraph ? schema : current?.Database ?? "";
         fetchColumnsBatch({
             variables: { schema: graphSchema, storageUnits: needed },
         }).then(result => {
@@ -230,7 +231,7 @@ export const GraphPage: FC = () => {
         }).catch(error => {
             console.error('Failed to fetch columns batch:', error);
         });
-    }, [selectedUnits, tableColumns, fetchColumnsBatch, current?.Type, schema, current?.Database]);
+    }, [selectedUnits, tableColumns, fetchColumnsBatch, usesSchemaForGraph, schema, current?.Database]);
 
     // Build nodes and edges from graph data and selection
     const { computedNodes, computedEdges } = useMemo(() => {
@@ -412,9 +413,9 @@ export const GraphPage: FC = () => {
                         ? <EmptyState
                             icon={<RectangleGroupIcon className="w-4 h-4" />}
                             title={t('noNodesTitle')}
-                            description={t('noNodesDescription', { storageUnit: getDatabaseStorageUnitLabel(current?.Type).toLowerCase() })}>
+                            description={t('noNodesDescription', { storageUnit: storageUnitLabel.toLowerCase() })}>
                             <Button onClick={() => navigate(InternalRoutes.Dashboard.StorageUnit.path + "?create=true")}>
-                                {t('createButton', { storageUnit: getDatabaseStorageUnitLabel(current?.Type, true) })}
+                                {t('createButton', { storageUnit: singularStorageUnitLabel })}
                             </Button>
                         </EmptyState>
                         : <Graph nodes={nodes} edges={edges} nodeTypes={nodeTypes}

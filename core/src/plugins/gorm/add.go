@@ -76,6 +76,7 @@ func (p *GormPlugin) AddStorageUnit(config *engine.PluginConfig, schema string, 
 
 		createTableQuery := p.GetCreateTableQuery(db, schema, storageUnit, columns)
 
+		// codeql[go/sql-injection]: AddStorageUnit intentionally executes user-authored DDL for the requested table definition.
 		if err := db.Exec(createTableQuery).Error; err != nil {
 			log.WithError(err).Error(fmt.Sprintf("Failed to create table %s.%s with query: %s", schema, storageUnit, createTableQuery))
 			return false, err

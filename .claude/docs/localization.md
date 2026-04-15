@@ -11,20 +11,25 @@ WhoDB uses a YAML-based localization system with the `useTranslation` hook. All 
 1. Translation files are YAML files in `frontend/src/locales/` (CE) and `ee/frontend/src/locales/` (EE)
 2. Components load translations via `useTranslation('component-path')`
 3. The `t()` function retrieves strings by key, with automatic pluralization and interpolation
-4. EE translations merge on top of CE translations at load time
+4. Translation merge order: **common → component → extension (EE)**. Every component automatically inherits all keys from `common.yaml`, then its own YAML file overrides/extends, then EE translations override on top
 
 ## File Structure
 
 ```
 frontend/src/locales/          # CE translations
+├── common.yaml                # Shared keys available to ALL components
 ├── components/
 │   ├── table.yaml
 │   ├── editor.yaml
 │   └── ...
-└── pages/
-    ├── chat.yaml
-    ├── login.yaml
-    └── ...
+├── pages/
+│   ├── chat.yaml
+│   ├── login.yaml
+│   └── ...
+├── config/
+│   └── graphql-client.yaml
+└── hooks/
+    └── use-page-size.yaml
 
 ee/frontend/src/locales/       # EE-only translations (overrides CE)
 ├── components/
@@ -37,6 +42,27 @@ ee/frontend/src/locales/       # EE-only translations (overrides CE)
 ## Supported Languages
 
 Languages are defined in `frontend/src/utils/languages.ts`. Each YAML file contains all languages as top-level keys.
+
+## common.yaml — Shared Translations
+
+`frontend/src/locales/common.yaml` contains translation keys shared across multiple components. Every component automatically inherits these keys — no extra import or `useTranslation` call needed.
+
+**When to put a key in common.yaml:**
+- The same key+value is needed by 2+ components (e.g., `cancel`, `save`, `close`)
+- Generic UI terms: action buttons, status labels, error messages
+- Page/feature names used in both navigation and page headers (e.g., `chat`, `settings`, `graph`)
+
+**When NOT to use common.yaml:**
+- Keys specific to one component (even if the value seems generic like "Title")
+- Keys where the same English word has different meanings in context (use component-specific keys instead — they may need different translations in other languages)
+
+**Component-specific keys override common keys.** If `common.yaml` has `title: "Default"` and `components/export.yaml` has `title: "Export Data"`, the export component gets "Export Data".
+
+### Adding a new common key
+
+1. Add the `en_US` entry to `common.yaml`
+2. Run the translation script: `cd dev/translate && python3 detect.py && node translate.mjs`
+3. Remove the key from any component YAML files that previously had it
 
 ## YAML File Format
 
@@ -182,17 +208,11 @@ No special function needed — just pass JSX as a param value.
 
 ### 1. No Fallback Strings
 
-**Wrong:**
-```typescript
-t('buttonLabel', 'Click me')  // NO - fallback string
-```
+The `t()` function does NOT accept a fallback string parameter. This is enforced at the TypeScript level — `t('key', 'fallback')` is a compile error. Keys must exist in YAML.
 
-**Correct:**
 ```typescript
 t('buttonLabel')  // YES - key must exist in YAML
 ```
-
-Why: Fallback strings create maintenance burden and can hide missing translations.
 
 ### 2. No Hardcoded UI Text
 
@@ -230,6 +250,16 @@ en_US:
   confirmDelete: Are you sure you want to delete this?
 ```
 
+### 5. No Duplicate Keys
+
+Before adding a new key, check if it already exists in `common.yaml` or in another component's YAML file with the same value.
+
+**Wrong:** Adding `cancel: Cancel` to a new component's YAML when `common.yaml` already has it.
+
+**Correct:** Just use `t('cancel')` — it comes from the common layer automatically.
+
+If the same key+value is needed by 2+ components, it belongs in `common.yaml`, not duplicated in each component file. When adding a new string that could be reusable (action buttons, status messages, generic labels), add it to `common.yaml` directly.
+
 ## Pluralization
 
 Uses CLDR plural rules via `Intl.PluralRules`. Add suffix keys for plural categories (`_one`, `_other`, `_two`, `_few`, `_many`, `_zero`):
@@ -252,13 +282,16 @@ The `count` param triggers plural resolution automatically. The base key (withou
 
 ## Adding New Strings
 
-1. Add the key to the appropriate YAML file under `en_US:`
-2. Use `t('keyName')` in your component
-3. Run the translation script to generate translations for all languages:
+1. **Check common.yaml first.** If the string already exists there (e.g., `cancel`, `save`, `close`, `delete`), just use `t('keyName')` — it's available to all components automatically
+2. **Decide where it belongs:**
+   - Generic UI terms used by multiple components → `common.yaml`
+   - Component-specific strings → the component's own YAML file (e.g., `components/table.yaml`)
+3. Add the `en_US:` key to the chosen YAML file
+4. Use `t('keyName')` in your component
+5. Run the translation script to generate translations for all languages:
    ```bash
-   cd dev/translate && node translate.mjs
+   cd dev/translate && python3 detect.py && node translate.mjs
    ```
-   The script is resumable — it skips languages already present in each file.
 
 ## What NOT to Localize
 
@@ -296,60 +329,47 @@ const items = [t('option1'), t('option2'), t('option3')];
 
 ## Translation Tooling
 
-### Machine Translation Script (`dev/translate/`)
-
-Translates `en_US` strings to all supported languages using Google Translate (via `google-translate-api-x`). Handles both CE and EE locale files.
+### Full workflow: detect drift, then translate
 
 ```bash
 cd dev/translate
-pnpm install
-node translate.mjs              # all languages
-node translate.mjs fr_FR de_DE  # specific languages only
+python3 detect.py              # step 1: find missing/stale/orphaned keys
+node translate.mjs             # step 2: machine-translate and apply
+node translate.mjs fr_FR de_DE # step 2: specific languages only
 ```
 
-- Resumable: skips locale blocks already present in each YAML file
+### Drift Detection (`dev/translate/detect.py`)
+
+Scans all YAML files (CE and EE) to find:
+- **Missing** keys: in `en_US` but absent from a translation
+- **Stale** keys: English text changed since last translation (SHA-256 checksum mismatch)
+- **Orphaned** keys: in a translation but removed from `en_US`
+
+Outputs `drift.json` for `translate.mjs` to consume. Uses `checksums.json` to track what was translated when.
+
+### Machine Translation (`dev/translate/translate.mjs`)
+
+Translates missing/stale keys using Google Translate (via `google-translate-api-x`).
+
+- Reads `drift.json` produced by `detect.py`
 - Protects `{placeholder}` tokens during translation
 - Handles `en_GB` via US→UK spelling substitutions
-- Groups duplicate Google Translate codes (e.g. `zh_TW`/`zh_HK`) to avoid redundant API calls
-
-### Drift Detection & Import (`ee/dev/translation-tool/`)
-
-Tools for managing translation quality after machine translation:
-
-**`generate.py`** — Finds missing, stale, and orphaned translations. Produces a ZIP package for human translators.
-
-```bash
-cd ee/dev/translation-tool
-uv run python generate.py                    # all languages
-uv run python generate.py -l "fr_FR,de_DE"   # specific languages
-```
-
-- Uses SHA-256 checksums (`checksums.json`) to detect when English strings change after translation
-- Reports missing keys (untranslated), stale keys (English changed), orphaned keys (no longer in English)
-
-**`import_translations.py`** — Imports human-reviewed translations back into CE and EE locale files.
-
-```bash
-uv run python import_translations.py /path/to/translations --dry-run
-uv run python import_translations.py /path/to/translations
-```
-
-- Routes keys to the correct file: CE keys → CE file, EE-only keys → EE file
-- Normalizes indentation, fixes `{{placeholders}}` → `{placeholders}`, quotes values with braces
+- Groups duplicate Google Translate codes to avoid redundant API calls
+- Removes orphaned keys automatically
 
 ## Verifying Translations
 
 Before committing, ensure:
-1. All `t()` calls have corresponding YAML keys
-2. No fallback strings are used
-3. No hardcoded user-facing text remains
+1. All `t()` calls have corresponding YAML keys (in the component's file or `common.yaml`)
+2. No hardcoded user-facing text remains
+3. No duplicate keys — if a key+value exists in `common.yaml`, don't add it to a component file
+4. TypeScript compiles cleanly (`tsc --noEmit`) — the `t()` overloads will catch invalid usage
 
 ## Reference Files
 
 - Languages: `frontend/src/utils/languages.ts`
 - Hook: `frontend/src/hooks/use-translation.ts`
 - i18n engine: `frontend/src/utils/i18n.ts`
-- Example YAML: `frontend/src/locales/components/table.yaml`
+- Shared translations: `frontend/src/locales/common.yaml`
 - Translation script: `dev/translate/translate.mjs`
-- Drift detection: `ee/dev/translation-tool/generate.py`
-- Translation import: `ee/dev/translation-tool/import_translations.py`
+- Drift detection: `dev/translate/detect.py`

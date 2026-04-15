@@ -29,9 +29,11 @@
             "group": "Core Features",
             "pages": [
               "features/database-connectivity",
+              "features/cloud-providers",
               "features/schema-explorer",
               "features/sidebar-navigation",
-              "features/storage-units"
+              "features/storage-units",
+              "features/settings"
             ]
           },
           {
@@ -50,6 +52,7 @@
               "data/viewing-data",
               "data/adding-records",
               "data/editing-records",
+              "data/importing",
               "data/deleting-records",
               "data/filtering-searching",
               "data/sorting-pagination"
@@ -80,6 +83,13 @@
               "advanced/export-options",
               "advanced/where-conditions",
               "advanced/batch-operations"
+            ]
+          },
+          {
+            "group": "Platform & Tooling",
+            "pages": [
+              "features/desktop-app",
+              "features/cli-and-mcp"
             ]
           }
         ]

@@ -1,0 +1,11 @@
+en_US:
+  title: Azure Accounts
+  description: Connect Azure subscriptions to auto-discover PostgreSQL, MySQL, Redis, and Cosmos DB instances.
+
+  noProviders: No Azure accounts configured
+  addFirstProvider: Add your first Azure account to discover databases
+
+
+
+
+

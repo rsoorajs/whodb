@@ -355,47 +355,23 @@ EXPLAIN SELECT customer_id FROM orders GROUP BY customer_id;
 <AccordionGroup>
 <Accordion title="Connection pool optimization">
 
-### Configure Connection Pooling in WhoDB
+### Connection Management In The Current CE Build
 
-```yaml
-version: "3.8"
-services:
-  whodb:
-    image: clidey/whodb
-    environment:
-      # Connection pool settings
-      DB_MAX_CONNECTIONS: 50
-      DB_MAX_IDLE_CONNECTIONS: 10
-      DB_CONNECTION_MAX_LIFETIME: 3600
-      DB_CONNECTION_TIMEOUT: 10
-      DB_QUERY_TIMEOUT: 60
-```
+The current CE server keeps an internal SQL connection pool with conservative defaults:
 
-**Parameter Explanation:**
+- Max open connections: `10`
+- Max idle connections: `5`
+- Max connection lifetime: `30 minutes`
+- Max idle lifetime: `5 minutes`
 
-- `DB_MAX_CONNECTIONS`: Maximum connections to database (typical: 20-100)
-  - Higher = more concurrent queries
-  - Don't exceed database max connections / number of apps
-  - PostgreSQL default: 100, MySQL default: 100-200
+These values are internal to the server and are not configured with `DB_MAX_CONNECTIONS`, `DB_MAX_IDLE_CONNECTIONS`, or related web env vars in the current build.
 
-- `DB_MAX_IDLE_CONNECTIONS`: Idle connections to keep open (typical: 5-20)
-  - Speeds up next query if connection available
-  - Too high = wastes database connections
-  - Usually 20-30% of max connections
+### Practical Tuning Guidance
 
-- `DB_CONNECTION_MAX_LIFETIME`: Max connection age in seconds (typical: 1800-7200)
-  - Recycle old connections periodically
-  - Prevents stale connection issues
-  - 1-2 hours is reasonable
-
-- `DB_CONNECTION_TIMEOUT`: How long to wait for connection (seconds)
-  - If pool exhausted, wait this long for idle connection
-  - 10-30 seconds is typical
-
-- `DB_QUERY_TIMEOUT`: How long query can run (seconds)
-  - Kill queries taking longer
-  - Prevent runaway queries
-  - 30-120 seconds is reasonable
+- Keep default WhoDB usage focused on filtered reads, not full-table scans
+- Lower result sizes and page sizes before assuming the pool is the bottleneck
+- Raise database-side connection limits only when the database server is the actual constraint
+- Use a database-side pooling layer such as PgBouncer or ProxySQL when multiple apps share the same database
 
 ### Database-Side Connection Limits
 
@@ -423,8 +399,8 @@ max_connections = 200
 
 ### Connection Pooling Best Practices
 
-- Monitor actual connection usage: `DB_MAX_CONNECTIONS >= (concurrent users * 2)`
-- Don't set max connections higher than database allows
+- Monitor actual connection usage on the database server
+- Don't set max connections higher than the database allows
 - Use connection pooling proxy (PgBouncer, ProxySQL) for high concurrency
 - Regularly review and adjust based on actual usage
 
@@ -432,17 +408,16 @@ max_connections = 200
 
 <Accordion title="Memory and cache configuration">
 
-### Configure WhoDB Memory
+### Memory And Result Handling In CE
 
-```yaml
-environment:
-  # Memory for query results and caching
-  DB_MAX_MEMORY: 1gb
-  # Schema cache duration (seconds)
-  SCHEMA_CACHE_TTL: 300
-  # Query result cache (not for production)
-  QUERY_CACHE_ENABLED: "false"
-```
+The current CE build does not expose `DB_MAX_MEMORY`, `SCHEMA_CACHE_TTL`, or `QUERY_CACHE_ENABLED` as user-facing web env vars.
+
+To keep memory usage predictable:
+
+- Lower the default page size in [Settings](/features/settings)
+- Use `LIMIT`, filters, and column selection in the Scratchpad
+- Export large datasets in batches rather than in one pass
+- Prefer database-native backup and bulk-export tools for very large jobs
 
 ### Database Buffer Pool Configuration
 

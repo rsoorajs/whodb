@@ -427,7 +427,7 @@ export const ExploreStorageUnitWhereConditionSheet: FC<IExploreStorageUnitWhereC
                                 data-testid="add-new-condition-button"
                             >
                                 <PlusCircleIcon className="w-4 h-4" />
-                                {t('addAnother')}
+                                {t('addCondition')}
                             </Button>
                         </div>
                     </div>

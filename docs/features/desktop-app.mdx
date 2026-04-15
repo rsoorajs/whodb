@@ -1,0 +1,63 @@
+---
+title: "Desktop App"
+description: "Current desktop-specific behavior in the Wails-based WhoDB app"
+---
+
+# Desktop App
+
+WhoDB ships a desktop app built with Wails. It uses the same frontend and backend logic as the web app, but adds native desktop integrations for files, menus, dialogs, and window management.
+
+## Desktop-Specific Features
+
+<CardGroup cols={2}>
+<Card title="Native File Dialogs" icon="desktop">
+Use native save dialogs for exports and native open dialogs for SQLite and DuckDB file selection.
+</Card>
+<Card title="Application Menu" icon="table">
+The desktop shell adds File, View, Database, Window, and Help menus with native accelerators.
+</Card>
+<Card title="Window State" icon="desktop">
+Window size and position are persisted between launches.
+</Card>
+<Card title="About Dialog" icon="question">
+The Help menu exposes a native About dialog.
+</Card>
+</CardGroup>
+
+## Current Menu Actions
+
+The desktop menu currently wires native actions for:
+
+- new connection
+- export data
+- refresh
+- toggle sidebar
+- execute query
+- new scratchpad page
+- disconnect
+- documentation and issue links
+- About dialog
+
+## File-Based Databases
+
+The desktop app adds native file pickers for:
+
+- SQLite database files
+- DuckDB database files
+
+This makes file-based logins smoother than the plain browser flow.
+
+## Updates
+
+The current app checks for release availability and can surface a link to the latest release, but it does **not** apply updates automatically.
+
+## Related Pages
+
+<CardGroup cols={2}>
+<Card title="Installation" icon="download" href="/installation">
+Choose between Docker, binary, source, and desktop workflows.
+</Card>
+<Card title="CLI & MCP" icon="code" href="/features/cli-and-mcp">
+See the separate terminal and MCP tooling surface.
+</Card>
+</CardGroup>

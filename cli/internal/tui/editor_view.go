@@ -218,8 +218,8 @@ func (v *EditorView) Update(msg tea.Msg) (*EditorView, tea.Cmd) {
 			return v, nil
 		}
 
-		// Ctrl+L to clear
-		if msg.Type == tea.KeyCtrlL {
+		// Alt+L clears the current query and autocomplete state.
+		if key.Matches(msg, Keys.Editor.Clear) {
 			v.textarea.Reset()
 			v.err = nil
 			v.showSuggestions = false

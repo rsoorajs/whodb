@@ -1,0 +1,34 @@
+en_US:
+  editProvider: Edit Azure Account
+
+  detectedSubscriptions: Detected Subscriptions
+  clickToAutofill: Click a subscription to auto-fill the form
+
+  namePlaceholder: e.g., Production Azure
+  subscriptionId: Subscription ID
+
+  authMethod: Authentication Method
+  selectAuthMethod: Select method
+  authDefault: Default (Managed Identity / CLI)
+  authMethodDesc: Default uses managed identity, Azure CLI, or environment credentials. Service Principal uses explicit client credentials.
+
+  tenantId: Tenant ID
+  clientId: Client ID
+  clientSecret: Client Secret
+  clientSecretPlaceholder: Enter client secret
+
+  resourceGroup: Resource Group
+  resourceGroupPlaceholder: e.g., my-resource-group
+  resourceGroupDesc: Leave empty to discover across all resource groups in the subscription.
+
+  azureRegion: Azure Region
+
+  postgresqlLabel: PostgreSQL
+  mysqlLabel: MySQL
+  redisLabel: Redis
+  cosmosdbLabel: Cosmos DB
+
+  providerAdded: Azure account added successfully
+  providerUpdated: Azure account updated successfully
+
+  subscriptionRequired: Subscription ID is required

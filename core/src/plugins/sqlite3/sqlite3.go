@@ -528,6 +528,7 @@ func (p *Sqlite3Plugin) executeRawSQL(config *engine.PluginConfig, query string,
 			if err != nil {
 				return nil, err
 			}
+			// codeql[go/sql-injection]: RawExecute intentionally runs user-authored SQL from the query editor/import flow.
 			_, err = sqlDB.Exec(query)
 			if err != nil {
 				return nil, err
@@ -538,6 +539,7 @@ func (p *Sqlite3Plugin) executeRawSQL(config *engine.PluginConfig, query string,
 			}, nil
 		}
 
+		// codeql[go/sql-injection]: RawExecute intentionally runs user-authored SQL from the query editor/import flow.
 		rows, err := db.Raw(query, params...).Rows()
 		if err != nil {
 			return nil, err

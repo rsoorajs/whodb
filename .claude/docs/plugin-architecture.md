@@ -48,7 +48,8 @@ GormPlugin base class (`core/src/plugins/gorm/`) provides:
 
 1. Create plugin directory in `core/src/plugins/`
 2. Implement `PluginFunctions` interface (extend GormPlugin for SQL databases)
-3. Register in `core/src/src.go` via `MainEngine.RegistryPlugin(yourplugin.NewYourPlugin())`
+3. Add `init()` function calling `engine.RegisterPlugin(NewYourPlugin())` — the plugin self-registers when imported
+4. Add a blank import in the entry point (`core/cmd/whodb/main.go`): `_ "github.com/clidey/whodb/core/src/plugins/yourplugin"`
 
 ## Key Methods to Override for SQL Plugins
 

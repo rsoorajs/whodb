@@ -55,6 +55,19 @@ func setupConnectionViewTest(t *testing.T) (*ConnectionView, func()) {
 	return parent.connectionView, cleanup
 }
 
+func requireDBTypeIndex(t *testing.T, v *ConnectionView, dbType string) int {
+	t.Helper()
+
+	for i, candidate := range v.dbTypes {
+		if candidate == dbType {
+			return i
+		}
+	}
+
+	t.Fatalf("database type %q not found in connection view catalog", dbType)
+	return -1
+}
+
 func TestNewConnectionView_NoConnections(t *testing.T) {
 	v, cleanup := setupConnectionViewTest(t)
 	defer cleanup()
@@ -689,6 +702,24 @@ func TestConnectionView_ConnectionResultMsg_Success(t *testing.T) {
 	}
 }
 
+func TestConnectionView_ConnectionResultMsg_UsesProvidedStatusMessage(t *testing.T) {
+	v, cleanup := setupConnectionViewTest(t)
+	defer cleanup()
+
+	v.mode = "form"
+	v.connecting = true
+
+	msg := connectionResultMsg{
+		err:           nil,
+		statusMessage: "Connected to Postgres@localhost • SSL/TLS: enabled (verify-full)",
+	}
+	v, _ = v.Update(msg)
+
+	if v.parent.statusMessage != msg.statusMessage {
+		t.Fatalf("Expected status message %q, got %q", msg.statusMessage, v.parent.statusMessage)
+	}
+}
+
 func TestConnectionView_ConnectionResultMsg_Error(t *testing.T) {
 	v, cleanup := setupConnectionViewTest(t)
 	defer cleanup()
@@ -728,7 +759,7 @@ func TestGetVisibleFields_AllTypes(t *testing.T) {
 		{"ClickHouse", []int{0, 1, 2, 3, 4, 5}},
 		{"Sqlite3", []int{0, 5}},
 		{"MongoDB", []int{0, 1, 2, 3, 4, 5}},
-		{"Redis", []int{0, 1, 2, 4, 5}},
+		{"Redis", []int{0, 1, 2, 3, 4}},
 		{"ElasticSearch", []int{0, 1, 2, 3, 4}},
 	}
 
@@ -791,7 +822,7 @@ func TestConnectionView_OnDbTypeChanged_UpdatesVisibility(t *testing.T) {
 	v.mode = "form"
 
 	// Switch to SQLite (index 2 in the dbTypes list)
-	v.dbTypeIndex = 2 // SQLite
+	v.dbTypeIndex = requireDBTypeIndex(t, v, "Sqlite3")
 	v.onDbTypeChanged()
 
 	if len(v.visibleFields) != 2 {
@@ -821,7 +852,7 @@ func TestConnectionView_NavigationSkipsHiddenFields_SQLite(t *testing.T) {
 	defer cleanup()
 
 	v.mode = "form"
-	v.dbTypeIndex = 2 // SQLite
+	v.dbTypeIndex = requireDBTypeIndex(t, v, "Sqlite3")
 	v.onDbTypeChanged()
 
 	// Focus order for SQLite: 7 (dbType) → 0 (name) → 5 (database) → 8 (connect) → wrap
@@ -857,7 +888,7 @@ func TestConnectionView_PrevNavigationSkipsHiddenFields_SQLite(t *testing.T) {
 	defer cleanup()
 
 	v.mode = "form"
-	v.dbTypeIndex = 2 // SQLite
+	v.dbTypeIndex = requireDBTypeIndex(t, v, "Sqlite3")
 	v.onDbTypeChanged()
 
 	// Focus order for SQLite: 7 → 0 → 5 → 8
@@ -888,7 +919,7 @@ func TestConnectionView_FormView_SQLiteHidesFields(t *testing.T) {
 	defer cleanup()
 
 	v.mode = "form"
-	v.dbTypeIndex = 2 // SQLite
+	v.dbTypeIndex = requireDBTypeIndex(t, v, "Sqlite3")
 	v.onDbTypeChanged()
 
 	view := v.View()
@@ -941,7 +972,7 @@ func TestConnectionView_PasswordPromptSkipped_SQLite(t *testing.T) {
 	defer cleanup()
 
 	v.mode = "form"
-	v.dbTypeIndex = 2 // SQLite
+	v.dbTypeIndex = requireDBTypeIndex(t, v, "Sqlite3")
 	v.onDbTypeChanged()
 	v.focusIndex = focusConnect // Connect button
 	v.inputs[4].SetValue("")    // Password empty (but hidden)
@@ -955,12 +986,30 @@ func TestConnectionView_PasswordPromptSkipped_SQLite(t *testing.T) {
 	}
 }
 
+func TestConnectionView_PasswordPromptSkipped_RedisOptionalPassword(t *testing.T) {
+	v, cleanup := setupConnectionViewTest(t)
+	defer cleanup()
+
+	v.mode = "form"
+	v.dbTypeIndex = requireDBTypeIndex(t, v, "Redis")
+	v.onDbTypeChanged()
+	v.focusIndex = focusConnect
+	v.inputs[fieldPassword].SetValue("")
+
+	msg := tea.KeyMsg{Type: tea.KeyEnter}
+	v, _ = v.Update(msg)
+
+	if v.awaitingPassword {
+		t.Error("Expected awaitingPassword to be false for Redis when password is optional")
+	}
+}
+
 func TestConnectionView_ResetFormUpdatesVisibility(t *testing.T) {
 	v, cleanup := setupConnectionViewTest(t)
 	defer cleanup()
 
 	v.mode = "form"
-	v.dbTypeIndex = 2 // SQLite
+	v.dbTypeIndex = requireDBTypeIndex(t, v, "Sqlite3")
 	v.onDbTypeChanged()
 
 	// Reset should go back to Postgres defaults

@@ -166,10 +166,7 @@ var connectionsAddCmd = &cobra.Command{
 	Short:         "Add a new connection",
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	Long: `Add a new database connection.
-
-Supported database types:
-  Postgres, MySQL, MariaDB, SQLite, MongoDB, Redis, ClickHouse, ElasticSearch`,
+	Long:          `Add a new database connection.`,
 	Example: `  # Add a PostgreSQL connection
   whodb-cli connections add --name mydb --type Postgres --host localhost --port 5432 --user admin --password secret --database myapp
 
@@ -184,10 +181,15 @@ Supported database types:
 		if connAddType == "" {
 			return fmt.Errorf("--type is required")
 		}
-		if connAddHost == "" && connAddType != "SQLite" {
+
+		resolvedType, ok := lookupDatabaseType(connAddType)
+		if !ok {
+			return fmt.Errorf("unsupported database type %q", connAddType)
+		}
+		if resolvedType.RequiredFields.Hostname && connAddHost == "" {
 			return fmt.Errorf("--host is required")
 		}
-		if connAddDatabase == "" {
+		if resolvedType.RequiredFields.Database && connAddDatabase == "" {
 			return fmt.Errorf("--database is required")
 		}
 
@@ -198,9 +200,18 @@ Supported database types:
 			return fmt.Errorf("cannot load config: %w", err)
 		}
 
+		if connAddHost == "" && isFileBasedDatabaseType(string(resolvedType.ID)) {
+			connAddHost = connAddDatabase
+		}
+		if connAddPort == 0 {
+			connAddPort = getDefaultPort(string(resolvedType.ID))
+		} else if connAddPort < 1024 || connAddPort > 65535 {
+			return fmt.Errorf("invalid port number %d: must be between 1024 and 65535 (ports below 1024 are system reserved)", connAddPort)
+		}
+
 		conn := config.Connection{
 			Name:     connAddName,
-			Type:     connAddType,
+			Type:     string(resolvedType.ID),
 			Host:     connAddHost,
 			Port:     connAddPort,
 			Username: connAddUser,
@@ -214,7 +225,7 @@ Supported database types:
 			return fmt.Errorf("failed to save connection: %w", err)
 		}
 
-		analytics.TrackConnectionAdd(ctx, connAddType)
+		analytics.TrackConnectionAdd(ctx, conn.Type)
 		out.Success("Connection %q saved", connAddName)
 		return nil
 	},
@@ -290,19 +301,31 @@ var connectionsTestCmd = &cobra.Command{
 		var spinner *output.Spinner
 		if !connectionsQuiet {
 			spinner = output.NewSpinner(fmt.Sprintf("Testing connection to %s...", conn.Type))
+			spinner.Start()
 		}
-		spinner.Start()
 
 		if err := mgr.Connect(conn); err != nil {
-			spinner.StopWithError("Connection failed")
+			if spinner != nil {
+				spinner.StopWithError("Connection failed")
+			}
 			analytics.TrackConnectionTest(ctx, conn.Type, false, time.Since(startTime).Milliseconds())
 			return fmt.Errorf("connection test failed: %w", err)
 		}
 		defer mgr.Disconnect()
 
+		sslSummary, sslErr := mgr.GetSSLStatusSummary()
+		if sslErr != nil {
+			sslSummary = ""
+		}
+
 		analytics.TrackConnectionTest(ctx, conn.Type, true, time.Since(startTime).Milliseconds())
-		spinner.StopWithSuccess("Connection successful")
+		if spinner != nil {
+			spinner.StopWithSuccess("Connection successful")
+		}
 		out.Success("Successfully connected to %s (%s)", name, conn.Type)
+		if sslSummary != "" {
+			out.Info(sslSummary)
+		}
 		return nil
 	},
 }
@@ -322,11 +345,16 @@ func init() {
 
 	// Add command flags
 	connectionsAddCmd.Flags().StringVar(&connAddName, "name", "", "connection name (required)")
-	connectionsAddCmd.Flags().StringVar(&connAddType, "type", "", "database type: Postgres, MySQL, MariaDB, SQLite, MongoDB, Redis, ClickHouse, ElasticSearch (required)")
+	connectionsAddCmd.Flags().StringVar(&connAddType, "type", "", "database type: Postgres, MySQL, MariaDB, TiDB, SQLite, MongoDB, Redis, ClickHouse, ElasticSearch (required)")
 	connectionsAddCmd.Flags().StringVar(&connAddHost, "host", "", "database host")
 	connectionsAddCmd.Flags().IntVar(&connAddPort, "port", 0, "database port")
 	connectionsAddCmd.Flags().StringVar(&connAddUser, "user", "", "database username")
 	connectionsAddCmd.Flags().StringVar(&connAddPassword, "password", "", "database password")
 	connectionsAddCmd.Flags().StringVar(&connAddDatabase, "database", "", "database name (required)")
 	connectionsAddCmd.Flags().StringVar(&connAddSchema, "schema", "", "default schema (optional)")
+
+	connectionsAddCmd.RegisterFlagCompletionFunc("type", completeDatabaseTypes)
+	connectionsCmd.RegisterFlagCompletionFunc("format", completeOutputFormats)
+	connectionsRemoveCmd.ValidArgsFunction = completeConnectionNames
+	connectionsTestCmd.ValidArgsFunction = completeConnectionNames
 }

@@ -82,14 +82,8 @@ sudo ufw allow 5432/tcp
 Check Windows Defender Firewall settings for the application.
 </Step>
 
-<Step title="Increase timeout if needed">
-If the database is slow to respond, increase timeout:
-
-```yaml
-environment:
-  - DB_CONNECTION_TIMEOUT=30
-  - DB_QUERY_TIMEOUT=60
-```
+<Step title="Test with the native client first">
+If the database is slow to respond, verify the same host, port, and credentials with the native client (`psql`, `mysql`, `mongosh`, and so on). If the native client also hangs or times out, the issue is network reachability, database health, or an upstream timeout rather than a configurable WhoDB web setting.
 </Step>
 </Steps>
 
@@ -272,7 +266,7 @@ Test connection with admin credentials to rule out permission issues. If admin w
 
 </Accordion>
 
-<Accordion title="SSH tunnel connection fails">
+<Accordion title="SSH tunnel or bastion connection fails">
 
 ### Symptoms
 - Error: "SSH connection failed"
@@ -282,6 +276,14 @@ Test connection with admin credentials to rule out permission issues. If admin w
 ### Step-by-Step Solution
 
 <Steps>
+<Step title="Confirm where the tunnel should live">
+The web app does not create SSH tunnels from the login form in this codebase. Use one of these approaches:
+
+- Create an external SSH tunnel yourself and point WhoDB at the forwarded host and port
+- Deploy WhoDB where the database is already reachable over a private network
+- Use the CLI if you want built-in SSH tunnel management
+</Step>
+
 <Step title="Verify SSH server is accessible">
 ```bash
 ssh -v username@ssh-host
@@ -309,15 +311,13 @@ chmod 700 ~/.ssh
 File must be readable only by the owner.
 </Step>
 
-<Step title="Configure tunnel settings correctly">
-In WhoDB:
-- SSH Host: ssh-tunnel.example.com
-- SSH Port: 22 (usually)
-- SSH Username: Your SSH username
-- Database Host: localhost (from SSH perspective)
-- Database Port: 5432
+<Step title="Point WhoDB at the forwarded address">
+After creating the tunnel, connect WhoDB to the forwarded endpoint:
+- Host: `localhost` (or the host where your forward terminates)
+- Port: the forwarded local port, such as `5432`
+- Database Host/Port inside the `ssh -L` command should target the real database
 
-After connecting via SSH tunnel, the database appears as localhost.
+From WhoDB's perspective, it only needs the final reachable host and port.
 </Step>
 
 <Step title="Test tunnel manually">
@@ -488,12 +488,7 @@ Export in smaller chunks:
 Reduce row count:
 - Generate 1,000 rows at a time instead of 10,000
 - Split generation across multiple sessions
-- Increase DB_MAX_MEMORY if available
-
-```yaml
-environment:
-  - DB_MAX_MEMORY=2gb
-```
+- Run large generation jobs in smaller batches
 </Step>
 
 <Step title="Monitor resource usage">
@@ -981,11 +976,7 @@ Click in the code editor to focus:
 Very long-running queries may timeout:
 - Add LIMIT clause to reduce results
 - Simplify query
-- Increase timeout setting if available
-
-```yaml
-DB_QUERY_TIMEOUT=120
-```
+- Check database-side or proxy timeouts if the same query dies outside WhoDB
 </Step>
 
 <Step title="Try a simple test query">

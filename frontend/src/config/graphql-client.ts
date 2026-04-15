@@ -30,7 +30,7 @@ import {LocalLoginProfile} from '../store/auth';
 import {reduxStore} from '../store';
 import {addAuthHeader} from '../utils/auth-headers';
 import {isAwsHostname} from '../utils/cloud-connection-prefill';
-import {getTranslation, loadTranslations} from '../utils/i18n';
+import {getTranslation, loadTranslationsSync} from '../utils/i18n';
 import {type SupportedLanguage, DEFAULT_LANGUAGE} from '../utils/languages';
 
 // Always use a relative URI so that:
@@ -43,24 +43,17 @@ const loginMutationQuery = print(LoginDocument);
 type GraphQLClientTranslationKey = 'sessionExpired' | 'autoLoginSuccess' | 'autoLoginFailed';
 type TranslatorFn = (key: GraphQLClientTranslationKey) => string;
 
-let cachedTranslationLanguage: SupportedLanguage | undefined;
-let cachedTranslationsPromise: Promise<Record<string, string>> | null = null;
-
-const getTranslator = async (): Promise<TranslatorFn> => {
+const getTranslator = (): TranslatorFn => {
     const language = (reduxStore.getState().settings.language ?? DEFAULT_LANGUAGE) as SupportedLanguage;
-    if (!cachedTranslationsPromise || cachedTranslationLanguage !== language) {
-        cachedTranslationLanguage = language;
-        cachedTranslationsPromise = loadTranslations('config/graphql-client', language);
-    }
-    const translations = await cachedTranslationsPromise;
+    const translations = loadTranslationsSync('config/graphql-client', language);
     return (key: GraphQLClientTranslationKey) => getTranslation(translations, key, language);
 };
 
-const redirectToLoginWithMessage = async (
+const redirectToLoginWithMessage = (
     key: GraphQLClientTranslationKey,
     translator?: TranslatorFn
 ) => {
-    const t = translator ?? await getTranslator();
+    const t = translator ?? getTranslator();
     toast.error(t(key));
     window.location.href = '/login';
 };
@@ -101,7 +94,7 @@ const errorLink = onError(({networkError}) => {
         } else {
             // Don't redirect if already on login page to avoid infinite loop
             if (!window.location.pathname.startsWith('/login')) {
-                void redirectToLoginWithMessage('sessionExpired');
+                redirectToLoginWithMessage('sessionExpired');
             }
         }
     } else if (networkError) {
@@ -113,7 +106,7 @@ const errorLink = onError(({networkError}) => {
  * Handles automatic login using the current profile.
  */
 async function handleAutoLogin(currentProfile: LocalLoginProfile) {
-    const t = await getTranslator();
+    const t = getTranslator();
     try {
         // Don't auto-login to AWS connections when cloud providers are disabled
         const cloudProvidersEnabled = reduxStore.getState().settings.cloudProvidersEnabled;
@@ -148,7 +141,7 @@ async function handleAutoLogin(currentProfile: LocalLoginProfile) {
                 window.location.reload();
                 return;
             } else {
-                await redirectToLoginWithMessage('autoLoginFailed', t);
+                redirectToLoginWithMessage('autoLoginFailed', t);
                 return;
             }
         } else {
@@ -181,13 +174,13 @@ async function handleAutoLogin(currentProfile: LocalLoginProfile) {
                 window.location.reload();
                 return;
             } else {
-                await redirectToLoginWithMessage('autoLoginFailed', t);
+                redirectToLoginWithMessage('autoLoginFailed', t);
                 return;
             }
         }
     } catch (error) {
         console.error('Auto-login error:', error);
-        await redirectToLoginWithMessage('autoLoginFailed', t);
+        redirectToLoginWithMessage('autoLoginFailed', t);
     }
 }
 

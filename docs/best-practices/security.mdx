@@ -46,11 +46,11 @@ Implement network-level security controls:
 
 **Firewall Rules:**
 - Restrict database access to specific IP ranges
-- Use VPN or SSH tunneling for remote access
+- Use VPNs, private networking, or bastion hosts for remote access
 - Never expose database ports directly to the internet
 
 **SSH Tunneling:**
-When direct database access is restricted, use SSH tunneling:
+When direct database access is restricted, create an external SSH tunnel or use the CLI's built-in SSH tunneling:
 ```bash
 ssh -L 5432:localhost:5432 user@bastion-host.example.com
 ```
@@ -58,7 +58,7 @@ Then connect WhoDB to `localhost:5432`.
 
 ### Connection String Security
 
-Never hardcode credentials in application code or configuration files. WhoDB stores connection profiles securely, but additional precautions are necessary:
+Never hardcode credentials in application code or configuration files. WhoDB can persist recent web connection profiles in browser storage and can also load environment-defined profiles, so treat both as sensitive configuration:
 
 **Environment Variables:**
 Store sensitive connection details in environment variables rather than committing them to version control.
@@ -390,7 +390,7 @@ Use this checklist before granting database access:
 **Connection Security:**
 - [ ] SSL/TLS enabled and configured
 - [ ] Network access restricted by IP
-- [ ] VPN or SSH tunnel required for remote access
+- [ ] Private network path or bastion workflow required for remote access
 - [ ] No database ports exposed to internet
 
 **Authentication:**

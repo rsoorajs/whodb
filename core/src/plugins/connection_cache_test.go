@@ -28,11 +28,14 @@ import (
 func resetCacheState(t *testing.T) {
 	t.Helper()
 	connectionCacheMu.Lock()
-	for key, cached := range connectionCache {
-		if cached != nil && cached.db != nil {
-			if sqlDB, err := cached.db.DB(); err == nil {
-				sqlDB.Close()
+	for key, bucket := range connectionCache {
+		for secret, cached := range bucket {
+			if cached != nil && cached.db != nil {
+				if sqlDB, err := cached.db.DB(); err == nil {
+					sqlDB.Close()
+				}
 			}
+			delete(bucket, secret)
 		}
 		delete(connectionCache, key)
 	}
@@ -67,8 +70,9 @@ func TestRemoveConnectionRemovesFromCache(t *testing.T) {
 
 	// Verify it's in the cache
 	key := getConnectionCacheKey(cfg)
+	secret := getConnectionCacheSecret(cfg)
 	connectionCacheMu.Lock()
-	_, exists := connectionCache[key]
+	_, exists := getCachedConnectionLocked(key, secret)
 	connectionCacheMu.Unlock()
 	if !exists {
 		t.Fatalf("expected connection to be in cache")
@@ -78,7 +82,7 @@ func TestRemoveConnectionRemovesFromCache(t *testing.T) {
 	RemoveConnection(cfg)
 
 	connectionCacheMu.Lock()
-	_, exists = connectionCache[key]
+	_, exists = getCachedConnectionLocked(key, secret)
 	connectionCacheMu.Unlock()
 	if exists {
 		t.Fatalf("expected connection to be removed from cache")
@@ -101,8 +105,9 @@ func TestCleanupStaleConnectionsRemovesOldEntries(t *testing.T) {
 
 	// Mark as stale by setting lastUsed in the past
 	key := getConnectionCacheKey(cfg)
+	secret := getConnectionCacheSecret(cfg)
 	connectionCacheMu.Lock()
-	if cached, ok := connectionCache[key]; ok {
+	if cached, ok := getCachedConnectionLocked(key, secret); ok {
 		cached.lastUsed = time.Now().Add(-connectionCacheTTL * 2)
 	}
 	connectionCacheMu.Unlock()
@@ -110,7 +115,7 @@ func TestCleanupStaleConnectionsRemovesOldEntries(t *testing.T) {
 	cleanupStaleConnections()
 
 	connectionCacheMu.Lock()
-	_, exists := connectionCache[key]
+	_, exists := getCachedConnectionLocked(key, secret)
 	connectionCacheMu.Unlock()
 	if exists {
 		t.Fatalf("expected stale connection to be cleaned up")
@@ -123,12 +128,16 @@ func TestEvictOldestConnectionPrefersOldest(t *testing.T) {
 
 	// Inject two connections with different lastUsed timestamps
 	connectionCacheMu.Lock()
-	connectionCache["new"] = &cachedConnection{lastUsed: time.Now()}
-	connectionCache["old"] = &cachedConnection{lastUsed: time.Now().Add(-10 * time.Minute)}
+	connectionCache["new"] = connectionCacheBucket{
+		"pw-new": {lastUsed: time.Now()},
+	}
+	connectionCache["old"] = connectionCacheBucket{
+		"pw-old": {lastUsed: time.Now().Add(-10 * time.Minute)},
+	}
 	connectionCacheMu.Unlock()
 
 	connectionCacheMu.Lock()
-	evictOldestConnection("")
+	evictOldestConnection("", "")
 	connectionCacheMu.Unlock()
 
 	connectionCacheMu.Lock()
@@ -175,5 +184,68 @@ func TestGetOrCreateConnectionReusesCache(t *testing.T) {
 
 	if db1 != db2 {
 		t.Fatalf("expected same db instance from cache")
+	}
+}
+
+func TestGetOrCreateConnectionSeparatesDifferentPasswords(t *testing.T) {
+	resetCacheState(t)
+	t.Cleanup(func() { resetCacheState(t) })
+
+	cfg1 := newTestConfig()
+	cfg2 := newTestConfig()
+	cfg2.Credentials.Password = "different"
+
+	callCount := 0
+	createDB := func(*engine.PluginConfig) (*gorm.DB, error) {
+		callCount++
+		return gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	}
+
+	db1, err := getOrCreateConnection(cfg1, createDB)
+	if err != nil {
+		t.Fatalf("first call failed: %v", err)
+	}
+
+	db2, err := getOrCreateConnection(cfg2, createDB)
+	if err != nil {
+		t.Fatalf("second call failed: %v", err)
+	}
+
+	if callCount != 2 {
+		t.Fatalf("expected separate connections for different passwords, got %d creations", callCount)
+	}
+
+	if db1 == db2 {
+		t.Fatalf("expected different db instances for different passwords")
+	}
+}
+
+func TestCachedSSLStatusSeparatesDifferentPasswords(t *testing.T) {
+	resetCacheState(t)
+	t.Cleanup(func() { resetCacheState(t) })
+
+	cfg1 := newTestConfig()
+	cfg2 := newTestConfig()
+	cfg2.Credentials.Password = "different"
+
+	createDB := func(*engine.PluginConfig) (*gorm.DB, error) {
+		return gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	}
+
+	if _, err := getOrCreateConnection(cfg1, createDB); err != nil {
+		t.Fatalf("first connection failed: %v", err)
+	}
+	if _, err := getOrCreateConnection(cfg2, createDB); err != nil {
+		t.Fatalf("second connection failed: %v", err)
+	}
+
+	expected := &engine.SSLStatus{IsEnabled: true, Mode: "require"}
+	SetCachedSSLStatus(cfg1, expected)
+
+	if got := GetCachedSSLStatus(cfg1); got != expected {
+		t.Fatalf("expected SSL status to be cached for first password")
+	}
+	if got := GetCachedSSLStatus(cfg2); got != nil {
+		t.Fatalf("expected no SSL status for different password, got %+v", got)
 	}
 }

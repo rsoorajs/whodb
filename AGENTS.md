@@ -1,10 +1,8 @@
 # WhoDB Development Guide
 
-WhoDB is a database management tool with dual-edition architecture: Community Edition (CE) in `/core` and Enterprise Edition (EE) in `/ee`.
+WhoDB is a database management tool. The `core/` directory contains the backend and `frontend/` contains the React UI.
 
-**Note**: The `ee/` submodule is only available to core WhoDB developers. If `ee/` is not present, stub files provide no-op implementations so CE builds work normally. Build tags (`//go:build ee` vs `//go:build !ee`) control which code is compiled.
-
-**EE Documentation**: All Enterprise Edition documentation, commands, and development guides are in `ee/AGENTS.md` and `ee/.claude/docs/`. This file covers CE only.
+If the `ee/` directory is present, read `ee/AGENTS.md` for additional context. Do not add any code, comments, or references to `ee/` in the CE codebase.
 
 ## Non-Negotiable Rules
 
@@ -12,23 +10,27 @@ WhoDB is a database management tool with dual-edition architecture: Community Ed
 2. **GraphQL-first** - All new API functionality via GraphQL. Never add HTTP resolvers unless explicitly needed (e.g., file downloads)
 3. **No SQL injection** - Never use `fmt.Sprintf` with user input for SQL. Use parameterized queries or GORM builders. See `.claude/docs/sql-security.md`
 4. **Plugin architecture** - Never use `switch dbType` or `if dbType ==` in shared code. All database-specific logic goes in plugins. See `.claude/docs/plugin-architecture.md`
-5. **CE/EE separation** - EE code MUST stay in the ee submodule. All EE documentation is in `ee/`. No exceptions
-6. **Documentation requirements** - All exported Go functions/types need doc comments. All exported TypeScript functions/components need JSDoc. See `.claude/docs/documentation.md`
-7. **Localization requirements** - All user-facing strings must use `t()` with YAML keys. No fallback strings. No hardcoded UI text. See `.claude/docs/localization.md`
-8. **Verify before completing** - After finishing any task, verify: (1) type checks pass (`pnpm run typecheck` for frontend, `go build` for backend), (2) no linting errors, (3) all added code is actually used (no dead code). See `.claude/docs/verification.md`
-9. **Fallback clarification** - Do not include fallback logic UNLESS you were asked to. If you think the project could benefit from fallback logic, first ask and clarify
-10. **Show proof** - When making a claim about how something outside of our codebase works, for example a 3rd party library or function, always provide official documentation or the actual code to back that up. Check online if you have to.
-11. **No defensive code** - Do not program defensively. If there is an edge or use case that you think needs to be handled, first ask.
-12. **No mention of EE in CE** - Under no circumstance can you mention ANY EE databases, features, or functionality in the CE version.
+5. **Documentation requirements** - All exported Go functions/types need doc comments. All exported TypeScript functions/components need JSDoc. See `.claude/docs/documentation.md`
+6. **Localization requirements** - All user-facing strings must use `t()` with YAML keys. No fallback strings. No hardcoded UI text. See `.claude/docs/localization.md`
+7. **Verify before completing** - After finishing any task, verify: (1) type checks pass (`pnpm run build:ce` for frontend, `go build ./cmd/whodb` for backend), (2) no linting errors, (3) all added code is actually used (no dead code). See `.claude/docs/verification.md`
+8. **Fallback clarification** - Do not include fallback logic UNLESS you were asked to. If you think the project could benefit from fallback logic, first ask and clarify
+9. **Show proof** - When making a claim about how something outside of our codebase works, for example a 3rd party library or function, always provide official documentation or the actual code to back that up. Check online if you have to.
+10. **No defensive code** - Do not program defensively. If there is an edge or use case that you think needs to be handled, first ask.
 
 ## Project Structure
 
 ```
-core/                   # CE backend (Go)
-  server.go             # Entry point (func main)
-  src/src.go            # Engine initialization, plugin registration
+core/                   # Backend (Go)
+  cmd/whodb/main.go     # Entry point — imports plugins and creates GraphQL schema
+  src/app/app.go        # AppConfig + Run() — shared server logic
+  src/src.go            # Engine initialization (collects from global plugin registry)
+  src/engine/registry.go # Global plugin registry (plugins self-register via init())
   src/engine/plugin.go  # PluginFunctions interface
-  src/plugins/          # Database connectors (each implements PluginFunctions)
+  src/env/              # Environment variable declarations (pure, no log dependency)
+  src/envconfig/        # Config-loading functions that need both env and log
+  src/plugins/          # Database connectors (each has init() calling engine.RegisterPlugin)
+                        # Includes: postgres, mysql, sqlite3, mongodb, redis, elasticsearch,
+                        #           clickhouse, duckdb, memcached (+ mariadb via mysql)
   graph/schema.graphqls # GraphQL schema
   graph/*.resolvers.go  # GraphQL resolvers
 
@@ -38,13 +40,34 @@ frontend/               # React/TypeScript
   src/generated/       # GraphQL codegen output (@graphql alias)
 
 cli/                    # Interactive TUI CLI (Bubble Tea)
-desktop-ce/             # CE desktop app (Wails)
+desktop-ce/             # Desktop app (Wails)
 desktop-common/         # Shared desktop code
 
 .github/workflows/      # CI/CD pipelines (release, build, deploy)
 ```
 
-Additional docs: `.claude/docs/cli.md` (CLI), `.claude/docs/desktop.md` (desktop), `.claude/docs/ci-cd.md` (GitHub Actions).
+Additional docs: `.claude/docs/cli.md` (CLI), `.claude/docs/desktop.md` (desktop), `.claude/docs/ci-cd.md` (GitHub Actions), `.claude/docs/testing.md` (testing).
+
+## Testing
+
+See `.claude/docs/testing.md` for comprehensive testing documentation including:
+- Frontend Playwright E2E tests
+- Docker container setup for test databases
+- Go backend unit and integration tests
+- CLI tests
+
+Quick reference:
+```bash
+# Frontend Playwright E2E
+cd frontend && pnpm e2e:ce:headless         # Headless (all databases)
+cd frontend && pnpm e2e:ce                  # Interactive (headed)
+
+# Backend Go tests
+bash dev/run-backend-tests.sh all           # Unit + integration
+
+# CLI tests
+bash dev/run-cli-tests.sh                   # All CLI tests
+```
 
 ## When Working on Backend (Go)
 
@@ -54,6 +77,7 @@ Additional docs: `.claude/docs/cli.md` (CLI), `.claude/docs/desktop.md` (desktop
 - When adding plugin functionality: add to `PluginFunctions` interface, implement in each plugin
 - Use `ErrorHandler` (`core/src/plugins/gorm/errors.go`) for user-friendly error messages
 - Never log sensitive data (passwords, API keys, tokens, connection strings)
+- `env` package is for pure env var declarations only (no `log` import). Functions that parse env vars and need `log` for error reporting go in `envconfig`
 - Delete build binaries after testing (`go build` artifacts)
 
 ## When Working on Frontend (TypeScript)
@@ -61,7 +85,7 @@ Additional docs: `.claude/docs/cli.md` (CLI), `.claude/docs/desktop.md` (desktop
 - Use PNPM, not NPM. Use pnpx, not npx
 - Define GraphQL operations in `.graphql` files, then run `pnpm run generate`
 - Import generated hooks from `@graphql` alias - never use inline `gql` strings
-- CE features in `frontend/src/`
+- **Keyboard shortcuts** are centralized in `frontend/src/utils/shortcuts.ts`. Never hardcode shortcut keys inline — use `SHORTCUTS.*` for definitions, `matchesShortcut()` for event handling, and `SHORTCUTS.*.displayKeys` for UI display. Platform-variant shortcuts (nav numbers) use `resolveShortcut()`. Some shortcuts also have Wails accelerators in `desktop-common/app.go` that must be updated separately
 
 ## When Updating Dependencies
 
@@ -69,34 +93,20 @@ Use `core/go.mod` as the reference point for dependency versions.
 
 ## Commands Quick Reference
 
-Additional docs: `.claude/docs/cli.md` (CLI), `.claude/docs/desktop.md` (desktop), `.claude/docs/ci-cd.md` (GitHub Actions), `.claude/docs/testing.md` (testing).
-
-## Testing
-
-See `.claude/docs/testing.md` for comprehensive testing documentation including:
-- Frontend Cypress E2E tests (CE and EE)
-- Docker container setup for test databases
-- Go backend unit and integration tests
-- CLI tests
-
-Quick reference:
-```bash
-# Frontend Cypress
-cd frontend && pnpm cypress:ce:headless     # CE headless
-cd frontend && pnpm cypress:ee:headless     # EE headless (requires ee/)
-
-# Backend Go tests
-bash dev/run-backend-tests.sh all           # Unit + integration
-
-# CLI tests
-bash dev/run-cli-tests.sh                   # All CLI tests
-```
+See `.claude/docs/commands.md` for full reference.
 
 ```bash
 # Backend: cd core && go run ./cmd/whodb
 # Frontend: cd frontend && pnpm start
 # CLI: cd cli && go run .
 ```
+
+## Architecture
+
+- **Plugin self-registration** — each plugin has `init() { engine.RegisterPlugin(...) }`. The entry point's blank imports control which plugins are registered
+- **AppConfig DI** — `core/src/app/app.go` defines `AppConfig` (schema, HTTP handlers). The entry point calls `app.Run(config, staticFiles)`
+- **Frontend registries** — components (`registerComponent`), database types (`registerDatabaseTypes`), icons (`registerIcons`), and functions (`registerDatabaseFunctions`) can be registered at boot. The frontend renders from registries — if something isn't registered, it's not shown
+- **Import cycle note** — `src` → `router` → `graph` → `src` cycle exists. `Run()` lives in `src/app/` (not `src/`) to avoid it. Never add router/graph imports to `src/`
 
 ## Development Principles
 
@@ -105,9 +115,8 @@ bash dev/run-cli-tests.sh                   # All CLI tests
 - Do not modify existing functionality without justification
 - Do not rename variables/files unless necessary
 - Remove unused code - no leftovers
-- Comment WHY, not WHAT - explain reasoning, edge cases, and non-obvious behavior. Never comment obvious code
+- Only comment edge cases and complex logic, not obvious code
 - Ask questions to understand requirements fully
 - Use subagents to accomplish tasks faster
 - Maintain professional, neutral tone without excessive enthusiasm
 - When you finish a task, go back and check your work. Check that it is correct and that it is not over-engineered
-- When you finish a task, if the ee submodule is available, then go through it and see if it needs to be modified to accomodate your changes. For example if you change a plugin signature in CE, update it in EE as well

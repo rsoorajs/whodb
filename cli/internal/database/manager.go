@@ -27,10 +27,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/clidey/whodb/cli/internal/bootstrap"
 	"github.com/clidey/whodb/cli/internal/config"
 	tunnelpkg "github.com/clidey/whodb/cli/internal/ssh"
 	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src"
+	"github.com/clidey/whodb/core/src/dbcatalog"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/envconfig"
 	"github.com/clidey/whodb/core/src/llm"
@@ -263,6 +265,8 @@ func (m *Manager) buildCredentials(conn *Connection) *engine.Credentials {
 }
 
 func NewManager() (*Manager, error) {
+	bootstrap.Ensure()
+
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		return nil, fmt.Errorf("error loading config: %w", err)
@@ -412,6 +416,21 @@ func (m *Manager) Connect(conn *Connection) error {
 	return nil
 }
 
+// Ping checks whether a database connection is reachable without fully connecting.
+// It uses the plugin's IsAvailable method with a short timeout.
+func (m *Manager) Ping(conn *Connection) bool {
+	dbType := engine.DatabaseType(conn.Type)
+	plugin := m.engine.Choose(dbType)
+	if plugin == nil {
+		return false
+	}
+	credentials := m.buildCredentials(conn)
+	pluginConfig := engine.NewPluginConfig(credentials)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	return plugin.IsAvailable(ctx, pluginConfig)
+}
+
 func (m *Manager) Disconnect() error {
 	m.cache.Clear()
 	m.currentConnection = nil
@@ -483,6 +502,53 @@ func (m *Manager) GetCurrentConnection() *Connection {
 	return m.currentConnection
 }
 
+// GetSSLStatus returns the verified SSL/TLS status for the current connection.
+// It returns nil when the connected database does not expose applicable SSL/TLS
+// status information.
+func (m *Manager) GetSSLStatus() (*engine.SSLStatus, error) {
+	if m.currentConnection == nil {
+		return nil, fmt.Errorf("not connected to any database")
+	}
+
+	dbType := engine.DatabaseType(m.currentConnection.Type)
+	plugin := m.engine.Choose(dbType)
+	if plugin == nil {
+		return nil, fmt.Errorf("plugin not found")
+	}
+
+	credentials := m.buildCredentials(m.currentConnection)
+	return plugin.GetSSLStatus(engine.NewPluginConfig(credentials))
+}
+
+// GetSSLStatusSummary returns a human-readable SSL/TLS summary for the current
+// connection. It returns an empty string when SSL/TLS status is not applicable.
+func (m *Manager) GetSSLStatusSummary() (string, error) {
+	status, err := m.GetSSLStatus()
+	if err != nil {
+		return "", err
+	}
+	return formatSSLStatusSummary(status), nil
+}
+
+func formatSSLStatusSummary(status *engine.SSLStatus) string {
+	if status == nil {
+		return ""
+	}
+
+	mode := strings.TrimSpace(status.Mode)
+	if status.IsEnabled {
+		if mode == "" || strings.EqualFold(mode, "enabled") {
+			return "SSL/TLS: enabled"
+		}
+		return fmt.Sprintf("SSL/TLS: enabled (%s)", mode)
+	}
+
+	if mode == "" {
+		mode = "disabled"
+	}
+	return fmt.Sprintf("SSL/TLS: %s", mode)
+}
+
 func (m *Manager) loadSavedConnections() []Connection {
 	cfg, err := config.LoadConfig()
 	if err != nil {
@@ -500,8 +566,7 @@ func (m *Manager) getEnvConnections() []Connection {
 	typeCounts := make(map[string]int)
 	var connections []Connection
 
-	for _, plugin := range m.engine.Plugins {
-		dbType := string(plugin.Type)
+	for _, dbType := range dbcatalog.IDs() {
 		profiles := envconfig.GetDefaultDatabaseCredentials(dbType)
 		for _, profile := range profiles {
 			typeCounts[dbType]++
@@ -1263,9 +1328,18 @@ func (m *Manager) GetAIModelsWithContext(ctx context.Context, providerID, modelT
 }
 
 type ChatMessage struct {
-	Type   string
-	Result *engine.GetRowsResult
-	Text   string
+	Type                 string
+	Result               *engine.GetRowsResult
+	Text                 string
+	RequiresConfirmation bool
+}
+
+// StreamChunk represents a chunk of a streaming AI chat response.
+type StreamChunk struct {
+	Text    string         // accumulated text so far
+	IsFinal bool           // is this the final response?
+	Final   []*ChatMessage // final messages (only when IsFinal=true)
+	Err     error
 }
 
 func (m *Manager) SendAIChat(providerID, modelType, token, schema, model, previousConversation, query string) ([]*ChatMessage, error) {
@@ -1312,9 +1386,10 @@ func (m *Manager) SendAIChat(providerID, modelType, token, schema, model, previo
 	chatMessages := []*ChatMessage{}
 	for _, msg := range messages {
 		chatMessages = append(chatMessages, &ChatMessage{
-			Type:   msg.Type,
-			Result: msg.Result,
-			Text:   msg.Text,
+			Type:                 msg.Type,
+			Result:               msg.Result,
+			Text:                 msg.Text,
+			RequiresConfirmation: msg.RequiresConfirmation,
 		})
 	}
 

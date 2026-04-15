@@ -50,28 +50,27 @@ func GetCredentials(ctx context.Context) *engine.Credentials {
 }
 
 func isPublicRoute(r *http.Request) bool {
-	if env.IsDevelopment {
+	// Paths not under /api/ are always public — SPA routes, auth proxy endpoints, static assets.
+	if !strings.HasPrefix(r.URL.Path, "/api/") && r.URL.Path != "/api" {
+		return true
+	}
+
+	// In dev mode, also allow GraphQL introspection requests without credentials.
+	if env.IsDevelopment && r.Method == http.MethodPost {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			return false
 		}
-
 		r.Body = io.NopCloser(bytes.NewReader(body))
-		if r.Method != http.MethodPost {
-			return false
-		}
-
 		var query map[string]any
-		if err := json.Unmarshal(body, &query); err != nil {
-			return false
-		}
-
-		if q, ok := query["query"].(string); ok && strings.Contains(q, "IntrospectionQuery") {
-			return true
+		if err := json.Unmarshal(body, &query); err == nil {
+			if q, ok := query["query"].(string); ok && strings.Contains(q, "IntrospectionQuery") {
+				return true
+			}
 		}
 	}
 
-	return !strings.HasPrefix(r.URL.Path, "/api/") && r.URL.Path != "/api"
+	return false
 }
 
 func AuthMiddleware(next http.Handler) http.Handler {
@@ -101,6 +100,11 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		// this is to ensure that it can be re-read by the GraphQL layer
 		r.Body = io.NopCloser(bytes.NewBuffer(body))
 		if isAllowed(r, body) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		if authBypassFn != nil && authBypassFn(r) {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -228,6 +232,18 @@ func RegisterAllowedOperation(opName string) {
 	additionalAllowedOps = append(additionalAllowedOps, opName)
 }
 
+// authBypassFn, if set, is called for requests that are not in the public allowlist.
+// When it returns true the CE credential check is skipped entirely.
+// Extensions use this to provide alternative authentication mechanisms.
+var authBypassFn func(*http.Request) bool
+
+// RegisterAuthBypass registers a bypass function for CE credential authentication.
+// It must be called before the HTTP server starts. When the function returns true,
+// the request passes through without requiring CE database credentials.
+func RegisterAuthBypass(fn func(*http.Request) bool) {
+	authBypassFn = fn
+}
+
 func isAllowed(r *http.Request, body []byte) bool {
 	if r.Method != http.MethodPost {
 		return false
@@ -245,11 +261,20 @@ func isAllowed(r *http.Request, body []byte) bool {
 
 	switch query.OperationName {
 	case "Login", "LoginWithProfile", "GetProfiles", "UpdateSettings", "SettingsConfig", "GetVersion",
-		"GetAWSProviders", "GetDiscoveredConnections", "GetProviderConnections",
+		"GetAWSProviders", "GetCloudProviders", "GetCloudProvider",
+		"GetDiscoveredConnections", "GetProviderConnections", "GetConnectableDatabases",
 		"GetLocalAWSProfiles", "GetAWSRegions",
 		"AddAWSProvider", "TestAWSCredentials", "TestCloudProvider",
 		"RefreshCloudProvider", "RemoveCloudProvider", "UpdateAWSProvider",
-		"GenerateRDSAuthToken":
+		"GenerateRDSAuthToken",
+		"GetAzureProviders", "GetAzureProvider",
+		"GetAzureSubscriptions", "GetAzureRegions",
+		"AddAzureProvider", "UpdateAzureProvider", "TestAzureCredentials",
+		"RefreshAzureProvider", "GenerateAzureADToken",
+		"GetLocalGCPProjects", "GetGCPRegions",
+		"GetGCPProviders", "GetGCPProvider",
+		"AddGCPProvider", "UpdateGCPProvider", "TestGCPCredentials",
+		"RefreshGCPProvider", "GenerateCloudSQLIAMAuthToken":
 		return true
 	}
 	for _, op := range additionalAllowedOps {

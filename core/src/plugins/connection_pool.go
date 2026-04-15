@@ -143,11 +143,12 @@ func WithConnection[T any](config *engine.PluginConfig, DB DBCreationFunc, opera
 // Returns nil if not cached or connection doesn't exist.
 func GetCachedSSLStatus(config *engine.PluginConfig) *engine.SSLStatus {
 	key := getConnectionCacheKey(config)
+	secret := getConnectionCacheSecret(config)
 
 	connectionCacheMu.Lock()
 	defer connectionCacheMu.Unlock()
 
-	if cached, found := connectionCache[key]; found {
+	if cached, found := getCachedConnectionLocked(key, secret); found {
 		return cached.sslStatus
 	}
 	return nil
@@ -156,11 +157,12 @@ func GetCachedSSLStatus(config *engine.PluginConfig) *engine.SSLStatus {
 // SetCachedSSLStatus stores SSL status in the connection cache.
 func SetCachedSSLStatus(config *engine.PluginConfig, status *engine.SSLStatus) {
 	key := getConnectionCacheKey(config)
+	secret := getConnectionCacheSecret(config)
 
 	connectionCacheMu.Lock()
 	defer connectionCacheMu.Unlock()
 
-	if cached, found := connectionCache[key]; found {
+	if cached, found := getCachedConnectionLocked(key, secret); found {
 		cached.sslStatus = status
 	}
 }

@@ -33,7 +33,7 @@ import {useExportToCSV} from "./hooks";
 import {ShareIcon} from "./heroicons";
 import {VisuallyHidden} from "@radix-ui/react-visually-hidden";
 import {useTranslation} from "@/hooks/use-translation";
-import {isNoSQL} from "@/utils/functions";
+import {useDatabaseTraits} from "@/hooks/useDatabaseTraits";
 
 interface IExportProps {
     open: boolean;
@@ -64,7 +64,8 @@ export const Export: FC<IExportProps> = ({
                                          }) => {
     const { t } = useTranslation('components/export');
     const [exportDelimiter, setExportDelimiter] = useState(',');
-    const defaultFormat = useMemo(() => isNoSQL(databaseType ?? '') ? 'ndjson' : 'csv', [databaseType]);
+    const { isNoSQL } = useDatabaseTraits(databaseType);
+    const defaultFormat = useMemo(() => isNoSQL ? 'ndjson' : 'csv', [isNoSQL]);
     const [exportFormat, setExportFormat] = useState<'csv' | 'excel' | 'ndjson'>(defaultFormat);
 
     useEffect(() => {
@@ -77,11 +78,11 @@ export const Export: FC<IExportProps> = ({
             {value: 'csv', label: t('formatCsv')},
             {value: 'excel', label: t('formatExcel')},
         ];
-        if (isNoSQL(databaseType ?? '')) {
+        if (isNoSQL) {
             options.push({value: 'ndjson', label: t('formatJson')});
         }
         return options;
-    }, [t, databaseType]);
+    }, [isNoSQL, t]);
 
     const exportDelimiterOptions = useMemo(() => [
         {value: ',', label: t('delimiterComma')},
@@ -119,9 +120,9 @@ export const Export: FC<IExportProps> = ({
         <>
             <Sheet open={open} onOpenChange={onOpenChange}>
                 <SheetContent side="right" className="max-w-md w-full p-8" data-testid="export-dialog">
-                    <SheetTitle className="flex items-center gap-2"><ShareIcon className="w-4 h-4" /> {t('title')}</SheetTitle>
+                    <SheetTitle className="flex items-center gap-2"><ShareIcon className="w-4 h-4" /> {t('exportData')}</SheetTitle>
                     <VisuallyHidden>
-                        <SheetTitle>{t('title')}</SheetTitle>
+                        <SheetTitle>{t('exportData')}</SheetTitle>
                     </VisuallyHidden>
                     <div className="flex flex-col gap-lg grow">
                         <div className="space-y-4 grow">
@@ -189,7 +190,7 @@ export const Export: FC<IExportProps> = ({
                                     {exportFormat === 'csv' ? (
                                         <>
                                             <li><p className="inline-block">{t('csvHeaders')}</p></li>
-                                            <li><p className="inline-block">{t('csvEncoding')}</p></li>
+                                            <li><p className="inline-block">{t('utf8Encoding')}</p></li>
                                             <li><p className="inline-block">{t('csvDelimiter')}</p></li>
                                         </>
                                     ) : exportFormat === 'excel' ? (
@@ -201,7 +202,7 @@ export const Export: FC<IExportProps> = ({
                                     ) : (
                                         <>
                                             <li><p className="inline-block">{t('jsonLineDelimited')}</p></li>
-                                            <li><p className="inline-block">{t('jsonEncoding')}</p></li>
+                                            <li><p className="inline-block">{t('utf8Encoding')}</p></li>
                                             <li><p className="inline-block">{t('jsonDetails')}</p></li>
                                         </>
                                     )}

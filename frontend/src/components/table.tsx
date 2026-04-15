@@ -79,6 +79,7 @@ import {Export} from "./export";
 import {ImportData} from "./import-data";
 import {useTranslation} from '@/hooks/use-translation';
 import {copyToClipboard} from '@/services/clipboard';
+import {useDatabaseTraits} from "@/hooks/useDatabaseTraits";
 import {
     ArrowDownCircleIcon,
     ArrowDownTrayIcon,
@@ -110,8 +111,7 @@ import {
 import {Tip} from "./tip";
 import {formatShortcut} from "@/utils/platform";
 import {matchesShortcut, SHORTCUTS} from "@/utils/shortcuts";
-import {formatNumber, isNoSQL} from "@/utils/functions";
-import {databaseSupportsMockData} from "@/utils/database-features";
+import {formatNumber} from "@/utils/functions";
 
 
 // Dynamically load Export component
@@ -378,9 +378,10 @@ export const StorageUnitTable: FC<TableProps> = ({
     const [mockDataOverwriteExisting, setMockDataOverwriteExisting] = useState("append");
     const [mockDataFkDensityRatio, setMockDataFkDensityRatio] = useState("20");
     const [showMockDataConfirmation, setShowMockDataConfirmation] = useState(false);
-    const isMockDataSupported = databaseSupportsMockData(databaseType) && isMockDataGenerationAllowed;
+    const { isNoSQL, supportsMockData } = useDatabaseTraits(databaseType);
+    const isMockDataSupported = supportsMockData && isMockDataGenerationAllowed;
     const isClickHouse = databaseType === "ClickHouse";
-    const isImportSupported = !isNoSQL(databaseType ?? "");
+    const isImportSupported = !isNoSQL;
     const { data: maxRowData } = useMockDataMaxRowCountQuery();
     const maxRowCount = maxRowData?.MockDataMaxRowCount || 200;
     
@@ -629,7 +630,7 @@ export const StorageUnitTable: FC<TableProps> = ({
         }
         
         // Set a new timeout for the single-click action
-        const timeout = setTimeout(() => {
+        const timeout = window.setTimeout(() => {
             const cell = paginatedRows[rowIndex][cellIndex];
             if (cell !== undefined && cell !== null) {
                 copyToClipboard(String(cell)).then(success => {
@@ -1650,7 +1651,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                             data-testid="import-button"
                         >
                             <ArrowUpCircleIcon className="w-4 h-4" />
-                            {t('importData')}
+                            {t('importAction')}
                         </Button>
                     )}
                     <Button
@@ -1671,7 +1672,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                     }
                 }}>
                     <SheetContent side="right" className="w-[400px] max-w-full p-8 flex flex-col" data-testid="edit-row-dialog">
-                        <SheetTitle>{t('editRowTitle')}</SheetTitle>
+                        <SheetTitle>{t('editRow')}</SheetTitle>
                         <div className="flex-1 overflow-y-auto mt-4">
                             <div className="flex flex-col gap-lg pr-2">
                                 {editRow &&
@@ -1735,7 +1736,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                 }}>
                 <SheetContent side="right" className="p-8" data-testid="mock-data-sheet">
                     <div className="flex flex-col gap-lg h-full">
-                        <SheetTitle className="flex items-center gap-2"><CalculatorIcon className="w-4 h-4" /> {t('mockDataTitle')}</SheetTitle>
+                        <SheetTitle className="flex items-center gap-2"><CalculatorIcon className="w-4 h-4" /> {t('mockData')}</SheetTitle>
                         {!showMockDataConfirmation ? (
                             <div className="space-y-4">
                                 <Label>{t('numberOfRows', { max: maxRowCount })}</Label>

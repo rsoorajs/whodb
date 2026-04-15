@@ -21,11 +21,16 @@ The cloud provider system uses the **Interface + Union** pattern in GraphQL, whi
 │  │ DiscoveredCount      │       │ + ProfileName        │        │
 │  │ ProviderType         │       │ + DiscoverRDS        │        │
 │  └──────────────────────┘       └──────────────────────┘        │
-│           ▲                              │                       │
-│           │                     ┌────────┴────────┐              │
-│           │                     │ GCPProvider     │  (future)    │
-│           └─────────────────────│ + ProjectID     │              │
-│                                 │ + DiscoverSQL   │              │
+│           ▲                                                      │
+│           │                     ┌─────────────────┐              │
+│           │                     │ GCPProvider      │              │
+│           ├─────────────────────│ + ProjectID      │              │
+│           │                     │ + DiscoverSQL    │              │
+│           │                     └─────────────────┘              │
+│           │                     ┌─────────────────┐              │
+│           │                     │ AzureProvider    │              │
+│           └─────────────────────│ + SubscriptionID │              │
+│                                 │ + DiscoverMySQL  │              │
 │                                 └─────────────────┘              │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -37,8 +42,8 @@ The cloud provider system uses the **Interface + Union** pattern in GraphQL, whi
 ```graphql
 enum CloudProviderType {
   AWS
-  # GCP - future
-  # Azure - future
+  Azure
+  GCP
 }
 ```
 
@@ -107,11 +112,14 @@ type DiscoveredConnection {
 |-----------|-------------|
 | `AddAWSProvider(input)` | Add AWS provider with AWS-specific config |
 | `UpdateAWSProvider(id, input)` | Update AWS provider |
-| `AddGCPProvider(input)` | Add GCP provider (future) |
+| `AddGCPProvider(input)` | Add GCP provider with GCP-specific config |
+| `UpdateGCPProvider(id, input)` | Update GCP provider |
+| `AddAzureProvider(input)` | Add Azure provider with Azure-specific config |
+| `UpdateAzureProvider(id, input)` | Update Azure provider |
 
 ## Adding a New Cloud Provider
 
-Follow these steps to add support for a new cloud provider (e.g., GCP):
+Follow these steps to add support for a new cloud provider:
 
 ### 1. Update GraphQL Schema (`core/graph/schema.graphqls`)
 
@@ -308,6 +316,8 @@ en:
 | Provider Interface | `core/src/providers/provider.go` |
 | Provider Registry | `core/src/providers/registry.go` |
 | AWS Provider | `core/src/providers/aws/` |
+| GCP Provider | `core/src/providers/gcp/` |
+| Azure Provider | `core/src/providers/azure/` |
 | Settings State | `core/src/settings/providers.go` |
 | Frontend Types | `frontend/src/generated/graphql.tsx` (generated) |
 | Redux Store | `frontend/src/store/providers.ts` |

@@ -20,6 +20,7 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/rds"
@@ -32,15 +33,21 @@ import (
 )
 
 func (p *Provider) discoverRDS(ctx context.Context) ([]providers.DiscoveredConnection, error) {
+	start := time.Now()
 	var connections []providers.DiscoveredConnection
 	var nextToken *string
 
 	log.Debugf("RDS discoverRDS: starting discovery for provider %s", p.config.ID)
 
 	for page := 0; page < maxPaginationPages; page++ {
+		if ctx.Err() != nil {
+			log.Warnf("RDS discoverRDS: context cancelled, returning %d results so far", len(connections))
+			return connections, ctx.Err()
+		}
+
 		input := &rds.DescribeDBInstancesInput{
 			Marker:     nextToken,
-			MaxRecords: aws.Int32(50),
+			MaxRecords: aws.Int32(100),
 		}
 
 		log.Debugf("RDS discoverRDS: calling DescribeDBInstances")
@@ -71,9 +78,16 @@ func (p *Provider) discoverRDS(ctx context.Context) ([]providers.DiscoveredConne
 			break
 		}
 		nextToken = output.Marker
+
+		if page > 0 && page%10 == 0 {
+			log.Debugf("RDS discoverRDS: processed %d pages, %d instances so far", page, len(connections))
+		}
+		if page == maxPaginationPages-1 {
+			log.Warnf("RDS discoverRDS: hit pagination limit of %d pages, results may be incomplete", maxPaginationPages)
+		}
 	}
 
-	log.Debugf("RDS discoverRDS: completed, found %d connections", len(connections))
+	log.Infof("RDS discoverRDS: found %d connections in %v", len(connections), time.Since(start))
 	return connections, nil
 }
 
@@ -118,15 +132,21 @@ func (p *Provider) rdsInstanceToConnection(instance *rdstypes.DBInstance) *provi
 
 // discoverRDSClusters discovers Aurora cluster-level endpoints (writer and reader).
 func (p *Provider) discoverRDSClusters(ctx context.Context) ([]providers.DiscoveredConnection, error) {
+	start := time.Now()
 	var connections []providers.DiscoveredConnection
 	var nextToken *string
 
 	log.Debugf("RDS discoverRDSClusters: starting for provider %s", p.config.ID)
 
 	for page := 0; page < maxPaginationPages; page++ {
+		if ctx.Err() != nil {
+			log.Warnf("RDS discoverRDSClusters: context cancelled, returning %d results so far", len(connections))
+			return connections, ctx.Err()
+		}
+
 		input := &rds.DescribeDBClustersInput{
 			Marker:     nextToken,
-			MaxRecords: aws.Int32(50),
+			MaxRecords: aws.Int32(100),
 		}
 
 		output, err := p.rdsClient.DescribeDBClusters(ctx, input)
@@ -210,23 +230,36 @@ func (p *Provider) discoverRDSClusters(ctx context.Context) ([]providers.Discove
 			break
 		}
 		nextToken = output.Marker
+
+		if page > 0 && page%10 == 0 {
+			log.Debugf("RDS discoverRDSClusters: processed %d pages, %d instances so far", page, len(connections))
+		}
+		if page == maxPaginationPages-1 {
+			log.Warnf("RDS discoverRDSClusters: hit pagination limit of %d pages, results may be incomplete", maxPaginationPages)
+		}
 	}
 
-	log.Debugf("RDS discoverRDSClusters: found %d cluster endpoints", len(connections))
+	log.Infof("RDS discoverRDSClusters: found %d cluster endpoints in %v", len(connections), time.Since(start))
 	return connections, nil
 }
 
 // discoverRDSProxies discovers RDS Proxy endpoints.
 func (p *Provider) discoverRDSProxies(ctx context.Context) ([]providers.DiscoveredConnection, error) {
+	start := time.Now()
 	var connections []providers.DiscoveredConnection
 	var nextToken *string
 
 	log.Debugf("RDS discoverRDSProxies: starting for provider %s", p.config.ID)
 
 	for page := 0; page < maxPaginationPages; page++ {
+		if ctx.Err() != nil {
+			log.Warnf("RDS discoverRDSProxies: context cancelled, returning %d results so far", len(connections))
+			return connections, ctx.Err()
+		}
+
 		input := &rds.DescribeDBProxiesInput{
 			Marker:     nextToken,
-			MaxRecords: aws.Int32(50),
+			MaxRecords: aws.Int32(100),
 		}
 
 		output, err := p.rdsClient.DescribeDBProxies(ctx, input)
@@ -280,9 +313,16 @@ func (p *Provider) discoverRDSProxies(ctx context.Context) ([]providers.Discover
 			break
 		}
 		nextToken = output.Marker
+
+		if page > 0 && page%10 == 0 {
+			log.Debugf("RDS discoverRDSProxies: processed %d pages, %d instances so far", page, len(connections))
+		}
+		if page == maxPaginationPages-1 {
+			log.Warnf("RDS discoverRDSProxies: hit pagination limit of %d pages, results may be incomplete", maxPaginationPages)
+		}
 	}
 
-	log.Debugf("RDS discoverRDSProxies: found %d proxies", len(connections))
+	log.Infof("RDS discoverRDSProxies: found %d proxies in %v", len(connections), time.Since(start))
 	return connections, nil
 }
 

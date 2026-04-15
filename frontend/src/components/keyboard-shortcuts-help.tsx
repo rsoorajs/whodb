@@ -89,7 +89,7 @@ export const KeyboardShortcutsHelp: FC<KeyboardShortcutsHelpProps> = ({
             ],
         },
         {
-            title: t('categoryNavigation'),
+            title: t('navigation'),
             shortcuts: [
                 { keys: resolveShortcut(SHORTCUTS.navFirst).displayKeys, description: t('navFirst') },
                 { keys: resolveShortcut(SHORTCUTS.navSecond).displayKeys, description: t('navSecond') },
@@ -107,7 +107,7 @@ export const KeyboardShortcutsHelp: FC<KeyboardShortcutsHelpProps> = ({
                 { keys: SHORTCUTS.pageDown.displayKeys, description: t('pageDown') },
                 { keys: SHORTCUTS.pageUp.displayKeys, description: t('pageUp') },
                 { keys: SHORTCUTS.nextPage.displayKeys, description: t('nextPage') },
-                { keys: SHORTCUTS.prevPage.displayKeys, description: t('prevPage') },
+                { keys: SHORTCUTS.prevPage.displayKeys, description: t('previousPage') },
             ],
         },
         {
@@ -124,8 +124,8 @@ export const KeyboardShortcutsHelp: FC<KeyboardShortcutsHelpProps> = ({
             shortcuts: [
                 { keys: SHORTCUTS.editRow.displayKeys, description: t('editRow') },
                 { keys: SHORTCUTS.deleteRow.displayKeys, description: t('deleteRow') },
-                { keys: SHORTCUTS.deleteRowAlt.displayKeys, description: t('deleteRowAlt') },
-                { keys: SHORTCUTS.editRowAlt.displayKeys, description: t('editRowAlt') },
+                { keys: SHORTCUTS.deleteRowAlt.displayKeys, description: t('deleteRow') },
+                { keys: SHORTCUTS.editRowAlt.displayKeys, description: t('editRow') },
                 { keys: SHORTCUTS.mockData.displayKeys, description: t('mockData') },
                 { keys: SHORTCUTS.refresh.displayKeys, description: t('refresh') },
                 { keys: SHORTCUTS.exportData.displayKeys, description: t('export') },

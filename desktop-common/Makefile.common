@@ -14,6 +14,11 @@ TEAM_ID ?=
 APPLE_APP_PASSWORD ?=
 PLATFORM_ENV ?= unknown
 
+# Frontend build locations. Edition-specific makefiles can override these when
+# the frontend package and its emitted build output live in different paths.
+FRONTEND_BUILD_DIR ?= ../frontend
+FRONTEND_BUILD_OUTPUT_DIR ?= ../frontend/build
+
 # Wails binary path (auto-detect from PATH, fallback to $(WAILS))
 WAILS := $(shell which wails 2>/dev/null || echo $(WAILS))
 
@@ -62,8 +67,8 @@ prepare:
 	@mkdir -p build/darwin
 	@mkdir -p frontend/dist
 	@echo "Building frontend..."
-	@cd ../frontend && pnpm run $(FRONTEND_BUILD_CMD)
-	@cp -r ../frontend/build/* frontend/dist/
+	@cd $(FRONTEND_BUILD_DIR) && pnpm run $(FRONTEND_BUILD_CMD)
+	@cp -r $(FRONTEND_BUILD_OUTPUT_DIR)/* frontend/dist/
 
 # Development mode
 dev: prepare
@@ -174,21 +179,21 @@ build-prod-windows-amd64: prepare
 		-o $(OUTPUT_PREFIX).exe
 	@mv build/bin/$(OUTPUT_PREFIX).exe build/windows/amd64/
 
-# CI build target for Windows AMD64 (assumes frontend is pre-built in ../frontend/build/)
+# CI build target for Windows AMD64 (assumes frontend is pre-built in $(FRONTEND_BUILD_OUTPUT_DIR))
 ci-build-prod-windows-amd64:
 	@echo "Building WhoDB Windows executable for AMD64 (CI)..."
-	@if [ ! -d "../frontend/build" ]; then \
-		echo "ERROR: Frontend build directory ../frontend/build does not exist"; \
+	@if [ ! -d "$(FRONTEND_BUILD_OUTPUT_DIR)" ]; then \
+		echo "ERROR: Frontend build directory $(FRONTEND_BUILD_OUTPUT_DIR) does not exist"; \
 		echo "Ensure frontend was built with 'pnpm run build' before running this target"; \
 		exit 1; \
 	fi
-	@if [ ! -f "../frontend/build/index.html" ]; then \
+	@if [ ! -f "$(FRONTEND_BUILD_OUTPUT_DIR)/index.html" ]; then \
 		echo "ERROR: Frontend build appears incomplete (missing index.html)"; \
 		echo "Ensure frontend was built successfully"; \
 		exit 1; \
 	fi
 	@mkdir -p frontend/dist
-	cp -r ../frontend/build/* frontend/dist/
+	cp -r $(FRONTEND_BUILD_OUTPUT_DIR)/* frontend/dist/
 	@mkdir -p build/windows/amd64
 	$(eval PLATFORM_ENV := windows-amd64)
 	GOWORK=$$PWD/../$(GOWORK) $(WAILS) build -clean -trimpath -platform windows/amd64 \
@@ -206,21 +211,21 @@ build-prod-windows-arm64: prepare
 		-o $(OUTPUT_PREFIX).exe
 	@mv build/bin/$(OUTPUT_PREFIX).exe build/windows/arm64/
 
-# CI build target for Windows ARM64 (assumes frontend is pre-built in ../frontend/build/)
+# CI build target for Windows ARM64 (assumes frontend is pre-built in $(FRONTEND_BUILD_OUTPUT_DIR))
 ci-build-prod-windows-arm64:
 	@echo "Building WhoDB Windows executable for ARM64 (CI)..."
-	@if [ ! -d "../frontend/build" ]; then \
-		echo "ERROR: Frontend build directory ../frontend/build does not exist"; \
+	@if [ ! -d "$(FRONTEND_BUILD_OUTPUT_DIR)" ]; then \
+		echo "ERROR: Frontend build directory $(FRONTEND_BUILD_OUTPUT_DIR) does not exist"; \
 		echo "Ensure frontend was built with 'pnpm run build' before running this target"; \
 		exit 1; \
 	fi
-	@if [ ! -f "../frontend/build/index.html" ]; then \
+	@if [ ! -f "$(FRONTEND_BUILD_OUTPUT_DIR)/index.html" ]; then \
 		echo "ERROR: Frontend build appears incomplete (missing index.html)"; \
 		echo "Ensure frontend was built successfully"; \
 		exit 1; \
 	fi
 	@mkdir -p frontend/dist
-	cp -r ../frontend/build/* frontend/dist/
+	cp -r $(FRONTEND_BUILD_OUTPUT_DIR)/* frontend/dist/
 	@mkdir -p build/windows/arm64
 	$(eval PLATFORM_ENV := windows-arm64)
 	GOWORK=$$PWD/../$(GOWORK) $(WAILS) build -clean -trimpath -platform windows/arm64 \
@@ -240,21 +245,21 @@ build-prod-mac: prepare
 		/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(VERSION)" "build/darwin/universal/$(APP_NAME)/Contents/Info.plist" || true; \
 	fi
 
-# CI build target for macOS Universal (assumes frontend is pre-built in ../frontend/build/)
+# CI build target for macOS Universal (assumes frontend is pre-built in $(FRONTEND_BUILD_OUTPUT_DIR))
 ci-build-prod-mac:
 	@echo "Building WhoDB macOS app (CI - frontend pre-built)..."
-	@if [ ! -d "../frontend/build" ]; then \
-		echo "ERROR: Frontend build directory ../frontend/build does not exist"; \
+	@if [ ! -d "$(FRONTEND_BUILD_OUTPUT_DIR)" ]; then \
+		echo "ERROR: Frontend build directory $(FRONTEND_BUILD_OUTPUT_DIR) does not exist"; \
 		echo "Ensure frontend was built with 'pnpm run build' before running this target"; \
 		exit 1; \
 	fi
-	@if [ ! -f "../frontend/build/index.html" ]; then \
+	@if [ ! -f "$(FRONTEND_BUILD_OUTPUT_DIR)/index.html" ]; then \
 		echo "ERROR: Frontend build appears incomplete (missing index.html)"; \
 		echo "Ensure frontend was built successfully"; \
 		exit 1; \
 	fi
 	@mkdir -p frontend/dist
-	cp -r ../frontend/build/* frontend/dist/
+	cp -r $(FRONTEND_BUILD_OUTPUT_DIR)/* frontend/dist/
 	@mkdir -p build/darwin/universal
 	$(eval PLATFORM_ENV := mac-universal)
 	GOWORK=$$PWD/../$(GOWORK) $(WAILS) build -clean -trimpath -platform darwin/universal \
@@ -429,20 +434,20 @@ build-prod-linux: prepare
 		$(BUILD_TAGS) $(LINUX_TAGS)  -ldflags="$(LDFLAGS)" -o $(OUTPUT_PREFIX)
 	@mv build/bin/$(OUTPUT_PREFIX) build/linux/$$(uname -m)/
 
-# CI build target for Linux (assumes frontend is pre-built in ../frontend/build/)
+# CI build target for Linux (assumes frontend is pre-built in $(FRONTEND_BUILD_OUTPUT_DIR))
 ci-build-prod-linux:
-	@if [ ! -d "../frontend/build" ]; then \
-		echo "ERROR: Frontend build directory ../frontend/build does not exist"; \
+	@if [ ! -d "$(FRONTEND_BUILD_OUTPUT_DIR)" ]; then \
+		echo "ERROR: Frontend build directory $(FRONTEND_BUILD_OUTPUT_DIR) does not exist"; \
 		echo "Ensure frontend was built with 'pnpm run build' before running this target"; \
 		exit 1; \
 	fi
-	@if [ ! -f "../frontend/build/index.html" ]; then \
+	@if [ ! -f "$(FRONTEND_BUILD_OUTPUT_DIR)/index.html" ]; then \
 		echo "ERROR: Frontend build appears incomplete (missing index.html)"; \
 		echo "Ensure frontend was built successfully"; \
 		exit 1; \
 	fi
 	@mkdir -p frontend/dist
-	cp -r ../frontend/build/* frontend/dist/
+	cp -r $(FRONTEND_BUILD_OUTPUT_DIR)/* frontend/dist/
 	@TARGET_ARCH=$${TARGET_ARCH:-$$(uname -m)}; \
 	case "$$TARGET_ARCH" in \
 		amd64|x86_64) ARCH_DIR="x86_64"; GOARCH_VALUE="amd64"; PLATFORM_ENV="linux-amd64" ;; \
@@ -556,9 +561,10 @@ server-all: server-amd64 server-arm64 server-riscv64 server-armv6 server-armv7
 	@echo "✅ All server binaries built successfully"
 	@ls -lh $(SERVER_BUILD_DIR)/
 
-# Install Wails CLI
+# Install Wails CLI — version derived from desktop-common/go.mod
+WAILS_VERSION := $(shell grep 'github.com/wailsapp/wails/v2' $(dir $(lastword $(MAKEFILE_LIST)))go.mod | awk '{print $$2}')
 install-wails:
-	go install github.com/wailsapp/wails/v2/cmd/wails@v2.11.0
+	go install github.com/wailsapp/wails/v2/cmd/wails@$(WAILS_VERSION)
 
 # Check Wails dependencies
 doctor:

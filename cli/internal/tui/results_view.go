@@ -414,6 +414,7 @@ func (v *ResultsView) View() string {
 				Keys.Results.Where.Help().Key, whereLabel,
 				Keys.Results.Columns.Help().Key, columnsLabel,
 				Keys.Results.Export.Help().Key, Keys.Results.Export.Help().Desc,
+				Keys.Global.MockData.Help().Key, Keys.Global.MockData.Help().Desc,
 				Keys.Results.NextPage.Help().Key, Keys.Results.NextPage.Help().Desc,
 				Keys.Results.PageSize.Help().Key, Keys.Results.PageSize.Help().Desc,
 				Keys.Results.CustomSize.Help().Key, Keys.Results.CustomSize.Help().Desc,
@@ -428,6 +429,7 @@ func (v *ResultsView) View() string {
 				"scroll", "trackpad/mouse",
 				Keys.Results.ViewCell.Help().Key, Keys.Results.ViewCell.Help().Desc,
 				Keys.Results.Export.Help().Key, Keys.Results.Export.Help().Desc,
+				Keys.Global.MockData.Help().Key, Keys.Global.MockData.Help().Desc,
 				Keys.Results.NextPage.Help().Key, Keys.Results.NextPage.Help().Desc,
 				Keys.Results.PageSize.Help().Key, Keys.Results.PageSize.Help().Desc,
 				Keys.Results.CustomSize.Help().Key, Keys.Results.CustomSize.Help().Desc,
@@ -691,8 +693,34 @@ func (v *ResultsView) countWhereConditions() int {
 	if v.whereCondition == nil {
 		return 0
 	}
-	if v.whereCondition.And != nil && v.whereCondition.And.Children != nil {
-		return len(v.whereCondition.And.Children)
+	return countAtomicConditions(v.whereCondition)
+}
+
+// countAtomicConditions recursively counts the number of leaf (atomic)
+// conditions in a WhereCondition tree.
+func countAtomicConditions(wc *model.WhereCondition) int {
+	if wc == nil {
+		return 0
+	}
+	switch wc.Type {
+	case model.WhereConditionTypeAtomic:
+		return 1
+	case model.WhereConditionTypeAnd:
+		if wc.And != nil {
+			n := 0
+			for _, c := range wc.And.Children {
+				n += countAtomicConditions(c)
+			}
+			return n
+		}
+	case model.WhereConditionTypeOr:
+		if wc.Or != nil {
+			n := 0
+			for _, c := range wc.Or.Children {
+				n += countAtomicConditions(c)
+			}
+			return n
+		}
 	}
 	return 0
 }

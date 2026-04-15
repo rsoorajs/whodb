@@ -20,6 +20,7 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/docdb"
@@ -32,15 +33,21 @@ import (
 )
 
 func (p *Provider) discoverDocumentDB(ctx context.Context) ([]providers.DiscoveredConnection, error) {
+	start := time.Now()
 	var connections []providers.DiscoveredConnection
 	var nextToken *string
 
 	log.Debugf("DocumentDB: starting discovery for provider %s", p.config.ID)
 
 	for page := 0; page < maxPaginationPages; page++ {
+		if ctx.Err() != nil {
+			log.Warnf("DocumentDB: context cancelled, returning %d results so far", len(connections))
+			return connections, ctx.Err()
+		}
+
 		input := &docdb.DescribeDBClustersInput{
 			Marker:     nextToken,
-			MaxRecords: aws.Int32(50),
+			MaxRecords: aws.Int32(100),
 		}
 
 		output, err := p.docdbClient.DescribeDBClusters(ctx, input)
@@ -73,9 +80,16 @@ func (p *Provider) discoverDocumentDB(ctx context.Context) ([]providers.Discover
 			break
 		}
 		nextToken = output.Marker
+
+		if page > 0 && page%10 == 0 {
+			log.Debugf("DocumentDB: processed %d pages, %d instances so far", page, len(connections))
+		}
+		if page == maxPaginationPages-1 {
+			log.Warnf("DocumentDB: hit pagination limit of %d pages, results may be incomplete", maxPaginationPages)
+		}
 	}
 
-	log.Debugf("DocumentDB: completed, found %d connections", len(connections))
+	log.Infof("DocumentDB: found %d connections in %v", len(connections), time.Since(start))
 	return connections, nil
 }
 

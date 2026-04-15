@@ -1,0 +1,15 @@
+en_US:
+  connectGcpAccount: Connect a GCP account to discover databases
+  gcpConnections: GCP Connections
+  noDiscoveredConnections: No databases discovered. Add a GCP account to auto-discover Cloud SQL, AlloyDB, and Memorystore instances.
+  refreshPartialError: Some GCP services could not be discovered. Check IAM permissions.
+
+  helpLabel: How to set up GCP
+  helpTitle: GCP Database Discovery
+  helpIntro: "{appName} can automatically discover your GCP databases. Add a GCP account to get started."
+  helpAuthDefault: Default (ADC)
+  helpAuthDefaultDesc: uses Application Default Credentials (gcloud auth, env vars, or metadata server)
+  helpAuthServiceAccount: Service Account
+  helpAuthServiceAccountDesc: uses a service account key JSON file
+  helpCloudSqlDesc: PostgreSQL, MySQL
+  helpCredentialNote: "Note: {appName} discovers connection endpoints from GCP but cannot access database passwords. You'll need to enter credentials when connecting."

@@ -46,9 +46,10 @@ import {Icons} from "../../components/icons";
 import {Loading} from "../../components/loading";
 import {Container} from "../../components/page";
 import {updateProfileLastAccessed} from "../../components/profile-info-tooltip";
-import {baseDatabaseTypes, getDatabaseTypeDropdownItems, IDatabaseDropdownItem} from "../../config/database-types";
+import {IDatabaseDropdownItem} from "../../config/database-types";
 import {extensions, featureFlags, getAppName, sources} from '../../config/features';
 import {InternalRoutes} from "../../config/routes";
+import {useDatabaseTypeDropdownItems} from "../../hooks/useDatabaseCatalog";
 import {useDesktopFile} from '../../hooks/useDesktop';
 import {useTranslation} from '@/hooks/use-translation';
 import {AuthActions} from "../../store/auth";
@@ -63,11 +64,15 @@ import {v4 as uuidv4} from 'uuid';
 import {hasCompletedOnboarding, markOnboardingComplete} from '../../utils/onboarding';
 import {
     AwsConnectionPicker,
-    AwsConnectionPrefillData,
     DatabaseIconWithBadge,
     isAwsConnection
 } from '../../components/aws';
-import {isAwsHostname} from '../../utils/cloud-connection-prefill';
+import {AzureConnectionPicker, isAzureConnection} from '../../components/azure';
+import {
+    GcpConnectionPicker,
+    isGcpConnection,
+} from '../../components/gcp';
+import {ConnectionPrefillData, isAwsHostname, isAzureHostname, isGcpHostname} from '../../utils/cloud-connection-prefill';
 import {SSL_KEYS, SSLConfig} from '../../components/ssl-config';
 
 /**
@@ -84,6 +89,37 @@ const LOGIN_RESERVED_PARAMS = new Set([
  * URL params that control UI behavior and should be preserved after login.
  */
 const LOGIN_UI_PARAMS = new Set(["locale", "mode", "theme", "os"]);
+
+const EMPTY_DATABASE_TYPE: IDatabaseDropdownItem = {
+    id: "",
+    label: "",
+    pluginType: "",
+    icon: <span className="w-6 h-6" />,
+    extra: {},
+    fields: {},
+    requiredFields: {},
+};
+
+function isFileBasedDatabaseType(databaseType: IDatabaseDropdownItem): boolean {
+    return !databaseType.fields?.hostname && databaseType.fields?.database === true;
+}
+
+function canSubmitDatabaseCredentials(
+    databaseType: IDatabaseDropdownItem,
+    hostName: string,
+    username: string,
+    password: string,
+    database: string
+): boolean {
+    const requiredFields = databaseType.requiredFields ?? {};
+
+    const hostnameOk = !requiredFields.hostname || hostName.length > 0;
+    const usernameOk = !requiredFields.username || username.length > 0;
+    const passwordOk = !requiredFields.password || password.length > 0;
+    const databaseOk = !requiredFields.database || database.length > 0;
+
+    return hostnameOk && usernameOk && passwordOk && databaseOk;
+}
 
 
 /**
@@ -160,26 +196,22 @@ export const LoginForm: FC<LoginFormProps> = ({
     const cloudProvidersEnabled = settingsData?.SettingsConfig?.CloudProvidersEnabled ?? false;
     const disableCredentialForm = settingsData?.SettingsConfig?.DisableCredentialForm ?? false;
     const maxPageSize = settingsData?.SettingsConfig?.MaxPageSize ?? 10000;
-
-    useEffect(() => {
-        dispatch(SettingsActions.setCloudProvidersEnabled(cloudProvidersEnabled));
-        dispatch(SettingsActions.setMaxPageSize(maxPageSize));
-    }, [cloudProvidersEnabled, maxPageSize, dispatch]);
-
+    const {
+        items: databaseTypeItems,
+        loading: databaseTypesLoading,
+        error: databaseTypesError,
+    } = useDatabaseTypeDropdownItems({ cloudProvidersEnabled });
     const [searchParams, setSearchParams] = useSearchParams();
 
-    const [databaseTypeItems, setDatabaseTypeItems] = useState<IDatabaseDropdownItem[]>(baseDatabaseTypes);
-    const [databaseTypesLoaded, setDatabaseTypesLoaded] = useState(false);
-    const [databaseType, setDatabaseType] = useState<IDatabaseDropdownItem>(baseDatabaseTypes[0]);
+    const databaseTypesLoaded = !databaseTypesLoading;
+    const [databaseType, setDatabaseType] = useState<IDatabaseDropdownItem>(EMPTY_DATABASE_TYPE);
     const [hostName, setHostName] = useState("");
     const [database, setDatabase] = useState("");
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string>();
     const [missingDriver, setMissingDriver] = useState<string | null>(null);
-    const [advancedForm, setAdvancedForm] = useState<Record<string, string>>(
-        databaseType.extra ?? {}
-    );
+    const [advancedForm, setAdvancedForm] = useState<Record<string, string>>({});
     const [showAdvanced, setShowAdvanced] = useState(false);
     const [formResetKey, setFormResetKey] = useState(0);
     const [selectedAvailableProfile, setSelectedAvailableProfile] = useState<string>();
@@ -190,8 +222,30 @@ export const LoginForm: FC<LoginFormProps> = ({
     const [isEmbedded] = useState(() => {
         return searchParams.has("credentials") || searchParams.has("resource") || searchParams.has("login");
     });
-
     const { isDesktop, selectDatabaseFile } = useDesktopFile();
+
+    useEffect(() => {
+        dispatch(SettingsActions.setCloudProvidersEnabled(cloudProvidersEnabled));
+        dispatch(SettingsActions.setMaxPageSize(maxPageSize));
+    }, [cloudProvidersEnabled, maxPageSize, dispatch]);
+
+    useEffect(() => {
+        if (databaseTypeItems.length === 0) {
+            return;
+        }
+
+        const nextType = databaseTypeItems.find(item => item.id === databaseType.id) ?? databaseTypeItems[0];
+        if (databaseType.id !== nextType.id) {
+            setDatabaseType(nextType);
+            setAdvancedForm(nextType.extra ?? {});
+        }
+    }, [databaseType.id, databaseTypeItems]);
+
+    useEffect(() => {
+        if (databaseTypesError) {
+            console.error('Failed to load connectable database catalog:', databaseTypesError);
+        }
+    }, [databaseTypesError]);
 
     const loading = useMemo(() => {
         return loginLoading || loginWithProfileLoading || isAutoLoggingIn;
@@ -206,9 +260,7 @@ export const LoginForm: FC<LoginFormProps> = ({
     }, [isFirstLogin, FIRST_LOGIN_KEY]);
 
     const handleSubmit = useCallback(() => {
-        if (([DatabaseType.MySql, DatabaseType.Postgres].includes(databaseType.id as DatabaseType) && (hostName.length === 0 || database.length === 0 || username.length === 0))
-            || ((databaseType.id === DatabaseType.Sqlite3 || databaseType.id === DatabaseType.DuckDb) && database.length === 0)
-            || ((databaseType.id === DatabaseType.MongoDb || databaseType.id === DatabaseType.Redis) && (hostName.length === 0))) {
+        if (databaseType.id === "" || !canSubmitDatabaseCredentials(databaseType, hostName, username, password, database)) {
             setIsAutoLoggingIn(false);
             return setError(t('allFieldsRequired'));
         }
@@ -292,12 +344,12 @@ export const LoginForm: FC<LoginFormProps> = ({
                 return toast.error(t('loginFailedWithError', { error: error.message }));
             }
         });
-    }, [databaseType.id, hostName, database, username, password, advancedForm, login, dispatch, navigate, onLoginSuccess, markFirstLoginComplete, t]);
+    }, [databaseType, hostName, database, username, password, advancedForm, login, dispatch, navigate, onLoginSuccess, markFirstLoginComplete, t]);
 
     const handleLoginWithProfileSubmit = useCallback((overrideProfileId?: string) => {
         const profileId = overrideProfileId ?? selectedAvailableProfile;
         if (profileId == null) {
-            return setError(t('selectProfileRequired'));
+            return setError(t('selectProfile'));
         }
         setError(undefined);
 
@@ -452,10 +504,10 @@ export const LoginForm: FC<LoginFormProps> = ({
     // This must be in useEffect (not in handleDatabaseTypeChange) because
     // setFormResetKey causes a re-mount that resets the useLazyQuery hook state.
     useEffect(() => {
-        if (databaseType.id === DatabaseType.Sqlite3 || databaseType.id === DatabaseType.DuckDb) {
-            getDatabases({ variables: { type: databaseType.id as DatabaseType } });
+        if (databaseType.pluginType === DatabaseType.Sqlite3 || databaseType.pluginType === DatabaseType.DuckDb) {
+            getDatabases({ variables: { type: databaseType.pluginType as DatabaseType } });
         }
-    }, [databaseType.id, getDatabases, formResetKey]);
+    }, [databaseType.pluginType, getDatabases, formResetKey]);
 
     const handleAdvancedForm = useCallback((key: string, value: string) => {
         setAdvancedForm(form => {
@@ -470,11 +522,11 @@ export const LoginForm: FC<LoginFormProps> = ({
     }, []);
 
     /**
-     * Handle prefill from AWS connection picker.
+     * Handle prefill from a cloud connection picker (AWS, Azure, GCP).
      * Updates the main login form with discovered connection details,
      * then focuses the username field for easy credential entry.
      */
-    const handleAwsConnectionPrefill = useCallback((data: AwsConnectionPrefillData) => {
+    const handleCloudConnectionPrefill = useCallback((data: ConnectionPrefillData) => {
         // Find the database type in our dropdown items
         const dbType = databaseTypeItems.find(item =>
             item.id.toLowerCase() === data.databaseType.toLowerCase()
@@ -509,7 +561,7 @@ export const LoginForm: FC<LoginFormProps> = ({
 
     const handleBrowseDatabaseFile = useCallback(async () => {
         try {
-            const filePath = await selectDatabaseFile(databaseType.id);
+            const filePath = await selectDatabaseFile(databaseType.pluginType);
             if (filePath) {
                 setDatabase(filePath);
             }
@@ -517,7 +569,7 @@ export const LoginForm: FC<LoginFormProps> = ({
             console.error('Failed to select database file:', error);
             toast.error(t('failedToSelectDatabaseFile'));
         }
-    }, [selectDatabaseFile, databaseType.id, t]);
+    }, [selectDatabaseFile, databaseType.pluginType, t]);
 
     useEffect(() => {
         dispatch(DatabaseActions.setSchema(""));
@@ -573,14 +625,6 @@ export const LoginForm: FC<LoginFormProps> = ({
         }
     }, [searchParams, dispatch]);
 
-    // Load database types before allowing auto-login
-    useEffect(() => {
-        getDatabaseTypeDropdownItems({ cloudProvidersEnabled }).then(items => {
-            setDatabaseTypeItems(items);
-            setDatabaseTypesLoaded(true);
-        });
-    }, [cloudProvidersEnabled]);
-
     // Update last accessed time when a new profile is created during login
     useEffect(() => {
         if (shouldUpdateLastAccessed.current && currentProfile?.Id) {
@@ -593,14 +637,14 @@ export const LoginForm: FC<LoginFormProps> = ({
         return profiles?.Profiles
             .filter(profile => profile.Source !== "builtin")
             // Filter out AWS-hosted profiles when cloud providers are disabled
-            .filter(profile => cloudProvidersEnabled || !isAwsHostname(profile.Hostname))
+            .filter(profile => cloudProvidersEnabled || (!isAwsHostname(profile.Hostname) && !isAzureHostname(profile.Hostname) && !isGcpHostname(profile.Hostname)))
             .map(profile => ({
                 value: profile.Id,
                 label: profile.Alias ?? profile.Id,
                 icon: (
                     <DatabaseIconWithBadge
                         icon={(Icons.Logos as Record<string, ReactElement>)[profile.Type]}
-                        showCloudBadge={isAwsConnection(profile.Id)}
+                        showCloudBadge={isAwsConnection(profile.Id) || isAzureConnection(profile.Id) || isGcpConnection(profile.Id)}
                         sslStatus={profile.SSLConfigured ? { IsEnabled: true, Mode: 'configured' } : undefined}
                         size="sm"
                     />
@@ -745,9 +789,9 @@ export const LoginForm: FC<LoginFormProps> = ({
     }, [pendingAutoLogin]);
 
     const handleHostNameChange = useCallback((newHostName: string) => {
-        if (databaseType.id !== DatabaseType.MongoDb || !newHostName.startsWith("mongodb+srv://")) {
+        if (databaseType.pluginType !== DatabaseType.MongoDb || !newHostName.startsWith("mongodb+srv://")) {
             // Checks the valid postgres URL
-            if (databaseType.id === DatabaseType.Postgres && (newHostName.startsWith("postgres://") || newHostName.startsWith("postgresql://"))) {
+            if (databaseType.pluginType === DatabaseType.Postgres && (newHostName.startsWith("postgres://") || newHostName.startsWith("postgresql://"))) {
                 try {
                     const url = new URL(newHostName);
                     const hostname = url.hostname;
@@ -795,7 +839,7 @@ export const LoginForm: FC<LoginFormProps> = ({
             setAdvancedForm(advancedForm);
             setShowAdvanced(true);
         }
-    }, [databaseType.id, t]);
+    }, [databaseType.pluginType, t]);
 
     const fields = useMemo(() => {
         if (databaseType.customFormRenderer) {
@@ -812,7 +856,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                 setAdvancedForm={setAdvancedForm}
             />;
         }
-        if (databaseType.id === DatabaseType.Sqlite3 || databaseType.id === DatabaseType.DuckDb) {
+        if (isFileBasedDatabaseType(databaseType)) {
             return <div className="flex flex-col gap-lg w-full">
                 <div className="flex flex-col gap-xs w-full">
                     <Label htmlFor="sqlite-database">{t('database')}</Label>
@@ -867,7 +911,7 @@ export const LoginForm: FC<LoginFormProps> = ({
         return <div className="flex flex-col gap-lg w-full">
             { databaseType.fields?.hostname && (
                 <div className="flex flex-col gap-sm w-full">
-                    <Label htmlFor="login-hostname">{databaseType.id === DatabaseType.MongoDb || databaseType.id === DatabaseType.Postgres ? t('hostNameOrUrl') : t('hostName')}</Label>
+                    <Label htmlFor="login-hostname">{databaseType.pluginType === DatabaseType.MongoDb || databaseType.pluginType === DatabaseType.Postgres ? t('hostNameOrUrl') : t('hostName')}</Label>
                     <Input id="login-hostname" value={hostName} onChange={(e) => handleHostNameChange(e.target.value)} data-testid="hostname" placeholder={t('enterHostName')} aria-required="true" aria-invalid={error ? "true" : undefined} aria-describedby={error ? "login-error" : undefined} />
                 </div>
             )}
@@ -896,33 +940,14 @@ export const LoginForm: FC<LoginFormProps> = ({
                 </div>
             )}
         </div>
-    }, [database, databaseType.id, databaseType.fields, databaseType.customFormRenderer, databasesLoading, foundDatabases?.Database, handleHostNameChange, hostName, password, username, isDesktop, handleBrowseDatabaseFile, advancedForm, formResetKey, t, error]);
+    }, [database, databaseType, databasesLoading, foundDatabases?.Database, handleHostNameChange, hostName, password, username, isDesktop, handleBrowseDatabaseFile, advancedForm, formResetKey, t, error]);
 
     const loginWithCredentialsEnabled = useMemo(() => {
         if (databaseType.customFormRenderer) {
             return hostName.length > 0 || Object.keys(advancedForm).length > 0;
         }
-        if (databaseType.id === DatabaseType.Sqlite3 || databaseType.id === DatabaseType.DuckDb) {
-            return database.length > 0;
-        }
-        const redisCompatible = [DatabaseType.Redis, "ElastiCache"];
-        const mongoCompatible = [DatabaseType.MongoDb, "DocumentDB"];
-
-        if (redisCompatible.includes(databaseType.id) || mongoCompatible.includes(databaseType.id) || databaseType.id === DatabaseType.ElasticSearch || databaseType.id === DatabaseType.Memcached) {
-            return hostName.length > 0;
-        }
-
-        const fields = databaseType.fields;
-        if (fields) {
-            const hostnameOk = !fields.hostname || hostName.length > 0;
-            const usernameOk = !fields.username || username.length > 0;
-            const passwordOk = !fields.password || password.length > 0;
-            const databaseOk = !fields.database || database.length > 0;
-            return hostnameOk && usernameOk && passwordOk && databaseOk;
-        }
-
-        return hostName.length > 0 && username.length > 0 && password.length > 0 && database.length > 0;
-    }, [databaseType.id, databaseType.customFormRenderer, databaseType.fields, hostName, username, password, database, advancedForm]);
+        return canSubmitDatabaseCredentials(databaseType, hostName, username, password, database);
+    }, [databaseType, hostName, username, password, database, advancedForm]);
 
     const loginWithProfileEnabled = useMemo(() => {
         return selectedAvailableProfile != null;
@@ -936,7 +961,7 @@ export const LoginForm: FC<LoginFormProps> = ({
 
     // Always show loading during auto-login, regardless of mutation or profile loading state
     // Only show form if auto-login fails (isAutoLoggingIn set to false in error handlers)
-    if (isAutoLoggingIn || loading || profilesLoading)  {
+    if (!databaseTypesLoaded || isAutoLoggingIn || loading || profilesLoading)  {
         return (
             <div className={classNames("flex flex-col justify-center items-center gap-lg w-full", className)}>
                 <div>
@@ -1006,7 +1031,9 @@ export const LoginForm: FC<LoginFormProps> = ({
                                                 value={databaseType?.id || ""}
                                                 onChange={(value) => {
                                                     const selected = databaseTypeItems.find(item => item.id === value);
-                                                    handleDatabaseTypeChange(selected ?? databaseTypeItems[0]);
+                                                    if (selected) {
+                                                        handleDatabaseTypeChange(selected);
+                                                    }
                                                 }}
                                                 options={databaseTypeItems.map(item => ({
                                                     value: item.id,
@@ -1036,7 +1063,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                                 .filter(([key]) => !excludedAdvancedKeys.has(key))
                                 .map(([key, value]) => (
                                 <div className="flex flex-col gap-sm" key={key}>
-                                    <Label htmlFor={`${key}-input`}>{t(`advancedFields.${camelCase(key)}`, key)}</Label>
+                                    <Label htmlFor={`${key}-input`}>{t(`advancedFields.${camelCase(key)}`)}</Label>
                                     <Input
                                         id={`${key}-input`}
                                         value={value}
@@ -1060,13 +1087,13 @@ export const LoginForm: FC<LoginFormProps> = ({
                 })}>
                     {!disableCredentialForm && <>
                     <Button className={classNames({
-                        "hidden": advancedForm == null || databaseType.id === DatabaseType.Sqlite3 || databaseType.id === DatabaseType.DuckDb || databaseType.customFormRenderer != null,
+                        "hidden": advancedForm == null || isFileBasedDatabaseType(databaseType) || databaseType.customFormRenderer != null,
                     })} onClick={handleAdvancedToggle} data-testid="advanced-button" variant="secondary">
                         <AdjustmentsHorizontalIcon className="w-4 h-4" /> {showAdvanced ? t('lessAdvancedButton') : t('advancedButton')}
                     </Button>
                     {advancedDirection === "horizontal" && (
                         <Button onClick={handleSubmit} data-testid="login-button" variant={loginWithCredentialsEnabled ? "default" : "secondary"} disabled={!loginWithCredentialsEnabled}>
-                            <CheckCircleIcon className="w-4 h-4" /> {t('loginButton')}
+                            <CheckCircleIcon className="w-4 h-4" /> {t('title')}
                         </Button>
                     )}
                     </>}
@@ -1077,7 +1104,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                     })}>
                         {!disableCredentialForm && <>
                         <Button onClick={handleSubmit} data-testid="login-button" variant={loginWithCredentialsEnabled ? "default" : "secondary"} disabled={!loginWithCredentialsEnabled}>
-                            <CheckCircleIcon className="w-4 h-4" /> {t('loginButton')}
+                            <CheckCircleIcon className="w-4 h-4" /> {t('title')}
                         </Button>
                         </>}
                     </div>
@@ -1100,7 +1127,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                                 rightIcon={<ChevronDownIcon className="w-4 h-4"/>}
                             />
                             <Button onClick={() => handleLoginWithProfileSubmit()} data-testid="login-with-profile-button" variant={loginWithProfileEnabled ? "default" : "secondary"} disabled={!loginWithProfileEnabled}>
-                                <CheckCircleIcon className="w-4 h-4" /> {t('loginButton')}
+                                <CheckCircleIcon className="w-4 h-4" /> {t('title')}
                             </Button>
                         </div>
                     </>
@@ -1108,7 +1135,11 @@ export const LoginForm: FC<LoginFormProps> = ({
                 {cloudProvidersEnabled && (
                     <>
                         <Separator className="my-8" />
-                        <AwsConnectionPicker onSelectConnection={handleAwsConnectionPrefill} />
+                        <AwsConnectionPicker onSelectConnection={handleCloudConnectionPrefill} />
+                        <Separator className="my-8" />
+                        <AzureConnectionPicker onSelectConnection={handleCloudConnectionPrefill} />
+                        <Separator className="my-8" />
+                        <GcpConnectionPicker onSelectConnection={handleCloudConnectionPrefill} />
                     </>
                 )}
             </div>

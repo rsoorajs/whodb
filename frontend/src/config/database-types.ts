@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-import {ComponentType, ReactElement} from "react";
-import {Icons} from "../components/icons";
-import { getRegisteredDatabaseTypes } from './database-registry';
+import { ComponentType, ReactElement, createElement } from "react";
+import { GetConnectableDatabasesQuery } from "@graphql";
+import { Icons } from "../components/icons";
+import { getEdition } from "./edition";
+import { getRegisteredDatabaseTypeOverrides } from "./database-registry";
 
 /**
  * Type category for grouping database types in the UI.
@@ -74,13 +76,16 @@ export interface CustomLoginFormProps {
     setAdvancedForm: (value: Record<string, string>) => void;
 }
 
-// Extended dropdown item type with UI field configuration
+/**
+ * Dropdown item type with backend-provided connection behavior and a thin
+ * frontend decoration layer.
+ */
 export interface IDatabaseDropdownItem {
     id: string;
     label: string;
+    pluginType: string;
     icon: ReactElement;
     extra: Record<string, string>;
-    // UI field configuration
     fields?: {
         hostname?: boolean;
         username?: boolean;
@@ -88,261 +93,44 @@ export interface IDatabaseDropdownItem {
         database?: boolean;
         searchPath?: boolean;
     };
-    // Valid operators for this database type
+    requiredFields?: {
+        hostname?: boolean;
+        username?: boolean;
+        password?: boolean;
+        database?: boolean;
+    };
     operators?: string[];
     /** Canonical type definitions for type selectors */
     typeDefinitions?: TypeDefinition[];
     /** Maps type aliases to canonical names (e.g., INT4 -> INTEGER) */
     aliasMap?: Record<string, string>;
-    // Whether this database supports field modifiers (primary, nullable)
+    /** Whether this database supports field modifiers (primary, nullable) */
     supportsModifiers?: boolean;
-    // Whether this database supports scratchpad/raw query execution
+    /** Whether this database supports scratchpad/raw query execution */
     supportsScratchpad?: boolean;
-    // Whether this database supports schemas
+    /** Whether this database supports schemas */
     supportsSchema?: boolean;
-    // Whether this database supports switching between databases in the UI
+    /** Whether this database supports switching between databases in the UI */
     supportsDatabaseSwitching?: boolean;
-    // Whether this database should use the schema field (true) or database field (false) for graph queries
+    /** Whether this database should use the schema field for graph queries */
     usesSchemaForGraph?: boolean;
-    // Whether this database type is an AWS managed service (hidden when cloud providers disabled)
+    /** Whether this database type uses database selection instead of schema selection */
+    usesDatabaseInsteadOfSchema?: boolean;
+    /** Whether this database supports mock data generation */
+    supportsMockData?: boolean;
+    /** Whether this database type is an AWS managed service */
     isAwsManaged?: boolean;
-    // SSL modes supported by this database (undefined = no SSL support, e.g., SQLite)
+    /** SSL modes supported by this database */
     sslModes?: SSLModeOption[];
-    // Custom login form renderer (replaces default hostname/username/password fields)
+    /** Optional custom login form renderer */
     customFormRenderer?: ComponentType<CustomLoginFormProps>;
 }
 
-// Common SSL mode sets matching backend ssl.go definitions
-const SSL_MODES_STANDARD: SSLModeOption[] = [
-    { value: 'disabled' },
-    { value: 'required', aliases: ['require'] },  // PostgreSQL uses 'require'
-    { value: 'verify-ca' },
-    { value: 'verify-identity', aliases: ['verify-full'] },  // PostgreSQL uses 'verify-full'
-];
-
-const SSL_MODES_WITH_PREFERRED: SSLModeOption[] = [
-    { value: 'disabled', aliases: ['DISABLED'] },
-    { value: 'preferred', aliases: ['PREFERRED'] },
-    { value: 'required', aliases: ['REQUIRED'] },
-    { value: 'verify-ca', aliases: ['VERIFY_CA'] },
-    { value: 'verify-identity', aliases: ['VERIFY_IDENTITY'] },
-];
-
-const SSL_MODES_SIMPLE: SSLModeOption[] = [
-    { value: 'disabled' },
-    { value: 'enabled' },
-    { value: 'insecure' },
-];
-
-export const baseDatabaseTypes: IDatabaseDropdownItem[] = [
-    {
-        id: "Postgres",
-        label: "Postgres",
-        icon: Icons.Logos.Postgres,
-        extra: {"Port": "5432"},
-        fields: {
-            hostname: true,
-            username: true,
-            password: true,
-            database: true,
-            searchPath: true,
-        },
-        supportsModifiers: true,
-        supportsScratchpad: true,
-        supportsSchema: true,
-        supportsDatabaseSwitching: true,
-        usesSchemaForGraph: true,
-        sslModes: SSL_MODES_STANDARD,
-    },
-    {
-        id: "MySQL",
-        label: "MySQL",
-        icon: Icons.Logos.MySQL,
-        extra: {"Port": "3306", "Parse Time": "True", "Loc": "UTC", "Allow clear text passwords": "0"},
-        fields: {
-            hostname: true,
-            username: true,
-            password: true,
-            database: true,
-        },
-        supportsModifiers: true,
-        supportsScratchpad: true,
-        supportsSchema: false,
-        supportsDatabaseSwitching: true,
-        usesSchemaForGraph: false,
-        sslModes: SSL_MODES_WITH_PREFERRED,
-    },
-    {
-        id: "MariaDB",
-        label: "MariaDB",
-        icon: Icons.Logos.MariaDB,
-        extra: {"Port": "3306", "Parse Time": "True", "Loc": "UTC", "Allow clear text passwords": "0"},
-        fields: {
-            hostname: true,
-            username: true,
-            password: true,
-            database: true,
-        },
-        supportsModifiers: true,
-        supportsScratchpad: true,
-        supportsSchema: false,
-        supportsDatabaseSwitching: true,
-        usesSchemaForGraph: false,
-        sslModes: SSL_MODES_WITH_PREFERRED,
-    },
-    {
-        id: "Sqlite3",
-        label: "Sqlite3",
-        icon: Icons.Logos.Sqlite3,
-        extra: {},
-        fields: {
-            database: true,
-        },
-        supportsModifiers: true,
-        supportsScratchpad: true,
-        supportsSchema: false,
-        supportsDatabaseSwitching: false,
-        usesSchemaForGraph: true,
-    },
-    {
-        id: "MongoDB",
-        label: "MongoDB",
-        icon: Icons.Logos.MongoDB,
-        extra: {"Port": "27017", "URL Params": "?", "DNS Enabled": "false"},
-        fields: {
-            hostname: true,
-            username: true,
-            password: true,
-            database: true,
-        },
-        supportsScratchpad: false,
-        supportsSchema: false,
-        supportsDatabaseSwitching: true,
-        usesSchemaForGraph: false,
-        sslModes: SSL_MODES_SIMPLE,
-    },
-    {
-        id: "Redis",
-        label: "Redis",
-        icon: Icons.Logos.Redis,
-        extra: {"Port": "6379"},
-        fields: {
-            hostname: true,
-            username: true,  // Redis 6+ supports ACL with username
-            password: true,
-        },
-        supportsScratchpad: false,
-        supportsSchema: false,
-        supportsDatabaseSwitching: true,
-        usesSchemaForGraph: false,
-        sslModes: SSL_MODES_SIMPLE,
-    },
-    {
-        id: "ElasticSearch",
-        label: "ElasticSearch",
-        icon: Icons.Logos.ElasticSearch,
-        extra: {"Port": "9200"},
-        fields: {
-            hostname: true,
-            username: true,
-            password: true,
-        },
-        supportsScratchpad: false,
-        supportsSchema: false,
-        supportsDatabaseSwitching: false,
-        usesSchemaForGraph: false,
-        sslModes: SSL_MODES_SIMPLE,
-    },
-    {
-        id: "ClickHouse",
-        label: "ClickHouse",
-        icon: Icons.Logos.ClickHouse,
-        extra: {
-            "Port": "9000",
-            "HTTP Protocol": "disable",
-            "Readonly": "disable",
-            "Debug": "disable"
-        },
-        fields: {
-            hostname: true,
-            username: true,
-            password: true,
-            database: true,
-        },
-        supportsModifiers: true,
-        supportsScratchpad: true,
-        supportsSchema: false,
-        supportsDatabaseSwitching: true,
-        usesSchemaForGraph: false,
-        sslModes: SSL_MODES_SIMPLE,
-    },
-    {
-        id: "DuckDB",
-        label: "DuckDB",
-        icon: Icons.Logos.DuckDB,
-        extra: {},
-        fields: {
-            database: true,
-        },
-        supportsModifiers: true,
-        supportsScratchpad: true,
-        supportsSchema: true,
-        supportsDatabaseSwitching: false,
-        usesSchemaForGraph: true,
-    },
-    {
-        id: "Memcached",
-        label: "Memcached",
-        icon: Icons.Logos.Memcached,
-        extra: {"Port": "11211"},
-        fields: {
-            hostname: true,
-            username: true,
-            password: true,
-        },
-        supportsScratchpad: false,
-        supportsSchema: false,
-        supportsDatabaseSwitching: false,
-        usesSchemaForGraph: false,
-        sslModes: SSL_MODES_SIMPLE,
-    },
-    // AWS managed database types (discovered via AWS providers, use underlying plugins)
-    {
-        id: "ElastiCache",
-        label: "ElastiCache",
-        icon: Icons.Logos.ElastiCache,
-        extra: {"Port": "6379", "TLS": "true"},
-        fields: {
-            hostname: true,
-            username: true,
-            password: true,
-        },
-        supportsScratchpad: false,
-        supportsSchema: false,
-        supportsDatabaseSwitching: true,
-        usesSchemaForGraph: false,
-        isAwsManaged: true,
-        sslModes: SSL_MODES_SIMPLE,  // Uses Redis SSL modes
-    },
-    {
-        id: "DocumentDB",
-        label: "DocumentDB",
-        icon: Icons.Logos.DocumentDB,
-        extra: {"Port": "27017"},
-        fields: {
-            hostname: true,
-            username: true,
-            password: true,
-            database: true,
-        },
-        supportsScratchpad: false,
-        supportsSchema: false,
-        supportsDatabaseSwitching: true,
-        usesSchemaForGraph: false,
-        isAwsManaged: true,
-        sslModes: SSL_MODES_SIMPLE,  // Uses MongoDB SSL modes
-    },
-];
+/**
+ * UI-only override for a backend-owned database catalog entry.
+ */
+export type DatabaseTypeOverride = Pick<IDatabaseDropdownItem, 'id'> &
+    Partial<Omit<IDatabaseDropdownItem, 'id'>>;
 
 /**
  * Filter options for database type retrieval.
@@ -353,26 +141,188 @@ export interface DatabaseTypeFilterOptions {
 }
 
 /**
- * Get all database types (base + registered extension types), optionally filtered.
- * @param options Filter options for database types
- * @returns Filtered list of database types
+ * Raw backend catalog entry returned by the GraphQL catalog query.
  */
-export const getDatabaseTypeDropdownItems = async (
-    options: DatabaseTypeFilterOptions = {}
-): Promise<IDatabaseDropdownItem[]> => {
-    const { cloudProvidersEnabled = true } = options;
-    const allTypes = [...baseDatabaseTypes, ...getRegisteredDatabaseTypes()];
+export type BackendConnectableDatabase = GetConnectableDatabasesQuery['ConnectableDatabases'][number];
 
-    if (!cloudProvidersEnabled) {
-        return allTypes.filter(item => !item.isAwsManaged);
-    }
+const shouldUseCatalogCache = !import.meta.env.DEV;
 
-    return allTypes;
-};
+function getCatalogCacheKey(): string {
+    return `whodb_database_catalog_${getEdition()}_${__APP_VERSION__}`;
+}
 
 /**
- * Synchronous version: returns base types + any registered extension types.
+ * Reads the persisted backend catalog cache for the current edition/version.
+ *
+ * @returns Cached raw backend catalog entries.
  */
-export const getDatabaseTypeDropdownItemsSync = (): IDatabaseDropdownItem[] => {
-    return [...baseDatabaseTypes, ...getRegisteredDatabaseTypes()];
-};
+export function readCachedDatabaseCatalog(): BackendConnectableDatabase[] {
+    if (!shouldUseCatalogCache) {
+        return [];
+    }
+
+    try {
+        const raw = localStorage.getItem(getCatalogCacheKey());
+        if (!raw) {
+            return [];
+        }
+
+        const parsed = JSON.parse(raw) as BackendConnectableDatabase[];
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
+
+/**
+ * Persists the backend catalog cache for the current edition/version.
+ *
+ * @param items Raw backend catalog entries to cache.
+ */
+export function writeCachedDatabaseCatalog(items: BackendConnectableDatabase[]): void {
+    if (!shouldUseCatalogCache) {
+        return;
+    }
+
+    try {
+        localStorage.setItem(getCatalogCacheKey(), JSON.stringify(items));
+    } catch {
+        // Ignore storage failures; the live query result is still valid.
+    }
+}
+
+function mapExtra(extra: BackendConnectableDatabase['extra']): Record<string, string> {
+    return extra.reduce((acc, item) => {
+        acc[item.Key] = item.Value;
+        return acc;
+    }, {} as Record<string, string>);
+}
+
+function resolveIcon(databaseType: string, pluginType: string): ReactElement {
+    const logos = Icons.Logos as Record<string, ReactElement>;
+    return logos[databaseType] ?? logos[pluginType] ?? createElement("span", { className: "w-6 h-6" });
+}
+
+function decorateDatabaseType(item: BackendConnectableDatabase): IDatabaseDropdownItem {
+    return {
+        id: item.id,
+        label: item.label,
+        pluginType: item.pluginType,
+        icon: resolveIcon(item.id, item.pluginType),
+        extra: mapExtra(item.extra),
+        fields: {
+            hostname: item.fields.hostname,
+            username: item.fields.username,
+            password: item.fields.password,
+            database: item.fields.database,
+            searchPath: item.fields.searchPath,
+        },
+        requiredFields: {
+            hostname: item.requiredFields.hostname,
+            username: item.requiredFields.username,
+            password: item.requiredFields.password,
+            database: item.requiredFields.database,
+        },
+        supportsModifiers: item.supportsModifiers,
+        supportsScratchpad: item.supportsScratchpad,
+        supportsSchema: item.supportsSchema,
+        supportsDatabaseSwitching: item.supportsDatabaseSwitching,
+        usesSchemaForGraph: item.usesSchemaForGraph,
+        usesDatabaseInsteadOfSchema: item.usesDatabaseInsteadOfSchema,
+        supportsMockData: item.supportsMockData,
+        isAwsManaged: item.isAwsManaged,
+        sslModes: item.sslModes.map(mode => ({
+            value: mode.value,
+            aliases: mode.aliases.length > 0 ? mode.aliases : undefined,
+        })),
+    };
+}
+
+function filterDatabaseTypes(
+    items: IDatabaseDropdownItem[],
+    options: DatabaseTypeFilterOptions = {}
+): IDatabaseDropdownItem[] {
+    const { cloudProvidersEnabled = true } = options;
+
+    if (cloudProvidersEnabled) {
+        return items;
+    }
+
+    return items.filter(item => !item.isAwsManaged);
+}
+
+function mergeDatabaseTypeOverride(
+    item: IDatabaseDropdownItem,
+    override: DatabaseTypeOverride
+): IDatabaseDropdownItem {
+    return {
+        ...item,
+        ...override,
+        extra: override.extra ? { ...item.extra, ...override.extra } : item.extra,
+        fields: override.fields ? { ...item.fields, ...override.fields } : item.fields,
+        requiredFields: override.requiredFields ? { ...item.requiredFields, ...override.requiredFields } : item.requiredFields,
+    };
+}
+
+function withRegisteredDatabaseTypes(baseTypes: IDatabaseDropdownItem[]): IDatabaseDropdownItem[] {
+    const overrides = getRegisteredDatabaseTypeOverrides();
+    if (overrides.length === 0) {
+        return baseTypes;
+    }
+
+    return baseTypes.map(item => {
+        const override = overrides.find(candidate => candidate.id === item.id);
+        return override ? mergeDatabaseTypeOverride(item, override) : item;
+    });
+}
+
+/**
+ * Decorates raw backend catalog data with frontend-only presentation details.
+ *
+ * @param catalog Raw backend catalog entries.
+ * @param options Optional UI filters for the resulting list.
+ * @returns Decorated database type items ready for rendering.
+ */
+export function resolveDatabaseTypeDropdownItems(
+    catalog: BackendConnectableDatabase[],
+    options: DatabaseTypeFilterOptions = {}
+): IDatabaseDropdownItem[] {
+    const items = withRegisteredDatabaseTypes(catalog.map(decorateDatabaseType));
+    return filterDatabaseTypes(items, options);
+}
+
+/**
+ * Finds a single decorated database type entry by id.
+ *
+ * @param items Decorated database type items.
+ * @param databaseType Database type identifier.
+ * @returns Matching catalog item, if present.
+ */
+export function findDatabaseTypeDropdownItem(
+    items: IDatabaseDropdownItem[],
+    databaseType: string | undefined
+): IDatabaseDropdownItem | undefined {
+    if (!databaseType) {
+        return undefined;
+    }
+
+    return items.find(item => item.id === databaseType);
+}
+
+/**
+ * Resolves a displayed database type to its underlying plugin type.
+ *
+ * @param databaseType Database type identifier.
+ * @param item Decorated catalog entry for the database type.
+ * @returns The resolved plugin type, or the original type when no catalog item is available.
+ */
+export function resolveDatabasePluginType(
+    databaseType: string | undefined,
+    item: IDatabaseDropdownItem | undefined
+): string | undefined {
+    if (!databaseType) {
+        return undefined;
+    }
+
+    return item?.pluginType ?? databaseType;
+}

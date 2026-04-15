@@ -164,6 +164,7 @@ func (b *BatchProcessor) InsertBatch(db *gorm.DB, schema, tableName string, reco
 
 	// Use GORM's CreateInBatches for efficient bulk insert
 	if b.config.UseBulkInsert {
+		// codeql[go/sql-injection]: batch inserts intentionally target the selected storage unit in import and mock-data flows.
 		query := db.Table(fullTableName)
 		if len(b.config.SkipConflictPKColumns) > 0 {
 			query = query.Clauses(b.buildSkipConflictClause())
@@ -200,6 +201,7 @@ func (b *BatchProcessor) InsertBatch(db *gorm.DB, schema, tableName string, reco
 
 		err := db.Transaction(func(tx *gorm.DB) error {
 			for _, record := range batch {
+				// codeql[go/sql-injection]: batch inserts intentionally target the selected storage unit in import and mock-data flows.
 				query := tx.Table(fullTableName)
 				if len(b.config.SkipConflictPKColumns) > 0 {
 					query = query.Clauses(b.buildSkipConflictClause())
@@ -235,6 +237,7 @@ func (b *BatchProcessor) InsertBatch(db *gorm.DB, schema, tableName string, reco
 // ExportInBatches exports data in batches to avoid memory issues
 func (b *BatchProcessor) ExportInBatches(db *gorm.DB, schema, tableName string, columns []string, writer func([]map[string]any) error) error {
 	fullTableName := b.plugin.FormTableName(schema, tableName)
+	// codeql[go/sql-injection]: table name comes from a validated storage unit or plugin-controlled metadata before reaching this helper.
 	query := db.Table(fullTableName)
 	if len(columns) > 0 {
 		query = query.Select(columns)

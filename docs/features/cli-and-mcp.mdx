@@ -1,0 +1,116 @@
+---
+title: "CLI & MCP"
+description: "Interactive CLI, terminal commands, SSH tunnels, and MCP server support"
+---
+
+# CLI & MCP
+
+WhoDB is not only a web app. This repository also ships a CLI with an interactive TUI, non-interactive subcommands, and an MCP server for tool integrations.
+
+## CLI Surfaces
+
+### Interactive TUI
+
+Running `whodb-cli` opens the terminal UI. The CLI includes:
+
+- split-pane layouts
+- SQL editor and results view
+- import and export flows
+- AI chat
+- ER diagram view
+- query history and bookmarks
+- Docker database auto-detection
+- connection profiles
+- built-in SSH tunneling
+- data quality audit view
+
+### Non-Interactive Commands
+
+The current command tree includes commands such as:
+
+- `connect`
+- `connections`
+- `schemas`
+- `tables`
+- `columns`
+- `query`
+- `export`
+- `import`
+- `history`
+- `audit`
+- `guide`
+- `version`
+- `mcp`
+
+## Common Examples
+
+```bash
+# Launch the TUI
+whodb-cli
+
+# Connect directly
+whodb-cli connect --type postgres --host localhost --user alice --database app
+
+# Save and manage reusable connections
+whodb-cli connections add --name mydb --type Postgres --host localhost --user alice --database app
+whodb-cli connections list
+
+# Inspect schemas and tables
+whodb-cli schemas --connection mydb
+whodb-cli tables --connection mydb
+
+# Export data
+whodb-cli export --connection mydb --table users --output users.csv
+
+# Import CSV or Excel
+whodb-cli import --connection mydb --file users.csv --table users
+
+# Run data quality checks
+whodb-cli audit --connection mydb
+```
+
+## SSH Tunneling
+
+Built-in SSH tunneling belongs to the CLI/TUI surface in this codebase. If your database sits behind a bastion host and you want WhoDB to manage the tunnel itself, use the CLI rather than the web login page.
+
+## MCP Server
+
+The CLI can also expose an MCP server:
+
+```bash
+whodb-cli mcp serve
+```
+
+Current MCP features include:
+
+- stdio and HTTP transport
+- `--safe-mode`
+- `--read-only`
+- `--allow-write`
+- tool allowlists/denylists
+- default and allowed connection scoping
+- query timeout and row limits
+
+Examples:
+
+```bash
+# Safe read-only server
+whodb-cli mcp serve --safe-mode
+
+# HTTP transport
+whodb-cli mcp serve --transport=http --port=3000
+
+# Restrict access to named connections
+whodb-cli mcp serve --allowed-connections=prod,staging
+```
+
+## Related Pages
+
+<CardGroup cols={2}>
+<Card title="Keyboard Shortcuts" icon="code" href="/resources/keyboard-shortcuts">
+The frontend shortcut list is separate from the CLI keymap.
+</Card>
+<Card title="Importing Data" icon="table" href="/data/importing">
+Compare the in-app import panel with the CLI import command.
+</Card>
+</CardGroup>

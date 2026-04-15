@@ -37,6 +37,8 @@ import {type SupportedLanguage, SUPPORTED_LANGUAGES} from "@/utils/languages";
 import {ExternalLink} from "../../utils/external-links";
 import {usePageSize} from "../../hooks/use-page-size";
 import {AwsProvidersSection} from "../../components/aws";
+import {AzureProvidersSection} from "../../components/azure";
+import {GcpProvidersSection} from "../../components/gcp";
 import {getComponent} from "../../config/component-registry";
 import {useSettingsConfigQuery} from "@graphql";
 
@@ -275,7 +277,7 @@ export const SettingsPage: FC = () => {
                                     <SelectValue placeholder={t('selectDatabaseSchemaTerminology')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="database" data-value="database">{t('databaseSchemaTerminologyDatabase')}</SelectItem>
+                                    <SelectItem value="database" data-value="database">{t('database')}</SelectItem>
                                     <SelectItem value="schema" data-value="schema">{t('databaseSchemaTerminologySchema')}</SelectItem>
                                 </SelectContent>
                             </Select>
@@ -297,6 +299,10 @@ export const SettingsPage: FC = () => {
                             <>
                                 <Separator className="my-6" />
                                 <AwsProvidersSection />
+                                <Separator className="my-6" />
+                                <AzureProvidersSection />
+                                <Separator className="my-6" />
+                                <GcpProvidersSection />
                             </>
                         )}
                         {(() => {

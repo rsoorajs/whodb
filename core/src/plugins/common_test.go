@@ -69,7 +69,7 @@ func TestWithConnectionCachesConnections(t *testing.T) {
 	}
 }
 
-func TestGetConnectionCacheKeyChangesOnSecrets(t *testing.T) {
+func TestGetConnectionCacheKeyIgnoresPasswordButTracksAdvancedConfig(t *testing.T) {
 	cfg := &engine.PluginConfig{
 		Credentials: &engine.Credentials{
 			Type:     "Postgres",
@@ -84,8 +84,8 @@ func TestGetConnectionCacheKeyChangesOnSecrets(t *testing.T) {
 
 	cfg.Credentials.Password = "secret2"
 	key2 := getConnectionCacheKey(cfg)
-	if key1 == key2 {
-		t.Fatalf("changing password should alter cache key")
+	if key1 != key2 {
+		t.Fatalf("changing password should not alter the outer cache bucket key")
 	}
 
 	cfg.Credentials.Advanced = []engine.Record{{Key: "sslmode", Value: "require"}}
@@ -98,11 +98,14 @@ func TestGetConnectionCacheKeyChangesOnSecrets(t *testing.T) {
 func resetConnectionCache(t *testing.T) {
 	t.Helper()
 	connectionCacheMu.Lock()
-	for key, cached := range connectionCache {
-		if cached != nil && cached.db != nil {
-			if sqlDB, err := cached.db.DB(); err == nil {
-				sqlDB.Close()
+	for key, bucket := range connectionCache {
+		for secret, cached := range bucket {
+			if cached != nil && cached.db != nil {
+				if sqlDB, err := cached.db.DB(); err == nil {
+					sqlDB.Close()
+				}
 			}
+			delete(bucket, secret)
 		}
 		delete(connectionCache, key)
 	}

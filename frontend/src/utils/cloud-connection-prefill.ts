@@ -16,17 +16,50 @@
 
 import { LocalDiscoveredConnection } from "@/store/providers";
 
-/** Matches AWS managed database hostnames (RDS, ElastiCache, DocumentDB) */
+/** Matches AWS managed database hostnames (RDS, ElastiCache, DocumentDB, Redshift, Neptune, Timestream) */
 const AWS_HOSTNAME_PATTERNS = [
     /\.rds\.amazonaws\.com$/i,
     /\.cache\.amazonaws\.com$/i,
     /\.docdb\.amazonaws\.com$/i,
+    /\.redshift\.amazonaws\.com$/i,
+    /\.neptune\.amazonaws\.com$/i,
+    /\.timestream-influxdb\.\w+\.amazonaws\.com$/i,
 ];
 
 /** Checks if a hostname belongs to an AWS managed database service */
 export function isAwsHostname(hostname: string | undefined | null): boolean {
     if (!hostname) return false;
     return AWS_HOSTNAME_PATTERNS.some(pattern => pattern.test(hostname));
+}
+
+/** Matches Azure managed database hostnames */
+const AZURE_HOSTNAME_PATTERNS = [
+    /\.postgres\.database\.azure\.com$/i,
+    /\.mysql\.database\.azure\.com$/i,
+    /\.redis\.cache\.windows\.net$/i,
+    /\.mongo\.cosmos\.azure\.com$/i,
+    /\.redisenterprise\.cache\.azure\.net$/i,
+    /\.managedcassandra\.cosmos\.azure\.com$/i,
+];
+
+/** Checks if a hostname belongs to an Azure managed database service */
+export function isAzureHostname(hostname: string | undefined | null): boolean {
+    if (!hostname) return false;
+    return AZURE_HOSTNAME_PATTERNS.some(pattern => pattern.test(hostname));
+}
+
+/** Matches GCP managed database hostnames (Cloud SQL, AlloyDB, Memorystore, Firestore) */
+const GCP_HOSTNAME_PATTERNS = [
+    /\.cloudsql\.goog$/i,
+    /\.alloydb\.goog$/i,
+    /\.memorystore\.goog$/i,
+    /\.firestore\.goog$/i,
+];
+
+/** Checks if a hostname belongs to a GCP managed database service */
+export function isGcpHostname(hostname: string | undefined | null): boolean {
+    if (!hostname) return false;
+    return GCP_HOSTNAME_PATTERNS.some(pattern => pattern.test(hostname));
 }
 
 /**
@@ -83,6 +116,14 @@ const basePrefillRules: Record<string, PrefillRule> = {
     // DocumentDB (MongoDB-compatible)
     DocumentDB: () => ({
         "URL Params": "?tls=true&tlsInsecure=true&replicaSet=rs0&retryWrites=false&readPreference=secondaryPreferred"
+    }),
+
+    // Azure Cache for Redis (always TLS on SSL port)
+    Redis: () => ({ "TLS": "true" }),
+
+    // Azure Cosmos DB for MongoDB (requires TLS)
+    MongoDB: () => ({
+        "URL Params": "?tls=true&tlsInsecure=true&retryWrites=false"
     }),
 };
 

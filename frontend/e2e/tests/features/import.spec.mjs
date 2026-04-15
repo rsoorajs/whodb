@@ -167,7 +167,6 @@ test.describe('Data Import', () => {
     // ========================================================================
 
     forEachDatabase('sql', (db) => {
-        // MySQL8 shares MySQL's SQL files which hardcode test_db (MySQL8 uses test_db_842).
         const supportsSqlFileImport = db.import.supportsSqlFileImport !== false;
 
         test.describe('SQL Import', () => {

@@ -33,6 +33,7 @@ import (
 	dbmgr "github.com/clidey/whodb/cli/internal/database"
 	"github.com/clidey/whodb/cli/internal/docker"
 	"github.com/clidey/whodb/cli/pkg/styles"
+	"github.com/clidey/whodb/core/src/dbcatalog"
 )
 
 type connectionItem struct {
@@ -56,7 +57,32 @@ func (i connectionItem) Description() string {
 }
 func (i connectionItem) FilterValue() string { return i.conn.Name }
 
-type connectionDelegate struct{}
+// connectionPingResult tracks the reachability status of a saved connection.
+type connectionPingResult struct {
+	checked bool
+	online  bool
+}
+
+// connectionPingMsg is sent when a background ping completes.
+type connectionPingMsg struct {
+	name   string
+	online bool
+}
+
+func buildConnectionStatusMessage(conn *config.Connection, sslSummary string) string {
+	parts := make([]string, 0, 2)
+	if conn != nil {
+		parts = append(parts, fmt.Sprintf("Connected to %s@%s", conn.Type, conn.Host))
+	}
+	if sslSummary != "" {
+		parts = append(parts, sslSummary)
+	}
+	return strings.Join(parts, " • ")
+}
+
+type connectionDelegate struct {
+	pingResults map[string]connectionPingResult
+}
 
 func (d connectionDelegate) Height() int                             { return 2 }
 func (d connectionDelegate) Spacing() int                            { return 1 }
@@ -73,7 +99,18 @@ func (d connectionDelegate) Render(w io.Writer, m list.Model, index int, item li
 	} else {
 		str = "  " + i.Title()
 	}
-	str += "\n  " + styles.RenderMuted(i.Description())
+
+	desc := styles.RenderMuted(i.Description())
+	if result, ok := d.pingResults[i.conn.Name]; ok && result.checked {
+		if result.online {
+			desc += " " + styles.SuccessStyle.Render("●")
+		} else {
+			desc += " " + styles.ErrorStyle.Render("●")
+		}
+	} else if i.conn.SSHHost != "" {
+		desc += " " + styles.MutedStyle.Render("○")
+	}
+	str += "\n  " + desc
 	fmt.Fprint(w, str)
 }
 
@@ -125,6 +162,8 @@ type ConnectionView struct {
 	formReady    bool
 	width        int
 	height       int
+	// Background ping status for each connection
+	pingResults map[string]connectionPingResult
 }
 
 // NewConnectionView creates a connection view initialized with saved connections
@@ -148,12 +187,14 @@ func NewConnectionView(parent *MainModel) *ConnectionView {
 		})
 	}
 
-	l := list.New(items, connectionDelegate{}, 0, 0)
+	pingResults := make(map[string]connectionPingResult)
+	l := list.New(items, connectionDelegate{pingResults: pingResults}, 0, 0)
 	l.Title = ""
 	l.SetShowTitle(false)
 	l.SetShowStatusBar(true)
+	l.SetShowHelp(false)
 	l.SetFilteringEnabled(true)
-	l.SetStatusBarItemName("connection available", "connections available")
+	l.SetStatusBarItemName("saved connection", "saved connections")
 
 	// Initialize form inputs
 	newInput := func(placeholder string, charLimit int) textinput.Model {
@@ -200,7 +241,7 @@ func NewConnectionView(parent *MainModel) *ConnectionView {
 	prompt.EchoMode = textinput.EchoPassword
 	prompt.EchoCharacter = '•'
 
-	dbTypes := []string{"Postgres", "MySQL", "Sqlite3", "DuckDB", "MongoDB", "Redis", "MariaDB", "ClickHouse", "ElasticSearch"}
+	dbTypes := dbcatalog.IDs()
 
 	return &ConnectionView{
 		parent:           parent,
@@ -214,6 +255,7 @@ func NewConnectionView(parent *MainModel) *ConnectionView {
 		connecting:       false,
 		awaitingPassword: false,
 		passwordPrompt:   prompt,
+		pingResults:      pingResults,
 	}
 }
 
@@ -224,8 +266,44 @@ func (v *ConnectionView) Update(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 	return v.updateList(msg)
 }
 
+// Init returns a command to start background ping checks for all connections.
+func (v *ConnectionView) Init() tea.Cmd {
+	if v.mode != "list" || len(v.list.Items()) == 0 {
+		return nil
+	}
+	return v.pingAllConnections()
+}
+
+// pingAllConnections fires background pings for every connection in the list.
+func (v *ConnectionView) pingAllConnections() tea.Cmd {
+	var cmds []tea.Cmd
+	for _, item := range v.list.Items() {
+		ci, ok := item.(connectionItem)
+		if !ok {
+			continue
+		}
+		if ci.conn.SSHHost != "" {
+			continue
+		}
+		conn := ci.conn
+		mgr := v.parent.dbManager
+		cmds = append(cmds, func() tea.Msg {
+			online := mgr.Ping(&conn)
+			return connectionPingMsg{name: conn.Name, online: online}
+		})
+	}
+	if len(cmds) == 0 {
+		return nil
+	}
+	return tea.Batch(cmds...)
+}
+
 func (v *ConnectionView) updateList(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 	switch msg := msg.(type) {
+	case connectionPingMsg:
+		v.pingResults[msg.name] = connectionPingResult{checked: true, online: msg.online}
+		return v, nil
+
 	case connectionResultMsg:
 		v.connecting = false
 		if msg.err != nil {
@@ -235,14 +313,15 @@ func (v *ConnectionView) updateList(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 		v.parent.mode = ViewBrowser
 		v.parent.initLayout()
 		conn := v.parent.dbManager.GetCurrentConnection()
-		connDesc := ""
-		if conn != nil {
-			connDesc = fmt.Sprintf("Connected to %s@%s", conn.Type, conn.Host)
+		connDesc := msg.statusMessage
+		if connDesc == "" {
+			connDesc = buildConnectionStatusMessage(conn, "")
 		}
 		return v, tea.Batch(v.parent.browserView.Init(), v.parent.SetStatus(connDesc))
 
 	case tea.WindowSizeMsg:
-		// Store dimensions; actual list sizing happens in View() using lipgloss.Height() measurements
+		v.width = msg.Width
+		v.height = msg.Height
 		return v, nil
 
 	case tea.MouseMsg:
@@ -292,7 +371,14 @@ func (v *ConnectionView) updateList(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 					if err := v.parent.dbManager.Connect(&conn); err != nil {
 						return connectionResultMsg{err: err}
 					}
-					return connectionResultMsg{err: nil}
+					sslSummary, err := v.parent.dbManager.GetSSLStatusSummary()
+					if err != nil {
+						sslSummary = ""
+					}
+					return connectionResultMsg{
+						err:           nil,
+						statusMessage: buildConnectionStatusMessage(&conn, sslSummary),
+					}
 				}
 			}
 
@@ -307,7 +393,7 @@ func (v *ConnectionView) updateList(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 				v.parent.config.RemoveConnection(item.conn.Name)
 				v.parent.config.Save()
 				v.refreshList()
-				return v, nil
+				return v, v.pingAllConnections()
 			}
 
 		case key.Matches(msg, Keys.ConnectionList.QuitEsc):
@@ -338,6 +424,12 @@ func (v *ConnectionView) inputWidth() int {
 
 func (v *ConnectionView) updateForm(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 	var cmd tea.Cmd
+
+	// Absorb ping results that arrive while in form mode
+	if pm, ok := msg.(connectionPingMsg); ok {
+		v.pingResults[pm.name] = connectionPingResult{checked: true, online: pm.online}
+		return v, nil
+	}
 
 	// Handle deferred password prompt overlay
 	if v.awaitingPassword {
@@ -390,9 +482,9 @@ func (v *ConnectionView) updateForm(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 			v.parent.mode = ViewBrowser
 			v.parent.initLayout()
 			conn := v.parent.dbManager.GetCurrentConnection()
-			connDesc := ""
-			if conn != nil {
-				connDesc = fmt.Sprintf("Connected to %s@%s", conn.Type, conn.Host)
+			connDesc := msg.statusMessage
+			if connDesc == "" {
+				connDesc = buildConnectionStatusMessage(conn, "")
 			}
 			return v, tea.Batch(v.parent.browserView.Init(), v.parent.SetStatus(connDesc))
 		}
@@ -407,7 +499,8 @@ func (v *ConnectionView) updateForm(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 			if len(v.parent.config.Connections) > 0 {
 				v.mode = "list"
 				v.connError = nil
-				return v, nil
+				v.refreshList()
+				return v, v.pingAllConnections()
 			}
 			return v, tea.Quit
 
@@ -450,8 +543,9 @@ func (v *ConnectionView) updateForm(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 				break
 			}
 			if v.focusIndex == focusConnect {
-				// If password field is visible and empty, prompt securely before connecting
-				if v.isFieldVisible(fieldPassword) && v.inputs[fieldPassword].Value() == "" {
+				// If this database requires a password and the field is empty,
+				// prompt securely before connecting.
+				if passwordRequired(v.dbTypes[v.dbTypeIndex]) && v.isFieldVisible(fieldPassword) && v.inputs[fieldPassword].Value() == "" {
 					v.awaitingPassword = true
 					v.passwordPrompt.SetValue("")
 					v.passwordPrompt.Focus()
@@ -489,12 +583,17 @@ func (v *ConnectionView) View() string {
 		Keys.ConnectionList.Connect,
 		Keys.ConnectionList.New,
 		Keys.ConnectionList.DeleteConn,
+		Keys.Global.CycleTheme,
 		Keys.ConnectionList.QuitEsc,
 		Keys.Global.Quit,
 	)
+	sep := styles.MutedStyle.Render("  ")
+	legend := styles.SuccessStyle.Render("●") + styles.RenderMuted(" available") + sep +
+		styles.ErrorStyle.Render("●") + styles.RenderMuted(" not available") + sep +
+		styles.MutedStyle.Render("○") + styles.RenderMuted(" inactive tunnel")
 
-	// Measure chrome within this view: title + subtitle + help + padding(2) + separators(2)
-	chromeHeight := lipgloss.Height(title) + lipgloss.Height(subtitle) + lipgloss.Height(helpText) + 4
+	// Measure chrome within this view: title + subtitle + legend + help + padding(2) + separators(3)
+	chromeHeight := lipgloss.Height(title) + lipgloss.Height(subtitle) + lipgloss.Height(helpText) + 1 + 5
 	listHeight := v.parent.ContentHeight() - chromeHeight
 	if listHeight < 3 {
 		listHeight = 3
@@ -512,17 +611,15 @@ func (v *ConnectionView) View() string {
 		b.WriteString(v.list.View())
 	}
 	b.WriteString("\n\n")
+	if v.escPressed {
+		b.WriteString(styles.RenderErr(fmt.Sprintf("Press ESC again to quit (%ds)", v.escTimeoutSecs)))
+	} else {
+		b.WriteString(legend)
+	}
+	b.WriteString("\n")
 	b.WriteString(helpText)
 
-	content := lipgloss.NewStyle().Padding(1, 2).Render(b.String())
-
-	if v.escPressed {
-		confirmMsg := fmt.Sprintf("Press ESC again to quit (%ds)", v.escTimeoutSecs)
-		confirmBox := styles.RenderErrorBox(confirmMsg)
-		return content + "\n" + confirmBox
-	}
-
-	return content
+	return lipgloss.NewStyle().Padding(1, 2).Render(b.String())
 }
 
 func (v *ConnectionView) renderForm() string {
@@ -661,9 +758,13 @@ func (v *ConnectionView) renderForm() string {
 
 	// Render title and help first, measure them, give remaining height to viewport
 	title := styles.RenderTitle("New Database Connection")
+	helpWidth := v.width
+	if helpWidth == 0 {
+		helpWidth = v.parent.width
+	}
 	helpText := ""
 	if len(v.parent.config.Connections) > 0 {
-		helpText = styles.RenderHelpWidth(v.width,
+		helpText = styles.RenderHelpWidth(helpWidth,
 			Keys.ConnectionForm.Navigate.Help().Key, Keys.ConnectionForm.Navigate.Help().Desc,
 			Keys.ConnectionForm.TypeLeft.Help().Key, Keys.ConnectionForm.TypeLeft.Help().Desc,
 			Keys.ConnectionForm.ConnectForm.Help().Key, Keys.ConnectionForm.ConnectForm.Help().Desc,
@@ -672,7 +773,7 @@ func (v *ConnectionView) renderForm() string {
 			Keys.Global.Quit.Help().Key, Keys.Global.Quit.Help().Desc,
 		)
 	} else {
-		helpText = styles.RenderHelpWidth(v.width,
+		helpText = styles.RenderHelpWidth(helpWidth,
 			Keys.ConnectionForm.Navigate.Help().Key, Keys.ConnectionForm.Navigate.Help().Desc,
 			Keys.ConnectionForm.TypeLeft.Help().Key, Keys.ConnectionForm.TypeLeft.Help().Desc,
 			Keys.ConnectionForm.ConnectForm.Help().Key, Keys.ConnectionForm.ConnectForm.Help().Desc,
@@ -748,6 +849,10 @@ func (v *ConnectionView) refreshList() {
 		})
 	}
 	v.list.SetItems(items)
+	// Reset ping results so they get refreshed
+	for k := range v.pingResults {
+		delete(v.pingResults, k)
+	}
 }
 
 // getFocusOrder returns the ordered list of focusable indices:
@@ -926,59 +1031,57 @@ func (v *ConnectionView) prefillFromConnection(conn config.Connection) {
 
 func (v *ConnectionView) updatePortPlaceholder() {
 	defaultPort := v.getDefaultPort(v.dbTypes[v.dbTypeIndex])
+	if defaultPort <= 0 {
+		v.inputs[fieldPort].Placeholder = ""
+		return
+	}
 	v.inputs[fieldPort].Placeholder = strconv.Itoa(defaultPort)
 }
 
 func (v *ConnectionView) getDefaultPort(dbType string) int {
-	switch dbType {
-	case "Postgres":
-		return 5432
-	case "MySQL", "MariaDB":
-		return 3306
-	case "MongoDB":
-		return 27017
-	case "Redis":
-		return 6379
-	case "ClickHouse":
-		return 9000
-	case "ElasticSearch":
-		return 9200
-	case "Sqlite3", "DuckDB":
-		return 0
-	default:
+	port, ok := dbcatalog.DefaultPort(dbType)
+	if !ok {
 		return 5432
 	}
+	return port
 }
 
 // isNetworkDatabase returns true for database types that connect over a network,
 // i.e. those where SSH tunneling is applicable.
 func isNetworkDatabase(dbType string) bool {
-	switch dbType {
-	case "Sqlite3", "DuckDB":
-		return false
-	default:
-		return true
-	}
+	return dbcatalog.IsNetworkDatabase(dbType)
 }
 
 // getVisibleFields returns the input field indices visible for the given database type.
 // SSH fields are not included here; they are managed separately via the SSH toggle.
 func getVisibleFields(dbType string) []int {
-	switch dbType {
-	case "Sqlite3", "DuckDB":
-		return []int{fieldName, fieldDatabase}
-	case "MongoDB":
-		return []int{fieldName, fieldHost, fieldPort, fieldUsername, fieldPassword, fieldDatabase}
-	case "Redis":
-		return []int{fieldName, fieldHost, fieldPort, fieldPassword, fieldDatabase}
-	case "ElasticSearch":
-		return []int{fieldName, fieldHost, fieldPort, fieldUsername, fieldPassword}
-	case "Postgres":
-		return []int{fieldName, fieldHost, fieldPort, fieldUsername, fieldPassword, fieldDatabase, fieldSchema}
-	default:
-		// MySQL, MariaDB, ClickHouse
+	entry, ok := dbcatalog.Find(dbType)
+	if !ok {
 		return []int{fieldName, fieldHost, fieldPort, fieldUsername, fieldPassword, fieldDatabase}
 	}
+
+	fields := []int{fieldName}
+	if entry.Fields.Hostname {
+		fields = append(fields, fieldHost, fieldPort)
+	}
+	if entry.Fields.Username {
+		fields = append(fields, fieldUsername)
+	}
+	if entry.Fields.Password {
+		fields = append(fields, fieldPassword)
+	}
+	if entry.Fields.Database {
+		fields = append(fields, fieldDatabase)
+	}
+	if entry.Fields.SearchPath {
+		fields = append(fields, fieldSchema)
+	}
+	return fields
+}
+
+func passwordRequired(dbType string) bool {
+	entry, ok := dbcatalog.Find(dbType)
+	return ok && entry.RequiredFields.Password
 }
 
 func (v *ConnectionView) isFieldVisible(index int) bool {
@@ -995,7 +1098,7 @@ func (v *ConnectionView) onDbTypeChanged() {
 	v.visibleFields = getVisibleFields(v.dbTypes[v.dbTypeIndex])
 
 	// Update database placeholder for file-based databases
-	if v.dbTypes[v.dbTypeIndex] == "Sqlite3" || v.dbTypes[v.dbTypeIndex] == "DuckDB" {
+	if !isNetworkDatabase(v.dbTypes[v.dbTypeIndex]) {
 		v.inputs[fieldDatabase].Placeholder = "/path/to/database.db"
 	} else {
 		v.inputs[fieldDatabase].Placeholder = "mydb"
@@ -1022,7 +1125,11 @@ func (v *ConnectionView) connect() tea.Cmd {
 		host = v.inputs[fieldHost].Value()
 	}
 	if host == "" {
-		host = "localhost"
+		if database := v.inputs[fieldDatabase].Value(); !isNetworkDatabase(dbType) && database != "" {
+			host = database
+		} else {
+			host = "localhost"
+		}
 	}
 
 	var port int
@@ -1090,12 +1197,20 @@ func (v *ConnectionView) connect() tea.Cmd {
 			return connectionResultMsg{err: err}
 		}
 
+		sslSummary, err := dbManager.GetSSLStatusSummary()
+		if err != nil {
+			sslSummary = ""
+		}
+
 		// Save connection if name is provided
 		if name != "" {
 			cfg.AddConnection(conn)
 			cfg.Save()
 		}
 
-		return connectionResultMsg{err: nil}
+		return connectionResultMsg{
+			err:           nil,
+			statusMessage: buildConnectionStatusMessage(&conn, sslSummary),
+		}
 	}
 }

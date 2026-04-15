@@ -62,26 +62,25 @@ export const useTranslation = (componentPath: string) => {
      */
     const t: {
         (key: string): string;
-        (key: string, fallback: string): string;
         (key: string, params: Record<string, string | number>): string;
         (key: string, params: Record<string, ReactNode>): ReactNode;
-    } = (key: string, fallbackOrParams?: string | Record<string, any>): any => {
-        if (typeof fallbackOrParams !== 'object' || fallbackOrParams === null) {
-            return getTranslation(translations, key, language, fallbackOrParams);
+    } = (key: string, params?: Record<string, any>): any => {
+        if (typeof params !== 'object' || params === null) {
+            return getTranslation(translations, key, language);
         }
 
-        const hasJsx = Object.values(fallbackOrParams).some(
+        const hasJsx = Object.values(params).some(
             v => v !== null && v !== undefined && typeof v === 'object'
         );
 
         if (!hasJsx) {
-            return getTranslation(translations, key, language, fallbackOrParams);
+            return getTranslation(translations, key, language, params);
         }
 
         // JSX interpolation path — also handles pluralization
         let resolvedKey = key;
-        if (typeof fallbackOrParams.count === 'number') {
-            const category = getPluralCategory(language, fallbackOrParams.count);
+        if (typeof params.count === 'number') {
+            const category = getPluralCategory(language, params.count);
             const pluralKey = `${key}_${category}`;
             if (translations[pluralKey]) {
                 resolvedKey = pluralKey;
@@ -102,7 +101,7 @@ export const useTranslation = (componentPath: string) => {
             if (match.index > lastIndex) {
                 parts.push(template.slice(lastIndex, match.index));
             }
-            parts.push(fallbackOrParams[match[1]] ?? match[0]);
+            parts.push(params[match[1]] ?? match[0]);
             lastIndex = match.index + match[0].length;
         }
 

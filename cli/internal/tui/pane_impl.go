@@ -40,6 +40,8 @@ var (
 	_ Pane = (*CmdLogView)(nil)
 	_ Pane = (*ExplainView)(nil)
 	_ Pane = (*ERDView)(nil)
+	_ Pane = (*AuditView)(nil)
+	_ Pane = (*ProfilesView)(nil)
 )
 
 // ---------------------------------------------------------------------------
@@ -218,6 +220,18 @@ func (v *ImportView) SetCompact(bool)                 {}
 func (v *ImportView) HelpBindings() []key.Binding     { return nil }
 
 // ---------------------------------------------------------------------------
+// MockDataView
+// ---------------------------------------------------------------------------
+
+func (v *MockDataView) UpdatePane(msg tea.Msg) tea.Cmd  { _, cmd := v.Update(msg); return cmd }
+func (v *MockDataView) SetDimensions(width, height int) { v.width = width; v.height = height }
+func (v *MockDataView) Focusable() bool                 { return true }
+func (v *MockDataView) OnFocus()                        {}
+func (v *MockDataView) OnBlur()                         {}
+func (v *MockDataView) SetCompact(bool)                 {}
+func (v *MockDataView) HelpBindings() []key.Binding     { return nil }
+
+// ---------------------------------------------------------------------------
 // JSONViewer
 // ---------------------------------------------------------------------------
 
@@ -266,6 +280,31 @@ func (v *ExplainView) SetCompact(bool)                 {}
 func (v *ExplainView) HelpBindings() []key.Binding     { return nil }
 
 // ---------------------------------------------------------------------------
+// AuditView
+// ---------------------------------------------------------------------------
+
+// UpdatePane wraps the AuditView's Update method for polymorphic dispatch.
+func (v *AuditView) UpdatePane(msg tea.Msg) tea.Cmd { _, cmd := v.Update(msg); return cmd }
+
+// SetDimensions sets the available width and height for the audit view.
+func (v *AuditView) SetDimensions(width, height int) { v.width = width; v.height = height }
+
+// Focusable returns true because the audit view can receive keyboard focus.
+func (v *AuditView) Focusable() bool { return true }
+
+// OnFocus is called when the audit view gains keyboard focus.
+func (v *AuditView) OnFocus() {}
+
+// OnBlur is called when the audit view loses keyboard focus.
+func (v *AuditView) OnBlur() {}
+
+// SetCompact is a no-op for the audit view.
+func (v *AuditView) SetCompact(bool) {}
+
+// HelpBindings returns the key bindings to display in the global help bar.
+func (v *AuditView) HelpBindings() []key.Binding { return nil }
+
+// ---------------------------------------------------------------------------
 // ERDView
 // ---------------------------------------------------------------------------
 
@@ -289,3 +328,15 @@ func (v *ERDView) SetCompact(bool) {}
 
 // HelpBindings returns the key bindings to display in the global help bar.
 func (v *ERDView) HelpBindings() []key.Binding { return nil }
+
+// ---------------------------------------------------------------------------
+// ProfilesView
+// ---------------------------------------------------------------------------
+
+func (v *ProfilesView) UpdatePane(msg tea.Msg) tea.Cmd  { _, cmd := v.Update(msg); return cmd }
+func (v *ProfilesView) SetDimensions(width, height int) { v.width = width; v.height = height }
+func (v *ProfilesView) Focusable() bool                 { return true }
+func (v *ProfilesView) OnFocus()                        {}
+func (v *ProfilesView) OnBlur()                         {}
+func (v *ProfilesView) SetCompact(bool)                 {}
+func (v *ProfilesView) HelpBindings() []key.Binding     { return nil }

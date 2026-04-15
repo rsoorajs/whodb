@@ -1,0 +1,106 @@
+{
+  "type": "QuestDB",
+  "category": "sql",
+  "testTable": {
+    "name": "users",
+    "identifierField": "username",
+    "identifierColIndex": 1,
+    "idField": "id",
+    "firstId": "1",
+    "firstName": "john_doe",
+    "testValues": {
+      "original": "john_doe",
+      "modified": "john_doe1",
+      "rowIndex": 0
+    },
+    "searchTerm": "john",
+    "whereConditions": {
+      "testId1": "1",
+      "testId2": "2",
+      "testId3": "3",
+      "thirdColumn": "email",
+      "thirdValue": "jane@example.com",
+      "expectedValue": "admin_user"
+    },
+    "typeCastingTable": "test_casting"
+  },
+  "connection": {
+    "host": "localhost",
+    "port": 8812,
+    "user": "user",
+    "password": "password",
+    "database": "qdb",
+    "advanced": {}
+  },
+  "schema": null,
+  "whereOperators": {
+    "equals": "=",
+    "notEquals": "!=",
+    "greaterThan": ">",
+    "lessThan": "<",
+    "greaterOrEqual": ">=",
+    "lessOrEqual": "<="
+  },
+  "sidebar": {
+    "showsDatabaseDropdown": false,
+    "showsSchemaDropdown": false
+  },
+  "features": {
+    "graph": false,
+    "export": true,
+    "scratchpad": true,
+    "mockData": false,
+    "chat": true,
+    "whereConditions": true,
+    "queryHistory": true,
+    "pagination": true,
+    "documentEdit": false
+  },
+  "featureNotes": {
+    "graph": "QuestDB does not support foreign keys, so graph view has no relationships",
+    "mockData": "Mock data generation not applicable for time-series databases",
+    "documentEdit": "QuestDB is append-only, direct row editing is not supported"
+  },
+  "expectedTables": [
+    "order_items",
+    "orders",
+    "payments",
+    "products",
+    "users"
+  ],
+  "tables": {
+    "users": {
+      "columns": {
+        "id": "INT",
+        "username": "STRING",
+        "email": "STRING",
+        "password": "STRING",
+        "created_at": "TIMESTAMP"
+      },
+      "expectedColumns": ["", "id", "username", "email", "password", "created_at"],
+      "testData": {
+        "initial": [
+          ["", "1", "john_doe", "john@example.com", "securepassword1"],
+          ["", "2", "jane_smith", "jane@example.com", "securepassword2"],
+          ["", "3", "admin_user", "admin@example.com", "adminpass"]
+        ]
+      },
+      "metadata": {
+        "type": "table"
+      }
+    }
+  },
+  "sql": {
+    "schemaPrefix": "",
+    "selectAllUsers": "SELECT * FROM users ORDER BY created_at;",
+    "selectUserById": "SELECT * FROM users WHERE id=1;",
+    "countUsers": "SELECT COUNT(*) as user_count FROM users;",
+    "countColumn": "user_count",
+    "selectUsersFiltered": "SELECT username, email FROM users WHERE id > 1;",
+    "invalidQuery": "SELECT * FROM users1;",
+    "emptyResultQuery": "SELECT * FROM users WHERE id = -99999",
+    "errorPatterns": {
+      "tableNotFound": "table does not exist"
+    }
+  }
+}

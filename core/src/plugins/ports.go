@@ -25,6 +25,7 @@ var defaultDatabasePorts = map[engine.DatabaseType]string{
 	engine.DatabaseType_MySQL:         "3306",
 	engine.DatabaseType_MariaDB:       "3306",
 	engine.DatabaseType_Postgres:      "5432",
+	engine.DatabaseType_CockroachDB:   "26257",
 	engine.DatabaseType_Sqlite3:       "0",    // SQLite is file-based, no port
 	engine.DatabaseType_ClickHouse:    "9000", // TCP port (HTTP port is 8123)
 	engine.DatabaseType_MongoDB:       "27017",
@@ -32,6 +33,7 @@ var defaultDatabasePorts = map[engine.DatabaseType]string{
 	engine.DatabaseType_Redis:         "6379",
 	engine.DatabaseType_DuckDB:        "0", // DuckDB is file-based, no port
 	engine.DatabaseType_Memcached:     "11211",
+	engine.DatabaseType_TiDB:          "4000",
 }
 
 // additionalPorts holds ports registered by external packages

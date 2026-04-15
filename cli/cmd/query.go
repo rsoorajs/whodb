@@ -191,4 +191,7 @@ func init() {
 	queryCmd.Flags().StringVarP(&queryConnection, "connection", "c", "", "connection name to use")
 	queryCmd.Flags().StringVarP(&queryFormat, "format", "f", "auto", "output format: auto, table, plain, json, csv")
 	queryCmd.Flags().BoolVarP(&queryQuiet, "quiet", "q", false, "suppress informational messages")
+
+	queryCmd.RegisterFlagCompletionFunc("connection", completeConnectionNames)
+	queryCmd.RegisterFlagCompletionFunc("format", completeOutputFormats)
 }

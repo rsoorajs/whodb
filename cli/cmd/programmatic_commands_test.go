@@ -481,6 +481,82 @@ func TestExportCmd_RequiresOutput(t *testing.T) {
 	}
 }
 
+// TestMockDataCmd_Exists verifies the mock-data command is registered.
+func TestMockDataCmd_Exists(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	found := false
+	for _, cmd := range rootCmd.Commands() {
+		if cmd.Use == "mock-data" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("Expected 'mock-data' command to be registered")
+	}
+}
+
+// TestMockDataCmd_Flags verifies the mock-data command has expected flags.
+func TestMockDataCmd_Flags(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	flags := []string{"connection", "schema", "table", "rows", "overwrite", "analyze", "yes", "fk-density-ratio", "format", "quiet"}
+	for _, flag := range flags {
+		if mockDataCmd.Flags().Lookup(flag) == nil {
+			t.Errorf("Expected '--%s' flag on mock-data command", flag)
+		}
+	}
+}
+
+// TestMockDataCmd_RequiresConnection verifies --connection is required.
+func TestMockDataCmd_RequiresConnection(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	oldConnection, oldTable, oldRows := mockDataConnection, mockDataTable, mockDataRows
+	t.Cleanup(func() {
+		mockDataConnection, mockDataTable, mockDataRows = oldConnection, oldTable, oldRows
+	})
+
+	mockDataConnection = ""
+	mockDataTable = "users"
+	mockDataRows = 10
+
+	err := mockDataCmd.RunE(mockDataCmd, []string{})
+	if err == nil {
+		t.Error("Expected error when --connection is not provided")
+	}
+	if !strings.Contains(err.Error(), "--connection") {
+		t.Errorf("Expected error message to mention --connection, got: %v", err)
+	}
+}
+
+// TestMockDataCmd_RequiresRows verifies --rows must be positive.
+func TestMockDataCmd_RequiresRows(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	oldConnection, oldTable, oldRows := mockDataConnection, mockDataTable, mockDataRows
+	t.Cleanup(func() {
+		mockDataConnection, mockDataTable, mockDataRows = oldConnection, oldTable, oldRows
+	})
+
+	mockDataConnection = "dev"
+	mockDataTable = "users"
+	mockDataRows = 0
+
+	err := mockDataCmd.RunE(mockDataCmd, []string{})
+	if err == nil {
+		t.Error("Expected error when --rows is not positive")
+	}
+	if !strings.Contains(err.Error(), "--rows") {
+		t.Errorf("Expected error message to mention --rows, got: %v", err)
+	}
+}
+
 // TestHistoryCmd_Exists verifies the history command is registered
 func TestHistoryCmd_Exists(t *testing.T) {
 	cleanup := setupTestEnv(t)

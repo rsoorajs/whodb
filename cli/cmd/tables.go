@@ -187,4 +187,7 @@ func init() {
 	tablesCmd.Flags().StringVarP(&tablesSchema, "schema", "s", "", "schema to list tables from")
 	tablesCmd.Flags().StringVarP(&tablesFormat, "format", "f", "auto", "output format: auto, table, plain, json, csv")
 	tablesCmd.Flags().BoolVarP(&tablesQuiet, "quiet", "q", false, "suppress informational messages")
+
+	tablesCmd.RegisterFlagCompletionFunc("connection", completeConnectionNames)
+	tablesCmd.RegisterFlagCompletionFunc("format", completeOutputFormats)
 }

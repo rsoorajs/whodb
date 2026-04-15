@@ -85,6 +85,61 @@ type AtomicWhereCondition struct {
 	Value      string `json:"Value"`
 }
 
+type AzureProvider struct {
+	ID                 string              `json:"Id"`
+	ProviderType       CloudProviderType   `json:"ProviderType"`
+	Name               string              `json:"Name"`
+	Region             string              `json:"Region"`
+	Status             CloudProviderStatus `json:"Status"`
+	LastDiscoveryAt    *string             `json:"LastDiscoveryAt,omitempty"`
+	DiscoveredCount    int                 `json:"DiscoveredCount"`
+	Error              *string             `json:"Error,omitempty"`
+	SubscriptionID     string              `json:"SubscriptionID"`
+	TenantID           *string             `json:"TenantID,omitempty"`
+	ResourceGroup      *string             `json:"ResourceGroup,omitempty"`
+	DiscoverPostgreSQL bool                `json:"DiscoverPostgreSQL"`
+	DiscoverMySQL      bool                `json:"DiscoverMySQL"`
+	DiscoverRedis      bool                `json:"DiscoverRedis"`
+	DiscoverCosmosDb   bool                `json:"DiscoverCosmosDB"`
+}
+
+func (AzureProvider) IsCloudProvider()                        {}
+func (this AzureProvider) GetID() string                      { return this.ID }
+func (this AzureProvider) GetProviderType() CloudProviderType { return this.ProviderType }
+func (this AzureProvider) GetName() string                    { return this.Name }
+func (this AzureProvider) GetRegion() string                  { return this.Region }
+func (this AzureProvider) GetStatus() CloudProviderStatus     { return this.Status }
+func (this AzureProvider) GetLastDiscoveryAt() *string        { return this.LastDiscoveryAt }
+func (this AzureProvider) GetDiscoveredCount() int            { return this.DiscoveredCount }
+func (this AzureProvider) GetError() *string                  { return this.Error }
+
+type AzureProviderInput struct {
+	Name               string  `json:"Name"`
+	SubscriptionID     string  `json:"SubscriptionID"`
+	TenantID           *string `json:"TenantID,omitempty"`
+	ClientID           *string `json:"ClientID,omitempty"`
+	ClientSecret       *string `json:"ClientSecret,omitempty"`
+	AuthMethod         *string `json:"AuthMethod,omitempty"`
+	ResourceGroup      *string `json:"ResourceGroup,omitempty"`
+	DiscoverPostgreSQL *bool   `json:"DiscoverPostgreSQL,omitempty"`
+	DiscoverMySQL      *bool   `json:"DiscoverMySQL,omitempty"`
+	DiscoverRedis      *bool   `json:"DiscoverRedis,omitempty"`
+	DiscoverCosmosDb   *bool   `json:"DiscoverCosmosDB,omitempty"`
+}
+
+type AzureRegion struct {
+	ID          string `json:"Id"`
+	DisplayName string `json:"DisplayName"`
+	Geography   string `json:"Geography"`
+}
+
+type AzureSubscription struct {
+	ID          string `json:"Id"`
+	DisplayName string `json:"DisplayName"`
+	State       string `json:"State"`
+	TenantID    string `json:"TenantID"`
+}
+
 type Capabilities struct {
 	SupportsScratchpad     bool `json:"supportsScratchpad"`
 	SupportsChat           bool `json:"supportsChat"`
@@ -113,6 +168,44 @@ type Column struct {
 	Scale            *int    `json:"Scale,omitempty"`
 }
 
+type ConnectableDatabase struct {
+	ID                          string                             `json:"id"`
+	Label                       string                             `json:"label"`
+	PluginType                  string                             `json:"pluginType"`
+	Extra                       []*Record                          `json:"extra"`
+	Fields                      *ConnectableDatabaseFields         `json:"fields"`
+	RequiredFields              *ConnectableDatabaseRequiredFields `json:"requiredFields"`
+	SupportsModifiers           bool                               `json:"supportsModifiers"`
+	SupportsScratchpad          bool                               `json:"supportsScratchpad"`
+	SupportsSchema              bool                               `json:"supportsSchema"`
+	SupportsDatabaseSwitching   bool                               `json:"supportsDatabaseSwitching"`
+	UsesSchemaForGraph          bool                               `json:"usesSchemaForGraph"`
+	UsesDatabaseInsteadOfSchema bool                               `json:"usesDatabaseInsteadOfSchema"`
+	SupportsMockData            bool                               `json:"supportsMockData"`
+	IsAWSManaged                bool                               `json:"isAwsManaged"`
+	SslModes                    []*ConnectableDatabaseSSLMode      `json:"sslModes"`
+}
+
+type ConnectableDatabaseFields struct {
+	Hostname   bool `json:"hostname"`
+	Username   bool `json:"username"`
+	Password   bool `json:"password"`
+	Database   bool `json:"database"`
+	SearchPath bool `json:"searchPath"`
+}
+
+type ConnectableDatabaseRequiredFields struct {
+	Hostname bool `json:"hostname"`
+	Username bool `json:"username"`
+	Password bool `json:"password"`
+	Database bool `json:"database"`
+}
+
+type ConnectableDatabaseSSLMode struct {
+	Value   string   `json:"value"`
+	Aliases []string `json:"aliases"`
+}
+
 type DatabaseMetadata struct {
 	DatabaseType    string            `json:"databaseType"`
 	TypeDefinitions []*TypeDefinition `json:"typeDefinitions"`
@@ -135,6 +228,47 @@ type DiscoveredConnection struct {
 	Region       *string           `json:"Region,omitempty"`
 	Status       ConnectionStatus  `json:"Status"`
 	Metadata     []*Record         `json:"Metadata"`
+}
+
+type GCPProvider struct {
+	ID                    string              `json:"Id"`
+	ProviderType          CloudProviderType   `json:"ProviderType"`
+	Name                  string              `json:"Name"`
+	Region                string              `json:"Region"`
+	Status                CloudProviderStatus `json:"Status"`
+	LastDiscoveryAt       *string             `json:"LastDiscoveryAt,omitempty"`
+	DiscoveredCount       int                 `json:"DiscoveredCount"`
+	Error                 *string             `json:"Error,omitempty"`
+	ProjectID             string              `json:"ProjectID"`
+	ServiceAccountKeyPath *string             `json:"ServiceAccountKeyPath,omitempty"`
+	DiscoverCloudSQL      bool                `json:"DiscoverCloudSQL"`
+	DiscoverAlloyDb       bool                `json:"DiscoverAlloyDB"`
+	DiscoverMemorystore   bool                `json:"DiscoverMemorystore"`
+}
+
+func (GCPProvider) IsCloudProvider()                        {}
+func (this GCPProvider) GetID() string                      { return this.ID }
+func (this GCPProvider) GetProviderType() CloudProviderType { return this.ProviderType }
+func (this GCPProvider) GetName() string                    { return this.Name }
+func (this GCPProvider) GetRegion() string                  { return this.Region }
+func (this GCPProvider) GetStatus() CloudProviderStatus     { return this.Status }
+func (this GCPProvider) GetLastDiscoveryAt() *string        { return this.LastDiscoveryAt }
+func (this GCPProvider) GetDiscoveredCount() int            { return this.DiscoveredCount }
+func (this GCPProvider) GetError() *string                  { return this.Error }
+
+type GCPProviderInput struct {
+	Name                  string  `json:"Name"`
+	ProjectID             string  `json:"ProjectID"`
+	Region                string  `json:"Region"`
+	ServiceAccountKeyPath *string `json:"ServiceAccountKeyPath,omitempty"`
+	DiscoverCloudSQL      *bool   `json:"DiscoverCloudSQL,omitempty"`
+	DiscoverAlloyDb       *bool   `json:"DiscoverAlloyDB,omitempty"`
+	DiscoverMemorystore   *bool   `json:"DiscoverMemorystore,omitempty"`
+}
+
+type GCPRegion struct {
+	ID          string `json:"Id"`
+	Description string `json:"Description"`
 }
 
 type GenerateChatTitleInput struct {
@@ -223,6 +357,13 @@ type LocalAWSProfile struct {
 	Source    string  `json:"Source"`
 	AuthType  string  `json:"AuthType"`
 	IsDefault bool    `json:"IsDefault"`
+}
+
+type LocalGCPProject struct {
+	ProjectID string `json:"ProjectID"`
+	Name      string `json:"Name"`
+	Source    string `json:"Source"`
+	IsDefault bool   `json:"IsDefault"`
 }
 
 type LoginCredentials struct {
@@ -439,16 +580,20 @@ func (e CloudProviderStatus) MarshalJSON() ([]byte, error) {
 type CloudProviderType string
 
 const (
-	CloudProviderTypeAWS CloudProviderType = "AWS"
+	CloudProviderTypeAWS   CloudProviderType = "AWS"
+	CloudProviderTypeAzure CloudProviderType = "Azure"
+	CloudProviderTypeGCP   CloudProviderType = "GCP"
 )
 
 var AllCloudProviderType = []CloudProviderType{
 	CloudProviderTypeAWS,
+	CloudProviderTypeAzure,
+	CloudProviderTypeGCP,
 }
 
 func (e CloudProviderType) IsValid() bool {
 	switch e {
-	case CloudProviderTypeAWS:
+	case CloudProviderTypeAWS, CloudProviderTypeAzure, CloudProviderTypeGCP:
 		return true
 	}
 	return false
@@ -562,9 +707,19 @@ const (
 	DatabaseTypeRedis         DatabaseType = "Redis"
 	DatabaseTypeElasticSearch DatabaseType = "ElasticSearch"
 	DatabaseTypeMariaDb       DatabaseType = "MariaDB"
+	DatabaseTypeCockroachDb   DatabaseType = "CockroachDB"
 	DatabaseTypeClickHouse    DatabaseType = "ClickHouse"
 	DatabaseTypeDuckDb        DatabaseType = "DuckDB"
 	DatabaseTypeMemcached     DatabaseType = "Memcached"
+	DatabaseTypeTiDb          DatabaseType = "TiDB"
+	DatabaseTypeElastiCache   DatabaseType = "ElastiCache"
+	DatabaseTypeDocumentDb    DatabaseType = "DocumentDB"
+	DatabaseTypeValkey        DatabaseType = "Valkey"
+	DatabaseTypeDragonfly     DatabaseType = "Dragonfly"
+	DatabaseTypeOpenSearch    DatabaseType = "OpenSearch"
+	DatabaseTypeYugabyteDb    DatabaseType = "YugabyteDB"
+	DatabaseTypeQuestDb       DatabaseType = "QuestDB"
+	DatabaseTypeFerretDb      DatabaseType = "FerretDB"
 )
 
 var AllDatabaseType = []DatabaseType{
@@ -575,14 +730,24 @@ var AllDatabaseType = []DatabaseType{
 	DatabaseTypeRedis,
 	DatabaseTypeElasticSearch,
 	DatabaseTypeMariaDb,
+	DatabaseTypeCockroachDb,
 	DatabaseTypeClickHouse,
 	DatabaseTypeDuckDb,
 	DatabaseTypeMemcached,
+	DatabaseTypeTiDb,
+	DatabaseTypeElastiCache,
+	DatabaseTypeDocumentDb,
+	DatabaseTypeValkey,
+	DatabaseTypeDragonfly,
+	DatabaseTypeOpenSearch,
+	DatabaseTypeYugabyteDb,
+	DatabaseTypeQuestDb,
+	DatabaseTypeFerretDb,
 }
 
 func (e DatabaseType) IsValid() bool {
 	switch e {
-	case DatabaseTypePostgres, DatabaseTypeMySQL, DatabaseTypeSqlite3, DatabaseTypeMongoDb, DatabaseTypeRedis, DatabaseTypeElasticSearch, DatabaseTypeMariaDb, DatabaseTypeClickHouse, DatabaseTypeDuckDb, DatabaseTypeMemcached:
+	case DatabaseTypePostgres, DatabaseTypeMySQL, DatabaseTypeSqlite3, DatabaseTypeMongoDb, DatabaseTypeRedis, DatabaseTypeElasticSearch, DatabaseTypeMariaDb, DatabaseTypeCockroachDb, DatabaseTypeClickHouse, DatabaseTypeDuckDb, DatabaseTypeMemcached, DatabaseTypeTiDb, DatabaseTypeElastiCache, DatabaseTypeDocumentDb, DatabaseTypeValkey, DatabaseTypeDragonfly, DatabaseTypeOpenSearch, DatabaseTypeYugabyteDb, DatabaseTypeQuestDb, DatabaseTypeFerretDb:
 		return true
 	}
 	return false

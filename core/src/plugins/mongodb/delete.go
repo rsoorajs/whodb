@@ -23,7 +23,7 @@ import (
 
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func (p *MongoDBPlugin) DeleteRow(config *engine.PluginConfig, database string, storageUnit string, values map[string]string) (bool, error) {
@@ -85,6 +85,7 @@ func (p *MongoDBPlugin) DeleteRow(config *engine.PluginConfig, database string, 
 
 	filter := bson.M{"_id": objectID}
 
+	// codeql[go/sql-injection]: MongoDB row deletion intentionally uses the selected document _id as the delete filter.
 	result, err := collection.DeleteOne(ctx, filter)
 	if err != nil {
 		log.WithError(err).WithFields(map[string]any{

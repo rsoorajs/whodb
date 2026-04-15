@@ -14,161 +14,44 @@
  * limitations under the License.
  */
 
-import {DatabaseType} from '@graphql';
-import {getDatabaseTypeDropdownItemsSync} from '../config/database-types';
-import {reduxStore} from '../store';
+import type { IDatabaseDropdownItem } from '../config/database-types';
+import type { BackendCapabilities } from '../store/database-metadata';
 
 /**
- * Get backend capabilities from the Redux store.
- * Returns null if capabilities haven't been fetched yet.
+ * Catalog-backed database feature flags resolved for the current UI.
  */
-function getBackendCapabilities() {
-    return reduxStore.getState().databaseMetadata.capabilities;
+export interface DatabaseFeatureFlags {
+    supportsScratchpad: boolean;
+    supportsSchema: boolean;
+    supportsDatabaseSwitching: boolean;
+    usesSchemaForGraph: boolean;
+    usesDatabaseInsteadOfSchema: boolean;
+    supportsMockData: boolean;
+    supportsModifiers: boolean;
 }
 
 /**
- * Check if a database supports scratchpad/raw query execution.
- * Reads from backend capabilities first, falls back to config/hardcoded lists.
+ * Resolves feature flags from the backend catalog plus live backend metadata.
+ *
+ * The live metadata takes precedence for capabilities that depend on the
+ * active connection, while the catalog remains the source of truth for static
+ * database traits.
+ *
+ * @param item Decorated catalog entry for the database type.
+ * @param capabilities Live backend capabilities for the active plugin.
+ * @returns The resolved feature flags for the database type.
  */
-export function databaseSupportsScratchpad(databaseType: DatabaseType | string | undefined): boolean {
-    if (!databaseType) {
-        return false;
-    }
-
-    const capabilities = getBackendCapabilities();
-    if (capabilities != null) {
-        return capabilities.supportsScratchpad;
-    }
-
-    // Fallback: check database configuration
-    const dbTypeItems = getDatabaseTypeDropdownItemsSync();
-    const dbConfig = dbTypeItems.find(item => item.id === databaseType);
-    if (dbConfig?.supportsScratchpad != null) {
-        return dbConfig.supportsScratchpad;
-    }
-
-    const databasesThatDontSupportScratchpad = [
-        DatabaseType.MongoDb,
-        DatabaseType.Redis,
-        DatabaseType.ElasticSearch,
-        DatabaseType.Memcached,
-    ];
-    return !databasesThatDontSupportScratchpad.includes(databaseType as DatabaseType);
-}
-
-/**
- * Check if a database supports schemas.
- * Reads from backend capabilities first, falls back to config/hardcoded lists.
- */
-export function databaseSupportsSchema(databaseType: DatabaseType | string | undefined): boolean {
-    if (databaseType == null) {
-        return false;
-    }
-
-    const capabilities = getBackendCapabilities();
-    if (capabilities != null) {
-        return capabilities.supportsSchema;
-    }
-
-    // Fallback: check database configuration
-    const dbTypeItems = getDatabaseTypeDropdownItemsSync();
-    const dbConfig = dbTypeItems.find(item => item.id === databaseType);
-    if (dbConfig?.supportsSchema != null) {
-        return dbConfig.supportsSchema;
-    }
-
-    const databasesThatDontSupportSchema = [
-        DatabaseType.Sqlite3,
-        DatabaseType.Redis,
-        DatabaseType.ElasticSearch,
-        DatabaseType.MongoDb,
-        DatabaseType.ClickHouse,
-        DatabaseType.MySql,
-        DatabaseType.MariaDb,
-        DatabaseType.Memcached,
-    ];
-    return !databasesThatDontSupportSchema.includes(databaseType as DatabaseType);
-}
-
-/**
- * Check if a database supports switching between databases in the UI.
- * Reads from backend capabilities first, falls back to config/hardcoded lists.
- */
-export function databaseSupportsDatabaseSwitching(databaseType: DatabaseType | string | undefined): boolean {
-    if (!databaseType) {
-        return false;
-    }
-
-    const capabilities = getBackendCapabilities();
-    if (capabilities != null) {
-        return capabilities.supportsDatabaseSwitch;
-    }
-
-    // Fallback: check database configuration
-    const dbTypeItems = getDatabaseTypeDropdownItemsSync();
-    const dbConfig = dbTypeItems.find(item => item.id === databaseType);
-    if (dbConfig?.supportsDatabaseSwitching !== undefined) {
-        return dbConfig.supportsDatabaseSwitching;
-    }
-
-    const databasesThatSupportDatabaseSwitching = [
-        DatabaseType.MongoDb,
-        DatabaseType.ClickHouse,
-        DatabaseType.Postgres,
-        DatabaseType.MySql,
-        DatabaseType.MariaDb,
-        DatabaseType.Redis,
-    ];
-    return databasesThatSupportDatabaseSwitching.includes(databaseType as DatabaseType);
-}
-
-/**
- * Check if a database should use the schema field for graph queries.
- */
-export function databaseUsesSchemaForGraph(databaseType: DatabaseType | string | undefined): boolean {
-    if (!databaseType) {
-        return true;
-    }
-
-    const dbTypeItems = getDatabaseTypeDropdownItemsSync();
-    const dbConfig = dbTypeItems.find(item => item.id === databaseType);
-    if (dbConfig?.usesSchemaForGraph !== undefined) {
-        return dbConfig.usesSchemaForGraph;
-    }
-
-    return !databaseSupportsDatabaseSwitching(databaseType);
-}
-
-/**
- * Check if a database type uses the "database" concept instead of "schema".
- */
-export function databaseTypesThatUseDatabaseInsteadOfSchema(databaseType: DatabaseType | string | undefined): boolean {
-    if (!databaseType) {
-        return false;
-    }
-
-    const databasesThatUseDatabaseInsteadOfSchema = [
-        DatabaseType.MongoDb,
-        DatabaseType.ClickHouse,
-        DatabaseType.MySql,
-        DatabaseType.MariaDb,
-        DatabaseType.Redis,
-    ];
-    return databasesThatUseDatabaseInsteadOfSchema.includes(databaseType as DatabaseType);
-}
-
-/**
- * Check if a database supports mock data generation.
- */
-export function databaseSupportsMockData(databaseType: DatabaseType | string | undefined): boolean {
-    if (!databaseType) {
-        return false;
-    }
-
-    const databasesThatDontSupportMockData = [
-        DatabaseType.Redis,
-        DatabaseType.ElasticSearch,
-        DatabaseType.Memcached,
-    ];
-    return !databasesThatDontSupportMockData.includes(databaseType as DatabaseType);
+export function resolveDatabaseFeatureFlags(
+    item: IDatabaseDropdownItem | undefined,
+    capabilities: BackendCapabilities | null
+): DatabaseFeatureFlags {
+    return {
+        supportsScratchpad: capabilities?.supportsScratchpad ?? item?.supportsScratchpad ?? false,
+        supportsSchema: capabilities?.supportsSchema ?? item?.supportsSchema ?? false,
+        supportsDatabaseSwitching: capabilities?.supportsDatabaseSwitch ?? item?.supportsDatabaseSwitching ?? false,
+        usesSchemaForGraph: item?.usesSchemaForGraph ?? true,
+        usesDatabaseInsteadOfSchema: item?.usesDatabaseInsteadOfSchema ?? false,
+        supportsMockData: item?.supportsMockData ?? false,
+        supportsModifiers: capabilities?.supportsModifiers ?? item?.supportsModifiers ?? false,
+    };
 }
