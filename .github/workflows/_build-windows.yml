@@ -83,6 +83,7 @@ jobs:
 
       - name: Install Wails CLI
         if: matrix.enabled != false
+        shell: bash
         run: |
           WAILS_VERSION=$(grep 'github.com/wailsapp/wails/v2' desktop-common/go.mod | awk '{print $2}')
           go install github.com/wailsapp/wails/v2/cmd/wails@${WAILS_VERSION}
