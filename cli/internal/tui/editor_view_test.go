@@ -107,7 +107,7 @@ func TestEditorView_CtrlL_Clear(t *testing.T) {
 	v.cursorPos = 10
 	v.lastText = "some text"
 
-	msg := tea.KeyMsg{Type: tea.KeyCtrlL}
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}, Alt: true}
 	v, _ = v.Update(msg)
 
 	if v.textarea.Value() != "" {

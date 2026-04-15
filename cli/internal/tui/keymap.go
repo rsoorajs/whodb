@@ -352,8 +352,8 @@ var Keys = Keymap{
 			key.WithHelp("ctrl+space", "autocomplete"),
 		),
 		Clear: key.NewBinding(
-			key.WithKeys("ctrl+shift+l"),
-			key.WithHelp("ctrl+shift+l", "clear"),
+			key.WithKeys("alt+l"),
+			key.WithHelp("alt+l", "clear"),
 		),
 		Format: key.NewBinding(
 			key.WithKeys("ctrl+f"),

@@ -1106,7 +1106,7 @@ export const ExploreStorageUnit: FC = () => {
                 </div>
                 {entitySearchData && (
                     <div className="text-sm text-gray-500">
-                        {t('query').replace('{table}', entitySearchData.targetTable).replace('{id}', entitySearchData.value)}
+                        {t('entitySearchQuery', { table: entitySearchData.targetTable, id: entitySearchData.value })}
                     </div>
                 )}
                 <div className="flex-1 overflow-y-auto pr-2">
