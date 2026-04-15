@@ -47,6 +47,7 @@ const (
 	ViewChat
 	ViewSchema
 	ViewImport
+	ViewMockData
 	ViewBookmarks
 	ViewJSON
 	ViewCmdLog
@@ -81,6 +82,7 @@ type MainModel struct {
 	chatView       *ChatView
 	schemaView     *SchemaView
 	importView     *ImportView
+	mockDataView   *MockDataView
 	bookmarksView  *BookmarksView
 	jsonViewer     *JSONViewer
 	cmdLogView     *CmdLogView
@@ -138,6 +140,7 @@ func NewMainModel() *MainModel {
 	m.chatView = NewChatView(m)
 	m.schemaView = NewSchemaView(m)
 	m.importView = NewImportView(m)
+	m.mockDataView = NewMockDataView(m)
 	m.bookmarksView = NewBookmarksView(m)
 	m.jsonViewer = NewJSONViewer(m)
 	m.cmdLogView = NewCmdLogView(m)
@@ -158,6 +161,7 @@ func NewMainModel() *MainModel {
 		ViewChat:       m.chatView,
 		ViewSchema:     m.schemaView,
 		ViewImport:     m.importView,
+		ViewMockData:   m.mockDataView,
 		ViewBookmarks:  m.bookmarksView,
 		ViewJSON:       m.jsonViewer,
 		ViewCmdLog:     m.cmdLogView,
@@ -364,6 +368,12 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
+		case "alt+m":
+			// Global shortcut: open mock-data wizard
+			if m.dbManager.GetCurrentConnection() != nil && m.mode != ViewMockData {
+				return m.openMockDataView()
+			}
+
 		case "ctrl+b":
 			// Global shortcut: open Bookmarks from any view/pane
 			if m.dbManager.GetCurrentConnection() != nil && m.mode != ViewBookmarks {
@@ -478,6 +488,8 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateConnectionView(msg)
 	case importResultMsg, importPreviewMsg:
 		return m.updateImportView(msg)
+	case mockDataAnalysisMsg, mockDataResultMsg:
+		return m.updateMockDataView(msg)
 	case explainResultMsg:
 		return m.updateExplainView(msg)
 	case erdDataLoadedMsg:
@@ -509,6 +521,8 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateSchemaView(msg)
 	case ViewImport:
 		return m.updateImportView(msg)
+	case ViewMockData:
+		return m.updateMockDataView(msg)
 	case ViewBookmarks:
 		return m.updateBookmarksView(msg)
 	case ViewJSON:
@@ -576,6 +590,12 @@ func (m *MainModel) updateImportView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+func (m *MainModel) updateMockDataView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	m.mockDataView, cmd = m.mockDataView.Update(msg)
+	return m, cmd
+}
+
 func (m *MainModel) View() string {
 	if m.err != nil {
 		return renderError(m.err.Error())
@@ -624,6 +644,8 @@ func (m *MainModel) View() string {
 			content = m.schemaView.View()
 		case ViewImport:
 			content = m.importView.View()
+		case ViewMockData:
+			content = m.mockDataView.View()
 		case ViewBookmarks:
 			content = m.bookmarksView.View()
 		case ViewJSON:
@@ -682,6 +704,8 @@ func (m *MainModel) isLoading() bool {
 		m.historyView.executing ||
 		m.connectionView.connecting ||
 		m.resultsView.loading ||
+		m.mockDataView.analyzing ||
+		m.mockDataView.generating ||
 		m.erdView.loading ||
 		m.auditView.loading
 }
@@ -758,6 +782,8 @@ func (m *MainModel) isHelpSafe() bool {
 		return m.connectionView.mode == "list"
 	case ViewProfiles:
 		return !m.profilesView.naming
+	case ViewMockData:
+		return false
 	case ViewEditor:
 		// Editor always has text input
 		return false
@@ -781,6 +807,7 @@ func (m *MainModel) renderHelpOverlay() string {
 			Keys.Browser.Editor,
 			Keys.Browser.AIChat,
 			Keys.Browser.History,
+			Keys.Global.MockData,
 			Keys.Browser.Filter,
 			Keys.Browser.Select,
 			Keys.Browser.Disconnect,
@@ -795,6 +822,7 @@ func (m *MainModel) renderHelpOverlay() string {
 			Keys.Results.Where,
 			Keys.Results.Columns,
 			Keys.Results.Export,
+			Keys.Global.MockData,
 			Keys.Results.PageSize,
 			Keys.Results.CustomSize,
 			Keys.Global.Back,
@@ -857,6 +885,17 @@ func (m *MainModel) renderHelpOverlay() string {
 			Keys.Export.Next,
 			Keys.Export.OptionLeft,
 			Keys.Export.Export,
+			Keys.Global.Back,
+		))
+
+	case ViewMockData:
+		b.WriteString(styles.RenderKey("Mock Data\n\n"))
+		b.WriteString(RenderBindingHelp(
+			key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "next field")),
+			key.NewBinding(key.WithKeys("shift+tab"), key.WithHelp("shift+tab", "prev field")),
+			key.NewBinding(key.WithKeys("space"), key.WithHelp("space", "toggle overwrite")),
+			key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "analyze/generate")),
+			key.NewBinding(key.WithKeys("a"), key.WithHelp("a", "re-analyze")),
 			Keys.Global.Back,
 		))
 
@@ -1021,6 +1060,7 @@ func (m *MainModel) renderGlobalHelpBar() string {
 		Keys.Global.ERDiagram,
 		Keys.Global.Audit,
 		Keys.Global.Import,
+		Keys.Global.MockData,
 		Keys.Global.ReadOnly,
 		Keys.Global.CycleLayout,
 		Keys.Global.CycleTheme,
@@ -1201,6 +1241,26 @@ func (m *MainModel) restoreLayout() {
 		m.savedLayout = ""
 		m.rebuildLayout()
 	}
+}
+
+func (m *MainModel) openMockDataView() (tea.Model, tea.Cmd) {
+	schema, table := m.currentMockDataTarget()
+	m.suspendLayout()
+	m.mockDataView.SetTarget(schema, table)
+	m.PushView(ViewMockData)
+	return m, nil
+}
+
+func (m *MainModel) currentMockDataTarget() (string, string) {
+	if m.resultsView.isTableData() {
+		return m.resultsView.schema, m.resultsView.tableName
+	}
+
+	if m.browserView.selectedIndex >= 0 && m.browserView.selectedIndex < len(m.browserView.filteredTables) {
+		return m.browserView.currentSchema, m.browserView.filteredTables[m.browserView.selectedIndex].Name
+	}
+
+	return m.browserView.currentSchema, ""
 }
 
 func (m *MainModel) renderViewIndicator() string {

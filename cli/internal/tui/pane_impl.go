@@ -220,6 +220,18 @@ func (v *ImportView) SetCompact(bool)                 {}
 func (v *ImportView) HelpBindings() []key.Binding     { return nil }
 
 // ---------------------------------------------------------------------------
+// MockDataView
+// ---------------------------------------------------------------------------
+
+func (v *MockDataView) UpdatePane(msg tea.Msg) tea.Cmd  { _, cmd := v.Update(msg); return cmd }
+func (v *MockDataView) SetDimensions(width, height int) { v.width = width; v.height = height }
+func (v *MockDataView) Focusable() bool                 { return true }
+func (v *MockDataView) OnFocus()                        {}
+func (v *MockDataView) OnBlur()                         {}
+func (v *MockDataView) SetCompact(bool)                 {}
+func (v *MockDataView) HelpBindings() []key.Binding     { return nil }
+
+// ---------------------------------------------------------------------------
 // JSONViewer
 // ---------------------------------------------------------------------------
 

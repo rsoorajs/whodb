@@ -28,6 +28,7 @@ type GlobalKeys struct {
 	CycleTheme  key.Binding
 	CycleLayout key.Binding
 	Import      key.Binding
+	MockData    key.Binding
 	ReadOnly    key.Binding
 	CmdLog      key.Binding
 	ERDiagram   key.Binding
@@ -270,6 +271,10 @@ var Keys = Keymap{
 		Import: key.NewBinding(
 			key.WithKeys("ctrl+g"),
 			key.WithHelp("ctrl+g", "import"),
+		),
+		MockData: key.NewBinding(
+			key.WithKeys("alt+m"),
+			key.WithHelp("alt+m", "mock data"),
 		),
 		ReadOnly: key.NewBinding(
 			key.WithKeys("ctrl+y"),

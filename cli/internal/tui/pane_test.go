@@ -33,7 +33,7 @@ func TestPaneRegistryPopulated(t *testing.T) {
 	expectedModes := []ViewMode{
 		ViewConnection, ViewBrowser, ViewEditor, ViewResults,
 		ViewHistory, ViewExport, ViewWhere, ViewColumns,
-		ViewChat, ViewSchema, ViewImport, ViewBookmarks, ViewJSON,
+		ViewChat, ViewSchema, ViewImport, ViewMockData, ViewBookmarks, ViewJSON,
 		ViewCmdLog, ViewExplain, ViewERD, ViewAudit, ViewProfiles,
 	}
 

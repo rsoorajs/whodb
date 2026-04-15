@@ -471,6 +471,7 @@ func (v *BrowserView) View() string {
 				Keys.Browser.Editor,
 				Keys.Browser.AIChat,
 				Keys.Browser.History,
+				Keys.Global.MockData,
 				Keys.Browser.Refresh,
 				Keys.Global.NextView,
 				Keys.Browser.Disconnect,

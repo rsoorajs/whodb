@@ -18,9 +18,11 @@ package database
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/clidey/whodb/core/src"
 	"github.com/clidey/whodb/core/src/dbcatalog"
+	"github.com/clidey/whodb/core/src/engine"
 	coremockdata "github.com/clidey/whodb/core/src/mockdata"
 )
 
@@ -47,6 +49,9 @@ func (m *Manager) AnalyzeMockDataDependencies(
 	}
 	if !coremockdata.IsMockDataGenerationAllowed(table) {
 		return nil, fmt.Errorf("mock data generation is not allowed for this table")
+	}
+	if err := m.ensureMockDataTargetWritable(schema, table); err != nil {
+		return nil, err
 	}
 
 	plugin, config, err := m.currentPlugin()
@@ -94,6 +99,9 @@ func (m *Manager) GenerateMockData(
 	if !coremockdata.IsMockDataGenerationAllowed(table) {
 		return nil, fmt.Errorf("mock data generation is not allowed for this table")
 	}
+	if err := m.ensureMockDataTargetWritable(schema, table); err != nil {
+		return nil, err
+	}
 
 	plugin, config, err := m.currentPlugin()
 	if err != nil {
@@ -124,4 +132,40 @@ func (m *Manager) ensureMockDataSupported() error {
 	}
 
 	return nil
+}
+
+func (m *Manager) ensureMockDataTargetWritable(schema, table string) error {
+	storageUnits, err := m.GetStorageUnits(schema)
+	if err != nil {
+		return err
+	}
+
+	for _, unit := range storageUnits {
+		if unit.Name != table {
+			continue
+		}
+		if storageUnitTypeLooksLikeView(unit) {
+			unitType := storageUnitType(unit)
+			if unitType == "" {
+				unitType = "view"
+			}
+			return fmt.Errorf("mock data generation requires a writable table or collection; %s is a %s", table, unitType)
+		}
+		return nil
+	}
+
+	return nil
+}
+
+func storageUnitTypeLooksLikeView(unit engine.StorageUnit) bool {
+	return strings.Contains(strings.ToLower(storageUnitType(unit)), "view")
+}
+
+func storageUnitType(unit engine.StorageUnit) string {
+	for _, attr := range unit.Attributes {
+		if strings.EqualFold(attr.Key, "Type") {
+			return attr.Value
+		}
+	}
+	return ""
 }
