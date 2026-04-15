@@ -285,7 +285,7 @@ services:
     networks:
       - db
     healthcheck:
-      test: ["CMD", "sh", "-c", "cat < /dev/tcp/127.0.0.1/4000"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:10080/status || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -410,7 +410,7 @@ services:
     container_name: e2e_yugabytedb
     command: >
       bash -c "
-        bin/yugabyted start --daemon=false --advertise_address=0.0.0.0 --tserver_flags='ysql_enable_auth=true'
+        bin/yugabyted start --daemon=false --advertise_address=0.0.0.0 --tserver_flags='ysql_enable_auth=true,pgsql_proxy_bind_address=0.0.0.0:5433'
       "
     ports:
       - "5434:5433"
@@ -420,7 +420,8 @@ services:
     networks:
       - db
     healthcheck:
-      test: ["CMD-SHELL", "PGPASSWORD=yugabyte psql -h localhost -p 5433 -U yugabyte -c 'SELECT 1' || exit 1"]
+      test: ["CMD-SHELL", "PGPASSWORD=yugabyte ysqlsh -h localhost -p 5433 -U yugabyte -c 'SELECT 1' || exit 1"]
+      start_period: 30s
       interval: 15s
       timeout: 10s
       retries: 20
@@ -431,9 +432,10 @@ services:
       e2e_yugabytedb:
         condition: service_healthy
     volumes:
-      - ./sample-data/postgres/data.sql:/data.sql:ro
+      - ./sample-data/yugabytedb/data.sql:/data.sql:ro
     entrypoint: >
       sh -c "
+        until PGPASSWORD=yugabyte psql -h e2e_yugabytedb -p 5433 -U yugabyte -c 'SELECT 1' 2>/dev/null; do echo 'Waiting for YugabyteDB...'; sleep 2; done &&
         PGPASSWORD=yugabyte psql -h e2e_yugabytedb -p 5433 -U yugabyte -c \"CREATE DATABASE test_db;\" &&
         PGPASSWORD=yugabyte psql -h e2e_yugabytedb -p 5433 -U yugabyte -c \"CREATE USER \\\"user\\\" WITH PASSWORD 'password';\" &&
         PGPASSWORD=yugabyte psql -h e2e_yugabytedb -p 5433 -U yugabyte -d test_db -c \"GRANT ALL PRIVILEGES ON DATABASE test_db TO \\\"user\\\";\" &&
