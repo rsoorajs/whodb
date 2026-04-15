@@ -138,6 +138,23 @@ IMPORT / EXPORT
     Press e from Results, or:
     whodb-cli export -c mydb -t users -o users.csv
 
+MOCK DATA
+─────────
+  Generate FK-aware mock data from the CLI:
+
+    whodb-cli mock-data \        Analyze only
+      -c mydb -t orders -r 50 --analyze
+
+    whodb-cli mock-data \        Generate after confirmation
+      -c mydb -t orders -r 50
+
+    whodb-cli mock-data \        Overwrite existing rows
+      -c mydb -t orders -r 50 --overwrite --yes
+
+  The command analyzes parent-table dependencies first, then generates
+  data in the correct order. Blocked tables reuse existing rows instead
+  of writing new data.
+
 AI CHAT
 ───────
   Ctrl+A      Open AI chat

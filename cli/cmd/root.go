@@ -48,6 +48,7 @@ Features:
   - ER diagram visualization (Ctrl+K)
   - EXPLAIN query plan viewer (Ctrl+X)
   - Data import/export (CSV, Excel) — Ctrl+G for import wizard
+  - FK-aware mock data generation (mock-data) with dependency analysis
   - AI chat with streaming responses (OpenAI, Anthropic, Ollama, LM Studio)
   - SSH tunnel support for remote databases
   - Docker container auto-detection
