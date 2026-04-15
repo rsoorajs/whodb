@@ -41,8 +41,11 @@ export const useDatabaseMetadata = () => {
     const [fetchMetadata, { loading }] = useGetDatabaseMetadataLazyQuery({
         fetchPolicy: 'network-only',
         onCompleted: (data) => {
-            if (data.DatabaseMetadata) {
-                dispatch(DatabaseMetadataActions.setMetadata(data.DatabaseMetadata));
+            if (data.DatabaseMetadata && currentDbType) {
+                dispatch(DatabaseMetadataActions.setMetadata({
+                    ...data.DatabaseMetadata,
+                    databaseType: currentDbType,
+                }));
             }
         },
         onError: (error) => {
