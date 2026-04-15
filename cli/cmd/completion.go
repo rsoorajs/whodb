@@ -153,6 +153,10 @@ func init() {
 	rootCmd.AddCommand(completionCmd)
 	completionCmd.AddCommand(completionInstallCmd)
 	completionCmd.AddCommand(completionUninstallCmd)
+
+	completionCmd.ValidArgsFunction = completeShellNames
+	completionInstallCmd.ValidArgsFunction = completeShellNames
+	completionUninstallCmd.ValidArgsFunction = completeShellNames
 }
 
 func detectShell() string {

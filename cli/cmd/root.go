@@ -146,6 +146,8 @@ func init() {
 	viper.BindPFlag("no-color", rootCmd.PersistentFlags().Lookup("no-color"))
 	viper.BindPFlag("no-analytics", rootCmd.PersistentFlags().Lookup("no-analytics"))
 	viper.BindPFlag("no-update-check", rootCmd.PersistentFlags().Lookup("no-update-check"))
+
+	rootCmd.RegisterFlagCompletionFunc("profile", completeProfileNames)
 }
 
 func initAnalytics() {

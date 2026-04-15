@@ -340,4 +340,9 @@ func init() {
 
 	// Mark flags as mutually exclusive
 	mcpServeCmd.MarkFlagsMutuallyExclusive("read-only", "allow-write")
+
+	mcpServeCmd.RegisterFlagCompletionFunc("default-connection", completeConnectionNames)
+	mcpServeCmd.RegisterFlagCompletionFunc("allowed-connections", completeConnectionNames)
+	mcpServeCmd.RegisterFlagCompletionFunc("transport", completeMCPTransports)
+	mcpServeCmd.RegisterFlagCompletionFunc("security", completeMCPSecurityLevels)
 }

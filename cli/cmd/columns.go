@@ -187,4 +187,7 @@ func init() {
 	columnsCmd.Flags().StringVarP(&columnsTable, "table", "t", "", "table to describe (required)")
 	columnsCmd.Flags().StringVarP(&columnsFormat, "format", "f", "auto", "output format: auto, table, plain, json, csv")
 	columnsCmd.Flags().BoolVarP(&columnsQuiet, "quiet", "q", false, "suppress informational messages")
+
+	columnsCmd.RegisterFlagCompletionFunc("connection", completeConnectionNames)
+	columnsCmd.RegisterFlagCompletionFunc("format", completeOutputFormats)
 }

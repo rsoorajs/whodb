@@ -215,4 +215,7 @@ func init() {
 	exportCmd.Flags().StringVarP(&exportOutput, "output", "o", "", "output file path (required)")
 	exportCmd.Flags().StringVarP(&exportDelimiter, "delimiter", "d", ",", "CSV delimiter (default: comma)")
 	exportCmd.Flags().BoolVarP(&exportQuiet, "quiet", "q", false, "suppress informational messages")
+
+	exportCmd.RegisterFlagCompletionFunc("connection", completeConnectionNames)
+	exportCmd.RegisterFlagCompletionFunc("format", completeExportFormats)
 }

@@ -1,0 +1,93 @@
+/*
+ * Copyright 2026 Clidey, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package cmd
+
+import (
+	"github.com/clidey/whodb/cli/internal/config"
+	dbmgr "github.com/clidey/whodb/cli/internal/database"
+	"github.com/clidey/whodb/core/src/dbcatalog"
+	"github.com/spf13/cobra"
+)
+
+// completeConnectionNames returns saved and env-based connection names.
+func completeConnectionNames(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	mgr, err := dbmgr.NewManager()
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	conns := mgr.ListAvailableConnections()
+	names := make([]string, len(conns))
+	for i, c := range conns {
+		names[i] = c.Name
+	}
+	return names, cobra.ShellCompDirectiveNoFileComp
+}
+
+// completeDatabaseTypes returns known database type identifiers and their synonyms.
+func completeDatabaseTypes(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	ids := dbcatalog.IDs()
+	types := make([]string, 0, len(ids)+len(dbTypeSynonyms))
+	types = append(types, ids...)
+	for synonym := range dbTypeSynonyms {
+		types = append(types, synonym)
+	}
+	return types, cobra.ShellCompDirectiveNoFileComp
+}
+
+// completeOutputFormats returns the standard output format options.
+func completeOutputFormats(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return []string{"auto", "table", "plain", "json", "csv"}, cobra.ShellCompDirectiveNoFileComp
+}
+
+// completeExportFormats returns export-specific format options.
+func completeExportFormats(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return []string{"csv", "excel"}, cobra.ShellCompDirectiveNoFileComp
+}
+
+// completeAuditFormats returns audit-specific format options.
+func completeAuditFormats(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return []string{"table", "json"}, cobra.ShellCompDirectiveNoFileComp
+}
+
+// completeShellNames returns supported shell names for completion scripts.
+func completeShellNames(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return []string{"bash", "zsh", "fish", "powershell"}, cobra.ShellCompDirectiveNoFileComp
+}
+
+// completeProfileNames returns saved profile names.
+func completeProfileNames(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	profiles := cfg.GetProfiles()
+	names := make([]string, len(profiles))
+	for i, p := range profiles {
+		names[i] = p.Name
+	}
+	return names, cobra.ShellCompDirectiveNoFileComp
+}
+
+// completeMCPTransports returns supported MCP transport types.
+func completeMCPTransports(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return []string{"stdio", "http"}, cobra.ShellCompDirectiveNoFileComp
+}
+
+// completeMCPSecurityLevels returns supported MCP security levels.
+func completeMCPSecurityLevels(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return []string{"strict", "standard", "minimal"}, cobra.ShellCompDirectiveNoFileComp
+}

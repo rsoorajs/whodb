@@ -273,4 +273,6 @@ func init() {
 	historyCmd.AddCommand(historyListCmd)
 	historyCmd.AddCommand(historySearchCmd)
 	historyCmd.AddCommand(historyClearCmd)
+
+	historyCmd.RegisterFlagCompletionFunc("format", completeOutputFormats)
 }

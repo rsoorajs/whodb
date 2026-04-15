@@ -314,4 +314,8 @@ func init() {
 	auditCmd.Flags().Float64Var(&auditNullWarning, "null-warning", 0, "null percentage warning threshold (default: 10)")
 	auditCmd.Flags().Float64Var(&auditNullError, "null-error", 0, "null percentage error threshold (default: 50)")
 	auditCmd.Flags().BoolVarP(&auditQuiet, "quiet", "q", false, "suppress informational messages")
+
+	auditCmd.RegisterFlagCompletionFunc("connection", completeConnectionNames)
+	auditCmd.RegisterFlagCompletionFunc("type", completeDatabaseTypes)
+	auditCmd.RegisterFlagCompletionFunc("format", completeAuditFormats)
 }

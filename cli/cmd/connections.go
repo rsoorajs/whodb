@@ -352,4 +352,9 @@ func init() {
 	connectionsAddCmd.Flags().StringVar(&connAddPassword, "password", "", "database password")
 	connectionsAddCmd.Flags().StringVar(&connAddDatabase, "database", "", "database name (required)")
 	connectionsAddCmd.Flags().StringVar(&connAddSchema, "schema", "", "default schema (optional)")
+
+	connectionsAddCmd.RegisterFlagCompletionFunc("type", completeDatabaseTypes)
+	connectionsCmd.RegisterFlagCompletionFunc("format", completeOutputFormats)
+	connectionsRemoveCmd.ValidArgsFunction = completeConnectionNames
+	connectionsTestCmd.ValidArgsFunction = completeConnectionNames
 }

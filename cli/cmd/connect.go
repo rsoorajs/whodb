@@ -210,4 +210,6 @@ func init() {
 	connectCmd.Flags().StringVar(&name, "name", "", "connection name (save for later use)")
 	connectCmd.Flags().BoolVar(&passwordFromStdin, "password", false, "read password from stdin when not using a TTY")
 	connectCmd.Flags().BoolVar(&useDocker, "docker", false, "auto-detect running Docker database containers and connect to the first match")
+
+	connectCmd.RegisterFlagCompletionFunc("type", completeDatabaseTypes)
 }

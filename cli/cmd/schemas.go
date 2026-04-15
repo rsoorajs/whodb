@@ -139,4 +139,7 @@ func init() {
 	schemasCmd.Flags().StringVarP(&schemasConnection, "connection", "c", "", "connection name to use")
 	schemasCmd.Flags().StringVarP(&schemasFormat, "format", "f", "auto", "output format: auto, table, plain, json, csv")
 	schemasCmd.Flags().BoolVarP(&schemasQuiet, "quiet", "q", false, "suppress informational messages")
+
+	schemasCmd.RegisterFlagCompletionFunc("connection", completeConnectionNames)
+	schemasCmd.RegisterFlagCompletionFunc("format", completeOutputFormats)
 }
