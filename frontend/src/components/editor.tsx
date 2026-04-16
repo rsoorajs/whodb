@@ -28,7 +28,7 @@ import React, {FC, useCallback, useEffect, useMemo, useRef, useState} from "reac
 import ReactJson from "react-json-view";
 import MarkdownPreview from 'react-markdown';
 import remarkGfm from "remark-gfm";
-import {useApolloClient} from "@apollo/client";
+import {useApolloClient} from "@apollo/client/react";
 import { useTranslation } from "@/hooks/use-translation";
 
 // Extension autocomplete — set via registerEditorExtensions()
@@ -436,4 +436,3 @@ export const CodeEditor: FC<ICodeEditorProps> = ({
     </div>
   );
 };
-

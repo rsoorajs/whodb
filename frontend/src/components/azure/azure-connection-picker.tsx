@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { useMutation, useQuery } from "@apollo/client/react";
 import { FC, useCallback, useEffect, useMemo } from "react";
 import {
     Badge,
@@ -27,9 +28,9 @@ import {
 } from "@clidey/ux";
 import {
     CloudProviderType,
-    useGetAzureProvidersQuery,
-    useGetDiscoveredConnectionsQuery,
-    useRefreshAzureProviderMutation,
+    GetAzureProvidersDocument,
+    GetDiscoveredConnectionsDocument,
+    RefreshAzureProviderDocument,
 } from "@graphql";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ProvidersActions, LocalDiscoveredConnection } from "../../store/providers";
@@ -75,9 +76,9 @@ export const AzureConnectionPicker: FC<AzureConnectionPickerProps> = ({
     const isModalOpen = useAppSelector(state => state.providers.isProviderModalOpen);
 
     // GraphQL - these operations are on the auth allowlist, so no skip needed
-    const { data: providersData, loading: providersLoading, refetch: refetchProviders } = useGetAzureProvidersQuery();
-    const { data: connectionsData, loading: connectionsLoading, refetch: refetchConnections } = useGetDiscoveredConnectionsQuery();
-    const [refreshProvider, { loading: refreshLoading }] = useRefreshAzureProviderMutation();
+    const { data: providersData, loading: providersLoading, refetch: refetchProviders } = useQuery(GetAzureProvidersDocument);
+    const { data: connectionsData, loading: connectionsLoading, refetch: refetchConnections } = useQuery(GetDiscoveredConnectionsDocument);
+    const [refreshProvider, { loading: refreshLoading }] = useMutation(RefreshAzureProviderDocument);
 
     const azureProviders = providersData?.AzureProviders ?? [];
 

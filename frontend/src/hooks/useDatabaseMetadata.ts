@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
+import { useLazyQuery } from '@apollo/client/react';
 import { useEffect, useCallback } from 'react';
-import { useGetDatabaseMetadataLazyQuery } from '@graphql';
+import { GetDatabaseMetadataDocument } from '@graphql';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
     DatabaseMetadataActions,
@@ -37,31 +38,34 @@ export const useDatabaseMetadata = () => {
     const dispatch = useAppDispatch();
     const auth = useAppSelector(state => state.auth);
     const metadata = useAppSelector(state => state.databaseMetadata);
+    const currentDbType = auth.current?.Type;
 
-    const [fetchMetadata, { loading }] = useGetDatabaseMetadataLazyQuery({
+    const [fetchMetadata, { data, error, loading }] = useLazyQuery(GetDatabaseMetadataDocument, {
         fetchPolicy: 'network-only',
-        onCompleted: (data) => {
-            if (data.DatabaseMetadata && currentDbType) {
-                dispatch(DatabaseMetadataActions.setMetadata({
-                    ...data.DatabaseMetadata,
-                    databaseType: currentDbType,
-                }));
-            }
-        },
-        onError: (error) => {
-            console.error('Failed to fetch database metadata:', error);
-            dispatch(DatabaseMetadataActions.setLoading(false));
-        },
     });
 
-    const currentDbType = auth.current?.Type;
+    useEffect(() => {
+        if (data?.DatabaseMetadata && currentDbType) {
+            dispatch(DatabaseMetadataActions.setMetadata({
+                ...data.DatabaseMetadata,
+                databaseType: currentDbType,
+            }));
+        }
+    }, [currentDbType, data?.DatabaseMetadata, dispatch]);
+
+    useEffect(() => {
+        if (error) {
+            console.error('Failed to fetch database metadata:', error);
+            dispatch(DatabaseMetadataActions.setLoading(false));
+        }
+    }, [dispatch, error]);
 
     // Fetch metadata when database type changes or cache expires
     useEffect(() => {
         if (auth.status === 'logged-in' && currentDbType) {
             if (shouldRefreshMetadata(metadata, currentDbType)) {
                 dispatch(DatabaseMetadataActions.setLoading(true));
-                fetchMetadata();
+                void fetchMetadata();
             }
         }
     }, [auth.status, currentDbType, dispatch, fetchMetadata, metadata]);
@@ -77,7 +81,7 @@ export const useDatabaseMetadata = () => {
     const refresh = useCallback(() => {
         if (auth.status === 'logged-in') {
             dispatch(DatabaseMetadataActions.setLoading(true));
-            fetchMetadata();
+            void fetchMetadata();
         }
     }, [auth.status, dispatch, fetchMetadata]);
 
@@ -100,4 +104,3 @@ export const useDatabaseMetadata = () => {
         refresh,
     };
 };
-

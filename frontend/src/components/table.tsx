@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import {useLazyQuery, useMutation, useQuery} from "@apollo/client/react";
 import {
     Alert,
     AlertDescription,
@@ -69,10 +70,10 @@ import {
     VirtualizedTableBody
 } from "@clidey/ux";
 import {
-    useAnalyzeMockDataDependenciesLazyQuery,
-    useDeleteRowMutation,
-    useGenerateMockDataMutation,
-    useMockDataMaxRowCountQuery
+    AnalyzeMockDataDependenciesDocument,
+    DeleteRowDocument,
+    GenerateMockDataDocument,
+    MockDataMaxRowCountDocument,
 } from '@graphql';
 import {FC, Suspense, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {Export} from "./export";
@@ -382,7 +383,7 @@ export const StorageUnitTable: FC<TableProps> = ({
     const isMockDataSupported = supportsMockData && isMockDataGenerationAllowed;
     const isClickHouse = databaseType === "ClickHouse";
     const isImportSupported = !isNoSQL;
-    const { data: maxRowData } = useMockDataMaxRowCountQuery();
+    const { data: maxRowData } = useQuery(MockDataMaxRowCountDocument);
     const maxRowCount = maxRowData?.MockDataMaxRowCount || 200;
     
     // Use server-side pagination
@@ -390,9 +391,9 @@ export const StorageUnitTable: FC<TableProps> = ({
     const totalRows = totalCount || 0;
     const totalPages = Math.ceil(totalRows / pageSize);
 
-    const [generateMockData, { loading: generatingMockData }] = useGenerateMockDataMutation();
-    const [analyzeDependencies, { data: depAnalysis, loading: analyzingDeps }] = useAnalyzeMockDataDependenciesLazyQuery();
-    const [deleteRow, ] = useDeleteRowMutation();
+    const [generateMockData, { loading: generatingMockData }] = useMutation(GenerateMockDataDocument);
+    const [analyzeDependencies, { data: depAnalysis, loading: analyzingDeps }] = useLazyQuery(AnalyzeMockDataDependenciesDocument);
+    const [deleteRow, ] = useMutation(DeleteRowDocument);
     const [containerWidth, setContainerWidth] = useState<number>(0);
     const lastSearchState = useRef<{ search: string; matchIdx: number }>({ search: '', matchIdx: 0 });
 

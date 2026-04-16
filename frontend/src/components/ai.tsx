@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { useLazyQuery } from "@apollo/client/react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -41,8 +42,7 @@ import {
 } from "@clidey/ux";
 import { SearchSelect } from "./ux";
 import { FC, ReactElement, useCallback, useEffect, useMemo, useState } from "react";
-import { useGetAiModelsLazyQuery, useGetAiProvidersLazyQuery } from "../generated/graphql";
-import { reduxStore } from "../store";
+import { GetAiModelsDocument, GetAiProvidersDocument } from "@graphql";
 import { AIModelsActions, availableExternalModelTypes } from "../store/ai-models";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { ensureModelsArray, ensureModelTypesArray } from "../utils/ai-models-helper";
@@ -79,15 +79,30 @@ export const useAI = () => {
 
     const dispatch = useAppDispatch();
 
-    const [getAiProviders, { loading }] = useGetAiProvidersLazyQuery();
-    const [getAIModels, { loading: getAIModelsLoading }] = useGetAiModelsLazyQuery({
-        onError() {
-            setModelAvailable(false);
-            dispatch(AIModelsActions.setModels([]));
-            dispatch(AIModelsActions.setCurrentModel(undefined));
-        },
+    const [getAiProviders, { loading }] = useLazyQuery(GetAiProvidersDocument);
+    const [getAIModels, { loading: getAIModelsLoading }] = useLazyQuery(GetAiModelsDocument, {
         fetchPolicy: "network-only",
     });
+
+    const handleAIModelsError = useCallback(() => {
+        setModelAvailable(false);
+        dispatch(AIModelsActions.setModels([]));
+        dispatch(AIModelsActions.setCurrentModel(undefined));
+    }, [dispatch]);
+
+    const fetchAIModels = useCallback(async (variables: {
+        providerId?: string;
+        modelType: string;
+        token?: string;
+    }) => {
+        const { data, error } = await getAIModels({ variables });
+
+        if (error) {
+            throw error;
+        }
+
+        return data?.AIModel ?? [];
+    }, [getAIModels]);
 
     const handleAIModelTypeChange = useCallback((item: string) => {
         const modelType = modelTypes.find(model => model.id === item);
@@ -95,20 +110,21 @@ export const useAI = () => {
             return;
         }
         setModelAvailable(true);
-        getAIModels({
-            variables: {
+        void fetchAIModels({
                 providerId: modelType.id,
                 modelType: modelType.modelType,
                 token: modelType.token,
-            },
-            onCompleted(data) {
-                dispatch(AIModelsActions.setModels(data.AIModel));
-                if (data.AIModel.length > 0) {
-                    dispatch(AIModelsActions.setCurrentModel(data.AIModel[0]));
+            })
+            .then((aiModels) => {
+                dispatch(AIModelsActions.setModels(aiModels));
+                if (aiModels.length > 0) {
+                    dispatch(AIModelsActions.setCurrentModel(aiModels[0]));
                 }
-            },
-        });
-    }, [dispatch, getAIModels, modelTypes]);
+            })
+            .catch(() => {
+                handleAIModelsError();
+            });
+    }, [dispatch, fetchAIModels, handleAIModelsError, modelTypes]);
 
     const handleAIModelChange = useCallback((item: string) => {
         dispatch(AIModelsActions.setCurrentModel(item));
@@ -135,9 +151,13 @@ export const useAI = () => {
             model.token != null && model.token !== ""
         );
 
-        getAiProviders({
-            onCompleted(data) {
-                const aiProviders = data.AIProviders || [];
+        void getAiProviders()
+            .then(({ data, error }) => {
+                if (error) {
+                    throw error;
+                }
+
+                const aiProviders = data?.AIProviders || [];
 
                 // Only keep user-added providers that still have tokens
                 const initialModelTypes = userAddedProviders.filter(model => {
@@ -177,38 +197,40 @@ export const useAI = () => {
                     dispatch(AIModelsActions.setCurrentModelType({ id: firstProvider.id }));
 
                     // Fetch models for the first provider
-                    getAIModels({
-                        variables: {
+                    void fetchAIModels({
                             providerId: firstProvider.id,
                             modelType: firstProvider.modelType ?? "",
                             token: (firstProvider as any).token ?? "",
-                        },
-                        onCompleted(data) {
-                            dispatch(AIModelsActions.setModels(data.AIModel));
-                            if (data.AIModel.length > 0) {
-                                dispatch(AIModelsActions.setCurrentModel(data.AIModel[0]));
+                        })
+                        .then((aiModels) => {
+                            dispatch(AIModelsActions.setModels(aiModels));
+                            if (aiModels.length > 0) {
+                                dispatch(AIModelsActions.setCurrentModel(aiModels[0]));
                             }
-                        },
-                    });
+                        })
+                        .catch(() => {
+                            handleAIModelsError();
+                        });
                 } else if (modelType) {
                     // Only fetch models if there's a current model type
-                    getAIModels({
-                        variables: {
+                    void fetchAIModels({
                             providerId: modelType.id,
                             modelType: modelType.modelType ?? "",
                             token: modelType.token ?? "",
-                        },
-                        onCompleted(data) {
-                            dispatch(AIModelsActions.setModels(data.AIModel));
+                        })
+                        .then((aiModels) => {
+                            dispatch(AIModelsActions.setModels(aiModels));
                             // Auto-select first model if none is selected
-                            if (data.AIModel.length > 0 && !currentModel) {
-                                dispatch(AIModelsActions.setCurrentModel(data.AIModel[0]));
+                            if (aiModels.length > 0 && !currentModel) {
+                                dispatch(AIModelsActions.setCurrentModel(aiModels[0]));
                             }
-                        },
-                    });
+                        })
+                        .catch(() => {
+                            handleAIModelsError();
+                        });
                 }
-            },
-        });
+            })
+            .catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -244,6 +266,7 @@ export const useAI = () => {
         getAIModels,
         getAIModelsLoading,
         modelAvailable,
+        handleAIModelsError,
         handleAIModelTypeChange,
         handleAIModelChange,
         handleAIModelRemove,
@@ -267,6 +290,7 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
     getAIModels,
     getAIModelsLoading,
     modelAvailable,
+    handleAIModelsError,
     handleAIModelTypeChange,
     handleAIModelChange,
     handleAIModelRemove,
@@ -303,13 +327,18 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
 
         dispatch(AIModelsActions.setCurrentModel(undefined));
         dispatch(AIModelsActions.setModels([]));
-        getAIModels({
+        void getAIModels({
             variables: {
                 modelType: externalModelType,
                 token: externalModelToken,
-            },
-            onCompleted(data) {
-                dispatch(AIModelsActions.setModels(data.AIModel));
+            }
+        }).then(({ data, error }) => {
+            if (error) {
+                throw error;
+            }
+
+            const aiModels = data?.AIModel ?? [];
+            dispatch(AIModelsActions.setModels(aiModels));
                 const id = uuidv4();
                 dispatch(AIModelsActions.addAIModelType({
                     id,
@@ -322,15 +351,17 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
                 setExternalModelToken("");
                 setExternalModelName("");
                 setAddExternalModel(false);
-                if (data.AIModel.length > 0) {
-                    dispatch(AIModelsActions.setCurrentModel(data.AIModel[0]));
+                if (aiModels.length > 0) {
+                    dispatch(AIModelsActions.setCurrentModel(aiModels[0]));
                 }
-            },
-            onError(error) {
-                toast.error(`${t('unableToConnect')}: ${error.message}`);
-            },
+        }).catch((error: unknown) => {
+            handleAIModelsError();
+            const errorMessage = error instanceof Error
+                ? error.message
+                : String((error as { message?: string }).message ?? t('unknownError'));
+            toast.error(`${t('unableToConnect')}: ${errorMessage}`);
         });
-    }, [getAIModels, externalModelType, externalModelToken, externalModelName, dispatch, t]);
+    }, [dispatch, externalModelName, externalModelToken, externalModelType, getAIModels, handleAIModelsError, t]);
 
     const handleOpenDocs = useCallback(() => {
         window.open("https://docs.whodb.com/ai/introduction", "_blank");

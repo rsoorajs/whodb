@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
+import {useLazyQuery} from "@apollo/client/react";
 import React, {FC, useEffect} from "react";
 import {StorageUnitTable} from "../../components/table";
-import {useRawExecuteLazyQuery} from "../../generated/graphql";
+import {RawExecuteDocument} from "../../generated/graphql";
 import {CheckCircleIcon} from "../../components/heroicons";
 import {useAppSelector} from "../../store/hooks";
 
@@ -51,7 +52,9 @@ function isSQLQueryAction(code?: string): boolean {
 }
 
 export const QueryView: FC<IPluginProps> = ({ code, handleExecuteRef, containerWidth }) => {
-    const [rawExecute, { data }] = useRawExecuteLazyQuery();
+    const [rawExecute, { data }] = useLazyQuery(RawExecuteDocument, {
+        fetchPolicy: 'network-only',
+    });
     const current = useAppSelector(state => state.auth.current);
 
     // Set the ref to a function that executes the query and returns a promise
@@ -59,7 +62,6 @@ export const QueryView: FC<IPluginProps> = ({ code, handleExecuteRef, containerW
         handleExecuteRef.current = async (code: string) => {
             const result = await rawExecute({
                 variables: { query: code },
-                fetchPolicy: 'network-only',
             });
             if (result.error) {
                 throw result.error;

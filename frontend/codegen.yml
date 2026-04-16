@@ -17,8 +17,9 @@
 schema: ../core/graph/schema.graphqls
 documents: src/**/*.graphql
 generates:
-  src/generated/graphql.tsx:
-    plugins:
-      - typescript
-      - typescript-operations
-      - typescript-react-apollo
+  src/generated/:
+    preset: client
+    presetConfig:
+      fragmentMasking: false
+    config:
+      useTypeImports: true

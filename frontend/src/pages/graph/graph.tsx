@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {useQuery} from "@apollo/client";
+import {useLazyQuery, useQuery} from "@apollo/client/react";
 import {FC, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {Edge, Node, ReactFlowProvider, useEdgesState, useNodesState} from "reactflow";
 import {GraphElements} from "../../components/graph/constants";
@@ -27,9 +27,9 @@ import {
     GetGraphDocument,
     GetGraphQuery,
     GetGraphQueryVariables,
+    GetColumnsBatchDocument,
+    GetStorageUnitsDocument,
     StorageUnit,
-    useGetColumnsBatchLazyQuery,
-    useGetStorageUnitsQuery
 } from '@graphql';
 import {useDatabaseTraits} from "../../hooks/useDatabaseTraits";
 import {useAppSelector} from "../../store/hooks";
@@ -166,22 +166,26 @@ export const GraphPage: FC = () => {
     const [isInitialized, setIsInitialized] = useState(false);
     const [tableColumns, setTableColumns] = useState<Record<string, any[]>>({});
 
-    const [fetchColumnsBatch] = useGetColumnsBatchLazyQuery();
+    const [fetchColumnsBatch] = useLazyQuery(GetColumnsBatchDocument);
 
     const {
+        data: graphQueryData,
         loading: graphLoading,
         refetch: refetchGraph
     } = useQuery<GetGraphQuery, GetGraphQueryVariables>(GetGraphDocument, {
         variables: {
             schema: usesSchemaForGraph ? schema : current?.Database ?? "",
         },
-        onCompleted(data) {
-            setGraphData(data.Graph);
-        },
     });
 
+    useEffect(() => {
+        if (graphQueryData?.Graph != null) {
+            setGraphData(graphQueryData.Graph);
+        }
+    }, [graphQueryData]);
+
     // Fetch all storage units for sidebar selection
-    const {data: storageUnitsData, loading: unitsLoading, refetch: refetchStorageUnits} = useGetStorageUnitsQuery({
+    const {data: storageUnitsData, loading: unitsLoading, refetch: refetchStorageUnits} = useQuery(GetStorageUnitsDocument, {
         variables: {
             schema: usesSchemaForGraph ? schema : current?.Database ?? "",
         },

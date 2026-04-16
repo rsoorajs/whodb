@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import {useLazyQuery, useMutation, useQuery} from "@apollo/client/react";
 import {
     Badge,
     Button,
@@ -41,12 +42,12 @@ import {
 import {TypeSelector} from "../../components/type-selector";
 import {findTypeDefinition} from "../../utils/database-data-types";
 import {
+    AddStorageUnitDocument,
     DatabaseType,
+    GetColumnsBatchDocument,
+    GetStorageUnitsDocument,
     RecordInput,
     StorageUnit,
-    useAddStorageUnitMutation,
-    useGetColumnsBatchLazyQuery,
-    useGetStorageUnitsQuery
 } from '@graphql';
 import {
     ArrowPathRoundedSquareIcon,
@@ -86,7 +87,7 @@ const StorageUnitCard: FC<{ unit: StorageUnit, schema: string }> = ({ unit, sche
     const { pluginType } = useDatabaseTraits(current?.Type);
     const [columns, setColumns] = useState<any[] | undefined>(undefined);
     const [columnsLoading, setColumnsLoading] = useState(false);
-    const [fetchColumnsBatch] = useGetColumnsBatchLazyQuery();
+    const [fetchColumnsBatch] = useLazyQuery(GetColumnsBatchDocument);
 
     const handleNavigateToDatabase = useCallback(() => {
         navigate(InternalRoutes.Dashboard.ExploreStorageUnit.path, {
@@ -248,11 +249,11 @@ export const StorageUnitPage: FC = () => {
         usesDatabaseInsteadOfSchema,
     } = useDatabaseTraits(current?.Type);
     const view = useAppSelector(state => state.settings.storageUnitView);
-    const [addStorageUnit,] = useAddStorageUnitMutation();
+    const [addStorageUnit,] = useMutation(AddStorageUnitDocument);
     const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
     const [expandedUnitColumns, setExpandedUnitColumns] = useState<{ name: string; columns: any[] } | null>(null);
     const [expandedUnitColumnsLoading, setExpandedUnitColumnsLoading] = useState(false);
-    const [fetchColumnsBatchForList] = useGetColumnsBatchLazyQuery();
+    const [fetchColumnsBatchForList] = useLazyQuery(GetColumnsBatchDocument);
     const dispatch = useAppDispatch();
     const { t } = useTranslation('pages/storage-unit');
 
@@ -268,7 +269,7 @@ export const StorageUnitPage: FC = () => {
         schema = current?.Database ?? '';
     }
 
-    const { loading, data, refetch } = useGetStorageUnitsQuery({
+    const { loading, data, refetch } = useQuery(GetStorageUnitsDocument, {
         variables: {
             schema,
         },

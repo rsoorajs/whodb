@@ -17,7 +17,7 @@
 import React, {useEffect, useState} from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import {ApolloProvider} from "@apollo/client";
+import {ApolloProvider} from "@apollo/client/react";
 import {graphqlClient} from './config/graphql-client';
 import {Provider} from "react-redux";
 import {reduxStore, reduxStorePersistor} from './store';

@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-import type { ApolloError } from "@apollo/client";
+import type { ErrorLike } from "@apollo/client";
+import { useQuery } from "@apollo/client/react";
 import { useEffect, useMemo, useState } from "react";
-import { useGetConnectableDatabasesQuery } from "@graphql";
+import { GetConnectableDatabasesDocument } from "@graphql";
 import {
     BackendConnectableDatabase,
     DatabaseTypeFilterOptions,
@@ -37,7 +38,7 @@ export interface UseDatabaseTypeDropdownItemsResult {
     /** Whether the live catalog query is still loading without any cached data. */
     loading: boolean;
     /** Query error, if the live fetch failed. */
-    error?: ApolloError;
+    error?: ErrorLike;
 }
 
 /**
@@ -61,7 +62,7 @@ export function useDatabaseTypeDropdownItems(
     options: DatabaseTypeFilterOptions = {}
 ): UseDatabaseTypeDropdownItemsResult {
     const [cachedCatalog] = useState<BackendConnectableDatabase[]>(() => readCachedDatabaseCatalog());
-    const { data, loading, error } = useGetConnectableDatabasesQuery({
+    const { data, loading, error } = useQuery(GetConnectableDatabasesDocument, {
         fetchPolicy: "cache-first",
     });
     const cloudProvidersEnabled = options.cloudProvidersEnabled;

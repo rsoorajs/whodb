@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
+import { useMutation, useQuery } from "@apollo/client/react";
 import { FC, useCallback, useEffect } from "react";
 import { Badge, Button, cn, toast } from "@clidey/ux";
 import {
     AzureProvider,
     CloudProviderStatus,
-    useGetAzureProvidersQuery,
-    useRefreshAzureProviderMutation,
-    useRemoveCloudProviderMutation,
+    GetAzureProvidersDocument,
+    GetDiscoveredConnectionsDocument,
+    RefreshAzureProviderDocument,
+    RemoveCloudProviderDocument,
 } from "@graphql";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ProvidersActions } from "../../store/providers";
@@ -73,9 +75,9 @@ export const AzureProvidersSection: FC = () => {
     const editingProviderId = useAppSelector(state => state.providers.editingProviderId);
 
     // GraphQL queries and mutations
-    const { data, loading, refetch } = useGetAzureProvidersQuery();
-    const [refreshProvider, { loading: refreshLoading }] = useRefreshAzureProviderMutation();
-    const [removeProvider, { loading: removeLoading }] = useRemoveCloudProviderMutation();
+    const { data, loading, refetch } = useQuery(GetAzureProvidersDocument);
+    const [refreshProvider, { loading: refreshLoading }] = useMutation(RefreshAzureProviderDocument);
+    const [removeProvider, { loading: removeLoading }] = useMutation(RemoveCloudProviderDocument);
 
     const azureProviders: LocalAzureProvider[] = (data?.AzureProviders as LocalAzureProvider[] | undefined) ?? [];
 
@@ -98,7 +100,7 @@ export const AzureProvidersSection: FC = () => {
         try {
             const { data } = await removeProvider({
                 variables: { id },
-                refetchQueries: ['GetAzureProviders', 'GetDiscoveredConnections'],
+                refetchQueries: [GetAzureProvidersDocument, GetDiscoveredConnectionsDocument],
             });
             if (data?.RemoveCloudProvider?.Status) {
                 toast.success(t('providerRemoved', { name }));
@@ -113,7 +115,7 @@ export const AzureProvidersSection: FC = () => {
         try {
             const { data } = await refreshProvider({
                 variables: { id },
-                refetchQueries: ['GetAzureProviders', 'GetDiscoveredConnections'],
+                refetchQueries: [GetAzureProvidersDocument, GetDiscoveredConnectionsDocument],
             });
             if (data?.RefreshAzureProvider) {
                 toast.success(t('refreshComplete', { count: data.RefreshAzureProvider.DiscoveredCount }));

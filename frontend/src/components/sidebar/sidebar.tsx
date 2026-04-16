@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import {useQuery} from "@apollo/client/react";
 import {
     Button,
     cn,
@@ -44,10 +45,10 @@ import {
 import {SearchSelect} from "../ux";
 import {
     DatabaseType,
-    useGetDatabaseQuery,
-    useGetSchemaQuery,
-    useGetSslStatusQuery,
-    useGetUpdateInfoQuery,
+    GetDatabaseDocument,
+    GetSchemaDocument,
+    GetSslStatusDocument,
+    GetUpdateInfoDocument,
 } from '@graphql';
 import {useTranslation} from '@/hooks/use-translation';
 import {VisuallyHidden} from "@radix-ui/react-visually-hidden";
@@ -111,13 +112,13 @@ export const Sidebar: FC = () => {
         supportsDatabaseSwitching,
         usesDatabaseInsteadOfSchema,
     } = useDatabaseTraits(current?.Type);
-    const {data: availableDatabases, loading: availableDatabasesLoading, refetch: getDatabases} = useGetDatabaseQuery({
+    const {data: availableDatabases, loading: availableDatabasesLoading, refetch: getDatabases} = useQuery(GetDatabaseDocument, {
         variables: {
             type: current?.Type as DatabaseType,
         },
         skip: current == null || !supportsDatabaseSwitching,
     });
-    const { data: availableSchemas, loading: availableSchemasLoading, refetch: getSchemas } = useGetSchemaQuery({
+    const { data: availableSchemas, loading: availableSchemasLoading, refetch: getSchemas } = useQuery(GetSchemaDocument, {
         skip: current == null || !supportsSchema,
     });
 
@@ -130,15 +131,15 @@ export const Sidebar: FC = () => {
             : availableSchemas.Schema[0] ?? "";
         dispatch(DatabaseActions.setSchema(defaultSchema));
     }, [current, schema, availableSchemas, dispatch]);
-    const { data: updateInfo } = useGetUpdateInfoQuery();
-    const { refetch: refetchSslStatus } = useGetSslStatusQuery({
+    const { data: updateInfo } = useQuery(GetUpdateInfoDocument);
+    const { data: sslStatusData, refetch: refetchSslStatus } = useQuery(GetSslStatusDocument, {
         skip: current == null || sslStatus !== undefined,
-        onCompleted(data) {
-            if (data.SSLStatus) {
-                dispatch(AuthActions.setSSLStatus(data.SSLStatus));
-            }
-        },
     });
+    useEffect(() => {
+        if (sslStatusData?.SSLStatus) {
+            dispatch(AuthActions.setSSLStatus(sslStatusData.SSLStatus));
+        }
+    }, [dispatch, sslStatusData?.SSLStatus]);
     const navigate = useNavigate();
     const [showLoginCard, setShowLoginCard] = useState(false);
     const [showProfileSwitchDialog, setShowProfileSwitchDialog] = useState(false);

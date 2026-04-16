@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { useMutation, useQuery } from "@apollo/client/react";
 import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import {
     Badge,
@@ -32,16 +33,20 @@ import {
 } from "@clidey/ux";
 import { SearchSelect } from "../ux";
 import {
+    AddAwsProviderDocument,
     AwsProvider,
     AwsProviderInput,
     CloudProviderStatus,
+    GetAwsRegionsDocument,
+    GetCloudProvidersDocument,
+    GetDiscoveredConnectionsDocument,
+    GetLocalAwsProfilesDocument,
+    RefreshCloudProviderDocument,
+    RemoveCloudProviderDocument,
+    TestAwsCredentialsDocument,
+    TestCloudProviderDocument,
+    UpdateAwsProviderDocument,
     LocalAwsProfile,
-    useAddAwsProviderMutation,
-    useUpdateAwsProviderMutation,
-    useTestCloudProviderMutation,
-    useTestAwsCredentialsMutation,
-    useGetLocalAwsProfilesQuery,
-    useGetAwsRegionsQuery,
 } from "@graphql";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ProvidersActions, LocalCloudProvider } from "../../store/providers";
@@ -73,13 +78,13 @@ export const AwsProviderModal: FC<AwsProviderModalProps> = ({
     const isEditMode = editingProviderId !== null;
 
     // Query local AWS profiles
-    const { data: localProfilesData, loading: profilesLoading } = useGetLocalAwsProfilesQuery({
+    const { data: localProfilesData, loading: profilesLoading } = useQuery(GetLocalAwsProfilesDocument, {
         skip: isEditMode, // Only fetch for new providers
     });
     const localProfiles = localProfilesData?.LocalAWSProfiles ?? [];
 
     // Query AWS regions from backend
-    const { data: regionsData } = useGetAwsRegionsQuery();
+    const { data: regionsData } = useQuery(GetAwsRegionsDocument);
     const awsRegions = regionsData?.AWSRegions ?? [];
 
     // Form state
@@ -92,14 +97,14 @@ export const AwsProviderModal: FC<AwsProviderModalProps> = ({
     const [discoverDocumentDB, setDiscoverDocumentDB] = useState(true);
 
     // GraphQL mutations - refetch providers and connections after add/update
-    const [addProvider, { loading: addLoading }] = useAddAwsProviderMutation({
-        refetchQueries: ['GetCloudProviders', 'GetDiscoveredConnections'],
+    const [addProvider, { loading: addLoading }] = useMutation(AddAwsProviderDocument, {
+        refetchQueries: [GetCloudProvidersDocument, GetDiscoveredConnectionsDocument],
     });
-    const [updateProvider, { loading: updateLoading }] = useUpdateAwsProviderMutation({
-        refetchQueries: ['GetCloudProviders', 'GetDiscoveredConnections'],
+    const [updateProvider, { loading: updateLoading }] = useMutation(UpdateAwsProviderDocument, {
+        refetchQueries: [GetCloudProvidersDocument, GetDiscoveredConnectionsDocument],
     });
-    const [testProvider, { loading: testLoading }] = useTestCloudProviderMutation();
-    const [testCredentials, { loading: testCredentialsLoading }] = useTestAwsCredentialsMutation();
+    const [testProvider, { loading: testLoading }] = useMutation(TestCloudProviderDocument);
+    const [testCredentials, { loading: testCredentialsLoading }] = useMutation(TestAwsCredentialsDocument);
 
     const loading = addLoading || updateLoading || testLoading || testCredentialsLoading;
 

@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
+import { useMutation, useQuery } from "@apollo/client/react";
 import { FC, useCallback, useEffect, useMemo } from "react";
 import { Badge, Button, cn, toast } from "@clidey/ux";
 import {
     AwsProvider,
     CloudProviderStatus,
     CloudProviderType,
-    useGetCloudProvidersQuery,
-    useRefreshCloudProviderMutation,
-    useRemoveCloudProviderMutation,
+    GetCloudProvidersDocument,
+    RefreshCloudProviderDocument,
+    RemoveCloudProviderDocument,
 } from "@graphql";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ProvidersActions, LocalCloudProvider } from "../../store/providers";
@@ -74,9 +75,9 @@ export const AwsProvidersSection: FC = () => {
     const isModalOpen = useAppSelector(state => state.providers.isProviderModalOpen);
 
     // GraphQL queries and mutations
-    const { data, loading, refetch } = useGetCloudProvidersQuery();
-    const [refreshProvider, { loading: refreshLoading }] = useRefreshCloudProviderMutation();
-    const [removeProvider, { loading: removeLoading }] = useRemoveCloudProviderMutation();
+    const { data, loading, refetch } = useQuery(GetCloudProvidersDocument);
+    const [refreshProvider, { loading: refreshLoading }] = useMutation(RefreshCloudProviderDocument);
+    const [removeProvider, { loading: removeLoading }] = useMutation(RemoveCloudProviderDocument);
 
     // Sync GraphQL data with Redux store on fetch
     useEffect(() => {

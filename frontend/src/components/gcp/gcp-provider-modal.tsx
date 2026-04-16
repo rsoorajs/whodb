@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { useMutation, useQuery } from "@apollo/client/react";
 import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import {
     Badge,
@@ -32,16 +33,18 @@ import {
 } from "@clidey/ux";
 import { SearchSelect } from "../ux";
 import {
+    AddGcpProviderDocument,
     GcpProviderInput,
     GcpProvider,
     CloudProviderStatus,
+    GetCloudProvidersDocument,
+    GetDiscoveredConnectionsDocument,
+    GetGcpRegionsDocument,
+    GetLocalGcpProjectsDocument,
     LocalGcpProject,
-    useAddGcpProviderMutation,
-    useUpdateGcpProviderMutation,
-    useTestCloudProviderMutation,
-    useTestGcpCredentialsMutation,
-    useGetLocalGcpProjectsQuery,
-    useGetGcpRegionsQuery,
+    TestCloudProviderDocument,
+    TestGcpCredentialsDocument,
+    UpdateGcpProviderDocument,
 } from "@graphql";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ProvidersActions, LocalCloudProvider } from "../../store/providers";
@@ -73,13 +76,13 @@ export const GcpProviderModal: FC<GcpProviderModalProps> = ({
     const isEditMode = editingProviderId !== null;
 
     // Query local GCP projects
-    const { data: localProjectsData } = useGetLocalGcpProjectsQuery({
+    const { data: localProjectsData } = useQuery(GetLocalGcpProjectsDocument, {
         skip: isEditMode,
     });
     const localProjects = localProjectsData?.LocalGCPProjects ?? [];
 
     // Query GCP regions from backend
-    const { data: regionsData } = useGetGcpRegionsQuery();
+    const { data: regionsData } = useQuery(GetGcpRegionsDocument);
     const gcpRegions = regionsData?.GCPRegions ?? [];
 
     // Form state
@@ -92,14 +95,14 @@ export const GcpProviderModal: FC<GcpProviderModalProps> = ({
     const [discoverMemorystore, setDiscoverMemorystore] = useState(true);
 
     // GraphQL mutations
-    const [addProvider, { loading: addLoading }] = useAddGcpProviderMutation({
-        refetchQueries: ['GetCloudProviders', 'GetDiscoveredConnections'],
+    const [addProvider, { loading: addLoading }] = useMutation(AddGcpProviderDocument, {
+        refetchQueries: [GetCloudProvidersDocument, GetDiscoveredConnectionsDocument],
     });
-    const [updateProvider, { loading: updateLoading }] = useUpdateGcpProviderMutation({
-        refetchQueries: ['GetCloudProviders', 'GetDiscoveredConnections'],
+    const [updateProvider, { loading: updateLoading }] = useMutation(UpdateGcpProviderDocument, {
+        refetchQueries: [GetCloudProvidersDocument, GetDiscoveredConnectionsDocument],
     });
-    const [testProvider, { loading: testLoading }] = useTestCloudProviderMutation();
-    const [testCredentials, { loading: testCredentialsLoading }] = useTestGcpCredentialsMutation();
+    const [testProvider, { loading: testLoading }] = useMutation(TestCloudProviderDocument);
+    const [testCredentials, { loading: testCredentialsLoading }] = useMutation(TestGcpCredentialsDocument);
 
     const loading = addLoading || updateLoading || testLoading || testCredentialsLoading;
 

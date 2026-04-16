@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
+import { useMutation } from "@apollo/client/react";
 import { FC, useCallback, useMemo, useState } from "react";
 import { Badge, Button, cn, toast } from "@clidey/ux";
 import {
     CloudProviderStatus,
     CloudProviderType,
-    useRefreshCloudProviderMutation,
-    useRemoveCloudProviderMutation,
+    RefreshCloudProviderDocument,
+    RemoveCloudProviderDocument,
 } from "@graphql";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ProvidersActions, LocalCloudProvider } from "../../store/providers";
@@ -77,8 +78,8 @@ export const GcpProvidersSection: FC = () => {
     }, [isModalOpen, editingProviderId, allProviders]);
 
     // GraphQL mutations
-    const [refreshProvider, { loading: refreshLoading }] = useRefreshCloudProviderMutation();
-    const [removeProvider, { loading: removeLoading }] = useRemoveCloudProviderMutation();
+    const [refreshProvider, { loading: refreshLoading }] = useMutation(RefreshCloudProviderDocument);
+    const [removeProvider, { loading: removeLoading }] = useMutation(RemoveCloudProviderDocument);
 
     // Track whether we initiated the add modal
     const [gcpAddMode, setGcpAddMode] = useState(false);

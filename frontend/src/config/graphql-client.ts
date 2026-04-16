@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-import {ApolloClient, createHttpLink, InMemoryCache} from '@apollo/client';
-import {setContext} from '@apollo/client/link/context';
-import {onError} from '@apollo/client/link/error';
+import {ApolloClient, InMemoryCache} from '@apollo/client';
+import {ServerError} from '@apollo/client/errors';
+import {SetContextLink} from '@apollo/client/link/context';
+import {ErrorLink} from '@apollo/client/link/error';
+import {HttpLink} from '@apollo/client/link/http';
 import {toast} from '@clidey/ux';
 import {print} from 'graphql';
 import {
@@ -60,16 +62,16 @@ const redirectToLoginWithMessage = (
     window.location.href = withBasePath('/login');
 };
 
-const httpLink = createHttpLink({
+const httpLink = new HttpLink({
   uri,
   credentials: "include",
 });
 
 // Add Authorization header in desktop/webview environments where cookies are not supported.
-const authLink = setContext((_, { headers }) => {
-  return {
-    headers: addAuthHeader(headers)
-  };
+const authLink = new SetContextLink((prevContext) => {
+    return {
+        headers: addAuthHeader(prevContext.headers),
+    };
 });
 
 /**
@@ -85,8 +87,8 @@ const authLink = setContext((_, { headers }) => {
  *
  * This ensures seamless user experience when sessions expire.
  */
-const errorLink = onError(({networkError}) => {
-    if (networkError && 'statusCode' in networkError && networkError.statusCode === 401) {
+const errorLink = new ErrorLink(({error}) => {
+    if (ServerError.is(error) && error.statusCode === 401) {
         // @ts-ignore
         const authState = reduxStore.getState().auth;
         const currentProfile = authState.current;
@@ -99,8 +101,8 @@ const errorLink = onError(({networkError}) => {
                 redirectToLoginWithMessage('sessionExpired');
             }
         }
-    } else if (networkError) {
-        console.error('Network error:', networkError);
+    } else {
+        console.error('Network error:', error);
     }
 });
 

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import {useLazyQuery, useMutation} from "@apollo/client/react";
 import {
     Alert,
     AlertDescription,
@@ -41,7 +42,7 @@ import {
     toast
 } from "@clidey/ux";
 import {ChatHistorySidebar} from "./chat-history-sidebar";
-import {GetAiChatQuery, useExecuteConfirmedSqlMutation, useGenerateChatTitleMutation, useGetAiChatLazyQuery, useGetDatabaseQuerySuggestionsLazyQuery} from '@graphql';
+import {ExecuteConfirmedSqlDocument, GenerateChatTitleDocument, GetAiChatQuery, GetDatabaseQuerySuggestionsDocument} from '@graphql';
 import {
     ArrowUpCircleIcon,
     CheckCircleIcon,
@@ -330,9 +331,8 @@ export const ChatPage: FC = () => {
         }
         return [];
     }, [sessions, activeSessionId]);
-    const [getAIChat, { loading: getAIChatLoading }] = useGetAiChatLazyQuery();
-    const [executeConfirmedSql] = useExecuteConfirmedSqlMutation();
-    const [generateChatTitleMutation] = useGenerateChatTitleMutation();
+    const [executeConfirmedSql] = useMutation(ExecuteConfirmedSqlDocument);
+    const [generateChatTitleMutation] = useMutation(GenerateChatTitleDocument);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const containerWidth = useContainerWidth(scrollContainerRef);
     const schemaFromState = useAppSelector(state => state.database.schema);
@@ -374,7 +374,7 @@ export const ChatPage: FC = () => {
     const loadingPhraseRef = useRef<string>("");
 
     // Database-specific suggestions
-    const [getDatabaseSuggestions, { loading: suggestionsLoading }] = useGetDatabaseQuerySuggestionsLazyQuery({
+    const [getDatabaseSuggestions, { loading: suggestionsLoading }] = useLazyQuery(GetDatabaseQuerySuggestionsDocument, {
         fetchPolicy: 'network-only',
         errorPolicy: 'all',
     });
@@ -746,15 +746,15 @@ export const ChatPage: FC = () => {
     const handleConfirmSQL = useCallback(async (messageId: number, sql: string, operationType: string) => {
         setExecutingConfirmedId(messageId);
         try {
-            const { data, errors } = await executeConfirmedSql({
+            const { data, error } = await executeConfirmedSql({
                 variables: {
                     query: sql,
                     operationType: operationType,
                 },
             });
 
-            if (errors || !data) {
-                toast.error(t('unableToQuery') + " " + (errors?.[0]?.message || t('failedToExecuteSQL')));
+            if (error || !data) {
+                toast.error(t('unableToQuery') + " " + (error?.message || t('failedToExecuteSQL')));
                 setLoading(false);
                 return;
             }

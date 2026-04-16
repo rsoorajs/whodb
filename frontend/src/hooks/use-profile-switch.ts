@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
+import { useMutation } from '@apollo/client/react';
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@clidey/ux';
-import { DatabaseType, useLoginMutation, useLoginWithProfileMutation } from '@graphql';
+import { DatabaseType, LoginDocument, LoginWithProfileDocument } from '@graphql';
 import { useAppDispatch } from '@/store/hooks';
 import { AuthActions, LocalLoginProfile } from '@/store/auth';
 import { DatabaseActions } from '@/store/database';
@@ -40,8 +41,8 @@ interface UseProfileSwitchOptions {
 export const useProfileSwitch = (options?: UseProfileSwitchOptions) => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const [login, { loading: loginLoading }] = useLoginMutation();
-    const [loginWithProfile, { loading: loginWithProfileLoading }] = useLoginWithProfileMutation();
+    const [login, { loading: loginLoading }] = useMutation(LoginDocument);
+    const [loginWithProfile, { loading: loginWithProfileLoading }] = useMutation(LoginWithProfileDocument);
 
     const loading = loginLoading || loginWithProfileLoading;
 

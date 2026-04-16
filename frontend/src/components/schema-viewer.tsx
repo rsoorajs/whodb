@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { useQuery } from "@apollo/client/react";
 import {
     SearchInput,
     Sidebar as SidebarComponent,
@@ -24,7 +25,7 @@ import {
     Tree,
     TreeDataItem,
 } from "@clidey/ux";
-import {StorageUnit, useGetStorageUnitsQuery} from "@graphql";
+import {GetStorageUnitsDocument, StorageUnit} from "@graphql";
 import {FolderIcon, TableCellsIcon} from "./heroicons";
 import {FC, useCallback, useEffect, useMemo, useState} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
@@ -60,7 +61,7 @@ export const SchemaViewer: FC = () => {
     const schemaValue = usesDatabaseInsteadOfSchema ? (current?.Database ?? '') : selectedSchema;
 
     // Query for storage units (tables, views, etc.)
-    const {data, loading, refetch} = useGetStorageUnitsQuery({
+    const {data, loading, refetch} = useQuery(GetStorageUnitsDocument, {
         variables: {
             schema: schemaValue,
         },

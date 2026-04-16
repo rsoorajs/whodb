@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
+import { useLazyQuery, useMutation, useQuery } from "@apollo/client/react";
 import {Badge, Button, Card, cn, Input, Label, ModeToggle, Separator, toast, useTheme} from '@clidey/ux';
 import {SearchSelect} from '../../components/ux';
 import {
     DatabaseType,
+    GetDatabaseDocument,
+    GetProfilesDocument,
     LoginCredentials,
-    useGetDatabaseLazyQuery,
-    useGetProfilesQuery,
-    useLoginMutation,
-    useLoginWithProfileMutation,
-    useSettingsConfigQuery
+    LoginDocument,
+    LoginWithProfileDocument,
+    SettingsConfigDocument,
 } from '@graphql';
 import camelCase from "lodash/camelCase";
 import classNames from "classnames";
@@ -74,6 +75,7 @@ import {
 } from '../../components/gcp';
 import {ConnectionPrefillData, isAwsHostname, isAzureHostname, isGcpHostname} from '../../utils/cloud-connection-prefill';
 import {SSL_KEYS, SSLConfig} from '../../components/ssl-config';
+import {ServerError} from '@apollo/client/errors';
 
 /**
  * URL params that are reserved for the standard login form fields and control flags.
@@ -188,11 +190,11 @@ export const LoginForm: FC<LoginFormProps> = ({
         return !localStorage.getItem(FIRST_LOGIN_KEY);
     });
 
-    const [login, { loading: loginLoading }] = useLoginMutation();
-    const [loginWithProfile, { loading: loginWithProfileLoading }] = useLoginWithProfileMutation();
-    const [getDatabases, { loading: databasesLoading, data: foundDatabases }] = useGetDatabaseLazyQuery();
-    const { loading: profilesLoading, data: profiles } = useGetProfilesQuery();
-    const { data: settingsData } = useSettingsConfigQuery();
+    const [login, { loading: loginLoading }] = useMutation(LoginDocument);
+    const [loginWithProfile, { loading: loginWithProfileLoading }] = useMutation(LoginWithProfileDocument);
+    const [getDatabases, { loading: databasesLoading, data: foundDatabases }] = useLazyQuery(GetDatabaseDocument);
+    const { loading: profilesLoading, data: profiles } = useQuery(GetProfilesDocument);
+    const { data: settingsData } = useQuery(SettingsConfigDocument);
     const cloudProvidersEnabled = settingsData?.SettingsConfig?.CloudProvidersEnabled ?? false;
     const disableCredentialForm = settingsData?.SettingsConfig?.DisableCredentialForm ?? false;
     const maxPageSize = settingsData?.SettingsConfig?.MaxPageSize ?? 10000;
@@ -332,7 +334,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                 const isNetworkError = error.message?.toLowerCase().includes('network') ||
                                       error.message?.toLowerCase().includes('fetch') ||
                                       error.message?.toLowerCase().includes('econnrefused') ||
-                                      error.networkError != null;
+                                      ServerError.is(error);
 
                 if (isNetworkError) {
                     // Set server status to error to trigger overlay
@@ -403,7 +405,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                 const isNetworkError = error.message?.toLowerCase().includes('network') ||
                                       error.message?.toLowerCase().includes('fetch') ||
                                       error.message?.toLowerCase().includes('econnrefused') ||
-                                      error.networkError != null;
+                                      ServerError.is(error);
 
                 if (isNetworkError) {
                     // Set server status to error to trigger overlay
@@ -472,7 +474,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                 const isNetworkError = error.message?.toLowerCase().includes('network') ||
                                       error.message?.toLowerCase().includes('fetch') ||
                                       error.message?.toLowerCase().includes('econnrefused') ||
-                                      error.networkError != null;
+                                      ServerError.is(error);
 
                 if (isNetworkError) {
                     // Set server status to error to trigger overlay

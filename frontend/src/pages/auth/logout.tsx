@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { useMutation } from "@apollo/client";
+import { useMutation } from "@apollo/client/react";
 import { FC, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { Container } from "../../components/page";

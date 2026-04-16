@@ -44,18 +44,19 @@ import {
     StackListItem,
     toast,
 } from "@clidey/ux";
+import {useLazyQuery, useMutation} from "@apollo/client/react";
 import {
+    AddRowDocument,
+    ColumnsDocument,
     DatabaseType,
+    GetStorageUnitRowsDocument,
     RecordInput,
+    RawExecuteDocument,
     RowsResult,
     SortCondition,
     SortDirection,
     StorageUnit,
-    useAddRowMutation,
-    useColumnsLazyQuery,
-    useGetStorageUnitRowsLazyQuery,
-    useRawExecuteLazyQuery,
-    useUpdateStorageUnitMutation,
+    UpdateStorageUnitDocument,
     WhereCondition,
     WhereConditionType
 } from '@graphql';
@@ -203,7 +204,7 @@ export const ExploreStorageUnit: FC = () => {
     const pageSizeInitialRef = useRef(true);
     const [tableHeight, setTableHeight] = useState<number>(500);
 
-    const [updateStorageUnit] = useUpdateStorageUnitMutation();
+    const [updateStorageUnit] = useMutation(UpdateStorageUnitDocument);
 
     // Load search bar extension from component registry
     useEffect(() => {
@@ -226,14 +227,14 @@ export const ExploreStorageUnit: FC = () => {
         };
     }, []);
 
-    const [getStorageUnitRows, { loading }] = useGetStorageUnitRowsLazyQuery({
+    const [getStorageUnitRows, { loading }] = useLazyQuery(GetStorageUnitRowsDocument, {
         fetchPolicy: "no-cache",
     });
-    const [getColumns] = useColumnsLazyQuery({
+    const [getColumns] = useLazyQuery(ColumnsDocument, {
         fetchPolicy: "network-only",
     });
-    const [addRow, { loading: adding }] = useAddRowMutation();
-    const [rawExecute, { data: rawExecuteData, error: rawExecuteError }] = useRawExecuteLazyQuery();
+    const [addRow, { loading: adding }] = useMutation(AddRowDocument);
+    const [rawExecute, { data: rawExecuteData, error: rawExecuteError }] = useLazyQuery(RawExecuteDocument);
 
     const unitName = useMemo(() => {
         return unit?.Name;
@@ -719,54 +720,64 @@ export const ExploreStorageUnit: FC = () => {
         });
 
         // First, fetch the target table's column metadata to find its primary key
-        getColumns({
+        void getColumns({
             variables: {
                 schema,
                 storageUnit: targetTable
             },
-            onCompleted: (columnsData) => {
-                // Find the primary key column in the target table
-                const targetPrimaryKey = columnsData.Columns?.find(col => col.IsPrimary);
+        }).then(({ data, error }) => {
+            if (error) {
+                throw error;
+            }
 
-                if (!targetPrimaryKey) {
-                    const errorMessage = t('noPrimaryKeyFound').replace('{table}', targetTable);
-                    toast.error(errorMessage);
-                    return;
+            // Find the primary key column in the target table
+            const targetPrimaryKey = data?.Columns?.find(col => col.IsPrimary);
+
+            if (!targetPrimaryKey) {
+                const errorMessage = t('noPrimaryKeyFound').replace('{table}', targetTable);
+                toast.error(errorMessage);
+                return;
+            }
+
+            const primaryKeyName = targetPrimaryKey.Name;
+
+            // Now search for the entity using the correct primary key
+            void getStorageUnitRows({
+                variables: {
+                    schema,
+                    storageUnit: targetTable,
+                    where: {
+                        Type: WhereConditionType.Atomic,
+                        Atomic: {
+                            Key: primaryKeyName,
+                            Operator: "=",
+                            Value: value,
+                            ColumnType: "string"
+                        }
+                    },
+                    pageSize: 1,
+                    pageOffset: 0
+                },
+            }).then(({ data, error }) => {
+                if (error) {
+                    throw error;
                 }
 
-                const primaryKeyName = targetPrimaryKey.Name;
-
-                // Now search for the entity using the correct primary key
-                getStorageUnitRows({
-                    variables: {
-                        schema,
-                        storageUnit: targetTable,
-                        where: {
-                            Type: WhereConditionType.Atomic,
-                            Atomic: {
-                                Key: primaryKeyName,
-                                Operator: "=",
-                                Value: value,
-                                ColumnType: "string"
-                            }
-                        },
-                        pageSize: 1,
-                        pageOffset: 0
-                    },
-                    onCompleted: (data) => {
-                        setEntitySearchResults(data.Row);
-                        setShowEntitySearchSheet(true);
-                    },
-                    onError: (error) => {
-                        const errorMessage = t('failedToSearchEntity').replace('{error}', error.message);
-                        toast.error(errorMessage);
-                    }
-                });
-            },
-            onError: (error) => {
-                const errorMessage = t('failedToGetTargetTableStructure').replace('{error}', error.message);
+                setEntitySearchResults(data?.Row ?? null);
+                setShowEntitySearchSheet(true);
+            }).catch((error: unknown) => {
+                const errorMessage = t('failedToSearchEntity').replace(
+                    '{error}',
+                    error instanceof Error ? error.message : String((error as { message?: string }).message ?? '')
+                );
                 toast.error(errorMessage);
-            }
+            });
+        }).catch((error: unknown) => {
+            const errorMessage = t('failedToGetTargetTableStructure').replace(
+                '{error}',
+                error instanceof Error ? error.message : String((error as { message?: string }).message ?? '')
+            );
+            toast.error(errorMessage);
         });
     }, [getColumns, getStorageUnitRows, getTargetTableName, schema, t]);
 
