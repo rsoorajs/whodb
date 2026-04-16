@@ -19,9 +19,10 @@ set -euo pipefail
 
 # Unified backend test runner for CE, EE, and integration.
 # - Uses a repo-local GOCACHE to avoid sandboxed cache permission issues
-# - Runs CE unit tests (excludes interactive server_test)
+# - Runs CE and EE unit tests with explicit per-edition modes
 # - Runs live integration tests (docker-compose) by default; set MODE to limit
-#   MODE values: all (default) | unit | integration | ssl
+#   MODE values:
+#     all (default) | unit | ce-unit | ee-unit | integration | ssl
 
 ROOT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GOCACHE_DIR="$ROOT_DIR/core/.gocache"
@@ -29,15 +30,87 @@ GOCACHE_DIR="$ROOT_DIR/core/.gocache"
 export GOCACHE="$GOCACHE_DIR"
 MODE="${1:-all}"
 
-run_unit() {
-  echo "→ Running CE backend tests"
-  (
-    cd "$ROOT_DIR/core"
-    go test ./src/... ./graph/...
-  )
+has_ee() {
+  [ -f "$ROOT_DIR/ee/go.mod" ]
+}
 
-  if [ -d "$ROOT_DIR/ee" ]; then
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") [MODE]
+
+Modes:
+  all          Run CE + EE unit tests, then CE integration tests
+  unit         Run CE + EE unit tests
+  ce-unit      Run CE unit tests only
+  ee-unit      Run EE unit tests only
+  integration  Run CE integration tests only
+  ssl          Run CE SSL integration tests only
+EOF
+}
+
+run_hermetic_go_test() {
+  local workdir="$1"
+  shift
+
+  (
+    set -euo pipefail
+
+    local test_home
+    local original_home
+    test_home="$(mktemp -d "${TMPDIR:-/tmp}/whodb-backend-home.XXXXXX")"
+    original_home="${HOME:-}"
+
+    cleanup() {
+      rm -rf "$test_home"
+    }
+    trap cleanup EXIT
+
+    while IFS='=' read -r name _; do
+      if [[ "$name" == WHODB_* ]]; then
+        unset "$name"
+      fi
+    done < <(env)
+
+    export HOME="$test_home"
+    export XDG_DATA_HOME="$test_home/.local/share"
+    export XDG_CONFIG_HOME="$test_home/.config"
+    export XDG_CACHE_HOME="$test_home/.cache"
+
+    mkdir -p "$XDG_DATA_HOME" "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME"
+
+    if [ -n "$original_home" ] && [ -d "$original_home/Library/Caches/baml" ]; then
+      mkdir -p "$HOME/Library/Caches"
+      ln -s "$original_home/Library/Caches/baml" "$HOME/Library/Caches/baml"
+    fi
+
+    # Some unit tests rely on the Ollama endpoint being fixed at process start,
+    # because the env package snapshots these vars during package initialization.
+    export WHODB_OLLAMA_HOST="ollama.test"
+    export WHODB_OLLAMA_PORT="11434"
+
+    cd "$workdir"
+    "$@"
+  )
+}
+
+run_ce_unit() {
+  echo "→ Running CE backend tests"
+  run_hermetic_go_test "$ROOT_DIR/core" go test ./src/... ./graph/...
+}
+
+run_ee_unit() {
+  if ! has_ee; then
+    echo "ℹ️  EE module not present, skipping EE backend tests"
+    return 0
   fi
+
+  echo "→ Running EE backend tests"
+  run_hermetic_go_test "$ROOT_DIR/ee" go test ./core/...
+}
+
+run_unit() {
+  run_ce_unit
+  run_ee_unit
 }
 
 run_integration() {
@@ -121,15 +194,24 @@ case "$MODE" in
   unit)
     run_unit
     ;;
+  ce-unit)
+    run_ce_unit
+    ;;
+  ee-unit)
+    run_ee_unit
+    ;;
   integration)
     run_integration
     ;;
   ssl)
     run_ssl
     ;;
+  -h|--help|help)
+    usage
+    ;;
   *)
     echo "Unknown MODE: $MODE"
-    echo "Usage: $(basename "$0") [all|unit|integration|ssl]"
+    usage
     exit 1
     ;;
 esac
