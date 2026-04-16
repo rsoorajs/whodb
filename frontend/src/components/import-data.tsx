@@ -34,6 +34,7 @@ import {FC, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useTranslation} from "@/hooks/use-translation";
 import {CodeEditor} from "@/components/editor";
 import {executeMultipartGraphQL} from "@/utils/graphql-upload";
+import {withBasePath} from "@/utils/base-path";
 import {addAuthHeader} from "@/utils/auth-headers";
 import {print} from "graphql";
 import {
@@ -371,7 +372,7 @@ export const ImportData: FC<ImportDataProps> = ({
   ]);
 
   const executeGraphQL = useCallback(async <T,>(query: string, variables: Record<string, any>) => {
-    const response = await fetch("/api/query", {
+    const response = await fetch(withBasePath("/api/query"), {
       method: "POST",
       credentials: "include",
       headers: addAuthHeader({

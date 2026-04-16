@@ -29,14 +29,16 @@ import {
 import {LocalLoginProfile} from '../store/auth';
 import {reduxStore} from '../store';
 import {addAuthHeader} from '../utils/auth-headers';
+import {withBasePath} from '../utils/base-path';
 import {isAwsHostname} from '../utils/cloud-connection-prefill';
 import {getTranslation, loadTranslationsSync} from '../utils/i18n';
 import {type SupportedLanguage, DEFAULT_LANGUAGE} from '../utils/languages';
 
-// Always use a relative URI so that:
+// Always use an application-relative URI so that:
 // - Desktop/Wails uses the embedded router handler
 // - Dev server (vite) proxies to the backend via server.proxy in vite.config.ts
-const uri = "/api/query";
+// - Bundled web builds honor WHODB_BASE_PATH
+const uri = withBasePath("/api/query");
 const loginWithProfileQuery = print(LoginWithProfileDocument);
 const loginMutationQuery = print(LoginDocument);
 
@@ -55,7 +57,7 @@ const redirectToLoginWithMessage = (
 ) => {
     const t = translator ?? getTranslator();
     toast.error(t(key));
-    window.location.href = '/login';
+    window.location.href = withBasePath('/login');
 };
 
 const httpLink = createHttpLink({
@@ -93,7 +95,7 @@ const errorLink = onError(({networkError}) => {
             void handleAutoLogin(currentProfile);
         } else {
             // Don't redirect if already on login page to avoid infinite loop
-            if (!window.location.pathname.startsWith('/login')) {
+            if (!window.location.pathname.startsWith(withBasePath('/login'))) {
                 redirectToLoginWithMessage('sessionExpired');
             }
         }

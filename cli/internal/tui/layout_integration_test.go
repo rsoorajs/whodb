@@ -68,7 +68,7 @@ func TestUseMultiPane_ModalViewsFallback(t *testing.T) {
 	}
 
 	// Modal/overlay views should NOT use multi-pane
-	for _, mode := range []ViewMode{ViewExport, ViewWhere, ViewColumns, ViewSchema, ViewHistory, ViewChat} {
+	for _, mode := range []ViewMode{ViewExport, ViewWhere, ViewColumns, ViewSchema, ViewHistory, ViewChat, ViewMockData, ViewRowWrite} {
 		m.mode = mode
 		if m.useMultiPane() {
 			t.Errorf("useMultiPane() should be false for modal mode %d", mode)

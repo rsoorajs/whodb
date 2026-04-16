@@ -331,6 +331,9 @@ WHODB_OPENAI_API_KEY=sk-xxx
 # Ollama Configuration
 WHODB_OLLAMA_HOST=ollama-server
 WHODB_OLLAMA_PORT=11434
+
+# Optional: serve WhoDB under https://example.com/whodb/
+WHODB_BASE_PATH=/whodb
 ```
 
 Reference in `docker-compose.yml`:
@@ -417,6 +420,74 @@ server {
     }
 }
 ```
+
+### Nginx Reverse Proxy on a Subpath
+
+To serve WhoDB from a subpath such as `https://example.com/whodb/`, set `WHODB_BASE_PATH` on the WhoDB container and proxy that same prefix in Nginx.
+
+This only applies when WhoDB serves its bundled frontend, such as the published Docker image. It does not apply to split dev mode.
+
+```yaml
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - whodb
+    networks:
+      - proxy-network
+
+  whodb:
+    image: clidey/whodb:latest
+    environment:
+      - WHODB_BASE_PATH=/whodb
+    expose:
+      - "8080"
+    networks:
+      - proxy-network
+
+networks:
+  proxy-network:
+    driver: bridge
+```
+
+Nginx configuration (`nginx.conf`):
+
+```nginx
+upstream whodb {
+    server whodb:8080;
+}
+
+server {
+    listen 80;
+    server_name example.com;
+
+    location /whodb/ {
+        proxy_pass http://whodb;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+```
+
+With that configuration:
+
+- Browse to `https://example.com/whodb/`
+- Set `WHODB_BASE_PATH=/whodb` in the WhoDB container
+- Keep health checks pointed at `http://whodb:8080/health`
 
 ### Traefik Integration
 
@@ -593,6 +664,8 @@ services:
       - WHODB_LOG_LEVEL=warn
       - WHODB_LOG_FILE=default
       - WHODB_ACCESS_LOG_FILE=default
+      # Optional: serve the bundled app from /whodb/
+      - WHODB_BASE_PATH=/whodb
     env_file:
       - .env.production
     volumes:

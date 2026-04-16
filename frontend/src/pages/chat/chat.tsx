@@ -79,6 +79,7 @@ import {useNavigate} from "react-router-dom";
 import {useChatExamples} from "./examples";
 import {useTranslation} from '@/hooks/use-translation';
 import {addAuthHeader} from "../../utils/auth-headers";
+import {withBasePath} from "../../utils/base-path";
 import {matchesShortcut, SHORTCUTS} from "../../utils/shortcuts";
 import {useContainerWidth} from "../../hooks/use-container-width";
 
@@ -465,7 +466,7 @@ export const ChatPage: FC = () => {
         }, 250);
 
         try {
-            const response = await fetch('/api/ai-chat/stream', {
+            const response = await fetch(withBasePath('/api/ai-chat/stream'), {
                 method: 'POST',
                 credentials: 'include',
                 headers: addAuthHeader({

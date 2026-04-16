@@ -171,9 +171,26 @@ Connect any OpenAI-compatible provider. Configured via multiple variables per pr
 | `WHODB_ACCESS_LOG_FILE` | unset | Redirect HTTP access logs to a file. `default` uses `/var/log/whodb/whodb.access.log` |
 | `WHODB_TOKENS` | unset | Comma-separated static tokens to restrict API/UI access |
 | `WHODB_ALLOWED_ORIGINS` | unset | Comma-separated CORS origins (defaults to all) |
+| `WHODB_BASE_PATH` | unset | URL path prefix for bundled WhoDB web builds, e.g. `/whodb`. Applies only when WhoDB serves embedded frontend assets; split frontend/backend dev mode is unchanged. Must be a slash-prefixed path with segments containing only letters, numbers, `.`, `_`, or `-` |
 | `WHODB_DISABLE_CREDENTIAL_FORM` | `false` | Set `true` to hide the database credential form on the login page |
 | `WHODB_MAX_PAGE_SIZE` | `10000` | Maximum number of rows returned per page |
 | `WHODB_DISABLE_MOCK_DATA_GENERATION` | unset | Disable mock data generation. `*` disables for all tables, or a comma-separated list of table names to disable selectively (e.g., `logs, metrics`) |
+
+### Serving WhoDB under a subpath
+
+Use `WHODB_BASE_PATH` when WhoDB serves its bundled frontend and you want the app mounted below `/`, for example behind Nginx at `/whodb/`.
+
+```bash
+WHODB_BASE_PATH=/whodb
+```
+
+This applies to bundled deployments such as the Docker image or a binary built with embedded frontend assets. It does not apply to split dev mode (`pnpm start` for the frontend and `go run` for the backend).
+
+When `WHODB_BASE_PATH=/whodb`:
+
+- Browse to `/whodb/`
+- Reverse proxy `/whodb/` to the WhoDB server
+- Keep container health checks on `/health`
 
 ## Cloud Provider Variables
 

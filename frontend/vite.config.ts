@@ -20,6 +20,8 @@ import path from 'path';
 import tailwindcss from '@tailwindcss/vite'
 import yamlPlugin from './plugins/vite-plugin-yaml';
 
+const baseHrefPlaceholder = '__WHODB_BASE_HREF__';
+
 // Resolve app meta (title, description) at build time
 const htmlMetaPlugin = () => {
   const title = 'Clidey WhoDB';
@@ -35,7 +37,7 @@ const htmlMetaPlugin = () => {
 };
 
 // https://vitejs.dev/config/
-export default defineConfig(async () => {
+export default defineConfig(async ({command}) => {
   // Dynamically import istanbul plugin only in test mode
   let istanbulPlugin = null;
   if (process.env.NODE_ENV === 'test') {
@@ -60,14 +62,23 @@ export default defineConfig(async () => {
     }
   }
 
-  return {
-    plugins: [
-      yamlPlugin(),
-      react(),
-      tailwindcss(),
-      htmlMetaPlugin(),
-      istanbulPlugin
-    ].filter(Boolean),
+    return {
+      plugins: [
+        yamlPlugin(),
+        react(),
+        tailwindcss(),
+        {
+          name: 'base-href-placeholder',
+          transformIndexHtml(html: string) {
+            if (command === 'build') {
+              return html;
+            }
+            return html.replace(baseHrefPlaceholder, '/');
+          }
+        },
+        htmlMetaPlugin(),
+        istanbulPlugin
+      ].filter(Boolean),
 
     resolve: {
       alias: {
@@ -85,6 +96,7 @@ export default defineConfig(async () => {
         },
       },
     },
+    base: command === 'build' ? './' : '/',
     build: {
       outDir: 'build',
       sourcemap: process.env.NODE_ENV === 'production' ? 'hidden' : true,

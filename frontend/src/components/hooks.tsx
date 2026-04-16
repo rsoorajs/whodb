@@ -18,8 +18,12 @@ import {useCallback} from "react";
 import * as desktopService from "../services/desktop";
 import {isDesktopApp} from "../utils/external-links";
 import {addAuthHeader} from "../utils/auth-headers";
+import {withBasePath} from "../utils/base-path";
 
 
+/**
+ * Exports the current table selection or full table contents through the backend export endpoint.
+ */
 export const useExportToCSV = (schema: string, storageUnit: string, selectedOnly: boolean = false, delimiter: string = ',', selectedRows?: Record<string, any>[], format: 'csv' | 'excel' | 'ndjson' = 'csv') => {
     return useCallback(async () => {
       try {
@@ -44,7 +48,7 @@ export const useExportToCSV = (schema: string, storageUnit: string, selectedOnly
 
         // Use backend export endpoint for full data export
         // Add auth header for desktop environments where cookies don't work
-        const response = await fetch('/api/export', {
+        const response = await fetch(withBasePath('/api/export'), {
           method: 'POST',
           credentials: 'include',
           headers: addAuthHeader({
@@ -106,4 +110,3 @@ export const useExportToCSV = (schema: string, storageUnit: string, selectedOnly
       }
     }, [schema, storageUnit, selectedOnly, delimiter, selectedRows, format]);
 };
-

@@ -80,6 +80,10 @@ var AccessLogFile = os.Getenv("WHODB_ACCESS_LOG_FILE") // where to store the htt
 var LogFile = os.Getenv("WHODB_LOG_FILE")              // where to store all other non-http logs
 var LogFormat = os.Getenv("WHODB_LOG_FORMAT")          // only option right now is "json". leave blank for default format
 
+// BasePath is the optional URL path prefix used when WhoDB serves its bundled
+// frontend, for example "/whodb".
+var BasePath = getBasePath()
+
 // Default log paths used when the AccessLogFile and LogFile vars are set to "default".
 const DefaultLogDir = "/var/log/whodb"
 const DefaultLogFile = DefaultLogDir + "/whodb.log"
@@ -201,4 +205,56 @@ func getMaxPageSize() int {
 		return 10000
 	}
 	return n
+}
+
+func getBasePath() string {
+	basePath := strings.TrimSpace(os.Getenv("WHODB_BASE_PATH"))
+	if basePath == "" || basePath == "/" {
+		return ""
+	}
+
+	if !strings.HasPrefix(basePath, "/") {
+		basePath = "/" + basePath
+	}
+
+	basePath = strings.TrimRight(basePath, "/")
+	if basePath == "" || basePath == "/" {
+		return ""
+	}
+
+	if !isValidBasePath(basePath) {
+		panic(fmt.Sprintf("invalid WHODB_BASE_PATH %q: must be a slash-prefixed path made of non-empty segments containing only letters, numbers, '.', '_' or '-'", basePath))
+	}
+
+	return basePath
+}
+
+func isValidBasePath(basePath string) bool {
+	if !strings.HasPrefix(basePath, "/") {
+		return false
+	}
+
+	segments := strings.Split(basePath, "/")[1:]
+	if len(segments) == 0 {
+		return false
+	}
+
+	for _, segment := range segments {
+		if segment == "" || segment == "." || segment == ".." {
+			return false
+		}
+
+		for _, char := range segment {
+			switch {
+			case char >= 'a' && char <= 'z':
+			case char >= 'A' && char <= 'Z':
+			case char >= '0' && char <= '9':
+			case char == '.', char == '_', char == '-':
+			default:
+				return false
+			}
+		}
+	}
+
+	return true
 }
