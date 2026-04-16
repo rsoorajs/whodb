@@ -31,6 +31,7 @@ import (
 	"github.com/clidey/whodb/core/internal/testutil"
 	"github.com/clidey/whodb/core/src/auth"
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/env"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -116,8 +117,14 @@ func TestRESTHandlersAIModelsAndChat(t *testing.T) {
 		return nil, fmt.Errorf("unexpected http request: %s %s", r.Method, r.URL.String())
 	})
 
-	t.Setenv("WHODB_OLLAMA_HOST", "ollama.test")
-	t.Setenv("WHODB_OLLAMA_PORT", "11434")
+	originalOllamaHost := env.OllamaHost
+	originalOllamaPort := env.OllamaPort
+	env.OllamaHost = "ollama.test"
+	env.OllamaPort = "11434"
+	t.Cleanup(func() {
+		env.OllamaHost = originalOllamaHost
+		env.OllamaPort = originalOllamaPort
+	})
 
 	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
 	mock.ChatFunc = func(*engine.PluginConfig, string, string, string) ([]*engine.ChatMessage, error) {

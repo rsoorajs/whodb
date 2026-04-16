@@ -20,12 +20,14 @@ set -euo pipefail
 # Unified backend test runner for CE, EE, and integration.
 # - Uses a repo-local GOCACHE to avoid sandboxed cache permission issues
 # - Runs CE and EE unit tests with explicit per-edition modes
-# - Runs live integration tests (docker-compose) by default; set MODE to limit
-#   MODE values:
-#     all (default) | unit | ce-unit | ee-unit | integration | ssl
+# - Runs CE and EE integration suites against their own docker-compose stacks
+# - MODE values:
+#     all (default) | unit | ce-unit | ee-unit | integration |
+#     ce-integration | ee-integration | ssl
 
 ROOT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GOCACHE_DIR="$ROOT_DIR/core/.gocache"
+EE_COMPOSE_PROJECT="whodb-ee-tests"
 
 export GOCACHE="$GOCACHE_DIR"
 MODE="${1:-all}"
@@ -39,12 +41,14 @@ usage() {
 Usage: $(basename "$0") [MODE]
 
 Modes:
-  all          Run CE + EE unit tests, then CE integration tests
-  unit         Run CE + EE unit tests
-  ce-unit      Run CE unit tests only
-  ee-unit      Run EE unit tests only
-  integration  Run CE integration tests only
-  ssl          Run CE SSL integration tests only
+  all             Run CE + EE unit tests, then CE + EE integration tests
+  unit            Run CE + EE unit tests
+  ce-unit         Run CE unit tests only
+  ee-unit         Run EE unit tests only
+  integration     Run CE + EE integration tests
+  ce-integration  Run CE integration tests only
+  ee-integration  Run EE integration tests only
+  ssl             Run CE SSL integration tests only
 EOF
 }
 
@@ -113,17 +117,17 @@ run_unit() {
   run_ee_unit
 }
 
-run_integration() {
+run_ce_integration() {
   (
     set -euo pipefail
-    echo "→ Running integration backend tests (docker-compose services required)"
+    echo "→ Running CE integration backend tests (docker-compose services required)"
     COMPOSE_FILE="$ROOT_DIR/dev/docker-compose.yml"
     MANAGE_COMPOSE="${WHODB_MANAGE_COMPOSE:-1}"
     COMPOSE_STARTED=0
 
     cleanup() {
       if [ "$MANAGE_COMPOSE" = "1" ] && [ "$COMPOSE_STARTED" -eq 1 ]; then
-        echo "→ Tearing down integration docker-compose stack"
+        echo "→ Tearing down CE integration docker-compose stack"
         docker compose -f "$COMPOSE_FILE" down --volumes --remove-orphans
       fi
     }
@@ -131,14 +135,14 @@ run_integration() {
 
     if [ "$MANAGE_COMPOSE" = "1" ]; then
       if docker compose -f "$COMPOSE_FILE" ps -q | grep -q .; then
-        echo "ℹ️  Reusing existing docker-compose stack"
+        echo "ℹ️  Reusing existing CE docker-compose stack"
       else
-        echo "🐳 Starting integration docker-compose stack"
+        echo "🐳 Starting CE integration docker-compose stack"
         docker compose -f "$COMPOSE_FILE" up -d
         COMPOSE_STARTED=1
       fi
     else
-      echo "ℹ️  WHODB_MANAGE_COMPOSE=0, assuming services are already running"
+      echo "ℹ️  WHODB_MANAGE_COMPOSE=0, assuming CE services are already running"
     fi
 
     cd "$ROOT_DIR/core"
@@ -149,6 +153,59 @@ run_integration() {
     fi
     WHODB_START_COMPOSE="${START_FLAG:-0}" go test -tags integration ./test/integration/...
   )
+}
+
+run_ee_integration() {
+  if ! has_ee; then
+    echo "ℹ️  EE module not present, skipping EE integration tests"
+    return 0
+  fi
+
+  (
+    set -euo pipefail
+    echo "→ Running EE integration backend tests (docker-compose services required)"
+    COMPOSE_FILE="$ROOT_DIR/ee/dev/docker-compose.yml"
+    MANAGE_COMPOSE="${WHODB_MANAGE_COMPOSE:-1}"
+    COMPOSE_STARTED=0
+    RUNNING_SERVICE_COUNT=0
+
+    cleanup() {
+      if [ "$MANAGE_COMPOSE" = "1" ] && [ "$COMPOSE_STARTED" -eq 1 ]; then
+        echo "→ Tearing down EE integration docker-compose stack"
+        docker compose -p "$EE_COMPOSE_PROJECT" -f "$COMPOSE_FILE" --profile ee down --volumes --remove-orphans
+      fi
+    }
+    trap cleanup EXIT
+
+    if [ "$MANAGE_COMPOSE" = "1" ]; then
+      RUNNING_SERVICE_COUNT="$(
+        docker compose -p "$EE_COMPOSE_PROJECT" -f "$COMPOSE_FILE" --profile ee ps -q \
+          e2e_mssql e2e_dynamodb e2e_oracle e2e_cassandra |
+          grep -c . || true
+      )"
+      if [ "$RUNNING_SERVICE_COUNT" -eq 4 ]; then
+        echo "ℹ️  Reusing existing EE docker-compose stack"
+      else
+        echo "🐳 Starting EE integration docker-compose stack"
+        docker compose -p "$EE_COMPOSE_PROJECT" -f "$COMPOSE_FILE" --profile ee up -d
+        COMPOSE_STARTED=1
+      fi
+    else
+      echo "ℹ️  WHODB_MANAGE_COMPOSE=0, assuming EE services are already running"
+    fi
+
+    cd "$ROOT_DIR/ee"
+    START_FLAG="${WHODB_START_COMPOSE:-}"
+    if [ "$COMPOSE_STARTED" -eq 1 ]; then
+      START_FLAG="0"
+    fi
+    WHODB_START_COMPOSE="${START_FLAG:-0}" go test -tags integration ./test/integration/...
+  )
+}
+
+run_integration() {
+  run_ce_integration
+  run_ee_integration
 }
 
 run_ssl() {
@@ -199,6 +256,12 @@ case "$MODE" in
     ;;
   ee-unit)
     run_ee_unit
+    ;;
+  ce-integration)
+    run_ce_integration
+    ;;
+  ee-integration)
+    run_ee_integration
     ;;
   integration)
     run_integration

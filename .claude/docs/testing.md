@@ -11,9 +11,11 @@ cd frontend && pnpm e2e:ce                   # Interactive mode (headed)
 
 
 # Backend Go tests
-bash dev/run-backend-tests.sh all            # Unit + integration
-bash dev/run-backend-tests.sh unit           # Unit tests only
-bash dev/run-backend-tests.sh integration    # Integration tests only
+bash dev/run-backend-tests.sh all            # CE + EE unit and integration
+bash dev/run-backend-tests.sh unit           # CE + EE unit tests only
+bash dev/run-backend-tests.sh integration    # CE + EE integration tests only
+bash dev/run-backend-tests.sh ce-integration # CE integration tests only
+bash dev/run-backend-tests.sh ee-integration # EE integration tests only
 
 # CLI tests
 bash dev/run-cli-tests.sh                    # All CLI tests
@@ -285,9 +287,11 @@ core/
 
 ```bash
 # Main test runner
-bash dev/run-backend-tests.sh all          # Unit + integration (default)
-bash dev/run-backend-tests.sh unit         # Unit tests only
-bash dev/run-backend-tests.sh integration  # Integration tests only
+bash dev/run-backend-tests.sh all            # CE + EE unit and integration (default)
+bash dev/run-backend-tests.sh unit           # CE + EE unit tests only
+bash dev/run-backend-tests.sh integration    # CE + EE integration tests only
+bash dev/run-backend-tests.sh ce-integration # CE integration tests only
+bash dev/run-backend-tests.sh ee-integration # EE integration tests only
 
 # Direct Go commands
 cd core && go test ./...                   # All unit tests
@@ -300,11 +304,15 @@ cd core && go test ./src/auth/...          # Auth tests only
 Integration tests require Docker services running:
 
 ```bash
-# Start services manually
+# Start CE services manually
 docker compose -f dev/docker-compose.yml up -d
 
-# Run integration tests
+# Start EE services manually
+docker compose -f ee/dev/docker-compose.yml --profile ee up -d
+
+# Run integration tests directly
 cd core && go test ./test/integration/...
+cd ee && go test ./test/integration/...
 
 # Or use the script (manages Docker automatically)
 bash dev/run-backend-tests.sh integration

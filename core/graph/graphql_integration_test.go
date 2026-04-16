@@ -209,8 +209,18 @@ func TestGraphQLProfilesQueryUsesEngineProfiles(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("failed to parse response: %v", err)
 	}
-	if len(resp.Data.Profiles) != 1 || resp.Data.Profiles[0].ID == "" || resp.Data.Profiles[0].Database == nil {
-		t.Fatalf("expected profile to be returned, got %#v", resp.Data.Profiles)
+
+	var found bool
+	for _, profile := range resp.Data.Profiles {
+		if profile.Alias != nil && *profile.Alias == "alias" {
+			found = true
+			if profile.ID == "" || profile.Database == nil || *profile.Database != "app" || profile.Type != "Test" || !profile.IsEnvironmentDefined {
+				t.Fatalf("expected merged profile fields to be preserved, got %#v", profile)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected engine-defined profile to be returned, got %#v", resp.Data.Profiles)
 	}
 }
 
