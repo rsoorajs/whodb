@@ -17,7 +17,6 @@
 package redis
 
 import (
-	"context"
 	"net"
 	"strconv"
 
@@ -29,7 +28,7 @@ import (
 )
 
 func DB(config *engine.PluginConfig) (*redis.Client, error) {
-	ctx := context.Background()
+	ctx := config.OperationContext()
 	port, err := strconv.Atoi(common.GetRecordValueOrDefault(config.Credentials.Advanced, "Port", "6379"))
 	if err != nil {
 		log.WithError(err).WithField("hostname", config.Credentials.Hostname).Error("Failed to parse Redis port number")

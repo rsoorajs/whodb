@@ -18,7 +18,6 @@ package elasticsearch
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -83,7 +82,7 @@ func (p *ElasticSearchPlugin) GetRows(config *engine.PluginConfig, req *engine.G
 	}
 
 	res, err := client.Search(
-		client.Search.WithContext(context.Background()),
+		client.Search.WithContext(config.OperationContext()),
 		client.Search.WithIndex(collection),
 		client.Search.WithBody(&buf),
 		client.Search.WithTrackTotalHits(true),
@@ -168,7 +167,7 @@ func (p *ElasticSearchPlugin) GetRowCount(config *engine.PluginConfig, database,
 	}
 
 	res, err := client.Count(
-		client.Count.WithContext(context.Background()),
+		client.Count.WithContext(config.OperationContext()),
 		client.Count.WithIndex(index),
 		client.Count.WithBody(&buf),
 	)
@@ -216,7 +215,7 @@ func (p *ElasticSearchPlugin) GetColumnsForTable(config *engine.PluginConfig, sc
 	}
 
 	res, err := client.Search(
-		client.Search.WithContext(context.Background()),
+		client.Search.WithContext(config.OperationContext()),
 		client.Search.WithIndex(storageUnit),
 		client.Search.WithBody(&buf),
 	)

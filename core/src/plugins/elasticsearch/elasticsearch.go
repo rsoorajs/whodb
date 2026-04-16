@@ -62,6 +62,7 @@ func (p *ElasticSearchPlugin) GetDatabases(config *engine.PluginConfig) ([]strin
 
 	// Use Cat Indices API for lightweight index listing
 	res, err := client.Cat.Indices(
+		client.Cat.Indices.WithContext(config.OperationContext()),
 		client.Cat.Indices.WithFormat("json"),
 	)
 	if err != nil {
@@ -107,7 +108,7 @@ func (p *ElasticSearchPlugin) GetStorageUnits(config *engine.PluginConfig, datab
 		return nil, err
 	}
 
-	res, err := client.Indices.Stats()
+	res, err := client.Indices.Stats(client.Indices.Stats.WithContext(config.OperationContext()))
 	if err != nil {
 		log.WithError(err).Error("Failed to get ElasticSearch indices stats")
 		return nil, err

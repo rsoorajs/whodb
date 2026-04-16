@@ -737,8 +737,8 @@ func (m *Manager) GetRows(schema, storageUnit string, where *model.WhereConditio
 }
 
 // runWithContext runs fn in a goroutine and returns its result, or ctx.Err() if the
-// context is cancelled/times out first. The goroutine is not terminated on context
-// cancellation — only the wait is cancelled.
+// context is cancelled/times out first. Context-aware plugins can use the same
+// request context to cancel the underlying driver work as well.
 func runWithContext[T any](ctx context.Context, fn func() (T, error)) (T, error) {
 	type result struct {
 		data T
@@ -758,6 +758,12 @@ func runWithContext[T any](ctx context.Context, fn func() (T, error)) (T, error)
 	case res := <-ch:
 		return res.data, res.err
 	}
+}
+
+func newPluginConfigWithContext(credentials *engine.Credentials, ctx context.Context) *engine.PluginConfig {
+	pluginConfig := engine.NewPluginConfig(credentials)
+	pluginConfig.Context = ctx
+	return pluginConfig
 }
 
 // ExecuteExplain prepends the appropriate EXPLAIN prefix for the current
@@ -785,8 +791,6 @@ func (m *Manager) ExecuteExplain(query string) (*engine.GetRowsResult, error) {
 }
 
 // ExecuteQueryWithContext executes a query with context support for cancellation and timeout.
-// If the context is cancelled or times out, the function returns immediately with ctx.Err().
-// Note: The underlying database operation may continue running; only the wait is cancelled.
 func (m *Manager) ExecuteQueryWithContext(ctx context.Context, query string) (*engine.GetRowsResult, error) {
 	if m.currentConnection == nil {
 		return nil, fmt.Errorf("not connected to any database")
@@ -803,7 +807,7 @@ func (m *Manager) ExecuteQueryWithContext(ctx context.Context, query string) (*e
 	}
 
 	credentials := m.buildCredentials(m.currentConnection)
-	pluginConfig := engine.NewPluginConfig(credentials)
+	pluginConfig := newPluginConfigWithContext(credentials, ctx)
 
 	start := time.Now()
 	result, err := runWithContext(ctx, func() (*engine.GetRowsResult, error) {
@@ -839,8 +843,6 @@ func (m *Manager) ExecuteQueryWithParams(query string, params []any) (*engine.Ge
 }
 
 // ExecuteQueryWithContextAndParams executes a parameterized query with context support.
-// If the context is cancelled or times out, the function returns immediately with ctx.Err().
-// Note: The underlying database operation may continue running; only the wait is cancelled.
 func (m *Manager) ExecuteQueryWithContextAndParams(ctx context.Context, query string, params []any) (*engine.GetRowsResult, error) {
 	if m.currentConnection == nil {
 		return nil, fmt.Errorf("not connected to any database")
@@ -857,7 +859,7 @@ func (m *Manager) ExecuteQueryWithContextAndParams(ctx context.Context, query st
 	}
 
 	credentials := m.buildCredentials(m.currentConnection)
-	pluginConfig := engine.NewPluginConfig(credentials)
+	pluginConfig := newPluginConfigWithContext(credentials, ctx)
 
 	start := time.Now()
 	result, err := runWithContext(ctx, func() (*engine.GetRowsResult, error) {
@@ -868,8 +870,6 @@ func (m *Manager) ExecuteQueryWithContextAndParams(ctx context.Context, query st
 }
 
 // GetRowsWithContext fetches rows with context support for cancellation and timeout.
-// If the context is cancelled or times out, the function returns immediately with ctx.Err().
-// Note: The underlying database operation may continue running; only the wait is cancelled.
 func (m *Manager) GetRowsWithContext(ctx context.Context, schema, storageUnit string, where *model.WhereCondition, pageSize, pageOffset int) (*engine.GetRowsResult, error) {
 	if m.currentConnection == nil {
 		return nil, fmt.Errorf("not connected to any database")
@@ -882,7 +882,7 @@ func (m *Manager) GetRowsWithContext(ctx context.Context, schema, storageUnit st
 	}
 
 	credentials := m.buildCredentials(m.currentConnection)
-	pluginConfig := engine.NewPluginConfig(credentials)
+	pluginConfig := newPluginConfigWithContext(credentials, ctx)
 
 	start := time.Now()
 	result, err := runWithContext(ctx, func() (*engine.GetRowsResult, error) {
@@ -908,7 +908,7 @@ func (m *Manager) GetSchemasWithContext(ctx context.Context) ([]string, error) {
 	}
 
 	credentials := m.buildCredentials(m.currentConnection)
-	pluginConfig := engine.NewPluginConfig(credentials)
+	pluginConfig := newPluginConfigWithContext(credentials, ctx)
 
 	start := time.Now()
 	result, err := runWithContext(ctx, func() ([]string, error) {
@@ -931,7 +931,7 @@ func (m *Manager) GetStorageUnitsWithContext(ctx context.Context, schema string)
 	}
 
 	credentials := m.buildCredentials(m.currentConnection)
-	pluginConfig := engine.NewPluginConfig(credentials)
+	pluginConfig := newPluginConfigWithContext(credentials, ctx)
 
 	start := time.Now()
 	result, err := runWithContext(ctx, func() ([]engine.StorageUnit, error) {

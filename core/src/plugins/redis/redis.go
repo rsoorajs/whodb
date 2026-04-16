@@ -68,7 +68,7 @@ func (p *RedisPlugin) GetDatabases(config *engine.PluginConfig) ([]string, error
 		dbConfig := *config
 		dbConfig.Credentials.Database = strconv.Itoa(i)
 
-		if p.IsAvailable(context.Background(), &dbConfig) {
+		if p.IsAvailable(config.OperationContext(), &dbConfig) {
 			availableDatabases = append(availableDatabases, strconv.Itoa(i))
 		}
 	}
@@ -83,7 +83,7 @@ func (p *RedisPlugin) GetDatabases(config *engine.PluginConfig) ([]string, error
 }
 
 func (p *RedisPlugin) GetStorageUnits(config *engine.PluginConfig, schema string) ([]engine.StorageUnit, error) {
-	ctx := context.Background()
+	ctx := config.OperationContext()
 
 	client, err := DB(config)
 	if err != nil {
@@ -225,7 +225,7 @@ func (p *RedisPlugin) GetStorageUnits(config *engine.PluginConfig, schema string
 }
 
 func (p *RedisPlugin) StorageUnitExists(config *engine.PluginConfig, schema string, storageUnit string) (bool, error) {
-	ctx := context.Background()
+	ctx := config.OperationContext()
 	client, err := DB(config)
 	if err != nil {
 		return false, err
@@ -245,7 +245,7 @@ func (p *RedisPlugin) GetRows(
 ) (*engine.GetRowsResult, error) {
 	storageUnit := req.StorageUnit
 	where := req.Where
-	ctx := context.Background()
+	ctx := config.OperationContext()
 
 	client, err := DB(config)
 	if err != nil {
@@ -356,7 +356,7 @@ func (p *RedisPlugin) GetRows(
 }
 
 func (p *RedisPlugin) GetRowCount(config *engine.PluginConfig, schema, storageUnit string, where *model.WhereCondition) (int64, error) {
-	ctx := context.Background()
+	ctx := config.OperationContext()
 
 	client, err := DB(config)
 	if err != nil {
@@ -402,7 +402,7 @@ func (p *RedisPlugin) GetRowCount(config *engine.PluginConfig, schema, storageUn
 }
 
 func (p *RedisPlugin) GetColumnsForTable(config *engine.PluginConfig, schema string, storageUnit string) ([]engine.Column, error) {
-	ctx := context.Background()
+	ctx := config.OperationContext()
 
 	client, err := DB(config)
 	if err != nil {

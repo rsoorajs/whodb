@@ -135,7 +135,7 @@ func DB(config *engine.PluginConfig) (*elasticsearch.Client, error) {
 	}
 
 	log.Debug("[ES DB] Pinging Elasticsearch server")
-	res, err := client.Info()
+	res, err := client.Info(client.Info.WithContext(config.OperationContext()))
 	if err != nil || res.IsError() {
 		errMsg := "no error"
 		if err != nil {

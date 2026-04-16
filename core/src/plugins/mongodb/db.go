@@ -35,8 +35,8 @@ import (
 const DefaultOperationTimeout = 30 * time.Second
 
 // opCtx returns a context with a timeout for MongoDB operations.
-func opCtx() (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), DefaultOperationTimeout)
+func opCtx(config *engine.PluginConfig) (context.Context, context.CancelFunc) {
+	return config.OperationContextWithTimeout(DefaultOperationTimeout)
 }
 
 // disconnectClient disconnects a MongoDB client using a fresh short-lived context,
@@ -47,7 +47,7 @@ func disconnectClient(client *mongo.Client) {
 }
 
 func DB(config *engine.PluginConfig) (*mongo.Client, error) {
-	ctx, cancel := opCtx()
+	ctx, cancel := opCtx(config)
 	defer cancel()
 	port, err := strconv.Atoi(common.GetRecordValueOrDefault(config.Credentials.Advanced, "Port", "27017"))
 	if err != nil {

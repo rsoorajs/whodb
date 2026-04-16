@@ -592,6 +592,126 @@ func TestContextTimeout(t *testing.T) {
 	}
 }
 
+type contextCaptureKey string
+
+type contextCapturePlugin struct {
+	engine.BasePlugin
+	rawContext          context.Context
+	rowsContext         context.Context
+	schemasContext      context.Context
+	storageUnitsContext context.Context
+}
+
+func (p *contextCapturePlugin) RawExecute(config *engine.PluginConfig, query string, params ...any) (*engine.GetRowsResult, error) {
+	p.rawContext = config.Context
+	return &engine.GetRowsResult{}, nil
+}
+
+func (p *contextCapturePlugin) GetRows(config *engine.PluginConfig, req *engine.GetRowsRequest) (*engine.GetRowsResult, error) {
+	p.rowsContext = config.Context
+	return &engine.GetRowsResult{}, nil
+}
+
+func (p *contextCapturePlugin) GetAllSchemas(config *engine.PluginConfig) ([]string, error) {
+	p.schemasContext = config.Context
+	return []string{"public"}, nil
+}
+
+func (p *contextCapturePlugin) GetStorageUnits(config *engine.PluginConfig, schema string) ([]engine.StorageUnit, error) {
+	p.storageUnitsContext = config.Context
+	return []engine.StorageUnit{{Name: "users"}}, nil
+}
+
+func newContextCaptureManager(plugin engine.PluginFunctions) *Manager {
+	return &Manager{
+		engine: &engine.Engine{
+			Plugins: []*engine.Plugin{{
+				Type:            engine.DatabaseType_Postgres,
+				PluginFunctions: plugin,
+			}},
+		},
+		currentConnection: &Connection{Type: string(engine.DatabaseType_Postgres)},
+		config:            config.DefaultConfig(),
+		cache:             NewMetadataCache(DefaultCacheTTL),
+	}
+}
+
+func TestExecuteQueryWithContext_PropagatesPluginContext(t *testing.T) {
+	setupTestEnv(t)
+
+	plugin := &contextCapturePlugin{}
+	mgr := newContextCaptureManager(plugin)
+	ctx := context.WithValue(context.Background(), contextCaptureKey("query"), "raw")
+
+	if _, err := mgr.ExecuteQueryWithContext(ctx, "SELECT 1"); err != nil {
+		t.Fatalf("ExecuteQueryWithContext failed: %v", err)
+	}
+
+	if plugin.rawContext == nil {
+		t.Fatal("expected plugin context to be set")
+	}
+	if got := plugin.rawContext.Value(contextCaptureKey("query")); got != "raw" {
+		t.Fatalf("expected propagated context value %q, got %v", "raw", got)
+	}
+}
+
+func TestGetRowsWithContext_PropagatesPluginContext(t *testing.T) {
+	setupTestEnv(t)
+
+	plugin := &contextCapturePlugin{}
+	mgr := newContextCaptureManager(plugin)
+	ctx := context.WithValue(context.Background(), contextCaptureKey("rows"), "rows")
+
+	if _, err := mgr.GetRowsWithContext(ctx, "public", "users", nil, 50, 0); err != nil {
+		t.Fatalf("GetRowsWithContext failed: %v", err)
+	}
+
+	if plugin.rowsContext == nil {
+		t.Fatal("expected plugin context to be set")
+	}
+	if got := plugin.rowsContext.Value(contextCaptureKey("rows")); got != "rows" {
+		t.Fatalf("expected propagated context value %q, got %v", "rows", got)
+	}
+}
+
+func TestGetSchemasWithContext_PropagatesPluginContext(t *testing.T) {
+	setupTestEnv(t)
+
+	plugin := &contextCapturePlugin{}
+	mgr := newContextCaptureManager(plugin)
+	ctx := context.WithValue(context.Background(), contextCaptureKey("schemas"), "schemas")
+
+	if _, err := mgr.GetSchemasWithContext(ctx); err != nil {
+		t.Fatalf("GetSchemasWithContext failed: %v", err)
+	}
+
+	if plugin.schemasContext == nil {
+		t.Fatal("expected plugin context to be set")
+	}
+	if got := plugin.schemasContext.Value(contextCaptureKey("schemas")); got != "schemas" {
+		t.Fatalf("expected propagated context value %q, got %v", "schemas", got)
+	}
+}
+
+func TestGetStorageUnitsWithContext_PropagatesPluginContext(t *testing.T) {
+	setupTestEnv(t)
+
+	plugin := &contextCapturePlugin{}
+	mgr := newContextCaptureManager(plugin)
+	ctx := context.WithValue(context.Background(), contextCaptureKey("storage_units"), "storage_units")
+
+	if _, err := mgr.GetStorageUnitsWithContext(ctx, "public"); err != nil {
+		t.Fatalf("GetStorageUnitsWithContext failed: %v", err)
+	}
+
+	if plugin.storageUnitsContext == nil {
+		t.Fatal("expected plugin context to be set")
+	}
+	if got := plugin.storageUnitsContext.Value(contextCaptureKey("storage_units")); got != "storage_units" {
+		t.Fatalf("expected propagated context value %q, got %v", "storage_units", got)
+	}
+}
+
 // Tests for MetadataCache
 
 func TestMetadataCache_NewCache(t *testing.T) {

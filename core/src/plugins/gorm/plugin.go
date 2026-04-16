@@ -590,7 +590,7 @@ func (p *GormPlugin) ExecuteRawSQL(config *engine.PluginConfig, openMultiStateme
 				return nil, err
 			}
 			// codeql[go/sql-injection]: RawExecute intentionally runs user-authored SQL from the query editor/import flow.
-			_, err = sqlDB.Exec(query)
+			_, err = sqlDB.ExecContext(config.OperationContext(), query)
 			if err != nil {
 				return nil, err
 			}
