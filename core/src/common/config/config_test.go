@@ -30,12 +30,12 @@ func setupTestDir(t *testing.T) (datadir.Options, func()) {
 	t.Helper()
 
 	tempDir := t.TempDir()
-	oldXDG := os.Getenv("XDG_DATA_HOME")
-	os.Setenv("XDG_DATA_HOME", tempDir)
+	t.Setenv("HOME", tempDir)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(tempDir, ".local", "share"))
+	t.Setenv("APPDATA", filepath.Join(tempDir, "AppData", "Roaming"))
 	ResetConfigPath()
 
 	cleanup := func() {
-		os.Setenv("XDG_DATA_HOME", oldXDG)
 		ResetConfigPath()
 	}
 
