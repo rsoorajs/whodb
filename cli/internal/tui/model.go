@@ -48,6 +48,7 @@ const (
 	ViewSchema
 	ViewImport
 	ViewMockData
+	ViewRowWrite
 	ViewBookmarks
 	ViewJSON
 	ViewCmdLog
@@ -83,6 +84,7 @@ type MainModel struct {
 	schemaView     *SchemaView
 	importView     *ImportView
 	mockDataView   *MockDataView
+	rowWriteView   *RowWriteView
 	bookmarksView  *BookmarksView
 	jsonViewer     *JSONViewer
 	cmdLogView     *CmdLogView
@@ -141,6 +143,7 @@ func NewMainModel() *MainModel {
 	m.schemaView = NewSchemaView(m)
 	m.importView = NewImportView(m)
 	m.mockDataView = NewMockDataView(m)
+	m.rowWriteView = NewRowWriteView(m)
 	m.bookmarksView = NewBookmarksView(m)
 	m.jsonViewer = NewJSONViewer(m)
 	m.cmdLogView = NewCmdLogView(m)
@@ -162,6 +165,7 @@ func NewMainModel() *MainModel {
 		ViewSchema:     m.schemaView,
 		ViewImport:     m.importView,
 		ViewMockData:   m.mockDataView,
+		ViewRowWrite:   m.rowWriteView,
 		ViewBookmarks:  m.bookmarksView,
 		ViewJSON:       m.jsonViewer,
 		ViewCmdLog:     m.cmdLogView,
@@ -291,6 +295,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.schemaView, _ = m.schemaView.Update(msg)
 		m.exportView, _ = m.exportView.Update(msg)
 		m.whereView, _ = m.whereView.Update(msg)
+		m.rowWriteView, _ = m.rowWriteView.Update(msg)
 		m.jsonViewer, _ = m.jsonViewer.Update(msg)
 		m.cmdLogView, _ = m.cmdLogView.Update(msg)
 		m.explainView, _ = m.explainView.Update(msg)
@@ -490,6 +495,8 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateImportView(msg)
 	case mockDataAnalysisMsg, mockDataResultMsg:
 		return m.updateMockDataView(msg)
+	case rowWriteResultMsg:
+		return m.updateRowWriteView(msg)
 	case explainResultMsg:
 		return m.updateExplainView(msg)
 	case erdDataLoadedMsg:
@@ -523,6 +530,8 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateImportView(msg)
 	case ViewMockData:
 		return m.updateMockDataView(msg)
+	case ViewRowWrite:
+		return m.updateRowWriteView(msg)
 	case ViewBookmarks:
 		return m.updateBookmarksView(msg)
 	case ViewJSON:
@@ -596,6 +605,12 @@ func (m *MainModel) updateMockDataView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+func (m *MainModel) updateRowWriteView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	m.rowWriteView, cmd = m.rowWriteView.Update(msg)
+	return m, cmd
+}
+
 func (m *MainModel) View() string {
 	if m.err != nil {
 		return renderError(m.err.Error())
@@ -646,6 +661,8 @@ func (m *MainModel) View() string {
 			content = m.importView.View()
 		case ViewMockData:
 			content = m.mockDataView.View()
+		case ViewRowWrite:
+			content = m.rowWriteView.View()
 		case ViewBookmarks:
 			content = m.bookmarksView.View()
 		case ViewJSON:
@@ -706,6 +723,7 @@ func (m *MainModel) isLoading() bool {
 		m.resultsView.loading ||
 		m.mockDataView.analyzing ||
 		m.mockDataView.generating ||
+		m.rowWriteView.working ||
 		m.erdView.loading ||
 		m.auditView.loading
 }
@@ -784,6 +802,8 @@ func (m *MainModel) isHelpSafe() bool {
 		return !m.profilesView.naming
 	case ViewMockData:
 		return false
+	case ViewRowWrite:
+		return false
 	case ViewEditor:
 		// Editor always has text input
 		return false
@@ -821,6 +841,8 @@ func (m *MainModel) renderHelpOverlay() string {
 			Keys.Results.ViewCell,
 			Keys.Results.Where,
 			Keys.Results.Columns,
+			Keys.Results.AddRow,
+			Keys.Results.DeleteRow,
 			Keys.Results.Export,
 			Keys.Global.MockData,
 			Keys.Results.PageSize,
@@ -898,6 +920,10 @@ func (m *MainModel) renderHelpOverlay() string {
 			key.NewBinding(key.WithKeys("a"), key.WithHelp("a", "re-analyze")),
 			Keys.Global.Back,
 		))
+
+	case ViewRowWrite:
+		b.WriteString(styles.RenderKey("Row Write\n\n"))
+		b.WriteString(RenderBindingHelp(rowWriteHelpBindings(m.rowWriteView.action)...))
 
 	case ViewConnection:
 		b.WriteString(styles.RenderKey("Connection View\n\n"))

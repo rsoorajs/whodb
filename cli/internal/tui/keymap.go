@@ -86,6 +86,8 @@ type ResultsKeys struct {
 	PrevPage   key.Binding
 	Where      key.Binding
 	Columns    key.Binding
+	AddRow     key.Binding
+	DeleteRow  key.Binding
 	Export     key.Binding
 	PageSize   key.Binding
 	CustomSize key.Binding
@@ -425,6 +427,14 @@ var Keys = Keymap{
 		Columns: key.NewBinding(
 			key.WithKeys("c"),
 			key.WithHelp("c", "columns"),
+		),
+		AddRow: key.NewBinding(
+			key.WithKeys("a"),
+			key.WithHelp("a", "add row"),
+		),
+		DeleteRow: key.NewBinding(
+			key.WithKeys("d"),
+			key.WithHelp("d", "delete row"),
 		),
 		Export: key.NewBinding(
 			key.WithKeys("e"),

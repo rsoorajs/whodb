@@ -35,6 +35,7 @@ var (
 	_ Pane = (*ChatView)(nil)
 	_ Pane = (*SchemaView)(nil)
 	_ Pane = (*ImportView)(nil)
+	_ Pane = (*RowWriteView)(nil)
 	_ Pane = (*BookmarksView)(nil)
 	_ Pane = (*JSONViewer)(nil)
 	_ Pane = (*CmdLogView)(nil)
@@ -128,11 +129,15 @@ func (v *ResultsView) OnFocus()                        {}
 func (v *ResultsView) OnBlur()                         {}
 func (v *ResultsView) SetCompact(c bool)               { v.compact = c }
 func (v *ResultsView) HelpBindings() []key.Binding {
-	return []key.Binding{
+	bindings := []key.Binding{
 		Keys.Results.NextPage, Keys.Results.ColLeft,
 		Keys.Results.ViewCell, Keys.Results.Where, Keys.Results.Columns,
 		Keys.Results.Export, Keys.Results.PageSize, Keys.Global.Back,
 	}
+	if v.tableName != "" {
+		bindings = append(bindings, Keys.Results.AddRow, Keys.Results.DeleteRow)
+	}
+	return bindings
 }
 
 // ---------------------------------------------------------------------------
@@ -230,6 +235,27 @@ func (v *MockDataView) OnFocus()                        {}
 func (v *MockDataView) OnBlur()                         {}
 func (v *MockDataView) SetCompact(bool)                 {}
 func (v *MockDataView) HelpBindings() []key.Binding     { return nil }
+
+// ---------------------------------------------------------------------------
+// RowWriteView
+// ---------------------------------------------------------------------------
+
+func (v *RowWriteView) UpdatePane(msg tea.Msg) tea.Cmd { _, cmd := v.Update(msg); return cmd }
+func (v *RowWriteView) SetDimensions(width, height int) {
+	v.width = width
+	v.height = height
+	v.applyDimensions()
+}
+func (v *RowWriteView) Focusable() bool { return true }
+func (v *RowWriteView) OnFocus()        { v.syncAddFocus() }
+func (v *RowWriteView) OnBlur() {
+	v.textarea.Blur()
+	for idx := range v.inputs {
+		v.inputs[idx].Blur()
+	}
+}
+func (v *RowWriteView) SetCompact(bool)             {}
+func (v *RowWriteView) HelpBindings() []key.Binding { return rowWriteHelpBindings(v.action) }
 
 // ---------------------------------------------------------------------------
 // JSONViewer

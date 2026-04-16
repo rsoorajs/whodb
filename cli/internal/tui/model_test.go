@@ -253,10 +253,12 @@ func TestViewMode_String(t *testing.T) {
 		ViewColumns,
 		ViewChat,
 		ViewSchema,
+		ViewMockData,
+		ViewRowWrite,
 	}
 
 	for _, mode := range modes {
-		if mode < 0 || mode > ViewSchema {
+		if mode < 0 || mode > ViewProfiles {
 			t.Errorf("Invalid view mode: %v", mode)
 		}
 	}
@@ -336,6 +338,8 @@ func TestMainModel_IsHelpSafe(t *testing.T) {
 		{ViewConnection, func() { m.connectionView.mode = "form" }, false, "ViewConnection unsafe in form mode"},
 		{ViewWhere, func() { m.whereView.addingNew = false }, true, "ViewWhere safe when not adding"},
 		{ViewWhere, func() { m.whereView.addingNew = true }, false, "ViewWhere unsafe when adding"},
+		{ViewMockData, nil, false, "ViewMockData always has text input"},
+		{ViewRowWrite, func() { m.rowWriteView.action = rowWriteActionAdd }, false, "ViewRowWrite add flow has text input"},
 	}
 
 	for _, tt := range tests {
@@ -367,6 +371,8 @@ func TestMainModel_RenderHelpOverlay(t *testing.T) {
 		ViewColumns,
 		ViewWhere,
 		ViewExport,
+		ViewMockData,
+		ViewRowWrite,
 		ViewConnection,
 	}
 
@@ -405,6 +411,16 @@ func (v ViewMode) String() string {
 		"ViewColumns",
 		"ViewChat",
 		"ViewSchema",
+		"ViewImport",
+		"ViewMockData",
+		"ViewRowWrite",
+		"ViewBookmarks",
+		"ViewJSON",
+		"ViewCmdLog",
+		"ViewExplain",
+		"ViewERD",
+		"ViewAudit",
+		"ViewProfiles",
 	}
 	if int(v) < len(names) {
 		return names[v]
