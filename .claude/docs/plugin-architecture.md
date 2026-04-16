@@ -30,6 +30,29 @@ func (p *MySQLPlugin) GetColumnConstraints(...) { /* MySQL-specific */ }
 3. Override in specific plugins as needed
 4. NoSQL plugins should return appropriate errors for SQL-specific features
 
+## Request Context and Cancellation
+
+Every request-scoped plugin operation must use the context carried by `*engine.PluginConfig`. Do not use `context.Background()` for query execution, metadata fetches, SDK calls, or health checks that are part of a user request.
+
+- GORM-based SQL plugins should inherit cancellation and timeout behavior through `plugins.WithConnection()`, `connection_pool.go`, `connection_cache.go`, and `GormPlugin`
+- Direct-driver plugins must use `config.OperationContext()` for request-scoped SDK calls
+- Use `config.OperationContextWithTimeout(...)` when the plugin needs an explicit upper bound for a long-running operation
+- Reserve `context.Background()` for non-request cleanup work such as cache eviction or best-effort disconnects
+- If a plugin talks to a driver directly, add a small local helper so future methods inherit the same context behavior instead of repeating it by hand
+
+```go
+ctx, cancel := config.OperationContextWithTimeout(30 * time.Second)
+defer cancel()
+
+_, err := client.ListTables(ctx, input)
+```
+
+```go
+func queryWithContext(session *gocql.Session, config *engine.PluginConfig, stmt string, values ...any) *gocql.Query {
+    return session.Query(stmt, values...).WithContext(config.OperationContext())
+}
+```
+
 ## Plugin File Organization
 
 SQL-based plugins follow this structure (see `core/src/plugins/postgres/` as reference):
