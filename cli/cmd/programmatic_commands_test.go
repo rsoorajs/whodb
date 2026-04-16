@@ -20,9 +20,106 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/clidey/whodb/cli/internal/config"
+	dbmgr "github.com/clidey/whodb/cli/internal/database"
+	"github.com/clidey/whodb/cli/internal/history"
+	"github.com/spf13/cobra"
 )
+
+type automationEnvelopeResult[T any] struct {
+	Command string `json:"command"`
+	Success bool   `json:"success"`
+	Data    T      `json:"data"`
+}
+
+func setCommandBuffers(t *testing.T, cmd *cobra.Command) (*bytes.Buffer, *bytes.Buffer) {
+	t.Helper()
+
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&errOut)
+	t.Cleanup(func() {
+		cmd.SetOut(os.Stdout)
+		cmd.SetErr(os.Stderr)
+	})
+
+	return &out, &errOut
+}
+
+func decodeJSONEnvelope[T any](t *testing.T, buf *bytes.Buffer) automationEnvelopeResult[T] {
+	t.Helper()
+
+	var envelope automationEnvelopeResult[T]
+	if err := json.Unmarshal(buf.Bytes(), &envelope); err != nil {
+		t.Fatalf("Failed to parse JSON envelope: %v", err)
+	}
+
+	return envelope
+}
+
+func createSQLiteTestDatabase(t *testing.T, filename string, queries ...string) string {
+	t.Helper()
+
+	if err := os.Setenv("WHODB_CLI", "true"); err != nil {
+		t.Fatalf("Failed to set WHODB_CLI: %v", err)
+	}
+
+	dbPath := filepath.Join(t.TempDir(), filename)
+	file, err := os.Create(dbPath)
+	if err != nil {
+		t.Fatalf("Failed to create SQLite file: %v", err)
+	}
+	if err := file.Close(); err != nil {
+		t.Fatalf("Failed to close SQLite file: %v", err)
+	}
+
+	mgr, err := dbmgr.NewManager()
+	if err != nil {
+		t.Fatalf("NewManager failed: %v", err)
+	}
+
+	conn := &config.Connection{
+		Name:     "test-sqlite",
+		Type:     "Sqlite3",
+		Host:     dbPath,
+		Database: dbPath,
+	}
+	if err := mgr.Connect(conn); err != nil {
+		t.Skipf("SQLite not available: %v", err)
+	}
+
+	for _, query := range queries {
+		if _, err := mgr.ExecuteQuery(query); err != nil {
+			_ = mgr.Disconnect()
+			t.Fatalf("Failed to seed SQLite database: %v", err)
+		}
+	}
+
+	if err := mgr.Disconnect(); err != nil {
+		t.Fatalf("Disconnect failed: %v", err)
+	}
+
+	return dbPath
+}
+
+func saveTestConnection(t *testing.T, conn config.Connection) {
+	t.Helper()
+
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig failed: %v", err)
+	}
+
+	cfg.AddConnection(conn)
+	if err := cfg.Save(); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+}
 
 // TestSchemasCmd_Exists verifies the schemas command is registered
 func TestSchemasCmd_Exists(t *testing.T) {
@@ -369,6 +466,123 @@ func TestConnectionsAddAndList(t *testing.T) {
 	}
 }
 
+func TestConnectionsAddCmd_JSONEnvelope(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	connectionsFormat = "json"
+	connectionsQuiet = false
+	connAddName = "json-conn"
+	connAddType = "Postgres"
+	connAddHost = "localhost"
+	connAddPort = 5432
+	connAddUser = "testuser"
+	connAddPassword = "testpass"
+	connAddDatabase = "testdb"
+	connAddSchema = "public"
+
+	outBuf, errBuf := setCommandBuffers(t, connectionsAddCmd)
+
+	err := connectionsAddCmd.RunE(connectionsAddCmd, []string{})
+	if err != nil {
+		t.Fatalf("Failed to add connection: %v", err)
+	}
+
+	envelope := decodeJSONEnvelope[safeConnectionOutput](t, outBuf)
+	if envelope.Command != "connections.add" {
+		t.Errorf("Expected command connections.add, got %q", envelope.Command)
+	}
+	if !envelope.Success {
+		t.Error("Expected success to be true")
+	}
+	if envelope.Data.Name != "json-conn" {
+		t.Errorf("Expected name json-conn, got %q", envelope.Data.Name)
+	}
+	if envelope.Data.Source != "config" {
+		t.Errorf("Expected source config, got %q", envelope.Data.Source)
+	}
+	if errBuf.Len() != 0 {
+		t.Errorf("Expected no stderr output, got %q", errBuf.String())
+	}
+}
+
+func TestConnectionsRemoveCmd_JSONEnvelope(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	saveTestConnection(t, config.Connection{
+		Name:     "remove-me",
+		Type:     "Postgres",
+		Host:     "localhost",
+		Port:     5432,
+		Username: "testuser",
+		Database: "testdb",
+	})
+
+	connectionsFormat = "json"
+	connectionsQuiet = false
+
+	outBuf, errBuf := setCommandBuffers(t, connectionsRemoveCmd)
+
+	err := connectionsRemoveCmd.RunE(connectionsRemoveCmd, []string{"remove-me"})
+	if err != nil {
+		t.Fatalf("Failed to remove connection: %v", err)
+	}
+
+	envelope := decodeJSONEnvelope[struct {
+		Name string `json:"name"`
+	}](t, outBuf)
+	if envelope.Command != "connections.remove" {
+		t.Errorf("Expected command connections.remove, got %q", envelope.Command)
+	}
+	if envelope.Data.Name != "remove-me" {
+		t.Errorf("Expected removed name remove-me, got %q", envelope.Data.Name)
+	}
+	if errBuf.Len() != 0 {
+		t.Errorf("Expected no stderr output, got %q", errBuf.String())
+	}
+}
+
+func TestConnectionsTestCmd_JSONEnvelope(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	dbPath := createSQLiteTestDatabase(t,
+		"connections-test.db",
+		"CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)",
+	)
+	saveTestConnection(t, config.Connection{
+		Name:     "sqlite-json",
+		Type:     "Sqlite3",
+		Host:     dbPath,
+		Database: dbPath,
+	})
+
+	connectionsFormat = "json"
+	connectionsQuiet = false
+
+	outBuf, errBuf := setCommandBuffers(t, connectionsTestCmd)
+
+	err := connectionsTestCmd.RunE(connectionsTestCmd, []string{"sqlite-json"})
+	if err != nil {
+		t.Fatalf("Failed to test connection: %v", err)
+	}
+
+	envelope := decodeJSONEnvelope[connectionTestOutput](t, outBuf)
+	if envelope.Command != "connections.test" {
+		t.Errorf("Expected command connections.test, got %q", envelope.Command)
+	}
+	if envelope.Data.Connection.Name != "sqlite-json" {
+		t.Errorf("Expected connection name sqlite-json, got %q", envelope.Data.Connection.Name)
+	}
+	if envelope.Data.Connection.Type != "Sqlite3" {
+		t.Errorf("Expected type Sqlite3, got %q", envelope.Data.Connection.Type)
+	}
+	if errBuf.Len() != 0 {
+		t.Errorf("Expected no stderr output, got %q", errBuf.String())
+	}
+}
+
 // TestConnectionsRemoveCmd_RequiresArg verifies remove requires a connection name
 func TestConnectionsRemoveCmd_RequiresArg(t *testing.T) {
 	cleanup := setupTestEnv(t)
@@ -652,6 +866,145 @@ func TestHistoryClearCmd_NoError(t *testing.T) {
 	err := historyClearCmd.RunE(historyClearCmd, []string{})
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
+	}
+}
+
+func TestHistoryClearCmd_JSONEnvelope(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	mgr, err := history.NewManager()
+	if err != nil {
+		t.Fatalf("Failed to create history manager: %v", err)
+	}
+	if err := mgr.Add("SELECT 1", true, "sqlite"); err != nil {
+		t.Fatalf("Failed to add history entry: %v", err)
+	}
+	if err := mgr.Add("SELECT 2", true, "sqlite"); err != nil {
+		t.Fatalf("Failed to add history entry: %v", err)
+	}
+
+	historyFormat = "json"
+	historyQuiet = false
+
+	outBuf, errBuf := setCommandBuffers(t, historyClearCmd)
+
+	err = historyClearCmd.RunE(historyClearCmd, []string{})
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	envelope := decodeJSONEnvelope[struct {
+		RemovedCount int `json:"removedCount"`
+	}](t, outBuf)
+	if envelope.Command != "history.clear" {
+		t.Errorf("Expected command history.clear, got %q", envelope.Command)
+	}
+	if envelope.Data.RemovedCount != 2 {
+		t.Errorf("Expected removedCount 2, got %d", envelope.Data.RemovedCount)
+	}
+	if errBuf.Len() != 0 {
+		t.Errorf("Expected no stderr output, got %q", errBuf.String())
+	}
+}
+
+func TestAuditCmd_JSONEnvelope(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	dbPath := createSQLiteTestDatabase(t,
+		"audit-test.db",
+		"CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT)",
+		"INSERT INTO users (id, name, email) VALUES (1, 'Alice', 'alice@example.com')",
+		"INSERT INTO users (id, name, email) VALUES (2, 'Bob', NULL)",
+	)
+
+	auditConnection = ""
+	auditSchema = ""
+	auditTable = "users"
+	auditFormat = "json"
+	auditNullWarning = 0
+	auditNullError = 0
+	auditQuiet = false
+	auditType = "sqlite3"
+	auditDatabase = dbPath
+	auditHost = ""
+	auditPort = 0
+	auditUser = ""
+
+	outBuf, errBuf := setCommandBuffers(t, auditCmd)
+
+	err := auditCmd.RunE(auditCmd, []string{})
+	if err != nil {
+		t.Fatalf("Audit command failed: %v", err)
+	}
+
+	envelope := decodeJSONEnvelope[auditCommandOutput](t, outBuf)
+	if envelope.Command != "audit" {
+		t.Errorf("Expected command audit, got %q", envelope.Command)
+	}
+	if envelope.Data.Summary.TablesScanned != 1 {
+		t.Errorf("Expected 1 table scanned, got %d", envelope.Data.Summary.TablesScanned)
+	}
+	if len(envelope.Data.Results) != 1 {
+		t.Fatalf("Expected 1 audit result, got %d", len(envelope.Data.Results))
+	}
+	if envelope.Data.Results[0].TableName != "users" {
+		t.Errorf("Expected users table audit, got %q", envelope.Data.Results[0].TableName)
+	}
+	if errBuf.Len() != 0 {
+		t.Errorf("Expected no stderr output, got %q", errBuf.String())
+	}
+}
+
+func TestMockDataCmd_Analyze_JSONEnvelope(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	dbPath := createSQLiteTestDatabase(t,
+		"mock-data-test.db",
+		"CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)",
+	)
+	saveTestConnection(t, config.Connection{
+		Name:     "mock-data-json",
+		Type:     "Sqlite3",
+		Host:     dbPath,
+		Database: dbPath,
+	})
+
+	mockDataConnection = "mock-data-json"
+	mockDataSchema = ""
+	mockDataTable = "users"
+	mockDataRows = 3
+	mockDataFormat = "json"
+	mockDataQuiet = false
+	mockDataOverwrite = false
+	mockDataAnalyzeOnly = true
+	mockDataConfirm = false
+	mockDataFKDensityRatio = 0
+
+	outBuf, errBuf := setCommandBuffers(t, mockDataCmd)
+
+	err := mockDataCmd.RunE(mockDataCmd, []string{})
+	if err != nil {
+		t.Fatalf("Mock data command failed: %v", err)
+	}
+
+	envelope := decodeJSONEnvelope[mockDataCommandOutput](t, outBuf)
+	if envelope.Command != "mock-data.analyze" {
+		t.Errorf("Expected command mock-data.analyze, got %q", envelope.Command)
+	}
+	if envelope.Data.StorageUnit != "users" {
+		t.Errorf("Expected storage unit users, got %q", envelope.Data.StorageUnit)
+	}
+	if envelope.Data.RowCount != 3 {
+		t.Errorf("Expected row count 3, got %d", envelope.Data.RowCount)
+	}
+	if envelope.Data.Analysis.TotalRows <= 0 {
+		t.Errorf("Expected analysis totalRows > 0, got %d", envelope.Data.Analysis.TotalRows)
+	}
+	if errBuf.Len() != 0 {
+		t.Errorf("Expected no stderr output, got %q", errBuf.String())
 	}
 }
 

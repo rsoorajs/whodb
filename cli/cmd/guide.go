@@ -289,7 +289,12 @@ PROGRAMMATIC USAGE
   whodb-cli columns -c mydb -t users
   whodb-cli history --format json
   whodb-cli connections list
+  whodb-cli connections test mydb --format json
+  whodb-cli history clear --format json
+  whodb-cli mock-data --connection mydb --table orders --rows 10 --analyze --format json
 
+  Query/list commands emit raw JSON arrays with -f json.
+  Action/analysis commands emit {command, success, data} envelopes.
   Output formats: table, plain, json, csv (use -f flag).
   Pipe-friendly: auto-detects TTY and uses plain format when piped.
 

@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -33,6 +32,22 @@ var (
 	connectionsFormat string
 	connectionsQuiet  bool
 )
+
+type safeConnectionOutput struct {
+	Name     string `json:"name"`
+	Type     string `json:"type"`
+	Host     string `json:"host"`
+	Port     int    `json:"port,omitempty"`
+	Username string `json:"username"`
+	Database string `json:"database"`
+	Schema   string `json:"schema,omitempty"`
+	Source   string `json:"source,omitempty"`
+}
+
+type connectionTestOutput struct {
+	Connection safeConnectionOutput `json:"connection"`
+	SSLStatus  string               `json:"sslStatus,omitempty"`
+}
 
 var connectionsCmd = &cobra.Command{
 	Use:   "connections",
@@ -69,10 +84,8 @@ var connectionsListCmd = &cobra.Command{
 			return err
 		}
 
-		out := output.New(
-			output.WithFormat(format),
-			output.WithQuiet(connectionsQuiet),
-		)
+		quiet := connectionsQuiet || format == output.FormatJSON
+		out := newCommandOutput(cmd, format, quiet)
 
 		mgr, err := dbmgr.NewManager()
 		if err != nil {
@@ -82,7 +95,7 @@ var connectionsListCmd = &cobra.Command{
 		connections := mgr.ListConnectionsWithSource()
 		if len(connections) == 0 {
 			if format == output.FormatJSON {
-				fmt.Println("[]")
+				return writeEmptyJSONArray(cmd)
 			} else {
 				out.Info("No connections available. Create one with:")
 				out.Info("  whodb-cli connect --type postgres --host localhost --user myuser --database mydb --name myconn")
@@ -92,21 +105,10 @@ var connectionsListCmd = &cobra.Command{
 
 		// For JSON, output a clean structure without passwords
 		if format == output.FormatJSON {
-			type safeConnection struct {
-				Name     string `json:"name"`
-				Type     string `json:"type"`
-				Host     string `json:"host"`
-				Port     int    `json:"port,omitempty"`
-				Username string `json:"username"`
-				Database string `json:"database"`
-				Schema   string `json:"schema,omitempty"`
-				Source   string `json:"source"`
-			}
-
-			safeConns := make([]safeConnection, len(connections))
+			safeConns := make([]safeConnectionOutput, len(connections))
 			for i, c := range connections {
 				conn := c.Connection
-				safeConns[i] = safeConnection{
+				safeConns[i] = safeConnectionOutput{
 					Name:     conn.Name,
 					Type:     conn.Type,
 					Host:     conn.Host,
@@ -118,9 +120,7 @@ var connectionsListCmd = &cobra.Command{
 				}
 			}
 
-			encoder := json.NewEncoder(cmd.OutOrStdout())
-			encoder.SetIndent("", "  ")
-			return encoder.Encode(safeConns)
+			return writeCommandJSON(cmd, safeConns)
 		}
 
 		// For table/csv/plain formats
@@ -174,6 +174,11 @@ var connectionsAddCmd = &cobra.Command{
   whodb-cli connections add --name mydb --type Postgres --host localhost --user admin --database myapp --schema public`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
+		format, err := output.ParseFormat(connectionsFormat)
+		if err != nil {
+			return err
+		}
+		quiet := connectionsQuiet || format == output.FormatJSON
 
 		if connAddName == "" {
 			return fmt.Errorf("--name is required")
@@ -193,7 +198,7 @@ var connectionsAddCmd = &cobra.Command{
 			return fmt.Errorf("--database is required")
 		}
 
-		out := output.New(output.WithQuiet(connectionsQuiet))
+		out := newCommandOutput(cmd, format, quiet)
 
 		cfg, err := config.LoadConfig()
 		if err != nil {
@@ -226,6 +231,18 @@ var connectionsAddCmd = &cobra.Command{
 		}
 
 		analytics.TrackConnectionAdd(ctx, conn.Type)
+		if format == output.FormatJSON {
+			return writeAutomationEnvelope(cmd, "connections.add", safeConnectionOutput{
+				Name:     conn.Name,
+				Type:     conn.Type,
+				Host:     conn.Host,
+				Port:     conn.Port,
+				Username: conn.Username,
+				Database: conn.Database,
+				Schema:   conn.Schema,
+				Source:   "config",
+			})
+		}
 		out.Success("Connection %q saved", connAddName)
 		return nil
 	},
@@ -241,7 +258,12 @@ var connectionsRemoveCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 		name := args[0]
-		out := output.New(output.WithQuiet(connectionsQuiet))
+		format, err := output.ParseFormat(connectionsFormat)
+		if err != nil {
+			return err
+		}
+		quiet := connectionsQuiet || format == output.FormatJSON
+		out := newCommandOutput(cmd, format, quiet)
 
 		mgr, err := dbmgr.NewManager()
 		if err != nil {
@@ -270,6 +292,13 @@ var connectionsRemoveCmd = &cobra.Command{
 		}
 
 		analytics.TrackConnectionRemove(ctx)
+		if format == output.FormatJSON {
+			return writeAutomationEnvelope(cmd, "connections.remove", struct {
+				Name string `json:"name"`
+			}{
+				Name: name,
+			})
+		}
 		out.Success("Connection %q removed", name)
 		return nil
 	},
@@ -286,7 +315,12 @@ var connectionsTestCmd = &cobra.Command{
 		ctx := context.Background()
 		startTime := time.Now()
 		name := args[0]
-		out := output.New(output.WithQuiet(connectionsQuiet))
+		format, err := output.ParseFormat(connectionsFormat)
+		if err != nil {
+			return err
+		}
+		quiet := connectionsQuiet || format == output.FormatJSON
+		out := newCommandOutput(cmd, format, quiet)
 
 		mgr, err := dbmgr.NewManager()
 		if err != nil {
@@ -299,7 +333,7 @@ var connectionsTestCmd = &cobra.Command{
 		}
 
 		var spinner *output.Spinner
-		if !connectionsQuiet {
+		if !quiet {
 			spinner = output.NewSpinner(fmt.Sprintf("Testing connection to %s...", conn.Type))
 			spinner.Start()
 		}
@@ -321,6 +355,20 @@ var connectionsTestCmd = &cobra.Command{
 		analytics.TrackConnectionTest(ctx, conn.Type, true, time.Since(startTime).Milliseconds())
 		if spinner != nil {
 			spinner.StopWithSuccess("Connection successful")
+		}
+		if format == output.FormatJSON {
+			return writeAutomationEnvelope(cmd, "connections.test", connectionTestOutput{
+				Connection: safeConnectionOutput{
+					Name:     conn.Name,
+					Type:     conn.Type,
+					Host:     conn.Host,
+					Port:     conn.Port,
+					Username: conn.Username,
+					Database: conn.Database,
+					Schema:   conn.Schema,
+				},
+				SSLStatus: sslSummary,
+			})
 		}
 		out.Success("Successfully connected to %s (%s)", name, conn.Type)
 		if sslSummary != "" {

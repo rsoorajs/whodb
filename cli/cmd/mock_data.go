@@ -18,8 +18,8 @@ package cmd
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -85,11 +85,9 @@ For safety, writes require an explicit connection and either:
 		if format == output.FormatCSV {
 			return fmt.Errorf("csv format is not supported for mock-data")
 		}
+		quiet := mockDataQuiet || format == output.FormatJSON
 
-		out := output.New(
-			output.WithFormat(format),
-			output.WithQuiet(mockDataQuiet),
-		)
+		out := newCommandOutput(cmd, format, quiet)
 
 		mgr, err := dbmgr.NewManager()
 		if err != nil {
@@ -102,7 +100,7 @@ For safety, writes require an explicit connection and either:
 		}
 
 		spinner := output.NewSpinner(fmt.Sprintf("Connecting to %s...", conn.Type))
-		if mockDataQuiet {
+		if quiet {
 			spinner = nil
 		}
 		spinner.Start()
@@ -119,7 +117,7 @@ For safety, writes require an explicit connection and either:
 		}
 
 		spinner = output.NewSpinner("Analyzing mock data dependencies...")
-		if mockDataQuiet {
+		if quiet {
 			spinner = nil
 		}
 		spinner.Start()
@@ -133,11 +131,15 @@ For safety, writes require an explicit connection and either:
 		payload := buildMockDataPayload(conn.Name, schema, mockDataTable, mockDataRows, mockDataOverwrite, mockDataFKDensityRatio, analysis, nil)
 
 		if mockDataAnalyzeOnly {
-			return writeMockDataOutput(format, payload)
+			if format == output.FormatJSON {
+				return writeAutomationEnvelope(cmd, "mock-data.analyze", payload)
+			}
+			printMockDataAnalysis(cmd.OutOrStdout(), payload)
+			return nil
 		}
 
 		if format != output.FormatJSON {
-			printMockDataAnalysis(payload)
+			printMockDataAnalysis(cmd.OutOrStdout(), payload)
 		}
 
 		approved, err := confirmMockDataRun(payload, mockDataConfirm)
@@ -150,7 +152,7 @@ For safety, writes require an explicit connection and either:
 		}
 
 		spinner = output.NewSpinner("Generating mock data...")
-		if mockDataQuiet {
+		if quiet {
 			spinner = nil
 		}
 		spinner.Start()
@@ -164,10 +166,10 @@ For safety, writes require an explicit connection and either:
 		payload.Result = buildMockDataResult(result)
 
 		if format == output.FormatJSON {
-			return writeMockDataOutput(format, payload)
+			return writeAutomationEnvelope(cmd, "mock-data.generate", payload)
 		}
 
-		printMockDataResult(payload)
+		printMockDataResult(cmd.OutOrStdout(), payload)
 		return nil
 	},
 }
@@ -310,66 +312,52 @@ func buildMockDataResult(result *coremockdata.GenerationResult) *mockDataResultO
 	return outputValue
 }
 
-func writeMockDataOutput(format output.Format, payload *mockDataCommandOutput) error {
-	if format != output.FormatJSON {
-		printMockDataAnalysis(payload)
-		if payload.Result != nil {
-			printMockDataResult(payload)
-		}
-		return nil
-	}
-
-	encoder := json.NewEncoder(os.Stdout)
-	encoder.SetIndent("", "  ")
-	return encoder.Encode(payload)
-}
-
-func printMockDataAnalysis(payload *mockDataCommandOutput) {
-	fmt.Fprintf(os.Stdout, "\nMock Data Plan\n")
-	fmt.Fprintf(os.Stdout, "  Connection: %s\n", payload.Connection)
+func printMockDataAnalysis(out io.Writer, payload *mockDataCommandOutput) {
+	fmt.Fprintf(out, "\nMock Data Plan\n")
+	fmt.Fprintf(out, "  Connection: %s\n", payload.Connection)
 	if payload.Schema != "" {
-		fmt.Fprintf(os.Stdout, "  Schema: %s\n", payload.Schema)
+		fmt.Fprintf(out, "  Schema: %s\n", payload.Schema)
 	}
-	fmt.Fprintf(os.Stdout, "  Target: %s\n", payload.StorageUnit)
-	fmt.Fprintf(os.Stdout, "  Requested rows: %d\n", payload.RowCount)
-	fmt.Fprintf(os.Stdout, "  Total rows across dependencies: %d\n", payload.Analysis.TotalRows)
-	fmt.Fprintf(os.Stdout, "  Overwrite existing rows: %t\n", payload.Overwrite)
+	fmt.Fprintf(out, "  Target: %s\n", payload.StorageUnit)
+	fmt.Fprintf(out, "  Requested rows: %d\n", payload.RowCount)
+	fmt.Fprintf(out, "  Total rows across dependencies: %d\n", payload.Analysis.TotalRows)
+	fmt.Fprintf(out, "  Overwrite existing rows: %t\n", payload.Overwrite)
 
 	if len(payload.Analysis.GenerationOrder) > 0 {
-		fmt.Fprintf(os.Stdout, "  Generation order: %s\n", strings.Join(payload.Analysis.GenerationOrder, " -> "))
+		fmt.Fprintf(out, "  Generation order: %s\n", strings.Join(payload.Analysis.GenerationOrder, " -> "))
 	}
 
-	fmt.Fprintln(os.Stdout)
+	fmt.Fprintln(out)
 	for _, tableInfo := range payload.Analysis.Tables {
 		status := "generate"
 		if tableInfo.UsesExistingData {
 			status = "use existing"
 		}
-		fmt.Fprintf(os.Stdout, "  - %-24s %4d rows  [%s]\n", tableInfo.Table, tableInfo.RowsToGenerate, status)
+		fmt.Fprintf(out, "  - %-24s %4d rows  [%s]\n", tableInfo.Table, tableInfo.RowsToGenerate, status)
 	}
 
 	if len(payload.Analysis.Warnings) > 0 {
-		fmt.Fprintln(os.Stdout)
-		fmt.Fprintln(os.Stdout, "Warnings:")
+		fmt.Fprintln(out)
+		fmt.Fprintln(out, "Warnings:")
 		for _, warning := range payload.Analysis.Warnings {
-			fmt.Fprintf(os.Stdout, "  - %s\n", warning)
+			fmt.Fprintf(out, "  - %s\n", warning)
 		}
 	}
-	fmt.Fprintln(os.Stdout)
+	fmt.Fprintln(out)
 }
 
-func printMockDataResult(payload *mockDataCommandOutput) {
+func printMockDataResult(out io.Writer, payload *mockDataCommandOutput) {
 	if payload.Result == nil {
 		return
 	}
 
-	fmt.Fprintf(os.Stdout, "Generated %d rows\n", payload.Result.AmountGenerated)
+	fmt.Fprintf(out, "Generated %d rows\n", payload.Result.AmountGenerated)
 	for _, detail := range payload.Result.Details {
 		mode := "generated"
 		if detail.UsedExistingData {
 			mode = "existing"
 		}
-		fmt.Fprintf(os.Stdout, "  - %-24s %4d rows  [%s]\n", detail.Table, detail.RowsGenerated, mode)
+		fmt.Fprintf(out, "  - %-24s %4d rows  [%s]\n", detail.Table, detail.RowsGenerated, mode)
 	}
 }
 

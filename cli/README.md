@@ -284,6 +284,9 @@ Install paths (bash/zsh rc files updated automatically):
 
 These commands output structured data for scripting, automation, and AI integration.
 
+- Query and list commands such as `query`, `schemas`, `tables`, `columns`, `connections list`, and `history list/search` keep their existing raw JSON array output.
+- Action and analysis commands such as `connections add/remove/test`, `history clear`, `audit`, and `mock-data` return a JSON envelope with `command`, `success`, and `data` when you pass `--format json`.
+
 ### schemas
 
 List database schemas.
@@ -335,13 +338,13 @@ Manage saved connections.
 whodb-cli connections list --format json
 
 # Test a connection
-whodb-cli connections test my-postgres
+whodb-cli connections test my-postgres --format json
 
 # Add a connection
-whodb-cli connections add --name prod --type postgres --host db.example.com --port 5432 --user app --database mydb
+whodb-cli connections add --name prod --type postgres --host db.example.com --port 5432 --user app --database mydb --format json
 
 # Remove a connection
-whodb-cli connections remove prod
+whodb-cli connections remove prod --format json
 ```
 
 Flags (applies to all subcommands):
@@ -385,7 +388,7 @@ whodb-cli history list --limit 20 --format json
 whodb-cli history search "SELECT.*users"
 
 # Clear history
-whodb-cli history clear
+whodb-cli history clear --format json
 ```
 
 Flags:

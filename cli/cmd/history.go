@@ -17,7 +17,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -66,10 +65,8 @@ var historyListCmd = &cobra.Command{
 			return err
 		}
 
-		out := output.New(
-			output.WithFormat(format),
-			output.WithQuiet(historyQuiet),
-		)
+		quiet := historyQuiet || format == output.FormatJSON
+		out := newCommandOutput(cmd, format, quiet)
 
 		mgr, err := history.NewManager()
 		if err != nil {
@@ -80,7 +77,7 @@ var historyListCmd = &cobra.Command{
 		if len(entries) == 0 {
 			out.Info("No query history found")
 			if format == output.FormatJSON {
-				fmt.Println("[]")
+				return writeEmptyJSONArray(cmd)
 			}
 			return nil
 		}
@@ -92,9 +89,7 @@ var historyListCmd = &cobra.Command{
 
 		// For JSON, output structured data
 		if format == output.FormatJSON {
-			encoder := json.NewEncoder(cmd.OutOrStdout())
-			encoder.SetIndent("", "  ")
-			return encoder.Encode(entries)
+			return writeCommandJSON(cmd, entries)
 		}
 
 		// For table/csv/plain formats
@@ -150,10 +145,8 @@ var historySearchCmd = &cobra.Command{
 			return err
 		}
 
-		out := output.New(
-			output.WithFormat(format),
-			output.WithQuiet(historyQuiet),
-		)
+		quiet := historyQuiet || format == output.FormatJSON
+		out := newCommandOutput(cmd, format, quiet)
 
 		mgr, err := history.NewManager()
 		if err != nil {
@@ -186,7 +179,7 @@ var historySearchCmd = &cobra.Command{
 		if len(matches) == 0 {
 			out.Info("No matching queries found")
 			if format == output.FormatJSON {
-				fmt.Println("[]")
+				return writeEmptyJSONArray(cmd)
 			}
 			return nil
 		}
@@ -198,9 +191,7 @@ var historySearchCmd = &cobra.Command{
 
 		// For JSON, output structured data
 		if format == output.FormatJSON {
-			encoder := json.NewEncoder(cmd.OutOrStdout())
-			encoder.SetIndent("", "  ")
-			return encoder.Encode(matches)
+			return writeCommandJSON(cmd, matches)
 		}
 
 		// For table/csv/plain formats
@@ -245,17 +236,30 @@ var historyClearCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		out := output.New(output.WithQuiet(historyQuiet))
+		format, err := output.ParseFormat(historyFormat)
+		if err != nil {
+			return err
+		}
+		quiet := historyQuiet || format == output.FormatJSON
+		out := newCommandOutput(cmd, format, quiet)
 
 		mgr, err := history.NewManager()
 		if err != nil {
 			return fmt.Errorf("cannot load history: %w", err)
 		}
 
+		removedCount := len(mgr.GetAll())
 		if err := mgr.Clear(); err != nil {
 			return fmt.Errorf("failed to clear history: %w", err)
 		}
 
+		if format == output.FormatJSON {
+			return writeAutomationEnvelope(cmd, "history.clear", struct {
+				RemovedCount int `json:"removedCount"`
+			}{
+				RemovedCount: removedCount,
+			})
+		}
 		out.Success("History cleared")
 		return nil
 	},
