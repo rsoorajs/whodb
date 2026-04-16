@@ -664,6 +664,29 @@ func TestResultsView_View_TableData(t *testing.T) {
 	}
 }
 
+func TestResultsView_View_ShowsERDiagramShortcut(t *testing.T) {
+	v, cleanup := setupResultsViewTest(t)
+	defer cleanup()
+
+	v.width = 220
+	v.query = ""
+	v.schema = "public"
+	v.tableName = "users"
+	v.results = &engine.GetRowsResult{
+		Columns: []engine.Column{{Name: "id", Type: "integer"}},
+		Rows:    [][]string{{"1"}},
+	}
+	v.totalRows = 1
+
+	view := v.View()
+	if !strings.Contains(view, Keys.Global.ERDiagram.Help().Key) {
+		t.Fatalf("expected results help to show %q, got: %s", Keys.Global.ERDiagram.Help().Key, view)
+	}
+	if !strings.Contains(view, Keys.Global.Help.Help().Key) {
+		t.Fatalf("expected results help to show %q, got: %s", Keys.Global.Help.Help().Key, view)
+	}
+}
+
 func TestResultsView_View_NoResults(t *testing.T) {
 	v, cleanup := setupResultsViewTest(t)
 	defer cleanup()

@@ -25,29 +25,32 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/clidey/whodb/cli/pkg/styles"
+	"github.com/clidey/whodb/core/src/engine"
 )
 
-// erdDataLoadedMsg is sent when the ERD data (tables + columns) has been loaded.
+// erdDataLoadedMsg is sent when the ERD data has been loaded.
 type erdDataLoadedMsg struct {
-	tables []tableWithColumns
-	err    error
-	schema string
+	tables            []tableWithColumns
+	err               error
+	schema            string
+	relationshipCount int
 }
 
 // ERDView renders an entity-relationship diagram using Unicode box-drawing characters.
 // It shows tables, their columns, and foreign key annotations. Accessible via Ctrl+K.
 type ERDView struct {
-	parent       *MainModel
-	tables       []tableWithColumns
-	loading      bool
-	err          error
-	compact      bool
-	focusedIndex int
-	viewport     viewport.Model
-	width        int
-	height       int
-	ready        bool
-	schema       string
+	parent            *MainModel
+	tables            []tableWithColumns
+	loading           bool
+	err               error
+	compact           bool
+	focusedIndex      int
+	viewport          viewport.Model
+	width             int
+	height            int
+	ready             bool
+	schema            string
+	relationshipCount int
 }
 
 // NewERDView creates a new ERDView attached to the given parent model.
@@ -70,6 +73,7 @@ func (v *ERDView) Update(msg tea.Msg) (*ERDView, tea.Cmd) {
 		}
 		v.tables = msg.tables
 		v.schema = msg.schema
+		v.relationshipCount = msg.relationshipCount
 		v.focusedIndex = 0
 		v.rebuildViewport()
 		return v, nil
@@ -139,7 +143,7 @@ func (v *ERDView) View() string {
 	}
 
 	if v.loading {
-		b.WriteString(v.parent.SpinnerView() + styles.RenderMuted(" Loading tables..."))
+		b.WriteString(v.parent.SpinnerView() + styles.RenderMuted(" Loading graph..."))
 		b.WriteString("\n\n")
 		b.WriteString(RenderBindingHelpWidth(v.width, Keys.Global.Back))
 		return lipgloss.NewStyle().Padding(1, 2).Render(b.String())
@@ -161,7 +165,7 @@ func (v *ERDView) View() string {
 	if v.compact {
 		modeLabel = "compact"
 	}
-	summary := fmt.Sprintf("%d tables (%s) — focused: %s", len(v.tables), modeLabel, focusedName)
+	summary := fmt.Sprintf("%d tables, %d relationships (%s) — focused: %s", len(v.tables), v.relationshipCount, modeLabel, focusedName)
 	b.WriteString(styles.RenderMuted(summary))
 	b.WriteString("\n\n")
 
@@ -198,7 +202,7 @@ func (v *ERDView) View() string {
 	return lipgloss.NewStyle().Padding(1, 2).Render(b.String())
 }
 
-// loadERDData returns a tea.Cmd that fetches all tables and their columns.
+// loadERDData returns a tea.Cmd that fetches graph data and the columns for each unit.
 func (v *ERDView) loadERDData() tea.Cmd {
 	browserSchema := v.parent.browserView.currentSchema
 
@@ -219,24 +223,20 @@ func (v *ERDView) loadERDData() tea.Cmd {
 			}
 		}
 
-		units, err := v.parent.dbManager.GetStorageUnits(schema)
+		graphUnits, err := v.parent.dbManager.GetGraph(schema)
 		if err != nil {
-			return erdDataLoadedMsg{err: fmt.Errorf("failed to get tables: %w", err)}
+			return erdDataLoadedMsg{err: fmt.Errorf("failed to get graph data: %w", err)}
 		}
 
-		var tables []tableWithColumns
-		for _, unit := range units {
-			columns, err := v.parent.dbManager.GetColumns(schema, unit.Name)
-			if err != nil {
-				continue
-			}
-			tables = append(tables, tableWithColumns{
-				StorageUnit: unit,
-				Columns:     columns,
-			})
-		}
+		tables := buildERDTablesFromGraph(graphUnits, func(storageUnit string) ([]engine.Column, error) {
+			return v.parent.dbManager.GetColumns(schema, storageUnit)
+		})
 
-		return erdDataLoadedMsg{tables: tables, schema: schema}
+		return erdDataLoadedMsg{
+			tables:            tables,
+			schema:            schema,
+			relationshipCount: countGraphRelationships(graphUnits),
+		}
 	}
 }
 

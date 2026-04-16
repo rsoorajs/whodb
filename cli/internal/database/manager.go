@@ -686,6 +686,31 @@ func (m *Manager) GetStorageUnits(schema string) ([]engine.StorageUnit, error) {
 	return tables, nil
 }
 
+// GetGraph returns graph visualization data for the current schema.
+func (m *Manager) GetGraph(schema string) ([]engine.GraphUnit, error) {
+	if m.currentConnection == nil {
+		return nil, fmt.Errorf("not connected to any database")
+	}
+
+	dbType := engine.DatabaseType(m.currentConnection.Type)
+	plugin := m.engine.Choose(dbType)
+	if plugin == nil {
+		return nil, fmt.Errorf("plugin not found")
+	}
+
+	credentials := m.buildCredentials(m.currentConnection)
+	pluginConfig := engine.NewPluginConfig(credentials)
+
+	start := time.Now()
+	graphUnits, err := plugin.GetGraph(pluginConfig, schema)
+	m.logOperation(fmt.Sprintf("GetGraph(%s)", schema), start, len(graphUnits), err)
+	if err != nil {
+		return nil, err
+	}
+
+	return graphUnits, nil
+}
+
 func (m *Manager) ExecuteQuery(query string) (*engine.GetRowsResult, error) {
 	if m.currentConnection == nil {
 		return nil, fmt.Errorf("not connected to any database")

@@ -764,7 +764,7 @@ func (v *ConnectionView) renderForm() string {
 	}
 	helpText := ""
 	if len(v.parent.config.Connections) > 0 {
-		helpText = styles.RenderHelpWidth(helpWidth,
+		helpText = renderFooterHelpPairsWidthNoHelp(helpWidth,
 			Keys.ConnectionForm.Navigate.Help().Key, Keys.ConnectionForm.Navigate.Help().Desc,
 			Keys.ConnectionForm.TypeLeft.Help().Key, Keys.ConnectionForm.TypeLeft.Help().Desc,
 			Keys.ConnectionForm.ConnectForm.Help().Key, Keys.ConnectionForm.ConnectForm.Help().Desc,
@@ -773,7 +773,7 @@ func (v *ConnectionView) renderForm() string {
 			Keys.Global.Quit.Help().Key, Keys.Global.Quit.Help().Desc,
 		)
 	} else {
-		helpText = styles.RenderHelpWidth(helpWidth,
+		helpText = renderFooterHelpPairsWidthNoHelp(helpWidth,
 			Keys.ConnectionForm.Navigate.Help().Key, Keys.ConnectionForm.Navigate.Help().Desc,
 			Keys.ConnectionForm.TypeLeft.Help().Key, Keys.ConnectionForm.TypeLeft.Help().Desc,
 			Keys.ConnectionForm.ConnectForm.Help().Key, Keys.ConnectionForm.ConnectForm.Help().Desc,

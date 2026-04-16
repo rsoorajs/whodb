@@ -96,7 +96,7 @@ func (v *JSONViewer) View() string {
 	b.WriteString(v.viewport.View())
 	b.WriteString("\n\n")
 
-	b.WriteString(styles.RenderHelp(
+	b.WriteString(renderFooterHelpPairsWidth(v.width,
 		"↑/↓", "scroll",
 		"esc", "close",
 	))

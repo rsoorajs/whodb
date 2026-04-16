@@ -451,7 +451,7 @@ func (v *BrowserView) View() string {
 				Keys.Global.Back,
 			))
 		} else if v.filtering {
-			b.WriteString(RenderBindingHelpWidth(v.width,
+			b.WriteString(renderBindingHelpWidthNoHelp(v.width,
 				Keys.Filter.CancelFilter,
 				Keys.Filter.ApplyFilter,
 			))
@@ -471,6 +471,7 @@ func (v *BrowserView) View() string {
 				Keys.Browser.Editor,
 				Keys.Browser.AIChat,
 				Keys.Browser.History,
+				Keys.Global.ERDiagram,
 				Keys.Global.MockData,
 				Keys.Browser.Refresh,
 				Keys.Global.NextView,

@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/clidey/whodb/cli/internal/config"
 	"github.com/clidey/whodb/cli/internal/tui/layout"
 )
@@ -212,6 +213,24 @@ func TestGlobalHelpBar_ContainsGlobalShortcuts(t *testing.T) {
 	}
 	if !strings.Contains(helpBar, "layout") {
 		t.Error("Global help bar should contain 'layout'")
+	}
+}
+
+func TestMultiPaneRender_PreservesWrappedGlobalHelpBar(t *testing.T) {
+	m := setupConnectedModel(t, 90, 22)
+	m.mode = ViewBrowser
+
+	helpBar := m.renderGlobalHelpBar()
+	if lipgloss.Height(helpBar) <= 2 {
+		t.Fatalf("expected wrapped global help bar height > 2 at narrow width, got %d", lipgloss.Height(helpBar))
+	}
+
+	output := m.View()
+	if !strings.Contains(output, Keys.Global.Quit.Help().Desc) {
+		t.Fatalf("expected wrapped multi-pane output to include %q, got: %s", Keys.Global.Quit.Help().Desc, output)
+	}
+	if !strings.Contains(output, Keys.Global.Help.Help().Desc) {
+		t.Fatalf("expected wrapped multi-pane output to include %q, got: %s", Keys.Global.Help.Help().Desc, output)
 	}
 }
 

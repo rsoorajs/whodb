@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/clidey/whodb/cli/internal/config"
+	"github.com/clidey/whodb/core/src/engine"
 )
 
 func TestSQLiteIntegration(t *testing.T) {
@@ -128,6 +129,84 @@ func TestSQLiteIntegration(t *testing.T) {
 
 	if mgr.GetCurrentConnection() != nil {
 		t.Error("Expected current connection to be nil after disconnect")
+	}
+}
+
+func TestSQLiteGetGraphIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test")
+	}
+
+	setupTestEnv(t)
+	tempDir := t.TempDir()
+	dbPath := tempDir + "/graph.db"
+
+	mgr, err := NewManager()
+	if err != nil {
+		t.Fatalf("NewManager failed: %v", err)
+	}
+
+	conn := &config.Connection{
+		Name:     "test-sqlite-graph",
+		Type:     "Sqlite",
+		Host:     dbPath,
+		Database: dbPath,
+	}
+
+	if err := mgr.Connect(conn); err != nil {
+		t.Skipf("Skipping test - database plugin not available: %v", err)
+	}
+
+	_, err = mgr.ExecuteQuery("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
+	if err != nil {
+		t.Fatalf("Create users table failed: %v", err)
+	}
+
+	_, err = mgr.ExecuteQuery("CREATE TABLE orders (id INTEGER PRIMARY KEY, user_id INTEGER REFERENCES users(id), total REAL)")
+	if err != nil {
+		t.Fatalf("Create orders table failed: %v", err)
+	}
+
+	graphUnits, err := mgr.GetGraph("")
+	if err != nil {
+		t.Fatalf("GetGraph failed: %v", err)
+	}
+
+	if len(graphUnits) < 2 {
+		t.Fatalf("expected at least two graph units, got %d", len(graphUnits))
+	}
+
+	var usersGraphUnit *engine.GraphUnit
+	for i := range graphUnits {
+		if graphUnits[i].Unit.Name == "users" {
+			usersGraphUnit = &graphUnits[i]
+			break
+		}
+	}
+
+	if usersGraphUnit == nil {
+		t.Fatal("expected users graph unit")
+	}
+
+	var ordersRelation *engine.GraphUnitRelationship
+	for i := range usersGraphUnit.Relations {
+		if usersGraphUnit.Relations[i].Name == "orders" {
+			ordersRelation = &usersGraphUnit.Relations[i]
+			break
+		}
+	}
+
+	if ordersRelation == nil {
+		t.Fatal("expected users -> orders relation in graph output")
+	}
+	if ordersRelation.RelationshipType != "OneToMany" {
+		t.Fatalf("expected OneToMany relation, got %q", ordersRelation.RelationshipType)
+	}
+	if ordersRelation.SourceColumn == nil || *ordersRelation.SourceColumn != "user_id" {
+		t.Fatalf("expected source column user_id, got %#v", ordersRelation.SourceColumn)
+	}
+	if ordersRelation.TargetColumn == nil || *ordersRelation.TargetColumn != "id" {
+		t.Fatalf("expected target column id, got %#v", ordersRelation.TargetColumn)
 	}
 }
 

@@ -506,7 +506,7 @@ func (v *ExportView) View() string {
 	b.WriteString("\n\n")
 
 	// Help text
-	b.WriteString(RenderBindingHelpWidth(v.width,
+	b.WriteString(renderBindingHelpWidthNoHelp(v.width,
 		Keys.Export.Prev,
 		Keys.Export.Next,
 		Keys.Export.OptionLeft,

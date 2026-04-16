@@ -447,7 +447,7 @@ func (v *ResultsView) View() string {
 			}
 
 			// Use static bindings for most items, but dynamic labels for where/columns/back
-			b.WriteString(styles.RenderHelp(
+			b.WriteString(renderFooterHelpPairsWidth(v.width,
 				Keys.Results.Up.Help().Key, Keys.Results.Up.Help().Desc,
 				Keys.Results.Down.Help().Key, Keys.Results.Down.Help().Desc,
 				Keys.Results.ColLeft.Help().Key, Keys.Results.ColLeft.Help().Desc,
@@ -458,6 +458,7 @@ func (v *ResultsView) View() string {
 				Keys.Results.Columns.Help().Key, columnsLabel,
 				Keys.Results.AddRow.Help().Key, Keys.Results.AddRow.Help().Desc,
 				Keys.Results.Export.Help().Key, Keys.Results.Export.Help().Desc,
+				Keys.Global.ERDiagram.Help().Key, Keys.Global.ERDiagram.Help().Desc,
 				Keys.Global.MockData.Help().Key, Keys.Global.MockData.Help().Desc,
 				Keys.Results.NextPage.Help().Key, Keys.Results.NextPage.Help().Desc,
 				Keys.Results.PageSize.Help().Key, Keys.Results.PageSize.Help().Desc,
@@ -466,18 +467,18 @@ func (v *ResultsView) View() string {
 			))
 			if v.results != nil && !v.results.DisableUpdate {
 				b.WriteString("\n")
-				b.WriteString(styles.RenderHelp(
+				b.WriteString(renderFooterHelpPairsWidthNoHelp(v.width,
 					Keys.Results.EditRow.Help().Key, Keys.Results.EditRow.Help().Desc,
 					Keys.Results.DeleteRow.Help().Key, Keys.Results.DeleteRow.Help().Desc,
 				))
 			} else {
 				b.WriteString("\n")
-				b.WriteString(styles.RenderHelp(
+				b.WriteString(renderFooterHelpPairsWidthNoHelp(v.width,
 					Keys.Results.DeleteRow.Help().Key, Keys.Results.DeleteRow.Help().Desc,
 				))
 			}
 		} else {
-			b.WriteString(styles.RenderHelp(
+			b.WriteString(renderFooterHelpPairsWidth(v.width,
 				Keys.Results.Up.Help().Key, Keys.Results.Up.Help().Desc,
 				Keys.Results.Down.Help().Key, Keys.Results.Down.Help().Desc,
 				Keys.Results.ColLeft.Help().Key, Keys.Results.ColLeft.Help().Desc,
@@ -485,6 +486,7 @@ func (v *ResultsView) View() string {
 				"scroll", "trackpad/mouse",
 				Keys.Results.ViewCell.Help().Key, Keys.Results.ViewCell.Help().Desc,
 				Keys.Results.Export.Help().Key, Keys.Results.Export.Help().Desc,
+				Keys.Global.ERDiagram.Help().Key, Keys.Global.ERDiagram.Help().Desc,
 				Keys.Global.MockData.Help().Key, Keys.Global.MockData.Help().Desc,
 				Keys.Results.NextPage.Help().Key, Keys.Results.NextPage.Help().Desc,
 				Keys.Results.PageSize.Help().Key, Keys.Results.PageSize.Help().Desc,

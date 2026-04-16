@@ -799,10 +799,70 @@ func RenderBindingHelp(bindings ...key.Binding) string {
 }
 
 func RenderBindingHelpWidth(width int, bindings ...key.Binding) string {
+	return renderBindingHelpWidth(width, true, bindings...)
+}
+
+func renderBindingHelpWidthNoHelp(width int, bindings ...key.Binding) string {
+	return renderBindingHelpWidth(width, false, bindings...)
+}
+
+func renderFooterHelpPairsWidth(width int, keys ...string) string {
+	return renderHelpPairsWidth(width, true, keys...)
+}
+
+func renderFooterHelpPairsWidthNoHelp(width int, keys ...string) string {
+	return renderHelpPairsWidth(width, false, keys...)
+}
+
+func renderBindingHelpWidth(width int, includeHelp bool, bindings ...key.Binding) string {
+	if includeHelp {
+		bindings = appendHelpBinding(bindings)
+	}
+
 	var pairs []string
 	for _, b := range bindings {
 		h := b.Help()
 		pairs = append(pairs, h.Key, h.Desc)
 	}
-	return styles.RenderHelpWidth(width, pairs...)
+	return renderHelpPairsWidth(width, false, pairs...)
+}
+
+func renderHelpPairsWidth(width int, includeHelp bool, keys ...string) string {
+	if width <= 0 {
+		width = 80
+	}
+	if includeHelp {
+		keys = appendHelpPair(keys)
+	}
+	return styles.RenderHelpWidth(width, keys...)
+}
+
+func appendHelpBinding(bindings []key.Binding) []key.Binding {
+	helpKey := Keys.Global.Help.Help().Key
+	for _, binding := range bindings {
+		if binding.Help().Key == helpKey {
+			return bindings
+		}
+	}
+
+	result := make([]key.Binding, 0, len(bindings)+1)
+	result = append(result, bindings...)
+	result = append(result, Keys.Global.Help)
+	return result
+}
+
+func appendHelpPair(keys []string) []string {
+	if len(keys) >= 2 {
+		helpKey := Keys.Global.Help.Help().Key
+		for i := 0; i+1 < len(keys); i += 2 {
+			if keys[i] == helpKey {
+				return keys
+			}
+		}
+	}
+
+	result := make([]string, 0, len(keys)+2)
+	result = append(result, keys...)
+	result = append(result, Keys.Global.Help.Help().Key, Keys.Global.Help.Help().Desc)
+	return result
 }

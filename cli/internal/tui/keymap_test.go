@@ -55,6 +55,24 @@ func TestRenderBindingHelp_MultipleBindings(t *testing.T) {
 	}
 }
 
+func TestRenderBindingHelpWidth_AppendsGlobalHelp(t *testing.T) {
+	b := key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "confirm"))
+	result := RenderBindingHelpWidth(80, b)
+
+	if !strings.Contains(result, Keys.Global.Help.Help().Key) {
+		t.Fatalf("expected width-aware footer help to include %q, got %q", Keys.Global.Help.Help().Key, result)
+	}
+}
+
+func TestRenderBindingHelpWidthNoHelp_DoesNotAppendGlobalHelp(t *testing.T) {
+	b := key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "confirm"))
+	result := renderBindingHelpWidthNoHelp(80, b)
+
+	if strings.Contains(result, Keys.Global.Help.Help().Key) {
+		t.Fatalf("did not expect no-help footer renderer to include %q, got %q", Keys.Global.Help.Help().Key, result)
+	}
+}
+
 func TestKeys_GlobalBindings(t *testing.T) {
 	// Verify global bindings have help text
 	h := Keys.Global.Quit.Help()

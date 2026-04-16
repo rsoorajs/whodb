@@ -452,7 +452,7 @@ func (v *EditorView) View() string {
 			Keys.Global.Back,
 			Keys.Global.Quit,
 		)
-		b.WriteString(RenderBindingHelpWidth(v.width, bindings...))
+		b.WriteString(renderBindingHelpWidthNoHelp(v.width, bindings...))
 	}
 
 	return lipgloss.NewStyle().Padding(1, 2).Render(b.String())

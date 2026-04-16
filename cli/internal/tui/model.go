@@ -626,14 +626,18 @@ func (m *MainModel) View() string {
 	var content string
 
 	if m.useMultiPane() && m.layoutRoot != nil {
-		// Multi-pane layout rendering (reserve 2 rows for the global help bar)
-		helpBarHeight := 2
+		// Multi-pane layout rendering with a footer that may wrap to multiple lines.
+		helpBar := m.renderGlobalHelpBar()
+		helpBarHeight := lipgloss.Height(helpBar)
+		if helpBarHeight < 1 {
+			helpBarHeight = 1
+		}
 		contentH := m.layoutContentHeight() - helpBarHeight
 		if contentH < MinPaneHeight {
 			contentH = MinPaneHeight
 		}
 		m.layoutRoot.Layout(0, 0, m.width, contentH)
-		content = m.layoutRoot.View() + "\n" + m.renderGlobalHelpBar()
+		content = m.layoutRoot.View() + "\n" + helpBar
 	} else {
 		// Single-pane rendering (original behavior)
 		switch m.mode {
@@ -827,6 +831,7 @@ func (m *MainModel) renderHelpOverlay() string {
 			Keys.Browser.Editor,
 			Keys.Browser.AIChat,
 			Keys.Browser.History,
+			Keys.Global.ERDiagram,
 			Keys.Global.MockData,
 			Keys.Browser.Filter,
 			Keys.Browser.Select,
@@ -845,6 +850,7 @@ func (m *MainModel) renderHelpOverlay() string {
 			Keys.Results.EditRow,
 			Keys.Results.DeleteRow,
 			Keys.Results.Export,
+			Keys.Global.ERDiagram,
 			Keys.Global.MockData,
 			Keys.Results.PageSize,
 			Keys.Results.CustomSize,
@@ -1094,7 +1100,10 @@ func (m *MainModel) renderGlobalHelpBar() string {
 		Keys.Browser.Disconnect,
 		Keys.Global.Quit,
 	)
-	return " " + RenderBindingHelpWidth(m.width, bindings...)
+	if m.isHelpSafe() {
+		return " " + RenderBindingHelpWidth(m.width, bindings...)
+	}
+	return " " + renderBindingHelpWidthNoHelp(m.width, bindings...)
 }
 
 // initLayout sets up the initial layout based on terminal width.

@@ -406,6 +406,41 @@ func TestBrowserView_View_SchemaSelectionHelp(t *testing.T) {
 	}
 }
 
+func TestBrowserView_View_ShowsERDiagramShortcut(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test")
+	}
+
+	v, cleanup := setupBrowserViewTest(t)
+	defer cleanup()
+
+	dbPath := t.TempDir() + "/test.db"
+	conn := &config.Connection{
+		Name:     "test",
+		Type:     "Sqlite",
+		Host:     dbPath,
+		Database: dbPath,
+	}
+
+	if err := v.parent.dbManager.Connect(conn); err != nil {
+		t.Skipf("Skipping test - database plugin not available: %v", err)
+	}
+
+	v.width = 220
+	v.height = 40
+	v.loading = false
+	v.tables = []engine.StorageUnit{{Name: "users"}}
+	v.filteredTables = v.tables
+
+	view := v.View()
+	if !strings.Contains(view, Keys.Global.ERDiagram.Help().Key) {
+		t.Fatalf("expected browser help to show %q, got: %s", Keys.Global.ERDiagram.Help().Key, view)
+	}
+	if !strings.Contains(view, Keys.Global.Help.Help().Key) {
+		t.Fatalf("expected browser help to show %q, got: %s", Keys.Global.Help.Help().Key, view)
+	}
+}
+
 func TestBrowserView_MouseScroll(t *testing.T) {
 	v, cleanup := setupBrowserViewTest(t)
 	defer cleanup()

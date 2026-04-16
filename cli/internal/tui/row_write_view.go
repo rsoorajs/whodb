@@ -367,7 +367,7 @@ func (v *RowWriteView) View() string {
 	}
 
 	b.WriteString("\n\n")
-	b.WriteString(RenderBindingHelpWidth(v.width, rowWriteHelpBindings(v.action)...))
+	b.WriteString(renderBindingHelpWidthNoHelp(v.width, rowWriteHelpBindings(v.action)...))
 
 	return lipgloss.NewStyle().Padding(1, 2).Render(b.String())
 }
@@ -511,7 +511,7 @@ func (v *RowWriteView) renderStructuredAddPreview(start, end int) string {
 	}
 
 	b.WriteString("\n\n")
-	b.WriteString(RenderBindingHelpWidth(v.width, rowWriteHelpBindings(v.action)...))
+	b.WriteString(renderBindingHelpWidthNoHelp(v.width, rowWriteHelpBindings(v.action)...))
 
 	return lipgloss.NewStyle().Padding(1, 2).Render(b.String())
 }
