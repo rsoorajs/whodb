@@ -261,6 +261,21 @@ func (v *ResultsView) Update(msg tea.Msg) (*ResultsView, tea.Cmd) {
 				return v, nil
 			}
 
+		case key.Matches(msg, Keys.Results.EditRow):
+			if v.tableName != "" && v.results != nil && !v.results.DisableUpdate {
+				pageRows := v.currentPageRows()
+				cursor := v.table.Cursor()
+				if cursor < 0 && len(pageRows) > 0 {
+					cursor = 0
+				}
+				if cursor >= 0 && cursor < len(pageRows) {
+					v.parent.suspendLayout()
+					v.parent.rowWriteView.SetEditContext(v.schema, v.tableName, v.results.Columns, v.selectedRowValues(pageRows, cursor))
+					v.parent.PushView(ViewRowWrite)
+					return v, nil
+				}
+			}
+
 		case key.Matches(msg, Keys.Results.DeleteRow):
 			if v.tableName != "" && v.results != nil {
 				pageRows := v.currentPageRows()
@@ -442,7 +457,6 @@ func (v *ResultsView) View() string {
 				Keys.Results.Where.Help().Key, whereLabel,
 				Keys.Results.Columns.Help().Key, columnsLabel,
 				Keys.Results.AddRow.Help().Key, Keys.Results.AddRow.Help().Desc,
-				Keys.Results.DeleteRow.Help().Key, Keys.Results.DeleteRow.Help().Desc,
 				Keys.Results.Export.Help().Key, Keys.Results.Export.Help().Desc,
 				Keys.Global.MockData.Help().Key, Keys.Global.MockData.Help().Desc,
 				Keys.Results.NextPage.Help().Key, Keys.Results.NextPage.Help().Desc,
@@ -450,6 +464,18 @@ func (v *ResultsView) View() string {
 				Keys.Results.CustomSize.Help().Key, Keys.Results.CustomSize.Help().Desc,
 				Keys.Global.Back.Help().Key, backTarget,
 			))
+			if v.results != nil && !v.results.DisableUpdate {
+				b.WriteString("\n")
+				b.WriteString(styles.RenderHelp(
+					Keys.Results.EditRow.Help().Key, Keys.Results.EditRow.Help().Desc,
+					Keys.Results.DeleteRow.Help().Key, Keys.Results.DeleteRow.Help().Desc,
+				))
+			} else {
+				b.WriteString("\n")
+				b.WriteString(styles.RenderHelp(
+					Keys.Results.DeleteRow.Help().Key, Keys.Results.DeleteRow.Help().Desc,
+				))
+			}
 		} else {
 			b.WriteString(styles.RenderHelp(
 				Keys.Results.Up.Help().Key, Keys.Results.Up.Help().Desc,

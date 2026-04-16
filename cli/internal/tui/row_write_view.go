@@ -34,6 +34,7 @@ type rowWriteAction int
 
 const (
 	rowWriteActionAdd rowWriteAction = iota
+	rowWriteActionEdit
 	rowWriteActionDelete
 )
 
@@ -42,25 +43,26 @@ type rowWriteResultMsg struct {
 	err    error
 }
 
-// RowWriteView provides an interactive add-row and delete-row workflow.
+// RowWriteView provides an interactive add-row, edit-row, and delete-row workflow.
 type RowWriteView struct {
 	parent *MainModel
 	width  int
 	height int
 
-	action        rowWriteAction
-	schema        string
-	tableName     string
-	columns       []engine.Column
-	inputColumns  []engine.Column
-	inputs        []textinput.Model
-	focusIndex    int
-	documentMode  bool
-	textarea      textarea.Model
-	deleteValues  map[string]string
-	deletePreview []string
-	working       bool
-	err           error
+	action         rowWriteAction
+	schema         string
+	tableName      string
+	columns        []engine.Column
+	inputColumns   []engine.Column
+	inputs         []textinput.Model
+	focusIndex     int
+	documentMode   bool
+	textarea       textarea.Model
+	originalValues map[string]string
+	deleteValues   map[string]string
+	deletePreview  []string
+	working        bool
+	err            error
 }
 
 // NewRowWriteView creates a new row-write modal view.
@@ -92,6 +94,7 @@ func (v *RowWriteView) SetAddContext(schema, tableName string, columns []engine.
 	v.documentMode = len(v.inputColumns) == 1 && strings.EqualFold(v.inputColumns[0].Type, "Document")
 	v.inputs = buildRowInputs(v.inputColumns)
 	v.focusIndex = 0
+	v.originalValues = nil
 	v.deleteValues = nil
 	v.deletePreview = nil
 	v.working = false
@@ -100,6 +103,34 @@ func (v *RowWriteView) SetAddContext(schema, tableName string, columns []engine.
 		v.textarea.SetValue("{\n  \n}")
 	} else {
 		v.textarea.SetValue("")
+	}
+	v.applyDimensions()
+	v.syncAddFocus()
+}
+
+// SetEditContext prepares the edit-row workflow for the selected row.
+func (v *RowWriteView) SetEditContext(schema, tableName string, columns []engine.Column, values map[string]string) {
+	v.action = rowWriteActionEdit
+	v.schema = schema
+	v.tableName = tableName
+	v.columns = append([]engine.Column(nil), columns...)
+	v.originalValues = copyStringMap(values)
+	v.inputColumns = editableColumns(columns)
+	v.documentMode = len(v.inputColumns) == 1 && strings.EqualFold(v.inputColumns[0].Type, "Document")
+	v.inputs = buildRowInputs(v.inputColumns)
+	v.focusIndex = 0
+	v.deleteValues = nil
+	v.deletePreview = nil
+	v.working = false
+	v.err = nil
+
+	if v.documentMode {
+		v.textarea.SetValue(formatDocumentValue(values["document"]))
+	} else {
+		v.textarea.SetValue("")
+		for idx, column := range v.inputColumns {
+			v.inputs[idx].SetValue(values[column.Name])
+		}
 	}
 	v.applyDimensions()
 	v.syncAddFocus()
@@ -114,6 +145,7 @@ func (v *RowWriteView) SetDeleteContext(schema, tableName string, columns []engi
 	v.inputColumns = nil
 	v.inputs = nil
 	v.documentMode = false
+	v.originalValues = nil
 	v.deleteValues = copyStringMap(values)
 	v.deletePreview = buildDeletePreview(columns, values)
 	v.working = false
@@ -142,6 +174,9 @@ func (v *RowWriteView) Update(msg tea.Msg) (*RowWriteView, tea.Cmd) {
 		}
 
 		actionLabel := "row added"
+		if msg.action == rowWriteActionEdit {
+			actionLabel = "row updated"
+		}
 		if msg.action == rowWriteActionDelete {
 			actionLabel = "row deleted"
 		}
@@ -177,7 +212,10 @@ func (v *RowWriteView) Update(msg tea.Msg) (*RowWriteView, tea.Cmd) {
 			return v, nil
 		}
 
-		if key.Matches(msg, rowWriteSubmitBinding(rowWriteActionAdd)) {
+		if key.Matches(msg, rowWriteSubmitBinding(v.action)) {
+			if v.action == rowWriteActionEdit {
+				return v, v.startEdit()
+			}
 			return v, v.startAdd()
 		}
 
@@ -278,6 +316,9 @@ func (v *RowWriteView) View() string {
 	var b strings.Builder
 
 	title := "Add Row"
+	if v.action == rowWriteActionEdit {
+		title = "Edit Row"
+	}
 	if v.action == rowWriteActionDelete {
 		title = "Delete Row"
 	}
@@ -291,7 +332,7 @@ func (v *RowWriteView) View() string {
 	b.WriteString(styles.RenderMuted("  Target: " + v.tableName))
 	b.WriteString("\n\n")
 
-	if v.action == rowWriteActionAdd {
+	if v.action == rowWriteActionAdd || v.action == rowWriteActionEdit {
 		v.renderAddView(&b)
 	} else {
 		b.WriteString(styles.RenderErr("  This will delete the selected row."))
@@ -311,6 +352,9 @@ func (v *RowWriteView) View() string {
 	if v.working {
 		b.WriteString("\n\n")
 		spinnerLabel := "Writing row..."
+		if v.action == rowWriteActionEdit {
+			spinnerLabel = "Updating row..."
+		}
 		if v.action == rowWriteActionDelete {
 			spinnerLabel = "Deleting row..."
 		}
@@ -330,7 +374,11 @@ func (v *RowWriteView) View() string {
 
 func (v *RowWriteView) renderAddView(b *strings.Builder) {
 	if v.documentMode {
-		b.WriteString("  Document JSON:\n\n")
+		label := "  Document JSON:\n\n"
+		if v.action == rowWriteActionEdit {
+			label = "  Edit document JSON:\n\n"
+		}
+		b.WriteString(label)
 		b.WriteString(v.textarea.View())
 		b.WriteString("\n\n")
 		b.WriteString(styles.RenderMuted("  Enter a JSON object for the document payload."))
@@ -342,10 +390,19 @@ func (v *RowWriteView) renderAddView(b *strings.Builder) {
 }
 
 func (v *RowWriteView) renderStructuredAddView(b *strings.Builder, start, end int) {
-	b.WriteString("  Fill row values:\n\n")
+	prompt := "  Fill row values:\n\n"
+	if v.action == rowWriteActionEdit {
+		prompt = "  Edit row values:\n\n"
+	}
+	b.WriteString(prompt)
 	if len(v.inputs) == 0 {
-		b.WriteString(styles.RenderMuted("  No writable columns available"))
+		b.WriteString(styles.RenderMuted("  No editable columns available"))
 		return
+	}
+
+	if v.action == rowWriteActionEdit && len(v.columns) > len(v.inputColumns) {
+		b.WriteString(styles.RenderMuted("  Primary key and database-managed columns are locked."))
+		b.WriteString("\n\n")
 	}
 
 	if start > 0 {
@@ -374,7 +431,9 @@ func (v *RowWriteView) renderStructuredAddView(b *strings.Builder, start, end in
 		b.WriteString("\n\n")
 	}
 
-	b.WriteString(styles.RenderMuted("  Leave fields blank to omit them from the insert."))
+	if v.action == rowWriteActionAdd {
+		b.WriteString(styles.RenderMuted("  Leave fields blank to omit them from the insert."))
+	}
 }
 
 func (v *RowWriteView) visibleInputRange() (int, int) {
@@ -422,7 +481,11 @@ func (v *RowWriteView) computeVisibleInputRange(maxVisible int) (int, int) {
 func (v *RowWriteView) renderStructuredAddPreview(start, end int) string {
 	var b strings.Builder
 
-	b.WriteString(styles.RenderTitle("Add Row"))
+	title := "Add Row"
+	if v.action == rowWriteActionEdit {
+		title = "Edit Row"
+	}
+	b.WriteString(styles.RenderTitle(title))
 	b.WriteString("\n\n")
 
 	if v.schema != "" {
@@ -435,7 +498,11 @@ func (v *RowWriteView) renderStructuredAddPreview(start, end int) string {
 
 	if v.working {
 		b.WriteString("\n\n")
-		b.WriteString(v.parent.SpinnerView() + styles.RenderMuted(" Writing row..."))
+		spinnerLabel := "Writing row..."
+		if v.action == rowWriteActionEdit {
+			spinnerLabel = "Updating row..."
+		}
+		b.WriteString(v.parent.SpinnerView() + styles.RenderMuted(" "+spinnerLabel))
 	}
 
 	if v.err != nil {
@@ -478,6 +545,54 @@ func (v *RowWriteView) buildAddPayload() (string, error) {
 	return string(data), nil
 }
 
+func (v *RowWriteView) buildEditValues() (map[string]string, error) {
+	if v.documentMode {
+		payload := strings.TrimSpace(v.textarea.Value())
+		if payload == "" {
+			return nil, fmt.Errorf("fill at least one value")
+		}
+		return map[string]string{"document": payload}, nil
+	}
+
+	values := make(map[string]string, len(v.inputColumns))
+	for idx, column := range v.inputColumns {
+		values[column.Name] = v.inputs[idx].Value()
+	}
+	if len(values) == 0 {
+		return nil, fmt.Errorf("no editable columns available")
+	}
+	return values, nil
+}
+
+func (v *RowWriteView) startEdit() tea.Cmd {
+	if strings.TrimSpace(v.tableName) == "" {
+		v.err = fmt.Errorf("table name is required")
+		return nil
+	}
+
+	v.err = nil
+	v.working = true
+
+	values, err := v.buildEditValues()
+	if err != nil {
+		v.working = false
+		v.err = err
+		return nil
+	}
+
+	schema := v.schema
+	tableName := v.tableName
+	originalValues := copyStringMap(v.originalValues)
+	mgr := v.parent.dbManager
+
+	return func() tea.Msg {
+		return rowWriteResultMsg{
+			action: rowWriteActionEdit,
+			err:    mgr.UpdateRow(schema, tableName, originalValues, values),
+		}
+	}
+}
+
 func (v *RowWriteView) moveFocus(delta int) {
 	if len(v.inputs) == 0 {
 		return
@@ -512,6 +627,17 @@ func writableColumns(columns []engine.Column) []engine.Column {
 		writable = append(writable, column)
 	}
 	return writable
+}
+
+func editableColumns(columns []engine.Column) []engine.Column {
+	editable := make([]engine.Column, 0, len(columns))
+	for _, column := range columns {
+		if column.IsAutoIncrement || column.IsComputed || column.IsPrimary {
+			continue
+		}
+		editable = append(editable, column)
+	}
+	return editable
 }
 
 func buildRowInputs(columns []engine.Column) []textinput.Model {
@@ -595,6 +721,12 @@ func rowWriteSubmitBinding(action rowWriteAction) key.Binding {
 			key.WithHelp("enter", "delete row"),
 		)
 	}
+	if action == rowWriteActionEdit {
+		return key.NewBinding(
+			key.WithKeys("alt+enter"),
+			key.WithHelp("alt+enter", "update row"),
+		)
+	}
 	return key.NewBinding(
 		key.WithKeys("alt+enter"),
 		key.WithHelp("alt+enter", "insert row"),
@@ -607,4 +739,22 @@ func rowWriteHelpBindings(action rowWriteAction) []key.Binding {
 		Keys.Global.Back,
 		Keys.Global.Quit,
 	}
+}
+
+func formatDocumentValue(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return "{\n  \n}"
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal([]byte(trimmed), &decoded); err != nil {
+		return value
+	}
+
+	pretty, err := json.MarshalIndent(decoded, "", "  ")
+	if err != nil {
+		return value
+	}
+	return string(pretty)
 }

@@ -129,6 +129,77 @@ func TestDeleteRow_RejectsViewTargets(t *testing.T) {
 	}
 }
 
+func TestUpdateRow_ReadOnlyBlocks(t *testing.T) {
+	setupTestEnv(t)
+
+	mgr, err := NewManager()
+	if err != nil {
+		t.Fatalf("NewManager failed: %v", err)
+	}
+
+	mgr.currentConnection = &Connection{
+		Name: "test",
+		Type: "postgres",
+		Host: "localhost",
+	}
+	mgr.config.SetReadOnly(true)
+
+	err = mgr.UpdateRow("public", "users", map[string]string{"id": "1"}, map[string]string{"name": "alice"})
+	if !errors.Is(err, ErrReadOnly) {
+		t.Fatalf("expected ErrReadOnly, got %v", err)
+	}
+}
+
+func TestUpdateRow_RejectsViewTargets(t *testing.T) {
+	setupTestEnv(t)
+
+	mgr, err := NewManager()
+	if err != nil {
+		t.Fatalf("NewManager failed: %v", err)
+	}
+
+	mgr.currentConnection = &Connection{
+		Name: "db",
+		Type: "postgres",
+		Host: "localhost",
+	}
+	mgr.cache.SetTables("public", []engine.StorageUnit{
+		{Name: "order_summary", Attributes: []engine.Record{{Key: "Type", Value: "VIEW"}}},
+	})
+
+	err = mgr.UpdateRow("public", "order_summary", map[string]string{"id": "1"}, map[string]string{"name": "alice"})
+	if err == nil || !strings.Contains(strings.ToLower(err.Error()), "view") {
+		t.Fatalf("expected view target error, got %v", err)
+	}
+}
+
+func TestUpdateRow_RejectsPrimaryKeyEdits(t *testing.T) {
+	setupTestEnv(t)
+
+	mgr, err := NewManager()
+	if err != nil {
+		t.Fatalf("NewManager failed: %v", err)
+	}
+
+	mgr.currentConnection = &Connection{
+		Name: "db",
+		Type: "postgres",
+		Host: "localhost",
+	}
+	mgr.cache.SetTables("public", []engine.StorageUnit{
+		{Name: "users", Attributes: []engine.Record{{Key: "Type", Value: "TABLE"}}},
+	})
+	mgr.cache.SetColumns("public", "users", []engine.Column{
+		{Name: "id", Type: "integer", IsPrimary: true},
+		{Name: "name", Type: "text"},
+	})
+
+	err = mgr.UpdateRow("public", "users", map[string]string{"id": "1", "name": "alice"}, map[string]string{"id": "2", "name": "alice"})
+	if err == nil || !strings.Contains(strings.ToLower(err.Error()), "primary key") {
+		t.Fatalf("expected primary key error, got %v", err)
+	}
+}
+
 func TestRowCRUDIntegration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test")
@@ -175,6 +246,29 @@ func TestRowCRUDIntegration(t *testing.T) {
 	}
 
 	values := map[string]string{}
+	for idx, column := range rows.Columns {
+		if idx < len(rows.Rows[0]) {
+			values[column.Name] = rows.Rows[0][idx]
+		}
+	}
+
+	err = mgr.UpdateRow("", "test_users", values, map[string]string{"name": "carol", "email": "c@b.com"})
+	if err != nil {
+		t.Fatalf("UpdateRow failed: %v", err)
+	}
+
+	rows, err = mgr.GetRows("", "test_users", nil, 50, 0)
+	if err != nil {
+		t.Fatalf("GetRows failed after update: %v", err)
+	}
+	if len(rows.Rows) != 1 {
+		t.Fatalf("expected 1 row after update, got %d", len(rows.Rows))
+	}
+	if rows.Rows[0][1] != "carol" || rows.Rows[0][2] != "c@b.com" {
+		t.Fatalf("expected updated row values, got %+v", rows.Rows[0])
+	}
+
+	values = map[string]string{}
 	for idx, column := range rows.Columns {
 		if idx < len(rows.Rows[0]) {
 			values[column.Name] = rows.Rows[0][idx]

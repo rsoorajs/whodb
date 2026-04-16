@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/clidey/whodb/core/src/engine"
 )
@@ -93,6 +94,86 @@ func (m *Manager) DeleteRow(schema, storageUnit string, values map[string]string
 	}
 
 	_, err = plugin.DeleteRow(config, schema, storageUnit, values)
+	if err != nil {
+		return err
+	}
+
+	if m.cache != nil {
+		m.cache.Clear()
+	}
+	return nil
+}
+
+// UpdateRow updates an existing row/document in a writable storage unit.
+func (m *Manager) UpdateRow(schema, storageUnit string, originalValues, updatedValues map[string]string) error {
+	if m.currentConnection == nil {
+		return fmt.Errorf("not connected to any database")
+	}
+	if m.config != nil && m.config.GetReadOnly() {
+		return ErrReadOnly
+	}
+	if err := m.ensureWritableStorageUnit(schema, storageUnit); err != nil {
+		return err
+	}
+	if len(originalValues) == 0 {
+		return fmt.Errorf("update requires original row values")
+	}
+
+	plugin, config, err := m.currentPlugin()
+	if err != nil {
+		return err
+	}
+
+	columns, err := m.GetColumns(schema, storageUnit)
+	if err != nil {
+		return err
+	}
+
+	var values map[string]string
+	var updatedColumns []string
+
+	if isDocumentStorageUnit(columns) {
+		document, ok := updatedValues["document"]
+		if !ok {
+			return fmt.Errorf("document update requires a document payload")
+		}
+		if strings.TrimSpace(document) == "" {
+			return fmt.Errorf("document payload must not be empty")
+		}
+		if originalValues["document"] == document {
+			return nil
+		}
+		values = map[string]string{"document": document}
+		updatedColumns = []string{"document"}
+	} else {
+		columnMap := make(map[string]engine.Column, len(columns))
+		for _, column := range columns {
+			columnMap[column.Name] = column
+		}
+
+		values = cloneRowValues(originalValues)
+		updatedColumns = make([]string, 0, len(updatedValues))
+		for key, newValue := range updatedValues {
+			column, knownColumn := columnMap[key]
+			if knownColumn && (column.IsComputed || column.IsAutoIncrement) && originalValues[key] != newValue {
+				return fmt.Errorf("column %s is database-managed and cannot be updated explicitly", key)
+			}
+			if knownColumn && column.IsPrimary && originalValues[key] != newValue {
+				return fmt.Errorf("primary key column %s cannot be edited", key)
+			}
+
+			oldValue := originalValues[key]
+			values[key] = newValue
+			if oldValue != newValue {
+				updatedColumns = append(updatedColumns, key)
+			}
+		}
+		if len(updatedColumns) == 0 {
+			return nil
+		}
+	}
+
+	_, err = plugin.UpdateStorageUnit(config, schema, storageUnit, values, updatedColumns)
 	if err != nil {
 		return err
 	}
@@ -181,4 +262,16 @@ func stringifyRowValue(value any) (string, bool, error) {
 		}
 		return string(data), false, nil
 	}
+}
+
+func cloneRowValues(values map[string]string) map[string]string {
+	cloned := make(map[string]string, len(values))
+	for key, value := range values {
+		cloned[key] = value
+	}
+	return cloned
+}
+
+func isDocumentStorageUnit(columns []engine.Column) bool {
+	return len(columns) == 1 && strings.EqualFold(columns[0].Type, "Document")
 }

@@ -842,6 +842,7 @@ func (m *MainModel) renderHelpOverlay() string {
 			Keys.Results.Where,
 			Keys.Results.Columns,
 			Keys.Results.AddRow,
+			Keys.Results.EditRow,
 			Keys.Results.DeleteRow,
 			Keys.Results.Export,
 			Keys.Global.MockData,

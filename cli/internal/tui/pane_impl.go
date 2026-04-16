@@ -136,6 +136,9 @@ func (v *ResultsView) HelpBindings() []key.Binding {
 	}
 	if v.tableName != "" {
 		bindings = append(bindings, Keys.Results.AddRow, Keys.Results.DeleteRow)
+		if v.results != nil && !v.results.DisableUpdate {
+			bindings = append(bindings, Keys.Results.EditRow)
+		}
 	}
 	return bindings
 }

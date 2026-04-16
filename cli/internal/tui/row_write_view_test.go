@@ -97,6 +97,43 @@ func TestResultsView_DeleteRowShortcutOpensRowWrite(t *testing.T) {
 	}
 }
 
+func TestResultsView_EditRowShortcutOpensRowWrite(t *testing.T) {
+	m := setupConnectedModelWithTable(t, 100, 30)
+
+	cmd := m.resultsView.LoadTable("", "test_users")
+	msg := cmd()
+	m.resultsView.Update(msg)
+	m.mode = ViewResults
+
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
+
+	if m.mode != ViewRowWrite {
+		t.Fatalf("expected mode ViewRowWrite after edit-row shortcut, got %v", m.mode)
+	}
+	if m.rowWriteView.action != rowWriteActionEdit {
+		t.Fatalf("expected edit action, got %v", m.rowWriteView.action)
+	}
+	if m.rowWriteView.tableName != "test_users" {
+		t.Fatalf("expected target table test_users, got %q", m.rowWriteView.tableName)
+	}
+}
+
+func TestResultsView_EditRowShortcutBlockedWhenUpdatesDisabled(t *testing.T) {
+	m := setupConnectedModelWithTable(t, 100, 30)
+
+	cmd := m.resultsView.LoadTable("", "test_users")
+	msg := cmd()
+	m.resultsView.Update(msg)
+	m.mode = ViewResults
+	m.resultsView.results.DisableUpdate = true
+
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
+
+	if m.mode != ViewResults {
+		t.Fatalf("expected mode ViewResults when updates are disabled, got %v", m.mode)
+	}
+}
+
 func TestRowWriteView_VisibleInputRange_ReachesLastInputs(t *testing.T) {
 	setupTestEnv(t)
 
@@ -127,7 +164,7 @@ func TestRowWriteView_VisibleInputRange_ReachesLastInputs(t *testing.T) {
 	}
 }
 
-func TestRowWriteView_AddAndDeleteFlow(t *testing.T) {
+func TestRowWriteView_AddEditAndDeleteFlow(t *testing.T) {
 	m := setupConnectedModelWithTable(t, 100, 30)
 
 	cmd := m.resultsView.LoadTable("", "test_users")
@@ -167,6 +204,48 @@ func TestRowWriteView_AddAndDeleteFlow(t *testing.T) {
 	}
 	if len(rows.Rows) != 3 {
 		t.Fatalf("expected 3 rows after add, got %d", len(rows.Rows))
+	}
+
+	cmd = m.resultsView.LoadTable("", "test_users")
+	msg = cmd()
+	m.resultsView.Update(msg)
+	m.mode = ViewResults
+	m.resultsView.table.SetCursor(len(m.resultsView.currentPageRows()) - 1)
+
+	m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'u'}})
+	if m.mode != ViewRowWrite {
+		t.Fatalf("expected mode ViewRowWrite after edit-row shortcut, got %v", m.mode)
+	}
+	if m.rowWriteView.action != rowWriteActionEdit {
+		t.Fatalf("expected edit action, got %v", m.rowWriteView.action)
+	}
+
+	inputByName = map[string]int{}
+	for idx, column := range m.rowWriteView.inputColumns {
+		inputByName[column.Name] = idx
+	}
+	nameIdx, ok = inputByName["name"]
+	if !ok {
+		t.Fatalf("expected name input in edit form, got columns %+v", m.rowWriteView.inputColumns)
+	}
+	m.rowWriteView.inputs[nameIdx].SetValue("carol-updated")
+
+	_, cmd = m.Update(tea.KeyMsg{Type: tea.KeyEnter, Alt: true})
+	if cmd == nil {
+		t.Fatal("expected edit-row command")
+	}
+	_, _ = m.Update(cmd())
+
+	rows, err = m.dbManager.GetRows("", "test_users", nil, 50, 0)
+	if err != nil {
+		t.Fatalf("GetRows failed after edit: %v", err)
+	}
+	if len(rows.Rows) != 3 {
+		t.Fatalf("expected 3 rows after edit, got %d", len(rows.Rows))
+	}
+	lastRow := rows.Rows[len(rows.Rows)-1]
+	if len(lastRow) < 2 || lastRow[1] != "carol-updated" {
+		t.Fatalf("expected edited row value, got %+v", lastRow)
 	}
 
 	cmd = m.resultsView.LoadTable("", "test_users")

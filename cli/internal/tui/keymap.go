@@ -87,6 +87,7 @@ type ResultsKeys struct {
 	Where      key.Binding
 	Columns    key.Binding
 	AddRow     key.Binding
+	EditRow    key.Binding
 	DeleteRow  key.Binding
 	Export     key.Binding
 	PageSize   key.Binding
@@ -431,6 +432,10 @@ var Keys = Keymap{
 		AddRow: key.NewBinding(
 			key.WithKeys("a"),
 			key.WithHelp("a", "add row"),
+		),
+		EditRow: key.NewBinding(
+			key.WithKeys("u"),
+			key.WithHelp("u", "edit row"),
 		),
 		DeleteRow: key.NewBinding(
 			key.WithKeys("d"),
