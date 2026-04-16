@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {useQuery} from "@apollo/client/react";
+import {skipToken, useQuery} from "@apollo/client/react";
 import {
     Button,
     cn,
@@ -112,15 +112,21 @@ export const Sidebar: FC = () => {
         supportsDatabaseSwitching,
         usesDatabaseInsteadOfSchema,
     } = useDatabaseTraits(current?.Type);
-    const {data: availableDatabases, loading: availableDatabasesLoading, refetch: getDatabases} = useQuery(GetDatabaseDocument, {
-        variables: {
-            type: current?.Type as DatabaseType,
-        },
-        skip: current == null || !supportsDatabaseSwitching,
-    });
-    const { data: availableSchemas, loading: availableSchemasLoading, refetch: getSchemas } = useQuery(GetSchemaDocument, {
-        skip: current == null || !supportsSchema,
-    });
+    const databaseQueryOptions = current != null && supportsDatabaseSwitching
+        ? {
+            variables: {
+                type: current.Type,
+            },
+        }
+        : skipToken;
+    const schemaQueryOptions = current != null && supportsSchema
+        ? {}
+        : skipToken;
+    const sslStatusQueryOptions = current != null && sslStatus === undefined
+        ? {}
+        : skipToken;
+    const {data: availableDatabases, loading: availableDatabasesLoading, refetch: getDatabases} = useQuery(GetDatabaseDocument, databaseQueryOptions);
+    const { data: availableSchemas, loading: availableSchemasLoading, refetch: getSchemas } = useQuery(GetSchemaDocument, schemaQueryOptions);
 
     // Default schema selection: prefer Search Path from login config, fall back to first schema
     useEffect(() => {
@@ -132,9 +138,7 @@ export const Sidebar: FC = () => {
         dispatch(DatabaseActions.setSchema(defaultSchema));
     }, [current, schema, availableSchemas, dispatch]);
     const { data: updateInfo } = useQuery(GetUpdateInfoDocument);
-    const { data: sslStatusData, refetch: refetchSslStatus } = useQuery(GetSslStatusDocument, {
-        skip: current == null || sslStatus !== undefined,
-    });
+    const { data: sslStatusData, refetch: refetchSslStatus } = useQuery(GetSslStatusDocument, sslStatusQueryOptions);
     useEffect(() => {
         if (sslStatusData?.SSLStatus) {
             dispatch(AuthActions.setSSLStatus(sslStatusData.SSLStatus));

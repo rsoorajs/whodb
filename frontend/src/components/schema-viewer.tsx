@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { useQuery } from "@apollo/client/react";
+import { skipToken, useQuery } from "@apollo/client/react";
 import {
     SearchInput,
     Sidebar as SidebarComponent,
@@ -59,15 +59,16 @@ export const SchemaViewer: FC = () => {
 
     // For databases that use database instead of schema, determine the schema value
     const schemaValue = usesDatabaseInsteadOfSchema ? (current?.Database ?? '') : selectedSchema;
+    const storageUnitsQueryOptions = current && schemaValue
+        ? {
+            variables: {
+                schema: schemaValue,
+            },
+        }
+        : skipToken;
 
     // Query for storage units (tables, views, etc.)
-    const {data, loading, refetch} = useQuery(GetStorageUnitsDocument, {
-        variables: {
-            schema: schemaValue,
-        },
-        // Skip if no current connection OR no schema value is available
-        skip: !current || !schemaValue,
-    });
+    const {data, loading, refetch} = useQuery(GetStorageUnitsDocument, storageUnitsQueryOptions);
 
     // Refetch when the connection context changes (profile switch or database switch)
     const currentProfileId = current?.Id;

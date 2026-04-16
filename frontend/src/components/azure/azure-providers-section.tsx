@@ -15,7 +15,7 @@
  */
 
 import { useMutation, useQuery } from "@apollo/client/react";
-import { FC, useCallback, useEffect } from "react";
+import { FC, useCallback } from "react";
 import { Badge, Button, cn, toast } from "@clidey/ux";
 import {
     AzureProvider,
@@ -37,6 +37,7 @@ import {
     PlusIcon,
     TrashIcon,
 } from "../heroicons";
+import { removeAzureProviderCache, removeCloudProviderCache, upsertAzureProviderCache, upsertCloudProviderCache } from "../../utils/apollo-provider-cache";
 
 /**
  * Local Azure provider with optional environment-defined flag.
@@ -81,13 +82,6 @@ export const AzureProvidersSection: FC = () => {
 
     const azureProviders: LocalAzureProvider[] = (data?.AzureProviders as LocalAzureProvider[] | undefined) ?? [];
 
-    // Refetch when modal closes to pick up changes
-    useEffect(() => {
-        if (!azureModalOpen) {
-            refetch();
-        }
-    }, [azureModalOpen, refetch]);
-
     const handleAddProvider = useCallback(() => {
         dispatch(ProvidersActions.openAddProviderModal());
     }, [dispatch]);
@@ -100,7 +94,11 @@ export const AzureProvidersSection: FC = () => {
         try {
             const { data } = await removeProvider({
                 variables: { id },
-                refetchQueries: [GetAzureProvidersDocument, GetDiscoveredConnectionsDocument],
+                refetchQueries: [GetDiscoveredConnectionsDocument],
+                update(cache) {
+                    removeAzureProviderCache(cache, id);
+                    removeCloudProviderCache(cache, id);
+                },
             });
             if (data?.RemoveCloudProvider?.Status) {
                 toast.success(t('providerRemoved', { name }));
@@ -115,7 +113,13 @@ export const AzureProvidersSection: FC = () => {
         try {
             const { data } = await refreshProvider({
                 variables: { id },
-                refetchQueries: [GetAzureProvidersDocument, GetDiscoveredConnectionsDocument],
+                refetchQueries: [GetDiscoveredConnectionsDocument],
+                update(cache, result) {
+                    if (result.data?.RefreshAzureProvider) {
+                        upsertAzureProviderCache(cache, result.data.RefreshAzureProvider);
+                        upsertCloudProviderCache(cache, result.data.RefreshAzureProvider);
+                    }
+                },
             });
             if (data?.RefreshAzureProvider) {
                 toast.success(t('refreshComplete', { count: data.RefreshAzureProvider.DiscoveredCount }));

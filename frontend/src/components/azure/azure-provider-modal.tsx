@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { useMutation, useQuery } from "@apollo/client/react";
+import { skipToken, useMutation, useQuery } from "@apollo/client/react";
 import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import {
     Badge,
@@ -47,6 +47,7 @@ import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ProvidersActions } from "../../store/providers";
 import { useTranslation } from "@/hooks/use-translation";
 import { ChevronDownIcon, CloudIcon } from "../heroicons";
+import { upsertAzureProviderCache, upsertCloudProviderCache } from "../../utils/apollo-provider-cache";
 
 export interface AzureProviderModalProps {
     open: boolean;
@@ -74,11 +75,10 @@ export const AzureProviderModal: FC<AzureProviderModalProps> = ({
         if (!editingProviderId || !providersData?.AzureProviders) return null;
         return providersData.AzureProviders.find(p => p.Id === editingProviderId) ?? null;
     }, [editingProviderId, providersData]);
+    const subscriptionsQueryOptions = isEditMode ? skipToken : {};
 
     // Query Azure subscriptions for picker
-    const { data: subscriptionsData, loading: subscriptionsLoading } = useQuery(GetAzureSubscriptionsDocument, {
-        skip: isEditMode,
-    });
+    const { data: subscriptionsData, loading: subscriptionsLoading } = useQuery(GetAzureSubscriptionsDocument, subscriptionsQueryOptions);
     const subscriptions = subscriptionsData?.AzureSubscriptions ?? [];
 
     // Query Azure regions from backend
@@ -101,10 +101,22 @@ export const AzureProviderModal: FC<AzureProviderModalProps> = ({
 
     // GraphQL mutations
     const [addProvider, { loading: addLoading }] = useMutation(AddAzureProviderDocument, {
-        refetchQueries: [GetAzureProvidersDocument, GetDiscoveredConnectionsDocument],
+        refetchQueries: [GetDiscoveredConnectionsDocument],
+        update(cache, { data }) {
+            if (data?.AddAzureProvider) {
+                upsertAzureProviderCache(cache, data.AddAzureProvider);
+                upsertCloudProviderCache(cache, data.AddAzureProvider);
+            }
+        },
     });
     const [updateProvider, { loading: updateLoading }] = useMutation(UpdateAzureProviderDocument, {
-        refetchQueries: [GetAzureProvidersDocument, GetDiscoveredConnectionsDocument],
+        refetchQueries: [GetDiscoveredConnectionsDocument],
+        update(cache, { data }) {
+            if (data?.UpdateAzureProvider) {
+                upsertAzureProviderCache(cache, data.UpdateAzureProvider);
+                upsertCloudProviderCache(cache, data.UpdateAzureProvider);
+            }
+        },
     });
     const [testCredentials, { loading: testCredentialsLoading }] = useMutation(TestAzureCredentialsDocument);
 

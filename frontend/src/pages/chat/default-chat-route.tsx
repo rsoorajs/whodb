@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {useQuery} from "@apollo/client/react";
+import {skipToken, useQuery} from "@apollo/client/react";
 import { FC } from "react";
 import { DatabaseType, GetAiModelsDocument } from '@graphql';
 import { Loading } from "../../components/loading";
@@ -28,11 +28,15 @@ import { availableInternalModelTypes } from "../../store/ai-models";
 export const NavigateToDefault: FC = () => {
     const current = useAppSelector(state => state.auth.current);
     const { isNoSQL } = useDatabaseTraits(current?.Type);
-    const { data, error } = useQuery(GetAiModelsDocument, {
-        variables: {
-            modelType: availableInternalModelTypes[0],
+    const defaultModelType = availableInternalModelTypes[0];
+    const aiModelsQueryOptions = current && !isNoSQL && defaultModelType
+        ? {
+            variables: {
+                modelType: defaultModelType,
+            }
         }
-    });
+        : skipToken;
+    const { data, error } = useQuery(GetAiModelsDocument, aiModelsQueryOptions);
 
     if (isNoSQL ||  error != null) {
         return <Navigate to={InternalRoutes.Dashboard.StorageUnit.path} />

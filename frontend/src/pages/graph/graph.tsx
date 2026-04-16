@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {useLazyQuery, useQuery} from "@apollo/client/react";
+import {skipToken, useLazyQuery, useQuery} from "@apollo/client/react";
 import {FC, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {Edge, Node, ReactFlowProvider, useEdgesState, useNodesState} from "reactflow";
 import {GraphElements} from "../../components/graph/constants";
@@ -167,16 +167,28 @@ export const GraphPage: FC = () => {
     const [tableColumns, setTableColumns] = useState<Record<string, any[]>>({});
 
     const [fetchColumnsBatch] = useLazyQuery(GetColumnsBatchDocument);
+    const graphQueryOptions = current
+        ? {
+            variables: {
+                schema: usesSchemaForGraph ? schema : current.Database ?? "",
+            },
+        }
+        : skipToken;
+    const storageUnitsQueryOptions = current
+        ? {
+            variables: {
+                schema: usesSchemaForGraph ? schema : current.Database ?? "",
+            },
+            fetchPolicy: "cache-and-network" as const,
+            nextFetchPolicy: "cache-first" as const,
+        }
+        : skipToken;
 
     const {
         data: graphQueryData,
         loading: graphLoading,
         refetch: refetchGraph
-    } = useQuery<GetGraphQuery, GetGraphQueryVariables>(GetGraphDocument, {
-        variables: {
-            schema: usesSchemaForGraph ? schema : current?.Database ?? "",
-        },
-    });
+    } = useQuery<GetGraphQuery, GetGraphQueryVariables>(GetGraphDocument, graphQueryOptions);
 
     useEffect(() => {
         if (graphQueryData?.Graph != null) {
@@ -185,13 +197,7 @@ export const GraphPage: FC = () => {
     }, [graphQueryData]);
 
     // Fetch all storage units for sidebar selection
-    const {data: storageUnitsData, loading: unitsLoading, refetch: refetchStorageUnits} = useQuery(GetStorageUnitsDocument, {
-        variables: {
-            schema: usesSchemaForGraph ? schema : current?.Database ?? "",
-        },
-        skip: !current,
-        fetchPolicy: "cache-and-network",
-    });
+    const {data: storageUnitsData, loading: unitsLoading, refetch: refetchStorageUnits} = useQuery(GetStorageUnitsDocument, storageUnitsQueryOptions);
 
     // Refetch when the connection context changes (profile switch or database switch)
     const currentProfileId = current?.Id;

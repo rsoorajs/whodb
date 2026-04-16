@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { useMutation, useQuery } from "@apollo/client/react";
+import { skipToken, useMutation, useQuery } from "@apollo/client/react";
 import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import {
     Badge,
@@ -38,11 +38,8 @@ import {
     AwsProviderInput,
     CloudProviderStatus,
     GetAwsRegionsDocument,
-    GetCloudProvidersDocument,
     GetDiscoveredConnectionsDocument,
     GetLocalAwsProfilesDocument,
-    RefreshCloudProviderDocument,
-    RemoveCloudProviderDocument,
     TestAwsCredentialsDocument,
     TestCloudProviderDocument,
     UpdateAwsProviderDocument,
@@ -52,6 +49,7 @@ import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ProvidersActions, LocalCloudProvider } from "../../store/providers";
 import { useTranslation } from "@/hooks/use-translation";
 import { ChevronDownIcon, CloudIcon } from "../heroicons";
+import { upsertCloudProviderCache } from "../../utils/apollo-provider-cache";
 
 export interface AwsProviderModalProps {
     open: boolean;
@@ -76,11 +74,10 @@ export const AwsProviderModal: FC<AwsProviderModalProps> = ({
     }, [editingProviderId, cloudProviders]);
 
     const isEditMode = editingProviderId !== null;
+    const localProfilesQueryOptions = isEditMode ? skipToken : {};
 
     // Query local AWS profiles
-    const { data: localProfilesData, loading: profilesLoading } = useQuery(GetLocalAwsProfilesDocument, {
-        skip: isEditMode, // Only fetch for new providers
-    });
+    const { data: localProfilesData, loading: profilesLoading } = useQuery(GetLocalAwsProfilesDocument, localProfilesQueryOptions);
     const localProfiles = localProfilesData?.LocalAWSProfiles ?? [];
 
     // Query AWS regions from backend
@@ -98,10 +95,20 @@ export const AwsProviderModal: FC<AwsProviderModalProps> = ({
 
     // GraphQL mutations - refetch providers and connections after add/update
     const [addProvider, { loading: addLoading }] = useMutation(AddAwsProviderDocument, {
-        refetchQueries: [GetCloudProvidersDocument, GetDiscoveredConnectionsDocument],
+        refetchQueries: [GetDiscoveredConnectionsDocument],
+        update(cache, { data }) {
+            if (data?.AddAWSProvider) {
+                upsertCloudProviderCache(cache, data.AddAWSProvider);
+            }
+        },
     });
     const [updateProvider, { loading: updateLoading }] = useMutation(UpdateAwsProviderDocument, {
-        refetchQueries: [GetCloudProvidersDocument, GetDiscoveredConnectionsDocument],
+        refetchQueries: [GetDiscoveredConnectionsDocument],
+        update(cache, { data }) {
+            if (data?.UpdateAWSProvider) {
+                upsertCloudProviderCache(cache, data.UpdateAWSProvider);
+            }
+        },
     });
     const [testProvider, { loading: testLoading }] = useMutation(TestCloudProviderDocument);
     const [testCredentials, { loading: testCredentialsLoading }] = useMutation(TestAwsCredentialsDocument);

@@ -287,6 +287,7 @@ PROGRAMMATIC USAGE
   whodb-cli schemas -c mydb --include-tables
   whodb-cli tables -c mydb --include-columns
   whodb-cli columns -c mydb -t users
+  whodb-cli diff --from staging --to prod --format json
   whodb-cli history --format json
   whodb-cli connections list
   whodb-cli connections test mydb --format json

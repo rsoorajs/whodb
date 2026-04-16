@@ -13,6 +13,7 @@ An interactive, production-ready command-line interface for WhoDB with a Claude 
 - **Responsive Data Viewer** - Paginated results with horizontal column scrolling
 - **Column Selection** - Choose which columns are visible in results
 - **Export Capabilities** - Export to CSV and Excel formats
+- **Schema Diff** - Compare schema metadata across environments
 - **Query History** - Persistent history with re-execution
 - **Shell Completion** - Bash/Zsh/Fish install plus PowerShell script generation
 - **Programmatic Mode** - JSON/CSV/plain output for scripting and automation
@@ -349,6 +350,37 @@ whodb-cli connections remove prod --format json
 
 Flags (applies to all subcommands):
 - `--format, -f`: Output format: `auto`, `table`, `plain`, `json`, `csv`
+- `--quiet, -q`: Suppress informational messages
+
+### diff
+
+Compare schema metadata between two connections.
+
+By default, `diff` uses each connection's configured schema when one exists.
+For database-scoped connections such as MySQL and MariaDB, it uses the
+connection's configured database when no schema flag is provided.
+
+```bash
+# Compare two connections using their default schemas
+whodb-cli diff --from staging --to prod
+
+# Compare the same schema on both sides
+whodb-cli diff --from staging --to prod --schema public
+
+# Compare Postgres to MySQL using each connection's configured namespace
+whodb-cli diff --from dev-e2e_postgres-1 --to dev-e2e_mysql-1
+
+# Emit machine-readable JSON
+whodb-cli diff --from staging --to prod --format json
+```
+
+Flags:
+- `--from`: Source connection name (required)
+- `--to`: Target connection name (required)
+- `--schema`: Schema name to compare on both sides
+- `--from-schema`: Source schema name
+- `--to-schema`: Target schema name
+- `--format, -f`: Output format: `table` or `json`
 - `--quiet, -q`: Suppress informational messages
 
 ### export

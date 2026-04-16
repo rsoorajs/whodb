@@ -76,6 +76,7 @@ import {
 import {ConnectionPrefillData, isAwsHostname, isAzureHostname, isGcpHostname} from '../../utils/cloud-connection-prefill';
 import {SSL_KEYS, SSLConfig} from '../../components/ssl-config';
 import {ServerError} from '@apollo/client/errors';
+import { clearGraphqlStore } from '@/config/graphql-client';
 
 /**
  * URL params that are reserved for the standard login form fields and control flags.
@@ -261,6 +262,35 @@ export const LoginForm: FC<LoginFormProps> = ({
         }
     }, [isFirstLogin, FIRST_LOGIN_KEY]);
 
+    const handleLoginError = useCallback((loginError: unknown, allowDriverInstallPrompt = false) => {
+        setIsAutoLoggingIn(false);
+
+        const errorMessage = loginError instanceof Error ? loginError.message : String(loginError);
+
+        if (allowDriverInstallPrompt) {
+            const driverMatch = errorMessage.match(/driver_not_installed:(\w+)/);
+            if (driverMatch) {
+                setMissingDriver(driverMatch[1]);
+                return;
+            }
+        }
+
+        const lowerCaseMessage = errorMessage.toLowerCase();
+        const isNetworkError = lowerCaseMessage.includes('network') ||
+            lowerCaseMessage.includes('fetch') ||
+            lowerCaseMessage.includes('econnrefused') ||
+            ServerError.is(loginError);
+
+        if (isNetworkError) {
+            dispatch(HealthActions.setHealthStatus({
+                server: 'error',
+                database: 'unavailable',
+            }));
+        }
+
+        toast.error(t('loginFailedWithError', { error: errorMessage }));
+    }, [dispatch, t]);
+
     const handleSubmit = useCallback(() => {
         if (databaseType.id === "" || !canSubmitDatabaseCredentials(databaseType, hostName, username, password, database)) {
             setIsAutoLoggingIn(false);
@@ -281,72 +311,54 @@ export const LoginForm: FC<LoginFormProps> = ({
             Advanced: Object.entries(advancedForm).map(([Key, Value]) => ({ Key, Value })),
         };
 
-        login({
-            variables: {
-                credentials,
-            },
-            onCompleted(data) {
-                if (data.Login.Status) {
-                    const sslMode = advancedForm[SSL_KEYS.MODE];
-                    const profileData = {
-                        ...credentials,
-                        SSLConfigured: sslMode != null && sslMode !== 'disabled' && sslMode !== '',
-                    };
-                    shouldUpdateLastAccessed.current = true;
-                    dispatch(AuthActions.login(profileData));
-                    markFirstLoginComplete();
+        void (async () => {
+            try {
+                const { data } = await login({
+                    variables: {
+                        credentials,
+                    },
+                });
 
-                    // Clear all login-related URL params before navigation, preserving UI-only params.
-                    const hasLoginParams = [...searchParams.keys()].some(k => !LOGIN_UI_PARAMS.has(k));
-                    if (hasLoginParams) {
-                        const newParams = new URLSearchParams();
-                        LOGIN_UI_PARAMS.forEach(key => {
-                            if (searchParams.has(key)) {
-                                newParams.set(key, searchParams.get(key)!);
-                            }
-                        });
-                        setSearchParams(newParams, { replace: true });
-                    }
-
-                    if (onLoginSuccess) {
-                        onLoginSuccess();
-                    } else {
-                        navigate(InternalRoutes.Dashboard.StorageUnit.path);
-                    }
-                    toast.success(t('loginSuccessful'));
-                    // Component will unmount after navigation, no need to clear state
-                    return;
-                }
-                setIsAutoLoggingIn(false);
-                return toast.error(t('loginFailed'));
-            },
-            onError(error) {
-                setIsAutoLoggingIn(false);
-
-                // Check if a JDBC bridge driver needs to be installed
-                const driverMatch = error.message?.match(/driver_not_installed:(\w+)/);
-                if (driverMatch) {
-                    setMissingDriver(driverMatch[1]);
+                if (!data?.Login.Status) {
+                    setIsAutoLoggingIn(false);
+                    toast.error(t('loginFailed'));
                     return;
                 }
 
-                // Check if this is a network error (server down)
-                const isNetworkError = error.message?.toLowerCase().includes('network') ||
-                                      error.message?.toLowerCase().includes('fetch') ||
-                                      error.message?.toLowerCase().includes('econnrefused') ||
-                                      ServerError.is(error);
+                const sslMode = advancedForm[SSL_KEYS.MODE];
+                const profileData = {
+                    ...credentials,
+                    SSLConfigured: sslMode != null && sslMode !== 'disabled' && sslMode !== '',
+                };
 
-                if (isNetworkError) {
-                    // Set server status to error to trigger overlay
-                    dispatch(HealthActions.setHealthStatus({
-                        server: 'error',
-                        database: 'unavailable',
-                    }));
+                await clearGraphqlStore();
+                shouldUpdateLastAccessed.current = true;
+                dispatch(AuthActions.login(profileData));
+                markFirstLoginComplete();
+
+                // Clear all login-related URL params before navigation, preserving UI-only params.
+                const hasLoginParams = [...searchParams.keys()].some(k => !LOGIN_UI_PARAMS.has(k));
+                if (hasLoginParams) {
+                    const newParams = new URLSearchParams();
+                    LOGIN_UI_PARAMS.forEach(key => {
+                        if (searchParams.has(key)) {
+                            newParams.set(key, searchParams.get(key)!);
+                        }
+                    });
+                    setSearchParams(newParams, { replace: true });
                 }
-                return toast.error(t('loginFailedWithError', { error: error.message }));
+
+                if (onLoginSuccess) {
+                    onLoginSuccess();
+                } else {
+                    navigate(InternalRoutes.Dashboard.StorageUnit.path);
+                }
+                toast.success(t('loginSuccessful'));
+            } catch (error) {
+                handleLoginError(error, true);
             }
-        });
-    }, [databaseType, hostName, database, username, password, advancedForm, login, dispatch, navigate, onLoginSuccess, markFirstLoginComplete, t]);
+        })();
+    }, [advancedForm, database, databaseType, dispatch, handleLoginError, hostName, login, markFirstLoginComplete, navigate, onLoginSuccess, password, searchParams, setSearchParams, t, username]);
 
     const handleLoginWithProfileSubmit = useCallback((overrideProfileId?: string) => {
         const profileId = overrideProfileId ?? selectedAvailableProfile;
@@ -357,67 +369,56 @@ export const LoginForm: FC<LoginFormProps> = ({
 
         const profile = profiles?.Profiles.find(p => p.Id === profileId);
 
-        loginWithProfile({
-            variables: {
-                profile: {
-                    Id:  profileId,
-                    Type: profile?.Type as DatabaseType,
-                },
-            },
-            onCompleted(data) {
-                if (data.LoginWithProfile.Status) {
-                    updateProfileLastAccessed(profileId);
-                    dispatch(AuthActions.login({
-                        Type: profile?.Type as DatabaseType,
-                        Id: profileId,
-                        Database: profile?.Database ?? "",
-                        Hostname: "",
-                        Password: "",
-                        Username: "",
-                        Saved: true,
-                        IsEnvironmentDefined: profile?.IsEnvironmentDefined ?? false,
-                        SSLConfigured: profile?.SSLConfigured ?? false,
-                    }));
-                    markFirstLoginComplete();
+        void (async () => {
+            try {
+                const { data } = await loginWithProfile({
+                    variables: {
+                        profile: {
+                            Id:  profileId,
+                            Type: profile?.Type as DatabaseType,
+                        },
+                    },
+                });
 
-                    // Clear login-related URL params before navigation
-                    if (searchParams.has("resource")) {
-                        const newParams = new URLSearchParams(searchParams);
-                        newParams.delete("resource");
-                        setSearchParams(newParams, { replace: true });
-                    }
-
-                    if (onLoginSuccess) {
-                        onLoginSuccess();
-                    } else {
-                        navigate(InternalRoutes.Dashboard.StorageUnit.path);
-                    }
-                    toast.success(t('loginSuccessful'));
-                    // Component will unmount after navigation, no need to clear state
+                if (!data?.LoginWithProfile.Status) {
+                    setIsAutoLoggingIn(false);
+                    toast.error(t('loginFailed'));
                     return;
                 }
-                setIsAutoLoggingIn(false);
-                return toast.error(t('loginFailed'));
-            },
-            onError(error) {
-                setIsAutoLoggingIn(false);
-                // Check if this is a network error (server down)
-                const isNetworkError = error.message?.toLowerCase().includes('network') ||
-                                      error.message?.toLowerCase().includes('fetch') ||
-                                      error.message?.toLowerCase().includes('econnrefused') ||
-                                      ServerError.is(error);
 
-                if (isNetworkError) {
-                    // Set server status to error to trigger overlay
-                    dispatch(HealthActions.setHealthStatus({
-                        server: 'error',
-                        database: 'unavailable',
-                    }));
+                updateProfileLastAccessed(profileId);
+                await clearGraphqlStore();
+                dispatch(AuthActions.login({
+                    Type: profile?.Type as DatabaseType,
+                    Id: profileId,
+                    Database: profile?.Database ?? "",
+                    Hostname: "",
+                    Password: "",
+                    Username: "",
+                    Saved: true,
+                    IsEnvironmentDefined: profile?.IsEnvironmentDefined ?? false,
+                    SSLConfigured: profile?.SSLConfigured ?? false,
+                }));
+                markFirstLoginComplete();
+
+                // Clear login-related URL params before navigation
+                if (searchParams.has("resource")) {
+                    const newParams = new URLSearchParams(searchParams);
+                    newParams.delete("resource");
+                    setSearchParams(newParams, { replace: true });
                 }
-                return toast.error(t('loginFailedWithError', { error: error.message }));
+
+                if (onLoginSuccess) {
+                    onLoginSuccess();
+                } else {
+                    navigate(InternalRoutes.Dashboard.StorageUnit.path);
+                }
+                toast.success(t('loginSuccessful'));
+            } catch (error) {
+                handleLoginError(error);
             }
-        });
-    }, [dispatch, loginWithProfile, navigate, profiles?.Profiles, selectedAvailableProfile, onLoginSuccess, markFirstLoginComplete, t]);
+        })();
+    }, [dispatch, handleLoginError, loginWithProfile, markFirstLoginComplete, navigate, onLoginSuccess, profiles?.Profiles, searchParams, selectedAvailableProfile, setSearchParams, t]);
 
     // Keep refs in sync with latest callback versions each render to avoid stale closures
     handleSubmitRef.current = handleSubmit;
@@ -431,62 +432,51 @@ export const LoginForm: FC<LoginFormProps> = ({
 
         setError(undefined);
 
-        loginWithProfile({
-            variables: {
-                profile: {
-                    Id: sampleProfile.Id,
-                    Type: sampleProfile.Type as DatabaseType,
-                },
-            },
-            onCompleted(data) {
-                if (data.LoginWithProfile.Status) {
-                    updateProfileLastAccessed(sampleProfile.Id);
-                    dispatch(AuthActions.login({
-                        Type: sampleProfile.Type as DatabaseType,
-                        Id: sampleProfile.Id,
-                        Database: sampleProfile.Database ?? "",
-                        Hostname: "",
-                        Password: "",
-                        Username: "",
-                        Saved: true,
-                        IsEnvironmentDefined: sampleProfile.IsEnvironmentDefined ?? false,
-                        SSLConfigured: sampleProfile.SSLConfigured ?? false,
-                    }));
-                    markFirstLoginComplete();
-                    if (featureFlags.autoStartTourOnLogin) {
-                        dispatch(TourActions.scheduleTourOnLoad('sample-database-tour'));
-                    }
-                    if (onLoginSuccess) {
-                        onLoginSuccess();
-                    } else {
-                        navigate(InternalRoutes.Dashboard.StorageUnit.path);
-                    }
-                    toast.success(t('welcomeToWhodb', { appName }));
-                    // Component will unmount after navigation, no need to clear state
+        void (async () => {
+            try {
+                const { data } = await loginWithProfile({
+                    variables: {
+                        profile: {
+                            Id: sampleProfile.Id,
+                            Type: sampleProfile.Type as DatabaseType,
+                        },
+                    },
+                });
+
+                if (!data?.LoginWithProfile.Status) {
+                    setIsAutoLoggingIn(false);
+                    toast.error(t('loginFailed'));
                     return;
                 }
-                setIsAutoLoggingIn(false);
-                return toast.error(t('loginFailed'));
-            },
-            onError(error) {
-                setIsAutoLoggingIn(false);
-                // Check if this is a network error (server down)
-                const isNetworkError = error.message?.toLowerCase().includes('network') ||
-                                      error.message?.toLowerCase().includes('fetch') ||
-                                      error.message?.toLowerCase().includes('econnrefused') ||
-                                      ServerError.is(error);
 
-                if (isNetworkError) {
-                    // Set server status to error to trigger overlay
-                    dispatch(HealthActions.setHealthStatus({
-                        server: 'error',
-                        database: 'unavailable',
-                    }));
+                updateProfileLastAccessed(sampleProfile.Id);
+                await clearGraphqlStore();
+                dispatch(AuthActions.login({
+                    Type: sampleProfile.Type as DatabaseType,
+                    Id: sampleProfile.Id,
+                    Database: sampleProfile.Database ?? "",
+                    Hostname: "",
+                    Password: "",
+                    Username: "",
+                    Saved: true,
+                    IsEnvironmentDefined: sampleProfile.IsEnvironmentDefined ?? false,
+                    SSLConfigured: sampleProfile.SSLConfigured ?? false,
+                }));
+                markFirstLoginComplete();
+                if (featureFlags.autoStartTourOnLogin) {
+                    dispatch(TourActions.scheduleTourOnLoad('sample-database-tour'));
                 }
-                return toast.error(t('loginFailedWithError', { error: error.message }));
+                if (onLoginSuccess) {
+                    onLoginSuccess();
+                } else {
+                    navigate(InternalRoutes.Dashboard.StorageUnit.path);
+                }
+                toast.success(t('welcomeToWhodb', { appName }));
+            } catch (error) {
+                handleLoginError(error);
             }
-        });
-    }, [dispatch, loginWithProfile, navigate, profiles?.Profiles, onLoginSuccess, markFirstLoginComplete, t]);
+        })();
+    }, [appName, dispatch, handleLoginError, loginWithProfile, markFirstLoginComplete, navigate, onLoginSuccess, profiles?.Profiles, t]);
 
     const handleDatabaseTypeChange = useCallback((item: IDatabaseDropdownItem) => {
         setHostName("");

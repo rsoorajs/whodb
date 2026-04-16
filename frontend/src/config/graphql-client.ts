@@ -192,6 +192,10 @@ export const graphqlClient = new ApolloClient({
     link: errorLink.concat(authLink.concat(httpLink)),
   cache: new InMemoryCache(),
   defaultOptions: {
+      watchQuery: {
+        fetchPolicy: "cache-first",
+        refetchWritePolicy: "overwrite",
+      },
       query: {
         fetchPolicy: "no-cache",
       },
@@ -200,3 +204,10 @@ export const graphqlClient = new ApolloClient({
       },
   }
 });
+
+/**
+ * Clears all cached GraphQL data without refetching active queries.
+ */
+export async function clearGraphqlStore(): Promise<void> {
+    await graphqlClient.clearStore();
+}

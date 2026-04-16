@@ -22,6 +22,7 @@ import {
     CloudProviderStatus,
     CloudProviderType,
     GetCloudProvidersDocument,
+    GetDiscoveredConnectionsDocument,
     RefreshCloudProviderDocument,
     RemoveCloudProviderDocument,
 } from "@graphql";
@@ -37,6 +38,7 @@ import {
     PlusIcon,
     TrashIcon,
 } from "../heroicons";
+import { removeCloudProviderCache, upsertCloudProviderCache } from "../../utils/apollo-provider-cache";
 
 /**
  * Returns the appropriate badge variant for a provider status.
@@ -96,7 +98,13 @@ export const AwsProvidersSection: FC = () => {
 
     const handleRemoveProvider = useCallback(async (id: string, name: string) => {
         try {
-            const { data } = await removeProvider({ variables: { id } });
+            const { data } = await removeProvider({
+                variables: { id },
+                refetchQueries: [GetDiscoveredConnectionsDocument],
+                update(cache) {
+                    removeCloudProviderCache(cache, id);
+                },
+            });
             if (data?.RemoveCloudProvider?.Status) {
                 dispatch(ProvidersActions.removeCloudProvider({ id }));
                 toast.success(t('providerRemoved', { name }));
@@ -110,7 +118,15 @@ export const AwsProvidersSection: FC = () => {
     const handleRefreshProvider = useCallback(async (id: string) => {
         dispatch(ProvidersActions.setProviderStatus({ id, status: CloudProviderStatus.Discovering }));
         try {
-            const { data } = await refreshProvider({ variables: { id } });
+            const { data } = await refreshProvider({
+                variables: { id },
+                refetchQueries: [GetDiscoveredConnectionsDocument],
+                update(cache, result) {
+                    if (result.data?.RefreshCloudProvider) {
+                        upsertCloudProviderCache(cache, result.data.RefreshCloudProvider);
+                    }
+                },
+            });
             if (data?.RefreshCloudProvider) {
                 dispatch(ProvidersActions.updateCloudProvider(data.RefreshCloudProvider as LocalCloudProvider));
                 toast.success(t('refreshComplete', { count: data.RefreshCloudProvider.DiscoveredCount }));

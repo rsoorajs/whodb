@@ -695,6 +695,110 @@ func TestExportCmd_RequiresOutput(t *testing.T) {
 	}
 }
 
+func TestDiffCmd_Exists(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	found := false
+	for _, cmd := range rootCmd.Commands() {
+		if cmd.Use == "diff" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("Expected 'diff' command to be registered")
+	}
+}
+
+func TestDiffCmd_Flags(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	flags := []string{"from", "to", "schema", "from-schema", "to-schema", "format", "quiet"}
+	for _, flag := range flags {
+		if diffCmd.Flags().Lookup(flag) == nil {
+			t.Errorf("Expected '--%s' flag on diff command", flag)
+		}
+	}
+}
+
+func TestDiffCmd_JSONEnvelope(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	fromDB := createSQLiteTestDatabase(t,
+		"diff-from.db",
+		"CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT)",
+		"CREATE TABLE legacy (id INTEGER PRIMARY KEY, note TEXT)",
+	)
+	toDB := createSQLiteTestDatabase(t,
+		"diff-to.db",
+		"CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT NOT NULL, status TEXT)",
+		"CREATE TABLE audit_log (id INTEGER PRIMARY KEY, action TEXT)",
+	)
+
+	saveTestConnection(t, config.Connection{
+		Name:     "diff-from",
+		Type:     "Sqlite3",
+		Host:     fromDB,
+		Database: fromDB,
+	})
+	saveTestConnection(t, config.Connection{
+		Name:     "diff-to",
+		Type:     "Sqlite3",
+		Host:     toDB,
+		Database: toDB,
+	})
+
+	diffFromConnection = "diff-from"
+	diffToConnection = "diff-to"
+	diffSchema = ""
+	diffFromSchema = ""
+	diffToSchema = ""
+	diffFormat = "json"
+	diffQuiet = false
+
+	outBuf, errBuf := setCommandBuffers(t, diffCmd)
+
+	err := diffCmd.RunE(diffCmd, []string{})
+	if err != nil {
+		t.Fatalf("Diff command failed: %v", err)
+	}
+
+	envelope := decodeJSONEnvelope[schemaDiffOutput](t, outBuf)
+	if envelope.Command != "diff" {
+		t.Errorf("Expected command diff, got %q", envelope.Command)
+	}
+	if !envelope.Data.Summary.HasDifferences {
+		t.Fatal("Expected schema differences")
+	}
+	if envelope.Data.Summary.AddedStorageUnits != 1 {
+		t.Errorf("Expected 1 added storage unit, got %d", envelope.Data.Summary.AddedStorageUnits)
+	}
+	if envelope.Data.Summary.RemovedStorageUnits != 1 {
+		t.Errorf("Expected 1 removed storage unit, got %d", envelope.Data.Summary.RemovedStorageUnits)
+	}
+	if envelope.Data.Summary.ChangedStorageUnits != 1 {
+		t.Errorf("Expected 1 changed storage unit, got %d", envelope.Data.Summary.ChangedStorageUnits)
+	}
+	if envelope.Data.Summary.AddedColumns != 3 {
+		t.Errorf("Expected 3 added columns, got %d", envelope.Data.Summary.AddedColumns)
+	}
+	if envelope.Data.Summary.RemovedColumns != 2 {
+		t.Errorf("Expected 2 removed columns, got %d", envelope.Data.Summary.RemovedColumns)
+	}
+	if envelope.Data.Summary.ChangedColumns != 1 {
+		t.Errorf("Expected 1 changed column, got %d", envelope.Data.Summary.ChangedColumns)
+	}
+	if len(envelope.Data.StorageUnits) != 3 {
+		t.Fatalf("Expected 3 storage unit diffs, got %d", len(envelope.Data.StorageUnits))
+	}
+	if errBuf.Len() != 0 {
+		t.Errorf("Expected no stderr output, got %q", errBuf.String())
+	}
+}
+
 // TestMockDataCmd_Exists verifies the mock-data command is registered.
 func TestMockDataCmd_Exists(t *testing.T) {
 	cleanup := setupTestEnv(t)
@@ -1018,6 +1122,7 @@ func TestAllNewCommandsRegistered(t *testing.T) {
 		"tables",
 		"columns",
 		"connections",
+		"diff",
 		"export",
 		"history",
 	}
