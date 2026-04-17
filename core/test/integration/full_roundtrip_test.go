@@ -85,7 +85,7 @@ func TestSQLCanonicalAndAliasRoundTrips(t *testing.T) {
 			// Unsupported type should fail validation
 			_, err := target.plugin.AddStorageUnit(target.config, target.schema, "intg_bad_type", []engine.Record{
 				{Key: "id", Value: "INTEGER", Extra: map[string]string{"Primary": "true", "Nullable": "false"}},
-				{Key: "val", Value: "NOT_A_REAL_TYPE"},
+				{Key: "val", Value: "NOT_A_REAL_TYPE", Extra: map[string]string{"Primary": "false", "Nullable": "false"}},
 			})
 			if err == nil {
 				t.Fatalf("expected unsupported type to fail on %s", target.name)
@@ -596,6 +596,7 @@ func runSQLTypeCase(t *testing.T, target target, tc typeCase, idx int) {
 
 	table := fmt.Sprintf("intg_%s_%s_%d", target.name, sanitize(tc.columnType), idx)
 	pkType := primaryKeyType(target)
+	pkValue := primaryKeyValue(target)
 	fields := []engine.Record{
 		{Key: "id", Value: pkType, Extra: map[string]string{"Primary": "true", "Nullable": "false"}},
 		{Key: "val", Value: tc.columnType, Extra: map[string]string{"Primary": "false", "Nullable": "false"}},
@@ -609,7 +610,7 @@ func runSQLTypeCase(t *testing.T, target target, tc typeCase, idx int) {
 	defer target.plugin.RawExecute(target.config, dropStatement(target, table))
 
 	ok, err := target.plugin.AddRow(target.config, target.schema, table, []engine.Record{
-		{Key: "id", Value: "1", Extra: map[string]string{"Type": pkType}},
+		{Key: "id", Value: pkValue, Extra: map[string]string{"Type": pkType}},
 		{Key: "val", Value: tc.value, Extra: map[string]string{"Type": tc.columnType}},
 	})
 	if err != nil || !ok {
@@ -639,7 +640,7 @@ func runSQLTypeCase(t *testing.T, target target, tc typeCase, idx int) {
 			updatedExpect = expectationForValue(tc, tc.updated)
 		}
 		_, err := target.plugin.UpdateStorageUnit(target.config, target.schema, table, map[string]string{
-			"id":  "1",
+			"id":  pkValue,
 			"val": tc.updated,
 		}, []string{"val"})
 		if err != nil {
@@ -1145,10 +1146,17 @@ func primaryKeyType(target target) string {
 	case engine.DatabaseType_ClickHouse:
 		return "Int32"
 	case engine.DatabaseType_Postgres:
-		return "INTEGER"
+		return "TEXT"
 	default:
 		return "INT"
 	}
+}
+
+func primaryKeyValue(target target) string {
+	if target.plugin.Type == engine.DatabaseType_Postgres {
+		return "row-1"
+	}
+	return "1"
 }
 
 func dropStatement(target target, table string) string {

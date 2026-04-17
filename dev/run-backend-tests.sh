@@ -124,6 +124,7 @@ run_ce_integration() {
     COMPOSE_FILE="$ROOT_DIR/dev/docker-compose.yml"
     MANAGE_COMPOSE="${WHODB_MANAGE_COMPOSE:-1}"
     COMPOSE_STARTED=0
+    RUNNING_SERVICE_COUNT=0
 
     cleanup() {
       if [ "$MANAGE_COMPOSE" = "1" ] && [ "$COMPOSE_STARTED" -eq 1 ]; then
@@ -134,7 +135,13 @@ run_ce_integration() {
     trap cleanup EXIT
 
     if [ "$MANAGE_COMPOSE" = "1" ]; then
-      if docker compose -f "$COMPOSE_FILE" ps -q | grep -q .; then
+      RUNNING_SERVICE_COUNT="$(
+        docker compose -f "$COMPOSE_FILE" ps -q \
+          e2e_postgres e2e_mysql e2e_mariadb e2e_mysql_842 \
+          e2e_mongo e2e_clickhouse e2e_redis e2e_elasticsearch |
+          grep -c . || true
+      )"
+      if [ "$RUNNING_SERVICE_COUNT" -eq 8 ]; then
         echo "ℹ️  Reusing existing CE docker-compose stack"
       else
         echo "🐳 Starting CE integration docker-compose stack"
