@@ -22,20 +22,23 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/clidey/whodb/core/src/dbcatalog"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/source"
 )
 
-type familySpec struct {
-	category       source.Category
-	model          source.Model
-	browsePath     []source.ObjectKind
-	defaultObject  source.ObjectKind
-	graphScopeKind *source.ObjectKind
-	graphSupported bool
-	objectTypes    []source.ObjectType
+// FamilySpec describes how one connector/plugin type should be projected into
+// the public source-first catalog.
+type FamilySpec struct {
+	Category       source.Category
+	Model          source.Model
+	BrowsePath     []source.ObjectKind
+	DefaultObject  source.ObjectKind
+	GraphScopeKind *source.ObjectKind
+	GraphSupported bool
+	ObjectTypes    []source.ObjectType
 }
 
 var (
@@ -49,15 +52,20 @@ var (
 	objectKindColl     = source.ObjectKindCollection
 )
 
-var familySpecs = map[string]familySpec{
+var (
+	customFamilySpecsMu sync.RWMutex
+	customFamilySpecs   = map[string]FamilySpec{}
+)
+
+var familySpecs = map[string]FamilySpec{
 	string(engine.DatabaseType_Postgres): {
-		category:       source.CategoryDatabase,
-		model:          source.ModelRelational,
-		browsePath:     []source.ObjectKind{objectKindDatabase, objectKindSchema, objectKindTable},
-		defaultObject:  objectKindTable,
-		graphScopeKind: ptr(objectKindSchema),
-		graphSupported: true,
-		objectTypes: []source.ObjectType{
+		Category:       source.CategoryDatabase,
+		Model:          source.ModelRelational,
+		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindSchema, objectKindTable},
+		DefaultObject:  objectKindTable,
+		GraphScopeKind: ptr(objectKindSchema),
+		GraphSupported: true,
+		ObjectTypes: []source.ObjectType{
 			metadataObjectType(objectKindDatabase, "Database", "Databases", true),
 			metadataObjectType(objectKindSchema, "Schema", "Schemas", true),
 			tabularObjectType(objectKindTable, "Table", "Tables"),
@@ -65,13 +73,13 @@ var familySpecs = map[string]familySpec{
 		},
 	},
 	string(engine.DatabaseType_CockroachDB): {
-		category:       source.CategoryDatabase,
-		model:          source.ModelRelational,
-		browsePath:     []source.ObjectKind{objectKindDatabase, objectKindSchema, objectKindTable},
-		defaultObject:  objectKindTable,
-		graphScopeKind: ptr(objectKindSchema),
-		graphSupported: true,
-		objectTypes: []source.ObjectType{
+		Category:       source.CategoryDatabase,
+		Model:          source.ModelRelational,
+		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindSchema, objectKindTable},
+		DefaultObject:  objectKindTable,
+		GraphScopeKind: ptr(objectKindSchema),
+		GraphSupported: true,
+		ObjectTypes: []source.ObjectType{
 			metadataObjectType(objectKindDatabase, "Database", "Databases", true),
 			metadataObjectType(objectKindSchema, "Schema", "Schemas", true),
 			tabularObjectType(objectKindTable, "Table", "Tables"),
@@ -79,101 +87,101 @@ var familySpecs = map[string]familySpec{
 		},
 	},
 	string(engine.DatabaseType_MySQL): {
-		category:       source.CategoryDatabase,
-		model:          source.ModelRelational,
-		browsePath:     []source.ObjectKind{objectKindDatabase, objectKindTable},
-		defaultObject:  objectKindTable,
-		graphScopeKind: ptr(objectKindDatabase),
-		graphSupported: true,
-		objectTypes: []source.ObjectType{
+		Category:       source.CategoryDatabase,
+		Model:          source.ModelRelational,
+		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindTable},
+		DefaultObject:  objectKindTable,
+		GraphScopeKind: ptr(objectKindDatabase),
+		GraphSupported: true,
+		ObjectTypes: []source.ObjectType{
 			metadataObjectType(objectKindDatabase, "Database", "Databases", true),
 			tabularObjectType(objectKindTable, "Table", "Tables"),
 			tabularReadOnlyObjectType(objectKindView, "View", "Views"),
 		},
 	},
 	string(engine.DatabaseType_MariaDB): {
-		category:       source.CategoryDatabase,
-		model:          source.ModelRelational,
-		browsePath:     []source.ObjectKind{objectKindDatabase, objectKindTable},
-		defaultObject:  objectKindTable,
-		graphScopeKind: ptr(objectKindDatabase),
-		graphSupported: true,
-		objectTypes: []source.ObjectType{
+		Category:       source.CategoryDatabase,
+		Model:          source.ModelRelational,
+		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindTable},
+		DefaultObject:  objectKindTable,
+		GraphScopeKind: ptr(objectKindDatabase),
+		GraphSupported: true,
+		ObjectTypes: []source.ObjectType{
 			metadataObjectType(objectKindDatabase, "Database", "Databases", true),
 			tabularObjectType(objectKindTable, "Table", "Tables"),
 			tabularReadOnlyObjectType(objectKindView, "View", "Views"),
 		},
 	},
 	string(engine.DatabaseType_ClickHouse): {
-		category:       source.CategoryDatabase,
-		model:          source.ModelRelational,
-		browsePath:     []source.ObjectKind{objectKindDatabase, objectKindTable},
-		defaultObject:  objectKindTable,
-		graphScopeKind: ptr(objectKindDatabase),
-		graphSupported: true,
-		objectTypes: []source.ObjectType{
+		Category:       source.CategoryDatabase,
+		Model:          source.ModelRelational,
+		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindTable},
+		DefaultObject:  objectKindTable,
+		GraphScopeKind: ptr(objectKindDatabase),
+		GraphSupported: true,
+		ObjectTypes: []source.ObjectType{
 			metadataObjectType(objectKindDatabase, "Database", "Databases", true),
 			tabularObjectType(objectKindTable, "Table", "Tables"),
 		},
 	},
 	string(engine.DatabaseType_Sqlite3): {
-		category:      source.CategoryDatabase,
-		model:         source.ModelRelational,
-		browsePath:    []source.ObjectKind{objectKindTable},
-		defaultObject: objectKindTable,
-		objectTypes: []source.ObjectType{
+		Category:      source.CategoryDatabase,
+		Model:         source.ModelRelational,
+		BrowsePath:    []source.ObjectKind{objectKindTable},
+		DefaultObject: objectKindTable,
+		ObjectTypes: []source.ObjectType{
 			tabularObjectType(objectKindTable, "Table", "Tables"),
 		},
 	},
 	string(engine.DatabaseType_DuckDB): {
-		category:      source.CategoryDatabase,
-		model:         source.ModelRelational,
-		browsePath:    []source.ObjectKind{objectKindTable},
-		defaultObject: objectKindTable,
-		objectTypes: []source.ObjectType{
+		Category:      source.CategoryDatabase,
+		Model:         source.ModelRelational,
+		BrowsePath:    []source.ObjectKind{objectKindTable},
+		DefaultObject: objectKindTable,
+		ObjectTypes: []source.ObjectType{
 			tabularObjectType(objectKindTable, "Table", "Tables"),
 		},
 	},
 	string(engine.DatabaseType_MongoDB): {
-		category:       source.CategoryDatabase,
-		model:          source.ModelDocument,
-		browsePath:     []source.ObjectKind{objectKindDatabase, objectKindColl},
-		defaultObject:  objectKindColl,
-		graphScopeKind: ptr(objectKindDatabase),
-		graphSupported: true,
-		objectTypes: []source.ObjectType{
+		Category:       source.CategoryDatabase,
+		Model:          source.ModelDocument,
+		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindColl},
+		DefaultObject:  objectKindColl,
+		GraphScopeKind: ptr(objectKindDatabase),
+		GraphSupported: true,
+		ObjectTypes: []source.ObjectType{
 			metadataObjectType(objectKindDatabase, "Database", "Databases", true),
 			documentObjectType(objectKindColl, "Collection", "Collections"),
 			metadataObjectType(objectKindIndex, "Index", "Indexes", false),
 		},
 	},
 	string(engine.DatabaseType_Redis): {
-		category:      source.CategoryCache,
-		model:         source.ModelKeyValue,
-		browsePath:    []source.ObjectKind{objectKindDatabase, objectKindKey},
-		defaultObject: objectKindKey,
-		objectTypes: []source.ObjectType{
+		Category:      source.CategoryCache,
+		Model:         source.ModelKeyValue,
+		BrowsePath:    []source.ObjectKind{objectKindDatabase, objectKindKey},
+		DefaultObject: objectKindKey,
+		ObjectTypes: []source.ObjectType{
 			metadataObjectType(objectKindDatabase, "Database", "Databases", true),
 			keyValueObjectType(objectKindKey, "Key", "Keys"),
 		},
 	},
 	string(engine.DatabaseType_Memcached): {
-		category:      source.CategoryCache,
-		model:         source.ModelKeyValue,
-		browsePath:    []source.ObjectKind{objectKindItem},
-		defaultObject: objectKindItem,
-		objectTypes: []source.ObjectType{
+		Category:      source.CategoryCache,
+		Model:         source.ModelKeyValue,
+		BrowsePath:    []source.ObjectKind{objectKindItem},
+		DefaultObject: objectKindItem,
+		ObjectTypes: []source.ObjectType{
 			keyValueReadOnlyObjectType(objectKindItem, "Item", "Items"),
 		},
 	},
 	string(engine.DatabaseType_ElasticSearch): {
-		category:       source.CategorySearch,
-		model:          source.ModelSearch,
-		browsePath:     []source.ObjectKind{objectKindIndex},
-		defaultObject:  objectKindIndex,
-		graphScopeKind: ptr(objectKindIndex),
-		graphSupported: true,
-		objectTypes: []source.ObjectType{
+		Category:       source.CategorySearch,
+		Model:          source.ModelSearch,
+		BrowsePath:     []source.ObjectKind{objectKindIndex},
+		DefaultObject:  objectKindIndex,
+		GraphScopeKind: ptr(objectKindIndex),
+		GraphSupported: true,
+		ObjectTypes: []source.ObjectType{
 			documentObjectType(objectKindIndex, "Index", "Indices"),
 		},
 	},
@@ -226,26 +234,35 @@ func Find(id string) (source.TypeSpec, bool) {
 	return source.TypeSpec{}, false
 }
 
+// RegisterFamilySpec registers a source-family mapping for a connector/plugin
+// type so extension modules can expose additional source types through the
+// shared source-first catalog.
+func RegisterFamilySpec(connector string, spec FamilySpec) {
+	customFamilySpecsMu.Lock()
+	defer customFamilySpecsMu.Unlock()
+	customFamilySpecs[connector] = cloneFamilySpec(spec)
+}
+
 func mapEntry(entry dbcatalog.ConnectableDatabase) (source.TypeSpec, bool) {
-	family, ok := familySpecs[string(entry.PluginType)]
+	family, ok := familySpecFor(string(entry.PluginType))
 	if !ok {
 		return source.TypeSpec{}, false
 	}
 
 	contract := source.Contract{
-		Model:             family.model,
+		Model:             family.Model,
 		Surfaces:          buildSurfaces(entry, family),
-		BrowsePath:        slices.Clone(family.browsePath),
-		DefaultObjectKind: family.defaultObject,
-		GraphScopeKind:    family.graphScopeKind,
-		ObjectTypes:       cloneObjectTypes(family.objectTypes),
+		BrowsePath:        slices.Clone(family.BrowsePath),
+		DefaultObjectKind: family.DefaultObject,
+		GraphScopeKind:    family.GraphScopeKind,
+		ObjectTypes:       cloneObjectTypes(family.ObjectTypes),
 	}
 
 	return source.TypeSpec{
 		ID:               string(entry.ID),
 		Label:            entry.Label,
 		Connector:        string(entry.PluginType),
-		Category:         family.category,
+		Category:         family.Category,
 		ConnectionFields: buildConnectionFields(entry),
 		Contract:         contract,
 		IsAWSManaged:     entry.IsAWSManaged,
@@ -253,12 +270,27 @@ func mapEntry(entry dbcatalog.ConnectableDatabase) (source.TypeSpec, bool) {
 	}, true
 }
 
-func buildSurfaces(entry dbcatalog.ConnectableDatabase, family familySpec) []source.Surface {
+func familySpecFor(connector string) (FamilySpec, bool) {
+	customFamilySpecsMu.RLock()
+	spec, ok := customFamilySpecs[connector]
+	customFamilySpecsMu.RUnlock()
+	if ok {
+		return cloneFamilySpec(spec), true
+	}
+
+	spec, ok = familySpecs[connector]
+	if !ok {
+		return FamilySpec{}, false
+	}
+	return cloneFamilySpec(spec), true
+}
+
+func buildSurfaces(entry dbcatalog.ConnectableDatabase, family FamilySpec) []source.Surface {
 	surfaces := []source.Surface{source.SurfaceBrowser}
 	if entry.SupportsScratchpad {
 		surfaces = append(surfaces, source.SurfaceQuery, source.SurfaceChat)
 	}
-	if family.graphSupported {
+	if family.GraphSupported {
 		surfaces = append(surfaces, source.SurfaceGraph)
 	}
 	return surfaces
@@ -524,6 +556,18 @@ func cloneObjectTypes(objectTypes []source.ObjectType) []source.ObjectType {
 		})
 	}
 	return cloned
+}
+
+func cloneFamilySpec(spec FamilySpec) FamilySpec {
+	return FamilySpec{
+		Category:       spec.Category,
+		Model:          spec.Model,
+		BrowsePath:     slices.Clone(spec.BrowsePath),
+		DefaultObject:  spec.DefaultObject,
+		GraphScopeKind: spec.GraphScopeKind,
+		GraphSupported: spec.GraphSupported,
+		ObjectTypes:    cloneObjectTypes(spec.ObjectTypes),
+	}
 }
 
 func ptr(kind source.ObjectKind) *source.ObjectKind {
