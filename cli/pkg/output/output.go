@@ -23,8 +23,8 @@ import (
 	"io"
 	"os"
 	"strings"
-	"text/tabwriter"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/clidey/whodb/cli/pkg/styles"
 	"golang.org/x/term"
 )
@@ -221,39 +221,76 @@ func (w *Writer) writePlain(result *QueryResult) error {
 }
 
 func (w *Writer) writeTable(result *QueryResult) error {
-	tw := tabwriter.NewWriter(w.out, 0, 0, 2, ' ', 0)
+	if len(result.Columns) == 0 {
+		return nil
+	}
+
+	widths := make([]int, len(result.Columns))
+	rows := make([][]string, len(result.Rows))
+	headers := make([]string, len(result.Columns))
 
 	for i, col := range result.Columns {
-		if w.ColorEnabled() {
-			fmt.Fprint(tw, "\033[1m"+col.Name+"\033[0m")
-		} else {
-			fmt.Fprint(tw, col.Name)
-		}
-		if i < len(result.Columns)-1 {
-			fmt.Fprint(tw, "\t")
-		}
+		headers[i] = col.Name
+		widths[i] = max(3, lipgloss.Width(col.Name))
 	}
-	fmt.Fprintln(tw)
 
-	for i := range result.Columns {
-		fmt.Fprint(tw, "───")
-		if i < len(result.Columns)-1 {
-			fmt.Fprint(tw, "\t")
-		}
-	}
-	fmt.Fprintln(tw)
-
-	for _, row := range result.Rows {
-		for i, cell := range row {
-			fmt.Fprintf(tw, "%v", cell)
-			if i < len(row)-1 {
-				fmt.Fprint(tw, "\t")
+	for i, row := range result.Rows {
+		renderedRow := make([]string, len(result.Columns))
+		for j := range result.Columns {
+			if j < len(row) {
+				renderedRow[j] = fmt.Sprintf("%v", row[j])
 			}
+			widths[j] = max(widths[j], lipgloss.Width(renderedRow[j]))
 		}
-		fmt.Fprintln(tw)
+		rows[i] = renderedRow
 	}
 
-	return tw.Flush()
+	if _, err := fmt.Fprintln(w.out, w.renderTableRow(headers, widths, true)); err != nil {
+		return err
+	}
+
+	separators := make([]string, len(result.Columns))
+	for i, width := range widths {
+		separators[i] = strings.Repeat("─", width)
+	}
+	if _, err := fmt.Fprintln(w.out, w.renderTableRow(separators, widths, false)); err != nil {
+		return err
+	}
+
+	for _, row := range rows {
+		if _, err := fmt.Fprintln(w.out, w.renderTableRow(row, widths, false)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (w *Writer) renderTableRow(cells []string, widths []int, header bool) string {
+	var b strings.Builder
+
+	for i, cell := range cells {
+		rendered := padTableCell(cell, widths[i])
+		if header && w.ColorEnabled() {
+			rendered = "\033[1m" + rendered + "\033[0m"
+		}
+
+		b.WriteString(rendered)
+		if i < len(cells)-1 {
+			b.WriteString("  ")
+		}
+	}
+
+	return b.String()
+}
+
+func padTableCell(text string, width int) string {
+	padding := width - lipgloss.Width(text)
+	if padding <= 0 {
+		return text
+	}
+
+	return text + strings.Repeat(" ", padding)
 }
 
 func (w *Writer) Info(format string, args ...any) {

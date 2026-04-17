@@ -19,6 +19,7 @@ package output
 import (
 	"bytes"
 	"encoding/json"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -422,6 +423,43 @@ func TestWriter_WriteTable_EmptyResult(t *testing.T) {
 	// Should still have header and separator
 	if !strings.Contains(output, "id") {
 		t.Error("Empty table should still show header")
+	}
+}
+
+func TestWriter_WriteTable_AlignsColumnsWithANSIText(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(WithOutput(&buf), WithFormat(FormatTable))
+
+	result := &QueryResult{
+		Columns: []Column{
+			{Name: "\x1b[1mid\x1b[0m"},
+			{Name: "\x1b[1mpayment_method\x1b[0m"},
+		},
+		Rows: [][]any{
+			{1, "credit_card"},
+			{2, "paypal"},
+		},
+	}
+
+	if err := w.WriteQueryResult(result); err != nil {
+		t.Fatalf("WriteQueryResult error: %v", err)
+	}
+
+	ansiPattern := regexp.MustCompile(`\x1b\[[0-9;]*m`)
+	lines := strings.Split(strings.TrimSpace(ansiPattern.ReplaceAllString(buf.String(), "")), "\n")
+	if len(lines) != 4 {
+		t.Fatalf("Expected 4 table lines, got %d: %q", len(lines), lines)
+	}
+
+	headerIndex := strings.Index(lines[0], "payment_method")
+	firstRowIndex := strings.Index(lines[2], "credit_card")
+	secondRowIndex := strings.Index(lines[3], "paypal")
+
+	if headerIndex == -1 || firstRowIndex == -1 || secondRowIndex == -1 {
+		t.Fatalf("Expected aligned header/data cells, got lines: %#v", lines)
+	}
+	if headerIndex != firstRowIndex || headerIndex != secondRowIndex {
+		t.Fatalf("Expected second column to align, got header=%d first=%d second=%d in %#v", headerIndex, firstRowIndex, secondRowIndex, lines)
 	}
 }
 
