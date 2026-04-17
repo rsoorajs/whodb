@@ -158,6 +158,10 @@ run_ce_integration() {
     if [ "$COMPOSE_STARTED" -eq 1 ]; then
       START_FLAG="0"
     fi
+    WHODB_START_COMPOSE="${START_FLAG:-0}" go test -tags integration \
+      ./src/plugins/postgres \
+      ./src/plugins/mysql \
+      ./src/plugins/clickhouse
     WHODB_START_COMPOSE="${START_FLAG:-0}" go test -tags integration ./test/integration/...
   )
 }
@@ -206,6 +210,11 @@ run_ee_integration() {
     if [ "$COMPOSE_STARTED" -eq 1 ]; then
       START_FLAG="0"
     fi
+    WHODB_START_COMPOSE="${START_FLAG:-0}" go test -tags integration \
+      ./core/src/plugins/cassandra \
+      ./core/src/plugins/dynamodb \
+      ./core/src/plugins/mssql \
+      ./core/src/plugins/oracle
     WHODB_START_COMPOSE="${START_FLAG:-0}" go test -tags integration ./test/integration/...
   )
 }
