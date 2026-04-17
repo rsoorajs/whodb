@@ -49,6 +49,7 @@ Output formats:
   table  - Human-readable table with borders
   plain  - One schema per line for scripting
   json   - JSON array of schema names
+  ndjson - One JSON object per line
   csv    - CSV format`,
 	Example: `  # List schemas for a connection
   whodb-cli schemas --connection mydb
@@ -67,10 +68,8 @@ Output formats:
 			return err
 		}
 
-		out := output.New(
-			output.WithFormat(format),
-			output.WithQuiet(schemasQuiet),
-		)
+		quiet := schemasQuiet || shouldSuppressInformationalOutput(cmd, format)
+		out := newCommandOutput(cmd, format, quiet)
 
 		mgr, err := dbmgr.NewManager()
 		if err != nil {
@@ -93,27 +92,35 @@ Output formats:
 		}
 
 		var spinner *output.Spinner
-		if !schemasQuiet {
+		if !quiet {
 			spinner = output.NewSpinner(fmt.Sprintf("Connecting to %s...", conn.Type))
+			spinner.Start()
 		}
-		spinner.Start()
 		if err := mgr.Connect(conn); err != nil {
-			spinner.StopWithError("Connection failed")
+			if spinner != nil {
+				spinner.StopWithError("Connection failed")
+			}
 			return fmt.Errorf("cannot connect to database: %w", err)
 		}
-		spinner.StopWithSuccess("Connected")
+		if spinner != nil {
+			spinner.Stop()
+		}
 		defer mgr.Disconnect()
 
-		if !schemasQuiet {
+		if !quiet {
 			spinner = output.NewSpinner("Fetching schemas...")
+			spinner.Start()
 		}
-		spinner.Start()
 		schemas, err := mgr.GetSchemas()
 		if err != nil {
-			spinner.StopWithError("Failed to fetch schemas")
+			if spinner != nil {
+				spinner.StopWithError("Failed to fetch schemas")
+			}
 			return fmt.Errorf("failed to fetch schemas: %w", err)
 		}
-		spinner.Stop()
+		if spinner != nil {
+			spinner.Stop()
+		}
 
 		analytics.TrackSchemasListed(ctx, conn.Type, len(schemas), time.Since(startTime).Milliseconds())
 
@@ -137,7 +144,7 @@ func init() {
 	rootCmd.AddCommand(schemasCmd)
 
 	schemasCmd.Flags().StringVarP(&schemasConnection, "connection", "c", "", "connection name to use")
-	schemasCmd.Flags().StringVarP(&schemasFormat, "format", "f", "auto", "output format: auto, table, plain, json, csv")
+	schemasCmd.Flags().StringVarP(&schemasFormat, "format", "f", "auto", "output format: auto, table, plain, json, ndjson, csv")
 	schemasCmd.Flags().BoolVarP(&schemasQuiet, "quiet", "q", false, "suppress informational messages")
 
 	schemasCmd.RegisterFlagCompletionFunc("connection", completeConnectionNames)

@@ -153,7 +153,7 @@ Checks performed:
 			return fmt.Errorf("cannot connect to database: %w", err)
 		}
 		if spinner != nil {
-			spinner.StopWithSuccess("Connected")
+			spinner.Stop()
 		}
 		defer mgr.Disconnect()
 

@@ -50,8 +50,10 @@ Features:
   - Data import/export (CSV, Excel) — Ctrl+G for import wizard
   - FK-aware mock data generation (mock-data) with dependency analysis
   - Schema diff between saved connections (diff)
+  - Backend-generated query suggestions (suggestions + editor empty state)
   - AI chat with streaming responses (OpenAI, Anthropic, Ollama, LM Studio)
   - SSH tunnel support for remote databases
+  - SSL mode + certificate file support in commands and the TUI
   - Docker container auto-detection
   - Query bookmarks (Ctrl+B), history (Ctrl+H), command log (Ctrl+D)
   - Nested WHERE builder with AND/OR grouping

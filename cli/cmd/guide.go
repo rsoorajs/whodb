@@ -94,6 +94,9 @@ SQL EDITOR
   Ghost text: Start typing and you'll see dimmed suggestions
   from your query history. Press → (right arrow) to accept.
 
+  When the editor is empty, backend-generated suggestions appear
+  based on the tables in the active schema or database.
+
 BROWSING DATA
 ─────────────
   In the Browser view:
@@ -219,6 +222,20 @@ SSH TUNNELS
 
   Requires the host to be in your ~/.ssh/known_hosts file.
 
+SSL
+───
+  The CLI also supports SSL mode selection and certificate files
+  in both command mode and the TUI connection form.
+
+  Examples:
+    whodb-cli connect \
+      --type postgres --host localhost --user alice --database mydb \
+      --ssl-mode verify-ca --ssl-ca ./ca.pem
+
+    whodb-cli connections add \
+      --name prod --type Postgres --host db.internal --user alice --database mydb \
+      --ssl-mode verify-identity --ssl-ca ./ca.pem --ssl-server-name db.internal
+
 DOCKER DETECTION
 ────────────────
   The CLI auto-detects running Docker database containers.
@@ -288,6 +305,7 @@ PROGRAMMATIC USAGE
   whodb-cli tables -c mydb --include-columns
   whodb-cli columns -c mydb -t users
   whodb-cli diff --from staging --to prod --format json
+  whodb-cli suggestions --connection mydb --format json
   whodb-cli history --format json
   whodb-cli connections list
   whodb-cli connections test mydb --format json
@@ -296,7 +314,8 @@ PROGRAMMATIC USAGE
 
   Query/list commands emit raw JSON arrays with -f json.
   Action/analysis commands emit {command, success, data} envelopes.
-  Output formats: table, plain, json, csv (use -f flag).
+  Output formats: table, plain, json, ndjson, csv (use -f flag).
+  ndjson emits one JSON object per row for streaming-friendly pipes.
   Pipe-friendly: auto-detects TTY and uses plain format when piped.
 
 MCP SERVER

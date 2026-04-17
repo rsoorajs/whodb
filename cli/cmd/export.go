@@ -114,7 +114,7 @@ The output format is determined by:
 			spinner.StopWithError("Connection failed")
 			return fmt.Errorf("cannot connect to database: %w", err)
 		}
-		spinner.StopWithSuccess("Connected")
+		spinner.Stop()
 		defer mgr.Disconnect()
 
 		// Determine export format

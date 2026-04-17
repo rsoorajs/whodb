@@ -56,6 +56,7 @@ Output formats:
   table  - Human-readable table with borders
   plain  - Tab-separated values for grep/awk
   json   - JSON array of objects
+  ndjson - One JSON object per line
   csv    - RFC 4180 CSV format`,
 	Example: `  # Query with a named connection
   whodb-cli query --connection mydb "SELECT id, name FROM users LIMIT 5"
@@ -106,10 +107,8 @@ Output formats:
 			return err
 		}
 
-		out := output.New(
-			output.WithFormat(format),
-			output.WithQuiet(queryQuiet),
-		)
+		quiet := queryQuiet || shouldSuppressInformationalOutput(cmd, format)
+		out := newCommandOutput(cmd, format, quiet)
 
 		mgr, err := dbmgr.NewManager()
 		if err != nil {
@@ -132,30 +131,38 @@ Output formats:
 		}
 
 		var spinner *output.Spinner
-		if !queryQuiet {
+		if !quiet {
 			spinner = output.NewSpinner(fmt.Sprintf("Connecting to %s...", conn.Type))
+			spinner.Start()
 		}
-		spinner.Start()
 		if err := mgr.Connect(conn); err != nil {
-			spinner.StopWithError("Connection failed")
+			if spinner != nil {
+				spinner.StopWithError("Connection failed")
+			}
 			analytics.TrackConnectError(ctx, conn.Type, "connection_failed", time.Since(startTime).Milliseconds())
 			return fmt.Errorf("cannot connect to database: %w", err)
 		}
-		spinner.StopWithSuccess("Connected")
+		if spinner != nil {
+			spinner.Stop()
+		}
 		defer mgr.Disconnect()
 
-		if !queryQuiet {
+		if !quiet {
 			spinner = output.NewSpinner("Executing query...")
+			spinner.Start()
 		}
-		spinner.Start()
 		queryStart := time.Now()
 		result, err := mgr.ExecuteQuery(sql)
 		if err != nil {
-			spinner.StopWithError("Query failed")
+			if spinner != nil {
+				spinner.StopWithError("Query failed")
+			}
 			analytics.TrackQueryError(ctx, conn.Type, "execution_failed", time.Since(queryStart).Milliseconds())
 			return fmt.Errorf("query failed: %w", err)
 		}
-		spinner.Stop()
+		if spinner != nil {
+			spinner.Stop()
+		}
 
 		columns := make([]output.Column, len(result.Columns))
 		for i, col := range result.Columns {
@@ -189,7 +196,7 @@ func init() {
 	rootCmd.AddCommand(queryCmd)
 
 	queryCmd.Flags().StringVarP(&queryConnection, "connection", "c", "", "connection name to use")
-	queryCmd.Flags().StringVarP(&queryFormat, "format", "f", "auto", "output format: auto, table, plain, json, csv")
+	queryCmd.Flags().StringVarP(&queryFormat, "format", "f", "auto", "output format: auto, table, plain, json, ndjson, csv")
 	queryCmd.Flags().BoolVarP(&queryQuiet, "quiet", "q", false, "suppress informational messages")
 
 	queryCmd.RegisterFlagCompletionFunc("connection", completeConnectionNames)

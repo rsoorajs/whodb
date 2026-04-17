@@ -37,6 +37,7 @@ func TestParseFormat(t *testing.T) {
 		{name: "table", input: "table", want: FormatTable},
 		{name: "plain", input: "plain", want: FormatPlain},
 		{name: "json", input: "json", want: FormatJSON},
+		{name: "ndjson", input: "ndjson", want: FormatNDJSON},
 		{name: "csv", input: "csv", want: FormatCSV},
 		{name: "uppercase_JSON", input: "JSON", want: FormatJSON},
 		{name: "mixed_case_Table", input: "TaBlE", want: FormatTable},
@@ -222,6 +223,41 @@ func TestWriter_WriteJSON_ColumnMismatch(t *testing.T) {
 
 	if _, exists := output[0]["extra"]; exists {
 		t.Error("Extra values should not be included")
+	}
+}
+
+func TestWriter_WriteNDJSON(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(WithOutput(&buf), WithFormat(FormatNDJSON))
+
+	result := &QueryResult{
+		Columns: []Column{{Name: "id"}, {Name: "name"}},
+		Rows:    [][]any{{1, "Alice"}, {2, "Bob"}},
+	}
+
+	if err := w.WriteQueryResult(result); err != nil {
+		t.Fatalf("WriteQueryResult error: %v", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 NDJSON lines, got %d", len(lines))
+	}
+
+	var first map[string]any
+	if err := json.Unmarshal([]byte(lines[0]), &first); err != nil {
+		t.Fatalf("invalid first NDJSON line: %v", err)
+	}
+	if first["name"] != "Alice" {
+		t.Errorf("first row name = %v, want Alice", first["name"])
+	}
+
+	var second map[string]any
+	if err := json.Unmarshal([]byte(lines[1]), &second); err != nil {
+		t.Fatalf("invalid second NDJSON line: %v", err)
+	}
+	if second["name"] != "Bob" {
+		t.Errorf("second row name = %v, want Bob", second["name"])
 	}
 }
 
@@ -470,6 +506,9 @@ func TestFormatConstants(t *testing.T) {
 	}
 	if FormatJSON != "json" {
 		t.Errorf("FormatJSON = %q, want 'json'", FormatJSON)
+	}
+	if FormatNDJSON != "ndjson" {
+		t.Errorf("FormatNDJSON = %q, want 'ndjson'", FormatNDJSON)
 	}
 	if FormatCSV != "csv" {
 		t.Errorf("FormatCSV = %q, want 'csv'", FormatCSV)

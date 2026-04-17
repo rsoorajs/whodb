@@ -65,7 +65,7 @@ var historyListCmd = &cobra.Command{
 			return err
 		}
 
-		quiet := historyQuiet || format == output.FormatJSON
+		quiet := historyQuiet || shouldSuppressInformationalOutput(cmd, format)
 		out := newCommandOutput(cmd, format, quiet)
 
 		mgr, err := history.NewManager()
@@ -76,7 +76,7 @@ var historyListCmd = &cobra.Command{
 		entries := mgr.GetAll()
 		if len(entries) == 0 {
 			out.Info("No query history found")
-			if format == output.FormatJSON {
+			if effectiveCommandOutputFormat(cmd, format) == output.FormatJSON {
 				return writeEmptyJSONArray(cmd)
 			}
 			return nil
@@ -88,7 +88,7 @@ var historyListCmd = &cobra.Command{
 		}
 
 		// For JSON, output structured data
-		if format == output.FormatJSON {
+		if effectiveCommandOutputFormat(cmd, format) == output.FormatJSON {
 			return writeCommandJSON(cmd, entries)
 		}
 
@@ -145,7 +145,7 @@ var historySearchCmd = &cobra.Command{
 			return err
 		}
 
-		quiet := historyQuiet || format == output.FormatJSON
+		quiet := historyQuiet || shouldSuppressInformationalOutput(cmd, format)
 		out := newCommandOutput(cmd, format, quiet)
 
 		mgr, err := history.NewManager()
@@ -178,7 +178,7 @@ var historySearchCmd = &cobra.Command{
 
 		if len(matches) == 0 {
 			out.Info("No matching queries found")
-			if format == output.FormatJSON {
+			if effectiveCommandOutputFormat(cmd, format) == output.FormatJSON {
 				return writeEmptyJSONArray(cmd)
 			}
 			return nil
@@ -190,7 +190,7 @@ var historySearchCmd = &cobra.Command{
 		}
 
 		// For JSON, output structured data
-		if format == output.FormatJSON {
+		if effectiveCommandOutputFormat(cmd, format) == output.FormatJSON {
 			return writeCommandJSON(cmd, matches)
 		}
 
@@ -240,7 +240,7 @@ var historyClearCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		quiet := historyQuiet || format == output.FormatJSON
+		quiet := historyQuiet || shouldSuppressInformationalOutput(cmd, format)
 		out := newCommandOutput(cmd, format, quiet)
 
 		mgr, err := history.NewManager()
@@ -253,7 +253,7 @@ var historyClearCmd = &cobra.Command{
 			return fmt.Errorf("failed to clear history: %w", err)
 		}
 
-		if format == output.FormatJSON {
+		if effectiveCommandOutputFormat(cmd, format) == output.FormatJSON {
 			return writeAutomationEnvelope(cmd, "history.clear", struct {
 				RemovedCount int `json:"removedCount"`
 			}{
@@ -269,7 +269,7 @@ func init() {
 	rootCmd.AddCommand(historyCmd)
 
 	// Global flags
-	historyCmd.PersistentFlags().StringVarP(&historyFormat, "format", "f", "auto", "output format: auto, table, plain, json, csv")
+	historyCmd.PersistentFlags().StringVarP(&historyFormat, "format", "f", "auto", "output format: auto, table, plain, json, ndjson, csv")
 	historyCmd.PersistentFlags().BoolVarP(&historyQuiet, "quiet", "q", false, "suppress informational messages")
 	historyCmd.PersistentFlags().IntVarP(&historyLimit, "limit", "l", 0, "limit number of results (0 = no limit)")
 

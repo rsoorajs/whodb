@@ -32,11 +32,12 @@ import (
 type Format string
 
 const (
-	FormatAuto  Format = "auto"
-	FormatTable Format = "table"
-	FormatPlain Format = "plain"
-	FormatJSON  Format = "json"
-	FormatCSV   Format = "csv"
+	FormatAuto   Format = "auto"
+	FormatTable  Format = "table"
+	FormatPlain  Format = "plain"
+	FormatJSON   Format = "json"
+	FormatNDJSON Format = "ndjson"
+	FormatCSV    Format = "csv"
 )
 
 type QueryResult struct {
@@ -131,6 +132,8 @@ func (w *Writer) WriteQueryResult(result *QueryResult) error {
 	switch format {
 	case FormatJSON:
 		return w.writeJSON(result)
+	case FormatNDJSON:
+		return w.writeNDJSON(result)
 	case FormatCSV:
 		return w.writeCSV(result)
 	case FormatPlain:
@@ -146,18 +149,32 @@ func (w *Writer) writeJSON(result *QueryResult) error {
 	output := make([]map[string]any, 0, len(result.Rows))
 
 	for _, row := range result.Rows {
-		record := make(map[string]any)
-		for i, col := range result.Columns {
-			if i < len(row) {
-				record[col.Name] = row[i]
-			}
-		}
-		output = append(output, record)
+		output = append(output, result.recordForRow(row))
 	}
 
 	encoder := json.NewEncoder(w.out)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(output)
+}
+
+func (w *Writer) writeNDJSON(result *QueryResult) error {
+	encoder := json.NewEncoder(w.out)
+	for _, row := range result.Rows {
+		if err := encoder.Encode(result.recordForRow(row)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *QueryResult) recordForRow(row []any) map[string]any {
+	record := make(map[string]any, len(r.Columns))
+	for i, col := range r.Columns {
+		if i < len(row) {
+			record[col.Name] = row[i]
+		}
+	}
+	return record
 }
 
 func (w *Writer) writeCSV(result *QueryResult) error {
@@ -271,9 +288,11 @@ func ParseFormat(s string) (Format, error) {
 		return FormatPlain, nil
 	case "json":
 		return FormatJSON, nil
+	case "ndjson":
+		return FormatNDJSON, nil
 	case "csv":
 		return FormatCSV, nil
 	default:
-		return "", fmt.Errorf("unknown format %q (valid: auto, table, plain, json, csv)", s)
+		return "", fmt.Errorf("unknown format %q (valid: auto, table, plain, json, ndjson, csv)", s)
 	}
 }

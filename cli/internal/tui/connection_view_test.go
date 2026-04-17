@@ -965,6 +965,9 @@ func TestConnectionView_FormView_PostgresShowsAllFields(t *testing.T) {
 			t.Errorf("Expected '%s' field to be visible for Postgres", field)
 		}
 	}
+	if !strings.Contains(view, "SSL Mode:") {
+		t.Error("Expected SSL mode selector to be visible for Postgres")
+	}
 }
 
 func TestConnectionView_PasswordPromptSkipped_SQLite(t *testing.T) {

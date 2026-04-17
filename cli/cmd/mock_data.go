@@ -108,7 +108,7 @@ For safety, writes require an explicit connection and either:
 			spinner.StopWithError("Connection failed")
 			return fmt.Errorf("cannot connect to database: %w", err)
 		}
-		spinner.StopWithSuccess("Connected")
+		spinner.Stop()
 		defer mgr.Disconnect()
 
 		schema, err := resolveMockDataSchema(mgr, conn, out, mockDataSchema)

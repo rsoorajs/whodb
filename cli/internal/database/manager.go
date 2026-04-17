@@ -36,6 +36,7 @@ import (
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/envconfig"
 	"github.com/clidey/whodb/core/src/llm"
+	"github.com/clidey/whodb/core/src/querysuggestions"
 	"github.com/clidey/whodb/core/src/types"
 	"github.com/xuri/excelize/v2"
 )
@@ -66,6 +67,10 @@ type ConnectionSourceInfo struct {
 	Connection Connection
 	Source     string
 }
+
+// QuerySuggestion is a backend-generated onboarding suggestion for a connected
+// database.
+type QuerySuggestion = querysuggestions.Suggestion
 
 // DefaultCacheTTL is the default time-to-live for cached metadata
 const DefaultCacheTTL = 5 * time.Minute
@@ -500,6 +505,23 @@ func (m *Manager) GetQueryLog() []QueryLogEntry {
 
 func (m *Manager) GetCurrentConnection() *Connection {
 	return m.currentConnection
+}
+
+// GetQuerySuggestions returns backend-generated onboarding suggestions for the
+// current connection and schema.
+func (m *Manager) GetQuerySuggestions(schema string) ([]QuerySuggestion, error) {
+	if m.currentConnection == nil {
+		return nil, fmt.Errorf("not connected to any database")
+	}
+
+	dbType := engine.DatabaseType(m.currentConnection.Type)
+	plugin := m.engine.Choose(dbType)
+	if plugin == nil {
+		return nil, fmt.Errorf("plugin not found")
+	}
+
+	credentials := m.buildCredentials(m.currentConnection)
+	return querysuggestions.FromPlugin(plugin, engine.NewPluginConfig(credentials), schema)
 }
 
 // GetSSLStatus returns the verified SSL/TLS status for the current connection.

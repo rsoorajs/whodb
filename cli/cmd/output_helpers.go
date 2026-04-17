@@ -29,6 +29,27 @@ type automationEnvelope struct {
 	Data    any    `json:"data,omitempty"`
 }
 
+func effectiveCommandOutputFormat(cmd *cobra.Command, format output.Format) output.Format {
+	if format != output.FormatAuto {
+		return format
+	}
+
+	writer := output.New(
+		output.WithFormat(format),
+		output.WithOutput(cmd.OutOrStdout()),
+		output.WithErrorOutput(cmd.ErrOrStderr()),
+	)
+	if writer.IsTTY() {
+		return output.FormatTable
+	}
+
+	return output.FormatPlain
+}
+
+func shouldSuppressInformationalOutput(cmd *cobra.Command, format output.Format) bool {
+	return effectiveCommandOutputFormat(cmd, format) != output.FormatTable
+}
+
 func newCommandOutput(cmd *cobra.Command, format output.Format, quiet bool) *output.Writer {
 	return output.New(
 		output.WithFormat(format),

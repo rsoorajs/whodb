@@ -14,9 +14,10 @@ An interactive, production-ready command-line interface for WhoDB with a Claude 
 - **Column Selection** - Choose which columns are visible in results
 - **Export Capabilities** - Export to CSV and Excel formats
 - **Schema Diff** - Compare schema metadata across environments
+- **Backend Query Suggestions** - Shared onboarding suggestions in the CLI and TUI editor
 - **Query History** - Persistent history with re-execution
 - **Shell Completion** - Bash/Zsh/Fish install plus PowerShell script generation
-- **Programmatic Mode** - JSON/CSV/plain output for scripting and automation
+- **Programmatic Mode** - JSON/NDJSON/CSV/plain output for scripting and automation
 - **MCP Server** - Model Context Protocol server for AI assistants (Claude, Cursor, etc.)
 
 ## Installation
@@ -139,6 +140,19 @@ printf "%s\n" "$PGPASSWORD" | whodb-cli connect \
   --password
 ```
 
+#### PostgreSQL with SSL
+
+```bash
+whodb-cli connect \
+  --type postgres \
+  --host localhost \
+  --port 5432 \
+  --user postgres \
+  --database mydb \
+  --ssl-mode verify-ca \
+  --ssl-ca ./ca.pem
+```
+
 #### MySQL
 
 ```bash
@@ -231,6 +245,11 @@ Flags:
 - `--schema`: Preferred schema (optional)
 - `--name`: Connection name (saves for later use)
 - `--password`: Read password from stdin when not using a TTY (pipe a single line)
+- `--ssl-mode`: SSL mode for the selected database type
+- `--ssl-ca`: Path to a CA certificate PEM file
+- `--ssl-cert`: Path to a client certificate PEM file
+- `--ssl-key`: Path to a client private key PEM file
+- `--ssl-server-name`: Override server name used for SSL hostname verification
 
 On a TTY, you will be prompted for the password with input hidden.
 
@@ -245,10 +264,27 @@ whodb-cli query "SQL" [flags]
 Flags:
 
 - `--connection, -c`: Connection name to use (optional; if omitted, the first available connection is used)
-- `--format, -f`: Output format: `auto`, `table`, `plain`, `json`, `csv`
+- `--format, -f`: Output format: `auto`, `table`, `plain`, `json`, `ndjson`, `csv`
 - `--quiet, -q`: Suppress informational messages
 
 `auto` uses table output for terminals and plain output for pipes.
+`ndjson` writes one JSON object per result row.
+
+### suggestions
+
+Show backend-generated query suggestions for a connection.
+
+```bash
+whodb-cli suggestions --connection my-postgres
+whodb-cli suggestions --connection my-postgres --format json
+```
+
+Flags:
+
+- `--connection, -c`: Connection name to use
+- `--schema, -s`: Schema to use for suggestion generation
+- `--format, -f`: Output format: `table`, `plain`, `json`, `ndjson`, `csv`
+- `--quiet, -q`: Suppress informational messages
 
 ### completion
 

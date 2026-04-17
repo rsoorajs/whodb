@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/clidey/whodb/cli/internal/config"
+	"github.com/clidey/whodb/cli/internal/connectionopts"
 	dbmgr "github.com/clidey/whodb/cli/internal/database"
 	"github.com/clidey/whodb/cli/pkg/analytics"
 	"github.com/clidey/whodb/cli/pkg/output"
@@ -84,7 +85,7 @@ var connectionsListCmd = &cobra.Command{
 			return err
 		}
 
-		quiet := connectionsQuiet || format == output.FormatJSON
+		quiet := connectionsQuiet || shouldSuppressInformationalOutput(cmd, format)
 		out := newCommandOutput(cmd, format, quiet)
 
 		mgr, err := dbmgr.NewManager()
@@ -94,7 +95,7 @@ var connectionsListCmd = &cobra.Command{
 
 		connections := mgr.ListConnectionsWithSource()
 		if len(connections) == 0 {
-			if format == output.FormatJSON {
+			if effectiveCommandOutputFormat(cmd, format) == output.FormatJSON {
 				return writeEmptyJSONArray(cmd)
 			} else {
 				out.Info("No connections available. Create one with:")
@@ -104,7 +105,7 @@ var connectionsListCmd = &cobra.Command{
 		}
 
 		// For JSON, output a clean structure without passwords
-		if format == output.FormatJSON {
+		if effectiveCommandOutputFormat(cmd, format) == output.FormatJSON {
 			safeConns := make([]safeConnectionOutput, len(connections))
 			for i, c := range connections {
 				conn := c.Connection
@@ -151,14 +152,19 @@ var connectionsListCmd = &cobra.Command{
 
 // connections add flags
 var (
-	connAddName     string
-	connAddType     string
-	connAddHost     string
-	connAddPort     int
-	connAddUser     string
-	connAddPassword string
-	connAddDatabase string
-	connAddSchema   string
+	connAddName          string
+	connAddType          string
+	connAddHost          string
+	connAddPort          int
+	connAddUser          string
+	connAddPassword      string
+	connAddDatabase      string
+	connAddSchema        string
+	connAddSSLMode       string
+	connAddSSLCA         string
+	connAddSSLCert       string
+	connAddSSLKey        string
+	connAddSSLServerName string
 )
 
 var connectionsAddCmd = &cobra.Command{
@@ -171,7 +177,10 @@ var connectionsAddCmd = &cobra.Command{
   whodb-cli connections add --name mydb --type Postgres --host localhost --port 5432 --user admin --password secret --database myapp
 
   # Add with schema
-  whodb-cli connections add --name mydb --type Postgres --host localhost --user admin --database myapp --schema public`,
+  whodb-cli connections add --name mydb --type Postgres --host localhost --user admin --database myapp --schema public
+
+  # Add with SSL
+  whodb-cli connections add --name mydb --type Postgres --host localhost --user admin --database myapp --ssl-mode verify-identity --ssl-ca ./ca.pem --ssl-server-name db.internal`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 		format, err := output.ParseFormat(connectionsFormat)
@@ -214,6 +223,17 @@ var connectionsAddCmd = &cobra.Command{
 			return fmt.Errorf("invalid port number %d: must be between 1024 and 65535 (ports below 1024 are system reserved)", connAddPort)
 		}
 
+		advanced, err := connectionopts.ApplySSLSettings(string(resolvedType.ID), nil, connectionopts.SSLSettings{
+			Mode:           connAddSSLMode,
+			CAFile:         connAddSSLCA,
+			ClientCertFile: connAddSSLCert,
+			ClientKeyFile:  connAddSSLKey,
+			ServerName:     connAddSSLServerName,
+		})
+		if err != nil {
+			return err
+		}
+
 		conn := config.Connection{
 			Name:     connAddName,
 			Type:     string(resolvedType.ID),
@@ -223,6 +243,7 @@ var connectionsAddCmd = &cobra.Command{
 			Password: connAddPassword,
 			Database: connAddDatabase,
 			Schema:   connAddSchema,
+			Advanced: advanced,
 		}
 
 		cfg.AddConnection(conn)
@@ -382,7 +403,7 @@ func init() {
 	rootCmd.AddCommand(connectionsCmd)
 
 	// Global flags for connections command
-	connectionsCmd.PersistentFlags().StringVarP(&connectionsFormat, "format", "f", "auto", "output format: auto, table, plain, json, csv")
+	connectionsCmd.PersistentFlags().StringVarP(&connectionsFormat, "format", "f", "auto", "output format: auto, table, plain, json, ndjson, csv")
 	connectionsCmd.PersistentFlags().BoolVarP(&connectionsQuiet, "quiet", "q", false, "suppress informational messages")
 
 	// Subcommands
@@ -400,8 +421,14 @@ func init() {
 	connectionsAddCmd.Flags().StringVar(&connAddPassword, "password", "", "database password")
 	connectionsAddCmd.Flags().StringVar(&connAddDatabase, "database", "", "database name (required)")
 	connectionsAddCmd.Flags().StringVar(&connAddSchema, "schema", "", "default schema (optional)")
+	connectionsAddCmd.Flags().StringVar(&connAddSSLMode, "ssl-mode", "", "SSL mode from the selected database type's supported modes")
+	connectionsAddCmd.Flags().StringVar(&connAddSSLCA, "ssl-ca", "", "path to a CA certificate PEM file")
+	connectionsAddCmd.Flags().StringVar(&connAddSSLCert, "ssl-cert", "", "path to a client certificate PEM file")
+	connectionsAddCmd.Flags().StringVar(&connAddSSLKey, "ssl-key", "", "path to a client private key PEM file")
+	connectionsAddCmd.Flags().StringVar(&connAddSSLServerName, "ssl-server-name", "", "override server name used for SSL hostname verification")
 
 	connectionsAddCmd.RegisterFlagCompletionFunc("type", completeDatabaseTypes)
+	connectionsAddCmd.RegisterFlagCompletionFunc("ssl-mode", completeSSLModes)
 	connectionsCmd.RegisterFlagCompletionFunc("format", completeOutputFormats)
 	connectionsRemoveCmd.ValidArgsFunction = completeConnectionNames
 	connectionsTestCmd.ValidArgsFunction = completeConnectionNames

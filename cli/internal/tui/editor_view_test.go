@@ -139,6 +139,25 @@ func TestEditorView_CtrlL_Clear(t *testing.T) {
 	}
 }
 
+func TestEditorView_View_ShowsBackendSuggestionsWhenEmpty(t *testing.T) {
+	v, cleanup := setupEditorViewTest(t)
+	defer cleanup()
+
+	v.parent.browserView.tables = []engine.StorageUnit{
+		{Name: "users"},
+		{Name: "orders"},
+		{Name: "payments"},
+	}
+
+	view := v.View()
+	if !strings.Contains(view, "Suggested queries") {
+		t.Fatalf("expected onboarding suggestions in view, got %q", view)
+	}
+	if !strings.Contains(view, "users") {
+		t.Fatalf("expected users suggestion in view, got %q", view)
+	}
+}
+
 func TestEditorView_SuggestionNavigation_Tab(t *testing.T) {
 	v, cleanup := setupEditorViewTest(t)
 	defer cleanup()

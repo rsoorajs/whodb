@@ -506,6 +506,97 @@ func TestConnectionsAddCmd_JSONEnvelope(t *testing.T) {
 	}
 }
 
+func TestConnectionsAddCmd_SSLAdvanced(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+	defer func() {
+		connAddName = ""
+		connAddType = ""
+		connAddHost = ""
+		connAddPort = 0
+		connAddUser = ""
+		connAddPassword = ""
+		connAddDatabase = ""
+		connAddSchema = ""
+		connAddSSLMode = ""
+		connAddSSLCA = ""
+		connAddSSLCert = ""
+		connAddSSLKey = ""
+		connAddSSLServerName = ""
+		connectionsFormat = "auto"
+		connectionsQuiet = false
+	}()
+
+	dir := t.TempDir()
+	caPath := filepath.Join(dir, "ca.pem")
+	certPath := filepath.Join(dir, "client-cert.pem")
+	keyPath := filepath.Join(dir, "client-key.pem")
+	if err := os.WriteFile(caPath, []byte("ca-content"), 0o600); err != nil {
+		t.Fatalf("Write CA file failed: %v", err)
+	}
+	if err := os.WriteFile(certPath, []byte("cert-content"), 0o600); err != nil {
+		t.Fatalf("Write client cert file failed: %v", err)
+	}
+	if err := os.WriteFile(keyPath, []byte("key-content"), 0o600); err != nil {
+		t.Fatalf("Write client key file failed: %v", err)
+	}
+
+	connectionsFormat = "json"
+	connectionsQuiet = false
+	connAddName = "ssl-db"
+	connAddType = "Postgres"
+	connAddHost = "localhost"
+	connAddPort = 5432
+	connAddUser = "alice"
+	connAddPassword = "secret"
+	connAddDatabase = "app"
+	connAddSchema = "public"
+	connAddSSLMode = "verify-identity"
+	connAddSSLCA = caPath
+	connAddSSLCert = certPath
+	connAddSSLKey = keyPath
+	connAddSSLServerName = "db.internal"
+
+	outBuf, errBuf := setCommandBuffers(t, connectionsAddCmd)
+
+	if err := connectionsAddCmd.RunE(connectionsAddCmd, []string{}); err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig failed: %v", err)
+	}
+	conn, err := cfg.GetConnection("ssl-db")
+	if err != nil {
+		t.Fatalf("expected saved connection: %v", err)
+	}
+
+	if conn.Advanced["SSL Mode"] != "verify-identity" {
+		t.Fatalf("expected SSL mode verify-identity, got %#v", conn.Advanced)
+	}
+	if conn.Advanced["SSL CA Content"] != "ca-content" {
+		t.Fatalf("expected CA content, got %#v", conn.Advanced)
+	}
+	if conn.Advanced["SSL Client Cert Content"] != "cert-content" {
+		t.Fatalf("expected client cert content, got %#v", conn.Advanced)
+	}
+	if conn.Advanced["SSL Client Key Content"] != "key-content" {
+		t.Fatalf("expected client key content, got %#v", conn.Advanced)
+	}
+	if conn.Advanced["SSL Server Name"] != "db.internal" {
+		t.Fatalf("expected server name, got %#v", conn.Advanced)
+	}
+
+	envelope := decodeJSONEnvelope[safeConnectionOutput](t, outBuf)
+	if envelope.Command != "connections.add" {
+		t.Errorf("Expected command connections.add, got %q", envelope.Command)
+	}
+	if errBuf.Len() != 0 {
+		t.Errorf("Expected no stderr output, got %q", errBuf.String())
+	}
+}
+
 func TestConnectionsRemoveCmd_JSONEnvelope(t *testing.T) {
 	cleanup := setupTestEnv(t)
 	defer cleanup()
@@ -793,6 +884,163 @@ func TestDiffCmd_JSONEnvelope(t *testing.T) {
 	}
 	if len(envelope.Data.StorageUnits) != 3 {
 		t.Fatalf("Expected 3 storage unit diffs, got %d", len(envelope.Data.StorageUnits))
+	}
+	if errBuf.Len() != 0 {
+		t.Errorf("Expected no stderr output, got %q", errBuf.String())
+	}
+}
+
+func TestSuggestionsCmd_Exists(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	found := false
+	for _, cmd := range rootCmd.Commands() {
+		if cmd.Use == "suggestions" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("Expected suggestions command to be registered")
+	}
+}
+
+func TestSuggestionsCmd_JSON(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+	defer func() {
+		suggestionsConnection = ""
+		suggestionsSchema = ""
+		suggestionsFormat = "table"
+		suggestionsQuiet = false
+	}()
+
+	dbPath := createSQLiteTestDatabase(t,
+		"suggestions-test.db",
+		"CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)",
+		"CREATE TABLE orders (id INTEGER PRIMARY KEY, user_id INTEGER)",
+		"CREATE TABLE payments (id INTEGER PRIMARY KEY, amount REAL)",
+	)
+	saveTestConnection(t, config.Connection{
+		Name:     "suggestions-db",
+		Type:     "Sqlite3",
+		Host:     dbPath,
+		Database: dbPath,
+	})
+
+	suggestionsConnection = "suggestions-db"
+	suggestionsSchema = ""
+	suggestionsFormat = "json"
+	suggestionsQuiet = false
+
+	outBuf, errBuf := setCommandBuffers(t, suggestionsCmd)
+
+	if err := suggestionsCmd.RunE(suggestionsCmd, []string{}); err != nil {
+		t.Fatalf("Suggestions command failed: %v", err)
+	}
+
+	var suggestions []struct {
+		Description string `json:"description"`
+		Category    string `json:"category"`
+	}
+	if err := json.Unmarshal(outBuf.Bytes(), &suggestions); err != nil {
+		t.Fatalf("Failed to parse suggestions JSON: %v", err)
+	}
+
+	if len(suggestions) != 3 {
+		t.Fatalf("Expected 3 suggestions, got %#v", suggestions)
+	}
+	if !strings.Contains(suggestions[0].Description, "users") {
+		t.Fatalf("Expected first suggestion to mention users, got %#v", suggestions[0])
+	}
+	if errBuf.Len() != 0 {
+		t.Errorf("Expected no stderr output, got %q", errBuf.String())
+	}
+}
+
+func TestQueryCmd_NDJSON(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+	defer func() {
+		queryConnection = ""
+		queryFormat = "auto"
+		queryQuiet = false
+	}()
+
+	dbPath := createSQLiteTestDatabase(t,
+		"query-ndjson-test.db",
+		"CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)",
+		"INSERT INTO users (id, name) VALUES (1, 'Alice')",
+		"INSERT INTO users (id, name) VALUES (2, 'Bob')",
+	)
+	saveTestConnection(t, config.Connection{
+		Name:     "query-ndjson-db",
+		Type:     "Sqlite3",
+		Host:     dbPath,
+		Database: dbPath,
+	})
+
+	queryConnection = "query-ndjson-db"
+	queryFormat = "ndjson"
+	queryQuiet = false
+
+	outBuf, errBuf := setCommandBuffers(t, queryCmd)
+
+	if err := queryCmd.RunE(queryCmd, []string{"SELECT id, name FROM users ORDER BY id"}); err != nil {
+		t.Fatalf("Query command failed: %v", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(outBuf.String()), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("Expected 2 NDJSON lines, got %d: %q", len(lines), outBuf.String())
+	}
+
+	var first map[string]any
+	if err := json.Unmarshal([]byte(lines[0]), &first); err != nil {
+		t.Fatalf("Failed to parse first NDJSON line: %v", err)
+	}
+	if first["name"] != "Alice" {
+		t.Fatalf("Expected first row Alice, got %#v", first)
+	}
+	if errBuf.Len() != 0 {
+		t.Errorf("Expected no stderr output, got %q", errBuf.String())
+	}
+}
+
+func TestQueryCmd_AutoFormatSuppressesInformationalOutputWhenPiped(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+	defer func() {
+		queryConnection = ""
+		queryFormat = "auto"
+		queryQuiet = false
+	}()
+
+	dbPath := createSQLiteTestDatabase(t,
+		"query-auto-format-test.db",
+		"CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)",
+		"INSERT INTO users (id, name) VALUES (1, 'Alice')",
+	)
+	saveTestConnection(t, config.Connection{
+		Name:     "query-auto-format-db",
+		Type:     "Sqlite3",
+		Host:     dbPath,
+		Database: dbPath,
+	})
+
+	queryConnection = "query-auto-format-db"
+	queryFormat = "auto"
+	queryQuiet = false
+
+	outBuf, errBuf := setCommandBuffers(t, queryCmd)
+
+	if err := queryCmd.RunE(queryCmd, []string{"SELECT id, name FROM users"}); err != nil {
+		t.Fatalf("Query command failed: %v", err)
+	}
+
+	if !strings.Contains(outBuf.String(), "id\tname") {
+		t.Fatalf("Expected plain tabular output, got %q", outBuf.String())
 	}
 	if errBuf.Len() != 0 {
 		t.Errorf("Expected no stderr output, got %q", errBuf.String())

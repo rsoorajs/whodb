@@ -24,6 +24,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/clidey/whodb/cli/internal/config"
+	"github.com/clidey/whodb/cli/internal/connectionopts"
 	"github.com/clidey/whodb/cli/internal/docker"
 	"github.com/clidey/whodb/cli/internal/tui"
 	"github.com/spf13/cobra"
@@ -33,15 +34,20 @@ import (
 var _ = tea.ProgramOption(nil) // Used in RunE
 
 var (
-	dbType            string
-	host              string
-	port              int
-	username          string
-	database          string
-	schema            string
-	name              string
-	passwordFromStdin bool
-	useDocker         bool
+	dbType               string
+	host                 string
+	port                 int
+	username             string
+	database             string
+	schema               string
+	name                 string
+	passwordFromStdin    bool
+	useDocker            bool
+	connectSSLMode       string
+	connectSSLCA         string
+	connectSSLCert       string
+	connectSSLKey        string
+	connectSSLServerName string
 )
 
 var connectCmd = &cobra.Command{
@@ -78,7 +84,10 @@ Usage modes:
 
   # Non-interactive: read password from stdin
   printf "%s\n" "$DB_PASS" | whodb-cli connect --type postgres --host localhost --user alice --database app --password
-  whodb-cli connect --type sqlite --host ./app.db --database ./app.db --name app-sqlite`,
+  whodb-cli connect --type sqlite --host ./app.db --database ./app.db --name app-sqlite
+
+  # Connect with SSL
+  whodb-cli connect --type postgres --host localhost --user alice --database app --ssl-mode verify-ca --ssl-ca ./ca.pem`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// --docker: detect running database containers and connect to the first match
 		if useDocker {
@@ -152,6 +161,17 @@ Usage modes:
 				}
 			}
 
+			advanced, err := connectionopts.ApplySSLSettings(string(resolvedType.ID), nil, connectionopts.SSLSettings{
+				Mode:           connectSSLMode,
+				CAFile:         connectSSLCA,
+				ClientCertFile: connectSSLCert,
+				ClientKeyFile:  connectSSLKey,
+				ServerName:     connectSSLServerName,
+			})
+			if err != nil {
+				return err
+			}
+
 			conn := config.Connection{
 				Name:     name,
 				Type:     string(resolvedType.ID),
@@ -161,6 +181,7 @@ Usage modes:
 				Password: password,
 				Database: database,
 				Schema:   schema,
+				Advanced: advanced,
 			}
 
 			if name != "" {
@@ -210,6 +231,12 @@ func init() {
 	connectCmd.Flags().StringVar(&name, "name", "", "connection name (save for later use)")
 	connectCmd.Flags().BoolVar(&passwordFromStdin, "password", false, "read password from stdin when not using a TTY")
 	connectCmd.Flags().BoolVar(&useDocker, "docker", false, "auto-detect running Docker database containers and connect to the first match")
+	connectCmd.Flags().StringVar(&connectSSLMode, "ssl-mode", "", "SSL mode from the selected database type's supported modes")
+	connectCmd.Flags().StringVar(&connectSSLCA, "ssl-ca", "", "path to a CA certificate PEM file")
+	connectCmd.Flags().StringVar(&connectSSLCert, "ssl-cert", "", "path to a client certificate PEM file")
+	connectCmd.Flags().StringVar(&connectSSLKey, "ssl-key", "", "path to a client private key PEM file")
+	connectCmd.Flags().StringVar(&connectSSLServerName, "ssl-server-name", "", "override server name used for SSL hostname verification")
 
 	connectCmd.RegisterFlagCompletionFunc("type", completeDatabaseTypes)
+	connectCmd.RegisterFlagCompletionFunc("ssl-mode", completeSSLModes)
 }
