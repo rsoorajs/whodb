@@ -51,6 +51,7 @@ GETTING STARTED
 
   Once connected, you'll see the Browser view with your tables.
   Press ? in any view for a quick shortcut reference.
+  Reconnectable TUI sessions resume automatically on the next launch.
 
 LAYOUTS
 ───────
@@ -100,6 +101,7 @@ SQL EDITOR
   CLI:
     whodb-cli explain --connection mydb "SELECT * FROM users"
     whodb-cli explain --connection mydb --format json "SELECT * FROM users"
+    whodb-cli query --connection mydb --stream --format ndjson "SELECT * FROM users"
 
 BROWSING DATA
 ─────────────
@@ -144,6 +146,7 @@ IMPORT / EXPORT
   Export:
     Press e from Results, or:
     whodb-cli export -c mydb -t users -o users.csv
+    whodb-cli export -c mydb -Q "SELECT * FROM users" -o users.csv --stream
 
 MOCK DATA
 ─────────

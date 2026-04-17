@@ -1057,6 +1057,157 @@ func TestQueryCmd_AutoFormatSuppressesInformationalOutputWhenPiped(t *testing.T)
 	}
 }
 
+func TestQueryCmd_StreamNDJSON(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+	defer func() {
+		queryConnection = ""
+		queryFormat = "auto"
+		queryQuiet = false
+		queryStream = false
+	}()
+
+	dbPath := createSQLiteTestDatabase(t,
+		"query-stream-test.db",
+		"CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)",
+		"INSERT INTO users (id, name) VALUES (1, 'Alice')",
+		"INSERT INTO users (id, name) VALUES (2, 'Bob')",
+	)
+	saveTestConnection(t, config.Connection{
+		Name:     "query-stream-db",
+		Type:     "Sqlite3",
+		Host:     dbPath,
+		Database: dbPath,
+	})
+
+	queryConnection = "query-stream-db"
+	queryFormat = "ndjson"
+	queryQuiet = false
+	queryStream = true
+
+	outBuf, errBuf := setCommandBuffers(t, queryCmd)
+
+	if err := queryCmd.RunE(queryCmd, []string{"SELECT id, name FROM users ORDER BY id"}); err != nil {
+		t.Fatalf("Query command failed: %v", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(outBuf.String()), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("Expected 2 NDJSON lines, got %d: %q", len(lines), outBuf.String())
+	}
+	if errBuf.Len() != 0 {
+		t.Errorf("Expected no stderr output, got %q", errBuf.String())
+	}
+}
+
+func TestExportCmd_StreamTableCSV(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+	defer func() {
+		exportConnection = ""
+		exportSchema = ""
+		exportTable = ""
+		exportQuery = ""
+		exportFormat = ""
+		exportOutput = ""
+		exportDelimiter = ","
+		exportQuiet = false
+		exportStream = false
+	}()
+
+	dbPath := createSQLiteTestDatabase(t,
+		"export-stream-table.db",
+		"CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)",
+		"INSERT INTO users (id, name) VALUES (1, 'Alice')",
+		"INSERT INTO users (id, name) VALUES (2, 'Bob')",
+	)
+	saveTestConnection(t, config.Connection{
+		Name:     "export-stream-table-db",
+		Type:     "Sqlite3",
+		Host:     dbPath,
+		Database: dbPath,
+	})
+
+	exportConnection = "export-stream-table-db"
+	exportTable = "users"
+	exportFormat = "csv"
+	exportOutput = filepath.Join(t.TempDir(), "users.csv")
+	exportDelimiter = ","
+	exportQuiet = true
+	exportStream = true
+
+	outBuf, errBuf := setCommandBuffers(t, exportCmd)
+
+	if err := exportCmd.RunE(exportCmd, []string{}); err != nil {
+		t.Fatalf("Export command failed: %v", err)
+	}
+
+	content, err := os.ReadFile(exportOutput)
+	if err != nil {
+		t.Fatalf("ReadFile failed: %v", err)
+	}
+	if !strings.Contains(string(content), "id,name") || !strings.Contains(string(content), "Alice") {
+		t.Fatalf("Unexpected streamed CSV content: %q", string(content))
+	}
+	if outBuf.Len() != 0 || errBuf.Len() != 0 {
+		t.Fatalf("Expected quiet export output, got stdout=%q stderr=%q", outBuf.String(), errBuf.String())
+	}
+}
+
+func TestExportCmd_StreamQueryCSV(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+	defer func() {
+		exportConnection = ""
+		exportSchema = ""
+		exportTable = ""
+		exportQuery = ""
+		exportFormat = ""
+		exportOutput = ""
+		exportDelimiter = ","
+		exportQuiet = false
+		exportStream = false
+	}()
+
+	dbPath := createSQLiteTestDatabase(t,
+		"export-stream-query.db",
+		"CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)",
+		"INSERT INTO users (id, name) VALUES (1, 'Alice')",
+		"INSERT INTO users (id, name) VALUES (2, 'Bob')",
+	)
+	saveTestConnection(t, config.Connection{
+		Name:     "export-stream-query-db",
+		Type:     "Sqlite3",
+		Host:     dbPath,
+		Database: dbPath,
+	})
+
+	exportConnection = "export-stream-query-db"
+	exportQuery = "SELECT id, name FROM users ORDER BY id"
+	exportFormat = "csv"
+	exportOutput = filepath.Join(t.TempDir(), "users-query.csv")
+	exportDelimiter = ","
+	exportQuiet = true
+	exportStream = true
+
+	outBuf, errBuf := setCommandBuffers(t, exportCmd)
+
+	if err := exportCmd.RunE(exportCmd, []string{}); err != nil {
+		t.Fatalf("Export command failed: %v", err)
+	}
+
+	content, err := os.ReadFile(exportOutput)
+	if err != nil {
+		t.Fatalf("ReadFile failed: %v", err)
+	}
+	if !strings.Contains(string(content), "id,name") || !strings.Contains(string(content), "Bob") {
+		t.Fatalf("Unexpected streamed query CSV content: %q", string(content))
+	}
+	if outBuf.Len() != 0 || errBuf.Len() != 0 {
+		t.Fatalf("Expected quiet export output, got stdout=%q stderr=%q", outBuf.String(), errBuf.String())
+	}
+}
+
 // TestMockDataCmd_Exists verifies the mock-data command is registered.
 func TestMockDataCmd_Exists(t *testing.T) {
 	cleanup := setupTestEnv(t)

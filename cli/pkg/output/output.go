@@ -45,6 +45,12 @@ type QueryResult struct {
 	Rows    [][]any  `json:"rows"`
 }
 
+// QueryStream writes a query result incrementally after the columns are known.
+type QueryStream interface {
+	WriteRow(row []string) error
+	Close() error
+}
+
 type Column struct {
 	Name string `json:"name"`
 	Type string `json:"type,omitempty"`
@@ -145,6 +151,27 @@ func (w *Writer) WriteQueryResult(result *QueryResult) error {
 	}
 }
 
+// BeginQueryStream starts a streaming query result writer for the configured
+// output format.
+func (w *Writer) BeginQueryStream(columns []Column) (QueryStream, error) {
+	format := w.resolveFormat()
+
+	switch format {
+	case FormatJSON:
+		return w.beginJSONStream(columns)
+	case FormatNDJSON:
+		return w.beginNDJSONStream(columns), nil
+	case FormatCSV:
+		return w.beginCSVStream(columns)
+	case FormatPlain:
+		return w.beginPlainStream(columns)
+	case FormatTable:
+		return nil, fmt.Errorf("streaming output is not supported for table format")
+	default:
+		return nil, fmt.Errorf("unknown output format: %s", format)
+	}
+}
+
 func (w *Writer) writeJSON(result *QueryResult) error {
 	output := make([]map[string]any, 0, len(result.Rows))
 
@@ -170,6 +197,16 @@ func (w *Writer) writeNDJSON(result *QueryResult) error {
 func (r *QueryResult) recordForRow(row []any) map[string]any {
 	record := make(map[string]any, len(r.Columns))
 	for i, col := range r.Columns {
+		if i < len(row) {
+			record[col.Name] = row[i]
+		}
+	}
+	return record
+}
+
+func recordForStringRow(columns []Column, row []string) map[string]any {
+	record := make(map[string]any, len(columns))
+	for i, col := range columns {
 		if i < len(row) {
 			record[col.Name] = row[i]
 		}
@@ -313,6 +350,123 @@ func (w *Writer) Success(format string, args ...any) {
 		prefix = "\033[32m✓\033[0m "
 	}
 	fmt.Fprintf(w.err, prefix+format+"\n", args...)
+}
+
+type plainQueryStream struct {
+	out io.Writer
+}
+
+func (s *plainQueryStream) WriteRow(row []string) error {
+	_, err := fmt.Fprintln(s.out, strings.Join(row, "\t"))
+	return err
+}
+
+func (s *plainQueryStream) Close() error {
+	return nil
+}
+
+type csvQueryStream struct {
+	writer *csv.Writer
+}
+
+func (s *csvQueryStream) WriteRow(row []string) error {
+	return s.writer.Write(row)
+}
+
+func (s *csvQueryStream) Close() error {
+	s.writer.Flush()
+	return s.writer.Error()
+}
+
+type ndjsonQueryStream struct {
+	encoder *json.Encoder
+	columns []Column
+}
+
+func (s *ndjsonQueryStream) WriteRow(row []string) error {
+	return s.encoder.Encode(recordForStringRow(s.columns, row))
+}
+
+func (s *ndjsonQueryStream) Close() error {
+	return nil
+}
+
+type jsonQueryStream struct {
+	out       io.Writer
+	encoder   *json.Encoder
+	columns   []Column
+	wroteRows bool
+	closed    bool
+}
+
+func (s *jsonQueryStream) WriteRow(row []string) error {
+	if s.closed {
+		return fmt.Errorf("json stream is already closed")
+	}
+	if s.wroteRows {
+		if _, err := io.WriteString(s.out, ",\n"); err != nil {
+			return err
+		}
+	}
+	if err := s.encoder.Encode(recordForStringRow(s.columns, row)); err != nil {
+		return err
+	}
+	s.wroteRows = true
+	return nil
+}
+
+func (s *jsonQueryStream) Close() error {
+	if s.closed {
+		return nil
+	}
+	s.closed = true
+	if s.wroteRows {
+		_, err := io.WriteString(s.out, "]\n")
+		return err
+	}
+	_, err := io.WriteString(s.out, "]\n")
+	return err
+}
+
+func (w *Writer) beginPlainStream(columns []Column) (QueryStream, error) {
+	headers := make([]string, len(columns))
+	for i, col := range columns {
+		headers[i] = col.Name
+	}
+	if _, err := fmt.Fprintln(w.out, strings.Join(headers, "\t")); err != nil {
+		return nil, err
+	}
+	return &plainQueryStream{out: w.out}, nil
+}
+
+func (w *Writer) beginCSVStream(columns []Column) (QueryStream, error) {
+	csvWriter := csv.NewWriter(w.out)
+	headers := make([]string, len(columns))
+	for i, col := range columns {
+		headers[i] = col.Name
+	}
+	if err := csvWriter.Write(headers); err != nil {
+		return nil, fmt.Errorf("writing CSV headers: %w", err)
+	}
+	return &csvQueryStream{writer: csvWriter}, nil
+}
+
+func (w *Writer) beginNDJSONStream(columns []Column) QueryStream {
+	return &ndjsonQueryStream{
+		encoder: json.NewEncoder(w.out),
+		columns: columns,
+	}
+}
+
+func (w *Writer) beginJSONStream(columns []Column) (QueryStream, error) {
+	if _, err := io.WriteString(w.out, "["); err != nil {
+		return nil, err
+	}
+	return &jsonQueryStream{
+		out:     w.out,
+		encoder: json.NewEncoder(w.out),
+		columns: columns,
+	}, nil
 }
 
 func ParseFormat(s string) (Format, error) {

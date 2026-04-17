@@ -323,6 +323,7 @@ func (v *ConnectionView) updateList(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 			v.parent.err = msg.err
 			return v, nil
 		}
+		v.parent.currentProfileName = ""
 		v.parent.mode = ViewBrowser
 		v.parent.initLayout()
 		conn := v.parent.dbManager.GetCurrentConnection()
@@ -492,6 +493,7 @@ func (v *ConnectionView) updateForm(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 			v.connError = msg.err
 			v.connecting = false
 		} else {
+			v.parent.currentProfileName = ""
 			v.parent.mode = ViewBrowser
 			v.parent.initLayout()
 			conn := v.parent.dbManager.GetCurrentConnection()

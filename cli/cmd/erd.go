@@ -125,7 +125,7 @@ storage units, columns, and normalized relationship edges for automation.`,
 		}
 		defer mgr.Disconnect()
 
-		schemaName, err := resolveSnapshotSchema(mgr, conn, erdSchema)
+		schemaName, err := mgr.ResolveSnapshotSchema(conn, erdSchema)
 		if err != nil {
 			return fmt.Errorf("resolve schema: %w", err)
 		}

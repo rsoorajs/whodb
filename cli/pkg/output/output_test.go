@@ -262,6 +262,42 @@ func TestWriter_WriteNDJSON(t *testing.T) {
 	}
 }
 
+func TestWriter_BeginQueryStream_JSON(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(WithOutput(&buf), WithFormat(FormatJSON))
+
+	stream, err := w.BeginQueryStream([]Column{{Name: "id"}, {Name: "name"}})
+	if err != nil {
+		t.Fatalf("BeginQueryStream error: %v", err)
+	}
+	if err := stream.WriteRow([]string{"1", "Alice"}); err != nil {
+		t.Fatalf("WriteRow error: %v", err)
+	}
+	if err := stream.WriteRow([]string{"2", "Bob"}); err != nil {
+		t.Fatalf("WriteRow error: %v", err)
+	}
+	if err := stream.Close(); err != nil {
+		t.Fatalf("Close error: %v", err)
+	}
+
+	var output []map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &output); err != nil {
+		t.Fatalf("Invalid streamed JSON output: %v", err)
+	}
+	if len(output) != 2 || output[1]["name"] != "Bob" {
+		t.Fatalf("Unexpected streamed JSON output: %#v", output)
+	}
+}
+
+func TestWriter_BeginQueryStream_TableUnsupported(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(WithOutput(&buf), WithFormat(FormatTable))
+
+	if _, err := w.BeginQueryStream([]Column{{Name: "id"}}); err == nil {
+		t.Fatal("expected table streaming to be rejected")
+	}
+}
+
 // --- CSV Output Tests ---
 
 func TestWriter_WriteCSV(t *testing.T) {

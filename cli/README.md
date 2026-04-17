@@ -18,9 +18,10 @@ An interactive, production-ready command-line interface for WhoDB with a Claude 
 - **Explain Plans** - Run database-native `EXPLAIN` from the CLI or TUI
 - **Backend Query Suggestions** - Shared onboarding suggestions in the CLI and TUI editor
 - **Bookmarks and Profiles** - Shared saved queries and connection profiles across CLI and TUI
+- **Workspace Restore** - Resume your last reconnectable TUI session on startup
 - **Query History** - Persistent history with re-execution
 - **Shell Completion** - Bash/Zsh/Fish install plus PowerShell script generation
-- **Programmatic Mode** - JSON/NDJSON/CSV/plain output for scripting and automation
+- **Programmatic Mode** - JSON/NDJSON/CSV/plain output plus streamed query/export paths for scripting and automation
 - **MCP Server** - Model Context Protocol server for AI assistants (Claude, Cursor, etc.)
 
 ## Installation
@@ -268,6 +269,7 @@ Flags:
 
 - `--connection, -c`: Connection name to use (optional; if omitted, the first available connection is used)
 - `--format, -f`: Output format: `auto`, `table`, `plain`, `json`, `ndjson`, `csv`
+- `--stream`: Stream result rows incrementally (supported for `plain`, `json`, `ndjson`, and `csv`)
 - `--quiet, -q`: Suppress informational messages
 
 `auto` uses table output for terminals and plain output for pipes.
@@ -326,6 +328,7 @@ These commands output structured data for scripting, automation, and AI integrat
 
 - Query and list commands such as `query`, `schemas`, `tables`, `columns`, `connections list`, and `history list/search` keep their existing raw JSON array output.
 - Action and analysis commands such as `connections add/remove/test`, `history clear`, `audit`, `mock-data`, `diff`, `erd`, `bookmarks save/delete`, and `profiles save/delete` return a JSON envelope with `command`, `success`, and `data` when you pass `--format json`.
+- `query --stream` supports `plain`, `json`, `ndjson`, and `csv`. `export --stream` supports CSV only.
 
 ### explain
 
@@ -474,6 +477,7 @@ Flags:
 - `--format, -f`: Export format: `csv` or `excel` (auto-detected from filename if omitted)
 - `--output, -o`: Output file path (required)
 - `--delimiter, -d`: CSV delimiter (default: comma)
+- `--stream`: Stream CSV exports incrementally to the output file
 - `--quiet, -q`: Suppress informational messages
 
 ### history
@@ -544,6 +548,11 @@ This starts an MCP server that exposes these tools:
 | `whodb_query` | Execute SQL queries (results include `column_types`) |
 | `whodb_confirm` | Confirm pending write operations (only when confirm-writes is enabled) |
 | `whodb_pending` | List pending write confirmations (only when confirm-writes is enabled) |
+| `whodb_explain` | Run database-native `EXPLAIN` for a SQL query |
+| `whodb_diff` | Compare schema metadata between two connections |
+| `whodb_erd` | Inspect backend graph/ERD metadata |
+| `whodb_audit` | Run data quality audits for a schema or table |
+| `whodb_suggestions` | Get backend-generated starter queries |
 
 Write operations require confirmation by default. Use `--allow-write` to disable confirmations, or `--read-only` to block writes entirely.
 

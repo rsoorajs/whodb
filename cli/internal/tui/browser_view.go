@@ -106,6 +106,14 @@ func (v *BrowserView) Update(msg tea.Msg) (*BrowserView, tea.Cmd) {
 		v.lastRefreshed = time.Now()
 		v.applyFilter()
 		v.selectedIndex = 0
+		if v.selectedTable != "" {
+			for i, table := range v.filteredTables {
+				if table.Name == v.selectedTable {
+					v.selectedIndex = i
+					break
+				}
+			}
+		}
 
 		// Find the index of currentSchema
 		for i, s := range v.schemas {

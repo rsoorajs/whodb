@@ -478,6 +478,23 @@ func (m *Manager) logQuery(query string, start time.Time, result *engine.GetRows
 	}
 }
 
+func (m *Manager) logStreamedQuery(query string, start time.Time, rowCount int, err error) {
+	entry := QueryLogEntry{
+		Query:     query,
+		Timestamp: start,
+		Duration:  time.Since(start),
+		Success:   err == nil,
+		RowCount:  rowCount,
+	}
+	if err != nil {
+		entry.Error = err.Error()
+	}
+	m.queryLog = append(m.queryLog, entry)
+	if len(m.queryLog) > MaxQueryLogEntries {
+		m.queryLog = m.queryLog[len(m.queryLog)-MaxQueryLogEntries:]
+	}
+}
+
 // logOperation logs a non-query operation (schema/table/column fetches).
 func (m *Manager) logOperation(operation string, start time.Time, count int, err error) {
 	entry := QueryLogEntry{
@@ -505,6 +522,34 @@ func (m *Manager) GetQueryLog() []QueryLogEntry {
 
 func (m *Manager) GetCurrentConnection() *Connection {
 	return m.currentConnection
+}
+
+// ResolveSnapshotSchema resolves the schema-like namespace used for metadata
+// snapshots, diffs, ERD, and suggestions. For database-scoped engines such as
+// MySQL, it uses the configured database before falling back to GetSchemas.
+func (m *Manager) ResolveSnapshotSchema(conn *Connection, explicitSchema string) (string, error) {
+	if strings.TrimSpace(explicitSchema) != "" {
+		return explicitSchema, nil
+	}
+	if conn == nil {
+		conn = m.currentConnection
+	}
+	if conn == nil {
+		return "", fmt.Errorf("not connected to any database")
+	}
+	if entry, ok := dbcatalog.Find(conn.Type); ok && entry.UsesDatabaseInsteadOfSchema && strings.TrimSpace(conn.Database) != "" {
+		return conn.Database, nil
+	}
+	if strings.TrimSpace(conn.Schema) != "" {
+		return conn.Schema, nil
+	}
+
+	schemas, err := m.GetSchemas()
+	if err != nil || len(schemas) == 0 {
+		return "", nil
+	}
+
+	return schemas[0], nil
 }
 
 // GetQuerySuggestions returns backend-generated onboarding suggestions for the
@@ -813,6 +858,20 @@ func newPluginConfigWithContext(credentials *engine.Credentials, ctx context.Con
 	return pluginConfig
 }
 
+type countingQueryStreamWriter struct {
+	writer   engine.QueryStreamWriter
+	rowCount int
+}
+
+func (w *countingQueryStreamWriter) WriteColumns(columns []engine.Column) error {
+	return w.writer.WriteColumns(columns)
+}
+
+func (w *countingQueryStreamWriter) WriteRow(row []string) error {
+	w.rowCount++
+	return w.writer.WriteRow(row)
+}
+
 // ExecuteExplain prepends the appropriate EXPLAIN prefix for the current
 // database type and executes the resulting query. The raw result is returned
 // so callers can display the plan output.
@@ -862,6 +921,46 @@ func (m *Manager) ExecuteQueryWithContext(ctx context.Context, query string) (*e
 	})
 	m.logQuery(query, start, result, err)
 	return result, err
+}
+
+// ExecuteQueryStream executes a query through a plugin streaming path when the
+// selected plugin supports row-by-row raw query streaming.
+func (m *Manager) ExecuteQueryStream(ctx context.Context, query string, writer engine.QueryStreamWriter) (int, error) {
+	if m.currentConnection == nil {
+		return 0, fmt.Errorf("not connected to any database")
+	}
+	if writer == nil {
+		return 0, fmt.Errorf("stream writer is required")
+	}
+
+	if m.config.GetReadOnly() && IsMutationQuery(query) {
+		return 0, ErrReadOnly
+	}
+
+	dbType := engine.DatabaseType(m.currentConnection.Type)
+	plugin := m.engine.Choose(dbType)
+	if plugin == nil {
+		return 0, fmt.Errorf("plugin not found")
+	}
+
+	streamer, ok := plugin.PluginFunctions.(engine.QueryStreamer)
+	if !ok {
+		return 0, fmt.Errorf("streaming queries are not supported for %s", m.currentConnection.Type)
+	}
+
+	credentials := m.buildCredentials(m.currentConnection)
+	pluginConfig := newPluginConfigWithContext(credentials, ctx)
+	countingWriter := &countingQueryStreamWriter{writer: writer}
+
+	start := time.Now()
+	_, err := runWithContext(ctx, func() (int, error) {
+		if err := streamer.StreamRawExecute(pluginConfig, query, countingWriter); err != nil {
+			return 0, err
+		}
+		return countingWriter.rowCount, nil
+	})
+	m.logStreamedQuery(query, start, countingWriter.rowCount, err)
+	return countingWriter.rowCount, err
 }
 
 // ExecuteQueryWithParams executes a parameterized query against the current database.
@@ -1128,6 +1227,45 @@ func (m *Manager) ExportToCSV(schema, storageUnit, filename, delimiter string) e
 	syncDir(filepath.Dir(filename))
 	_ = os.Chmod(filename, 0600)
 	return nil
+}
+
+// ExportDataStream streams storage-unit data row by row via the plugin export
+// callback and returns the number of data rows written.
+func (m *Manager) ExportDataStream(schema, storageUnit string, writer func([]string) error) (int, error) {
+	start := time.Now()
+
+	if m.currentConnection == nil {
+		return 0, fmt.Errorf("not connected to any database")
+	}
+	if writer == nil {
+		return 0, fmt.Errorf("writer is required")
+	}
+
+	dbType := engine.DatabaseType(m.currentConnection.Type)
+	plugin := m.engine.Choose(dbType)
+	if plugin == nil {
+		return 0, fmt.Errorf("plugin not found")
+	}
+
+	credentials := m.buildCredentials(m.currentConnection)
+	pluginConfig := engine.NewPluginConfig(credentials)
+
+	headerWritten := false
+	rowCount := 0
+	err := plugin.ExportData(pluginConfig, schema, storageUnit, func(record []string) error {
+		if headerWritten {
+			rowCount++
+		} else {
+			headerWritten = true
+		}
+		return writer(record)
+	}, nil)
+	m.logOperation(fmt.Sprintf("ExportDataStream(%s.%s)", schema, storageUnit), start, rowCount, err)
+	if err != nil {
+		return 0, err
+	}
+
+	return rowCount, nil
 }
 
 func (m *Manager) ExportToExcel(schema, storageUnit, filename string) error {

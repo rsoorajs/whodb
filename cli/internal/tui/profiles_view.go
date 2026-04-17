@@ -203,6 +203,7 @@ func (v *ProfilesView) applySelected() (*ProfilesView, tea.Cmd) {
 		return v, nil
 	}
 
+	v.parent.currentProfileName = profile.Name
 	v.parent.mode = ViewBrowser
 	v.parent.initLayout()
 	return v, tea.Batch(

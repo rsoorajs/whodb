@@ -18,10 +18,13 @@ package tui
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/clidey/whodb/cli/internal/config"
+	"github.com/clidey/whodb/cli/internal/tui/layout"
+	graphmodel "github.com/clidey/whodb/core/graph/model"
 )
 
 func TestNewMainModel(t *testing.T) {
@@ -164,6 +167,126 @@ func TestMainModel_View(t *testing.T) {
 
 	if view == "" {
 		t.Error("Expected non-empty view")
+	}
+}
+
+func TestMainModel_PersistAndRestoreWorkspace(t *testing.T) {
+	setupTestEnv(t)
+
+	dbPath := filepath.Join(t.TempDir(), "workspace-restore.db")
+	conn := config.Connection{
+		Name:     "workspace-sqlite",
+		Type:     "Sqlite3",
+		Host:     dbPath,
+		Database: dbPath,
+	}
+
+	cfg := config.DefaultConfig()
+	cfg.AddConnection(conn)
+	cfg.AddProfile(config.Profile{Name: "daily", Connection: conn.Name})
+	if err := cfg.Save(); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+
+	modelWithConn := NewMainModelWithProfile(&conn, cfg, "daily")
+	if modelWithConn.err != nil {
+		t.Skipf("Skipping workspace restore test - database plugin not available: %v", modelWithConn.err)
+	}
+	defer modelWithConn.dbManager.Disconnect()
+
+	schema, err := modelWithConn.dbManager.ResolveSnapshotSchema(&conn, "")
+	if err != nil {
+		t.Fatalf("ResolveSnapshotSchema failed: %v", err)
+	}
+
+	if _, err := modelWithConn.dbManager.ExecuteQuery("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)"); err != nil {
+		t.Fatalf("Failed to seed SQLite table: %v", err)
+	}
+
+	modelWithConn.mode = ViewResults
+	modelWithConn.activeLayout = layout.LayoutFull
+	modelWithConn.focusedPaneIdx = 2
+	modelWithConn.browserView.currentSchema = schema
+	modelWithConn.browserView.selectedTable = "users"
+	modelWithConn.browserView.filterInput.SetValue("us")
+	modelWithConn.editorView.buffers = []queryBuffer{
+		{name: "Users", text: "SELECT * FROM users"},
+		{name: "Count", text: "SELECT COUNT(*) FROM users"},
+	}
+	modelWithConn.editorView.activeTab = 1
+	modelWithConn.editorView.textarea.SetValue(modelWithConn.editorView.buffers[1].text)
+	modelWithConn.resultsView.schema = schema
+	modelWithConn.resultsView.tableName = "users"
+	modelWithConn.resultsView.currentPage = 2
+	modelWithConn.resultsView.pageSize = 25
+	modelWithConn.resultsView.columnOffset = 1
+	modelWithConn.resultsView.visibleColumns = []string{"id", "name"}
+	modelWithConn.resultsView.whereCondition = &graphmodel.WhereCondition{
+		Type: graphmodel.WhereConditionTypeAtomic,
+		Atomic: &graphmodel.AtomicWhereCondition{
+			ColumnType: "TEXT",
+			Key:        "name",
+			Operator:   "LIKE",
+			Value:      "A%",
+		},
+	}
+	modelWithConn.diffView.SetSelectionState(config.WorkspaceDiffState{
+		FromConnection: conn.Name,
+		ToConnection:   conn.Name,
+		FromSchema:     schema,
+		ToSchema:       schema,
+	})
+
+	if err := modelWithConn.PersistWorkspace(); err != nil {
+		t.Fatalf("PersistWorkspace failed: %v", err)
+	}
+
+	restored := newMainModel(true)
+	if restored.err != nil {
+		t.Fatalf("Restored model failed: %v", restored.err)
+	}
+	defer restored.dbManager.Disconnect()
+
+	if restored.dbManager.GetCurrentConnection() == nil || restored.dbManager.GetCurrentConnection().Name != conn.Name {
+		t.Fatalf("expected restored connection %q, got %#v", conn.Name, restored.dbManager.GetCurrentConnection())
+	}
+	if restored.currentProfileName != "daily" {
+		t.Fatalf("expected restored profile daily, got %q", restored.currentProfileName)
+	}
+	if restored.mode != ViewResults {
+		t.Fatalf("expected restored mode ViewResults, got %v", restored.mode)
+	}
+	if restored.activeLayout != layout.LayoutFull {
+		t.Fatalf("expected restored layout %s, got %s", layout.LayoutFull, restored.activeLayout)
+	}
+	if restored.focusedPaneIdx != 2 {
+		t.Fatalf("expected focused pane 2, got %d", restored.focusedPaneIdx)
+	}
+	if restored.browserView.currentSchema != schema || restored.browserView.selectedTable != "users" {
+		t.Fatalf("unexpected restored browser state: schema=%q table=%q", restored.browserView.currentSchema, restored.browserView.selectedTable)
+	}
+	if restored.browserView.filterInput.Value() != "us" {
+		t.Fatalf("expected restored browser filter, got %q", restored.browserView.filterInput.Value())
+	}
+	if len(restored.editorView.buffers) != 2 || restored.editorView.activeTab != 1 {
+		t.Fatalf("unexpected restored editor state: buffers=%d active=%d", len(restored.editorView.buffers), restored.editorView.activeTab)
+	}
+	if restored.editorView.buffers[1].text != "SELECT COUNT(*) FROM users" {
+		t.Fatalf("unexpected restored editor buffer: %#v", restored.editorView.buffers[1])
+	}
+	if restored.resultsView.tableName != "users" || restored.resultsView.pageSize != 25 || restored.resultsView.currentPage != 2 {
+		t.Fatalf("unexpected restored results state: table=%q pageSize=%d page=%d", restored.resultsView.tableName, restored.resultsView.pageSize, restored.resultsView.currentPage)
+	}
+	if restored.resultsView.whereCondition == nil || restored.resultsView.whereCondition.Atomic == nil || restored.resultsView.whereCondition.Atomic.Value != "A%" {
+		t.Fatalf("unexpected restored where condition: %#v", restored.resultsView.whereCondition)
+	}
+
+	diffState := restored.diffView.SelectionState()
+	if diffState.FromConnection != conn.Name || diffState.ToConnection != conn.Name {
+		t.Fatalf("unexpected restored diff state: %#v", diffState)
+	}
+	if len(restored.initCommands) == 0 {
+		t.Fatal("expected restored model to schedule workspace init commands")
 	}
 }
 

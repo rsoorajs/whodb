@@ -25,6 +25,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/clidey/whodb/cli/internal/config"
 	"github.com/clidey/whodb/cli/internal/database"
 	"github.com/clidey/whodb/cli/internal/schemadiff"
 	"github.com/clidey/whodb/cli/pkg/styles"
@@ -94,6 +95,11 @@ func NewSchemaDiffView(parent *MainModel) *SchemaDiffView {
 }
 
 func (v *SchemaDiffView) prepare() {
+	fromConnection := v.selectedConnectionName(v.fromIndex)
+	toConnection := v.selectedConnectionName(v.toIndex)
+	fromSchema := strings.TrimSpace(v.fromSchemaInput.Value())
+	toSchema := strings.TrimSpace(v.toSchemaInput.Value())
+
 	v.refreshConnections()
 	v.editing = true
 	v.loading = false
@@ -102,8 +108,16 @@ func (v *SchemaDiffView) prepare() {
 	v.ready = false
 
 	defaultSchema := strings.TrimSpace(v.parent.browserView.currentSchema)
-	v.fromSchemaInput.SetValue(defaultSchema)
-	v.toSchemaInput.SetValue(defaultSchema)
+	if fromSchema == "" {
+		fromSchema = defaultSchema
+	}
+	if toSchema == "" {
+		toSchema = defaultSchema
+	}
+	v.fromSchemaInput.SetValue(fromSchema)
+	v.toSchemaInput.SetValue(toSchema)
+	v.selectConnectionByName(fromConnection, true)
+	v.selectConnectionByName(toConnection, false)
 	v.syncFocus()
 }
 
@@ -430,6 +444,52 @@ func (v *SchemaDiffView) currentConnectionLabel(idx int) string {
 	}
 
 	return label
+}
+
+func (v *SchemaDiffView) selectedConnectionName(idx int) string {
+	if idx < 0 || idx >= len(v.connections) {
+		return ""
+	}
+	return strings.TrimSpace(v.connections[idx].Name)
+}
+
+func (v *SchemaDiffView) selectConnectionByName(name string, from bool) {
+	if strings.TrimSpace(name) == "" {
+		return
+	}
+
+	for i, conn := range v.connections {
+		if strings.TrimSpace(conn.Name) != name {
+			continue
+		}
+		if from {
+			v.fromIndex = i
+		} else {
+			v.toIndex = i
+		}
+		return
+	}
+}
+
+// SelectionState returns the current schema diff selection inputs for
+// persistence in the CLI workspace snapshot.
+func (v *SchemaDiffView) SelectionState() config.WorkspaceDiffState {
+	return config.WorkspaceDiffState{
+		FromConnection: v.selectedConnectionName(v.fromIndex),
+		ToConnection:   v.selectedConnectionName(v.toIndex),
+		FromSchema:     strings.TrimSpace(v.fromSchemaInput.Value()),
+		ToSchema:       strings.TrimSpace(v.toSchemaInput.Value()),
+	}
+}
+
+// SetSelectionState restores persisted schema diff inputs into the diff view.
+func (v *SchemaDiffView) SetSelectionState(state config.WorkspaceDiffState) {
+	v.refreshConnections()
+	v.selectConnectionByName(state.FromConnection, true)
+	v.selectConnectionByName(state.ToConnection, false)
+	v.fromSchemaInput.SetValue(strings.TrimSpace(state.FromSchema))
+	v.toSchemaInput.SetValue(strings.TrimSpace(state.ToSchema))
+	v.syncFocus()
 }
 
 func (v *SchemaDiffView) runComparison() tea.Cmd {

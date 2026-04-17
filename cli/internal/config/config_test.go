@@ -108,6 +108,32 @@ func TestGetQueryTimeout(t *testing.T) {
 	}
 }
 
+func TestWorkspaceStateSetGetClear(t *testing.T) {
+	cfg := DefaultConfig()
+
+	workspace := &WorkspaceState{
+		ConnectionName: "test-db",
+		ProfileName:    "daily",
+		View:           "results",
+		Layout:         "Full",
+		FocusedPane:    1,
+	}
+
+	cfg.SetWorkspace(workspace)
+	got := cfg.GetWorkspace()
+	if got == nil {
+		t.Fatal("expected workspace to be set")
+	}
+	if got.ConnectionName != "test-db" || got.ProfileName != "daily" {
+		t.Fatalf("unexpected workspace contents: %#v", got)
+	}
+
+	cfg.ClearWorkspace()
+	if cfg.GetWorkspace() != nil {
+		t.Fatal("expected workspace to be cleared")
+	}
+}
+
 func TestAddConnection(t *testing.T) {
 	cfg := DefaultConfig()
 

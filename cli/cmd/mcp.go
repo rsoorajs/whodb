@@ -113,11 +113,17 @@ Available tools:
   whodb_tables      - List tables in a schema
   whodb_columns     - Describe table columns
   whodb_connections - List available connections
+  whodb_explain     - Run EXPLAIN for a query
+  whodb_diff        - Compare schema metadata between two connections
+  whodb_erd         - Load graph/relationship metadata
+  whodb_audit       - Run data quality audits
+  whodb_suggestions - Load backend query suggestions
   whodb_confirm     - Confirm pending writes (only with --confirm-writes)
+  whodb_pending     - List pending confirmation tokens
 
 TOOL SELECTION:
   --tools           - Comma-separated list of tools to enable (default: all)
-                      Valid: query, schemas, tables, columns, connections, confirm
+                      Valid: query, schemas, tables, columns, connections, confirm, pending, explain, diff, erd, audit, suggestions
   --disable-tools   - Comma-separated list of tools to disable (takes precedence)
 
 ANALYTICS:
@@ -176,7 +182,7 @@ Connection Resolution:
   whodb-cli mcp serve --transport=http --host=0.0.0.0 --port=8080
 
   # Enable only specific tools (minimal surface for read-only exploration)
-  whodb-cli mcp serve --tools=schemas,tables,columns,connections
+  whodb-cli mcp serve --tools=schemas,tables,columns,connections,suggestions
 
   # Disable query tool (only schema exploration)
   whodb-cli mcp serve --disable-tools=query,confirm

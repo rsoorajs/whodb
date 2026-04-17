@@ -82,7 +82,7 @@ database, so they stay aligned with the same backend logic used by the app.`,
 		}
 		defer mgr.Disconnect()
 
-		schemaName, err := resolveSnapshotSchema(mgr, conn, suggestionsSchema)
+		schemaName, err := mgr.ResolveSnapshotSchema(conn, suggestionsSchema)
 		if err != nil {
 			return fmt.Errorf("resolve schema: %w", err)
 		}

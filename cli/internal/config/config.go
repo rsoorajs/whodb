@@ -23,6 +23,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src/common/config"
 	"github.com/clidey/whodb/core/src/common/datadir"
 	"github.com/clidey/whodb/core/src/env"
@@ -91,16 +92,70 @@ type SavedQuery struct {
 	Query string `json:"query"`
 }
 
+// WorkspaceEditorBufferState stores the name and SQL text for one editor tab.
+type WorkspaceEditorBufferState struct {
+	Name  string `json:"name"`
+	Query string `json:"query"`
+}
+
+// WorkspaceEditorState stores the editor tab set and active tab index.
+type WorkspaceEditorState struct {
+	Buffers   []WorkspaceEditorBufferState `json:"buffers,omitempty"`
+	ActiveTab int                          `json:"active_tab,omitempty"`
+}
+
+// WorkspaceBrowserState stores lightweight browser selection and filter state.
+type WorkspaceBrowserState struct {
+	Schema string `json:"schema,omitempty"`
+	Table  string `json:"table,omitempty"`
+	Filter string `json:"filter,omitempty"`
+}
+
+// WorkspaceResultsState stores reloadable table-results context.
+type WorkspaceResultsState struct {
+	Schema         string                `json:"schema,omitempty"`
+	Table          string                `json:"table,omitempty"`
+	CurrentPage    int                   `json:"current_page,omitempty"`
+	PageSize       int                   `json:"page_size,omitempty"`
+	ColumnOffset   int                   `json:"column_offset,omitempty"`
+	VisibleColumns []string              `json:"visible_columns,omitempty"`
+	Where          *model.WhereCondition `json:"where,omitempty"`
+}
+
+// WorkspaceDiffState stores the last schema diff selection inputs.
+type WorkspaceDiffState struct {
+	FromConnection string `json:"from_connection,omitempty"`
+	ToConnection   string `json:"to_connection,omitempty"`
+	FromSchema     string `json:"from_schema,omitempty"`
+	ToSchema       string `json:"to_schema,omitempty"`
+}
+
+// WorkspaceState stores the lightweight interactive CLI session that can be
+// restored on the next TUI launch.
+type WorkspaceState struct {
+	ConnectionName string                `json:"connection_name,omitempty"`
+	ProfileName    string                `json:"profile_name,omitempty"`
+	View           string                `json:"view,omitempty"`
+	Layout         string                `json:"layout,omitempty"`
+	FocusedPane    int                   `json:"focused_pane,omitempty"`
+	Browser        WorkspaceBrowserState `json:"browser,omitempty"`
+	Editor         WorkspaceEditorState  `json:"editor,omitempty"`
+	Results        WorkspaceResultsState `json:"results,omitempty"`
+	Diff           WorkspaceDiffState    `json:"diff,omitempty"`
+	SavedAt        string                `json:"saved_at,omitempty"`
+}
+
 // CLISection is the structure stored in the "cli" section of config.json.
 type CLISection struct {
-	Connections  []Connection  `json:"connections"`
-	History      HistoryConfig `json:"history"`
-	Display      DisplayConfig `json:"display"`
-	AI           AIConfig      `json:"ai"`
-	Query        QueryConfig   `json:"query"`
-	SavedQueries []SavedQuery  `json:"saved_queries,omitempty"`
-	Profiles     []Profile     `json:"profiles,omitempty"`
-	ReadOnly     bool          `json:"read_only,omitempty"`
+	Connections  []Connection    `json:"connections"`
+	History      HistoryConfig   `json:"history"`
+	Display      DisplayConfig   `json:"display"`
+	AI           AIConfig        `json:"ai"`
+	Query        QueryConfig     `json:"query"`
+	SavedQueries []SavedQuery    `json:"saved_queries,omitempty"`
+	Profiles     []Profile       `json:"profiles,omitempty"`
+	ReadOnly     bool            `json:"read_only,omitempty"`
+	Workspace    *WorkspaceState `json:"workspace,omitempty"`
 }
 
 type Config struct {
@@ -437,4 +492,19 @@ func (c *Config) GetProfile(name string) *Profile {
 // GetProfiles returns all saved profiles.
 func (c *Config) GetProfiles() []Profile {
 	return c.Profiles
+}
+
+// GetWorkspace returns the saved interactive workspace, or nil if none exists.
+func (c *Config) GetWorkspace() *WorkspaceState {
+	return c.Workspace
+}
+
+// SetWorkspace replaces the saved interactive workspace snapshot.
+func (c *Config) SetWorkspace(workspace *WorkspaceState) {
+	c.Workspace = workspace
+}
+
+// ClearWorkspace removes any saved interactive workspace snapshot.
+func (c *Config) ClearWorkspace() {
+	c.Workspace = nil
 }

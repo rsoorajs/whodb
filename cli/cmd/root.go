@@ -58,6 +58,7 @@ Features:
   - Query bookmarks in the TUI (Ctrl+B) and CLI (bookmarks), history (Ctrl+H), command log (Ctrl+D)
   - Nested WHERE builder with AND/OR grouping
   - Connection profiles in the TUI (Ctrl+P) and CLI (profiles) — bundle connection + theme + settings
+  - Workspace restore — resumes your last reconnectable TUI session on startup
   - Data quality audit with configurable thresholds (Ctrl+U)
   - Read-only mode (Ctrl+Y)
   - JSON cell viewer, fish-style history suggestions
@@ -71,8 +72,12 @@ Press ? in any view for keyboard shortcuts.`,
 		// Start TUI directly
 		m := tui.NewMainModel()
 		p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
-		if _, err := p.Run(); err != nil {
+		finalModel, err := p.Run()
+		if err != nil {
 			return fmt.Errorf("error running interactive mode: %w", err)
+		}
+		if err := persistWorkspace(finalModel); err != nil {
+			return err
 		}
 		return nil
 	},
@@ -125,10 +130,25 @@ func runWithProfile(name string) error {
 		cfg.Query.TimeoutSeconds = profile.TimeoutSeconds
 	}
 
-	m := tui.NewMainModelWithProfile(conn, cfg)
+	m := tui.NewMainModelWithProfile(conn, cfg, name)
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
-	if _, err := p.Run(); err != nil {
+	finalModel, err := p.Run()
+	if err != nil {
 		return fmt.Errorf("error running interactive mode: %w", err)
+	}
+	if err := persistWorkspace(finalModel); err != nil {
+		return err
+	}
+	return nil
+}
+
+func persistWorkspace(model tea.Model) error {
+	finalModel, ok := model.(*tui.MainModel)
+	if !ok || finalModel == nil {
+		return nil
+	}
+	if err := finalModel.PersistWorkspace(); err != nil {
+		return fmt.Errorf("error saving workspace: %w", err)
 	}
 	return nil
 }
