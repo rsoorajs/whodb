@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import type { SourceObjectRefInput } from "@graphql";
 import {useCallback} from "react";
 import * as desktopService from "../services/desktop";
 import {isDesktopApp} from "../utils/external-links";
@@ -22,15 +23,22 @@ import {withBasePath} from "../utils/base-path";
 
 
 /**
- * Exports the current table selection or full table contents through the backend export endpoint.
+ * Exports the current source object selection or full object contents through the backend export endpoint.
  */
-export const useExportToCSV = (schema: string, storageUnit: string, selectedOnly: boolean = false, delimiter: string = ',', selectedRows?: Record<string, any>[], format: 'csv' | 'excel' | 'ndjson' = 'csv') => {
+export const useExportToCSV = (
+    objectRef: SourceObjectRefInput | undefined,
+    fileBaseName: string,
+    selectedOnly: boolean = false,
+    delimiter: string = ',',
+    selectedRows?: Record<string, any>[],
+    format: 'csv' | 'excel' | 'ndjson' = 'csv'
+) => {
     return useCallback(async () => {
       try {
         // Prepare request body
         const requestBody: any = {
-          schema,
-          storageUnit,
+          ref: objectRef,
+          fileBaseName,
           delimiter,
           format,
         };
@@ -64,9 +72,8 @@ export const useExportToCSV = (schema: string, storageUnit: string, selectedOnly
 
         // Get filename from Content-Disposition header
         const contentDisposition = response.headers.get('Content-Disposition');
-        // Only include schema in filename if it exists (for SQLite, schema is empty)
         const extension = format === 'excel' ? 'xlsx' : format === 'ndjson' ? 'ndjson' : 'csv';
-        let filename = schema ? `${schema}_${storageUnit}.${extension}` : `${storageUnit}.${extension}`;
+        let filename = `${fileBaseName}.${extension}`;
         if (contentDisposition) {
           const filenameMatch = contentDisposition.match(/filename="(.+)"/);
           if (filenameMatch) {
@@ -108,5 +115,5 @@ export const useExportToCSV = (schema: string, storageUnit: string, selectedOnly
       } catch (error) {
         throw error;
       }
-    }, [schema, storageUnit, selectedOnly, delimiter, selectedRows, format]);
+    }, [objectRef, fileBaseName, selectedOnly, delimiter, selectedRows, format]);
 };

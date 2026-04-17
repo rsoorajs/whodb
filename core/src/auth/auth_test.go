@@ -27,6 +27,7 @@ import (
 
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
+	"github.com/clidey/whodb/core/src/source"
 )
 
 func TestIsPublicRouteAllowsIntrospectionInDev(t *testing.T) {
@@ -65,12 +66,14 @@ func TestAuthMiddlewareExtractsCredentialsFromBearer(t *testing.T) {
 		env.IsAPIGatewayEnabled = originalGateway
 	})
 
-	creds := engine.Credentials{
-		Type:     "Postgres",
-		Hostname: "db.local",
-		Username: "alice",
-		Password: "pw",
-		Database: "app",
+	creds := source.Credentials{
+		SourceType: "Postgres",
+		Values: map[string]string{
+			"Hostname": "db.local",
+			"Username": "alice",
+			"Password": "pw",
+			"Database": "app",
+		},
 	}
 	payload, err := json.Marshal(&creds)
 	if err != nil {
@@ -130,15 +133,15 @@ func TestAuthMiddlewarePreservesAdvancedOptions(t *testing.T) {
 		env.IsAPIGatewayEnabled = originalGateway
 	})
 
-	creds := engine.Credentials{
-		Type:     "Postgres",
-		Hostname: "db.local",
-		Username: "alice",
-		Password: "pw",
-		Database: "app",
-		Advanced: []engine.Record{
-			{Key: "SSL Mode", Value: "verify-ca"},
-			{Key: "SSL CA Certificate Path", Value: "/path/to/ca.crt"},
+	creds := source.Credentials{
+		SourceType: "Postgres",
+		Values: map[string]string{
+			"Hostname":                "db.local",
+			"Username":                "alice",
+			"Password":                "pw",
+			"Database":                "app",
+			"SSL Mode":                "verify-ca",
+			"SSL CA Certificate Path": "/path/to/ca.crt",
 		},
 	}
 	payload, err := json.Marshal(&creds)
@@ -167,22 +170,25 @@ func TestAuthMiddlewarePreservesAdvancedOptions(t *testing.T) {
 		t.Fatal("expected credentials to be populated")
 	}
 
-	if len(captured.Advanced) != 2 {
-		t.Fatalf("expected 2 advanced options, got %d", len(captured.Advanced))
+	advancedByKey := map[string]string{}
+	for _, record := range captured.Advanced {
+		advancedByKey[record.Key] = record.Value
 	}
 
-	if captured.Advanced[0].Key != "SSL Mode" || captured.Advanced[0].Value != "verify-ca" {
-		t.Fatalf("expected SSL Mode=verify-ca, got %s=%s", captured.Advanced[0].Key, captured.Advanced[0].Value)
+	if advancedByKey["Port"] != "5432" {
+		t.Fatalf("expected default Postgres port to be injected, got %+v", captured.Advanced)
 	}
-
-	if captured.Advanced[1].Key != "SSL CA Certificate Path" {
-		t.Fatalf("expected SSL CA Certificate Path, got %s", captured.Advanced[1].Key)
+	if advancedByKey["SSL Mode"] != "verify-ca" {
+		t.Fatalf("expected SSL Mode=verify-ca, got %+v", captured.Advanced)
+	}
+	if advancedByKey["SSL CA Certificate Path"] != "/path/to/ca.crt" {
+		t.Fatalf("expected SSL CA Certificate Path to be preserved, got %+v", captured.Advanced)
 	}
 }
 
-func TestAuthMiddlewareDecodesLoginCredentialsFormat(t *testing.T) {
-	// This test verifies that credentials marshaled from model.LoginCredentials format
-	// (with capitalized JSON field names) are correctly unmarshaled into engine.Credentials
+func TestAuthMiddlewareDecodesSourceCredentialsFormat(t *testing.T) {
+	// This test verifies that credentials marshaled from the source-first format
+	// are correctly unmarshaled into engine.Credentials.
 	originalDev := env.IsDevelopment
 	originalGateway := env.IsAPIGatewayEnabled
 	env.IsDevelopment = false
@@ -192,17 +198,17 @@ func TestAuthMiddlewareDecodesLoginCredentialsFormat(t *testing.T) {
 		env.IsAPIGatewayEnabled = originalGateway
 	})
 
-	// This JSON matches the format produced by model.LoginCredentials (GraphQL input)
+	// This JSON matches the format produced by the source-first auth payload.
 	loginPayload := `{
-		"Type": "Postgres",
-		"Hostname": "db.local",
-		"Username": "alice",
-		"Password": "pw",
-		"Database": "app",
-		"Advanced": [
-			{"Key": "SSL Mode", "Value": "verify-ca"},
-			{"Key": "SSL CA Certificate Path", "Value": "/path/to/ca.crt"}
-		]
+		"SourceType": "Postgres",
+		"Values": {
+			"Hostname": "db.local",
+			"Username": "alice",
+			"Password": "pw",
+			"Database": "app",
+			"SSL Mode": "verify-ca",
+			"SSL CA Certificate Path": "/path/to/ca.crt"
+		}
 	}`
 	token := base64.StdEncoding.EncodeToString([]byte(loginPayload))
 
@@ -226,31 +232,50 @@ func TestAuthMiddlewareDecodesLoginCredentialsFormat(t *testing.T) {
 		t.Fatal("expected credentials to be populated")
 	}
 
-	if len(captured.Advanced) != 2 {
-		t.Fatalf("expected 2 advanced options, got %d: %+v", len(captured.Advanced), captured.Advanced)
+	advancedByKey := map[string]string{}
+	for _, record := range captured.Advanced {
+		advancedByKey[record.Key] = record.Value
 	}
 
-	if captured.Advanced[0].Key != "SSL Mode" || captured.Advanced[0].Value != "verify-ca" {
-		t.Fatalf("expected SSL Mode=verify-ca, got %s=%s", captured.Advanced[0].Key, captured.Advanced[0].Value)
+	if advancedByKey["Port"] != "5432" {
+		t.Fatalf("expected default Postgres port to be injected, got %+v", captured.Advanced)
+	}
+	if advancedByKey["SSL Mode"] != "verify-ca" {
+		t.Fatalf("expected SSL Mode=verify-ca, got %+v", captured.Advanced)
+	}
+	if advancedByKey["SSL CA Certificate Path"] != "/path/to/ca.crt" {
+		t.Fatalf("expected SSL CA Certificate Path to be preserved, got %+v", captured.Advanced)
 	}
 }
 
 func TestIsAllowedPermitsWhitelistedOperations(t *testing.T) {
-	body := `{"operationName":"Login","variables":{}}`
+	body := `{"operationName":"LoginSource","variables":{}}`
 	req := httptest.NewRequest(http.MethodPost, "/api/query", strings.NewReader(body))
 	if !isAllowed(req, []byte(body)) {
-		t.Fatalf("expected Login operation to be allowed without auth")
+		t.Fatalf("expected LoginSource operation to be allowed without auth")
 	}
 
-	getDb := `{"operationName":"GetDatabase","variables":{"type":"Sqlite3"}}`
+	profiles := `{"operationName":"SourceProfiles","variables":{}}`
+	req = httptest.NewRequest(http.MethodPost, "/api/query", strings.NewReader(profiles))
+	if !isAllowed(req, []byte(profiles)) {
+		t.Fatalf("expected SourceProfiles operation to be allowed without auth")
+	}
+
+	loginWithProfile := `{"operationName":"LoginWithSourceProfile","variables":{}}`
+	req = httptest.NewRequest(http.MethodPost, "/api/query", strings.NewReader(loginWithProfile))
+	if !isAllowed(req, []byte(loginWithProfile)) {
+		t.Fatalf("expected LoginWithSourceProfile operation to be allowed without auth")
+	}
+
+	getDb := `{"operationName":"SourceFieldOptions","variables":{"sourceType":"Sqlite3"}}`
 	req = httptest.NewRequest(http.MethodPost, "/api/query", strings.NewReader(getDb))
 	if !isAllowed(req, []byte(getDb)) {
-		t.Fatalf("expected GetDatabase for Sqlite3 to be allowed")
+		t.Fatalf("expected SourceFieldOptions for Sqlite3 to be allowed")
 	}
 
-	denied := `{"operationName":"GetDatabase","variables":{"type":"Postgres"}}`
+	denied := `{"operationName":"SourceFieldOptions","variables":{"sourceType":"Postgres"}}`
 	req = httptest.NewRequest(http.MethodPost, "/api/query", strings.NewReader(denied))
 	if isAllowed(req, []byte(denied)) {
-		t.Fatalf("expected GetDatabase for non-sqlite to be rejected")
+		t.Fatalf("expected SourceFieldOptions for non-sqlite to be rejected")
 	}
 }

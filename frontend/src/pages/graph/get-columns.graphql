@@ -1,5 +1,5 @@
-query GetColumns($schema: String!, $storageUnit: String!) {
-  Columns(schema: $schema, storageUnit: $storageUnit) {
+query GetColumns($ref: SourceObjectRefInput!) {
+  Columns: SourceColumns(ref: $ref) {
     Name
     Type
     IsPrimary

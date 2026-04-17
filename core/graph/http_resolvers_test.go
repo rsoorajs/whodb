@@ -40,7 +40,7 @@ type roundTripperFunc func(*http.Request) (*http.Response, error)
 func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
 func TestRESTHandlersAddRowAndGetRows(t *testing.T) {
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	mock.StorageUnitExistsFunc = func(*engine.PluginConfig, string, string) (bool, error) { return true, nil }
 	mock.AddRowFunc = func(*engine.PluginConfig, string, string, []engine.Record) (bool, error) { return true, nil }
 	mock.GetRowsFunc = func(*engine.PluginConfig, *engine.GetRowsRequest) (*engine.GetRowsResult, error) {
@@ -55,9 +55,9 @@ func TestRESTHandlersAddRowAndGetRows(t *testing.T) {
 	SetupHTTPServer(router)
 
 	// Add row via REST
-	addPayload := `{"schema":"public","storageUnit":"users","values":[{"Key":"id","Value":"1"}]}`
+	addPayload := `{"ref":{"Kind":"Table","Path":["app","public","users"]},"values":[{"Key":"id","Value":"1"}]}`
 	addReq := httptest.NewRequest(http.MethodPost, "/api/rows", bytes.NewBufferString(addPayload))
-	addReq = addReq.WithContext(context.WithValue(addReq.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"}))
+	addReq = addReq.WithContext(testSourceContext("Postgres", map[string]string{"Database": "app"}))
 	addRec := httptest.NewRecorder()
 	router.ServeHTTP(addRec, addReq)
 	if addRec.Code != http.StatusOK {
@@ -65,8 +65,8 @@ func TestRESTHandlersAddRowAndGetRows(t *testing.T) {
 	}
 
 	// Get rows via REST
-	rowsReq := httptest.NewRequest(http.MethodGet, "/api/rows?schema=public&storageUnit=users&pageSize=10&pageOffset=0", nil)
-	rowsReq = rowsReq.WithContext(context.WithValue(rowsReq.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"}))
+	rowsReq := httptest.NewRequest(http.MethodGet, "/api/rows?kind=Table&path=app&path=public&path=users&pageSize=10&pageOffset=0", nil)
+	rowsReq = rowsReq.WithContext(testSourceContext("Postgres", map[string]string{"Database": "app"}))
 	rowsRec := httptest.NewRecorder()
 	router.ServeHTTP(rowsRec, rowsReq)
 	if rowsRec.Code != http.StatusOK {
@@ -82,15 +82,15 @@ func TestRESTHandlersAddRowAndGetRows(t *testing.T) {
 }
 
 func TestRESTHandlersHandleErrors(t *testing.T) {
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	mock.GetDatabasesFunc = func(*engine.PluginConfig) ([]string, error) { return nil, errors.New("db error") }
 	setEngineMock(t, mock)
 
 	router := chi.NewRouter()
 	SetupHTTPServer(router)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/databases?type=Test", nil)
-	req = req.WithContext(context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"}))
+	req := httptest.NewRequest(http.MethodGet, "/api/databases?sourceType=Postgres", nil)
+	req = req.WithContext(context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres"}))
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -126,7 +126,7 @@ func TestRESTHandlersAIModelsAndChat(t *testing.T) {
 		env.OllamaPort = originalOllamaPort
 	})
 
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	mock.ChatFunc = func(*engine.PluginConfig, string, string, string) ([]*engine.ChatMessage, error) {
 		return nil, errors.New("chat error")
 	}
@@ -138,7 +138,7 @@ func TestRESTHandlersAIModelsAndChat(t *testing.T) {
 
 	// AI models
 	modelReq := httptest.NewRequest(http.MethodGet, "/api/ai-models?modelType=Ollama&token=", nil)
-	modelReq = modelReq.WithContext(context.WithValue(modelReq.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"}))
+	modelReq = modelReq.WithContext(context.WithValue(modelReq.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres"}))
 	modelRec := httptest.NewRecorder()
 	router.ServeHTTP(modelRec, modelReq)
 	if modelRec.Code != http.StatusOK {
@@ -147,9 +147,9 @@ func TestRESTHandlersAIModelsAndChat(t *testing.T) {
 
 	// AI chat
 	// AI chat with unsupported type should surface error (no network)
-	payload := `{"modelType":"Test","token":"","schema":"public","input":{"PreviousConversation":"","Query":"select","Model":"gpt-4"}}`
+	payload := `{"modelType":"Test","token":"","ref":{"Kind":"Schema","Path":["app","public"]},"input":{"PreviousConversation":"","Query":"select","Model":"gpt-4"}}`
 	chatReq := httptest.NewRequest(http.MethodPost, "/api/ai-chat", bytes.NewBufferString(payload))
-	chatReq = chatReq.WithContext(context.WithValue(chatReq.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"}))
+	chatReq = chatReq.WithContext(testSourceContext("Postgres", map[string]string{"Database": "app"}))
 	chatRec := httptest.NewRecorder()
 	router.ServeHTTP(chatRec, chatReq)
 	if chatRec.Code != http.StatusInternalServerError {
@@ -179,16 +179,16 @@ func TestRESTRawExecutePropagatesErrors(t *testing.T) {
 }
 
 func TestRESTHandlersEnforceAuthForProtectedRoutes(t *testing.T) {
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	mock.GetDatabasesFunc = func(*engine.PluginConfig) ([]string, error) { return nil, errors.New("unauthorized") }
 	setEngineMock(t, mock)
 
 	router := chi.NewRouter()
 	SetupHTTPServer(router)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/databases?type=Test", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/databases?sourceType=Postgres", nil)
 	// Provide empty credentials to avoid panic but simulate unauthorized flow
-	req = req.WithContext(context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"}))
+	req = req.WithContext(context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres"}))
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 	if rec.Code != http.StatusInternalServerError {
@@ -197,7 +197,7 @@ func TestRESTHandlersEnforceAuthForProtectedRoutes(t *testing.T) {
 }
 
 func TestRESTExportSuccessAndFailure(t *testing.T) {
-	successMock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+	successMock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	successMock.ExportDataFunc = func(*engine.PluginConfig, string, string, func([]string) error, []map[string]any) error {
 		return nil
 	}
@@ -206,9 +206,9 @@ func TestRESTExportSuccessAndFailure(t *testing.T) {
 	router := chi.NewRouter()
 	SetupHTTPServer(router)
 
-	payload := `{"schema":"public","storageUnit":"users","rows":[{"id":1}]}`
+	payload := `{"ref":{"Kind":"Table","Path":["app","public","users"]},"selectedRows":[{"id":1}]}`
 	req := httptest.NewRequest(http.MethodPost, "/api/export", bytes.NewBufferString(payload))
-	req = req.WithContext(context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"}))
+	req = req.WithContext(testSourceContext("Postgres", map[string]string{"Database": "app"}))
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
@@ -216,14 +216,14 @@ func TestRESTExportSuccessAndFailure(t *testing.T) {
 	}
 
 	// Failure case
-	failMock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+	failMock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	failMock.ExportDataFunc = func(*engine.PluginConfig, string, string, func([]string) error, []map[string]any) error {
 		return errors.New("export failed")
 	}
 	setEngineMock(t, failMock)
 
 	req = httptest.NewRequest(http.MethodPost, "/api/export", bytes.NewBufferString(payload))
-	req = req.WithContext(context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"}))
+	req = req.WithContext(testSourceContext("Postgres", map[string]string{"Database": "app"}))
 	rec = httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 	if rec.Code != http.StatusInternalServerError {

@@ -1,5 +1,5 @@
-mutation AddRow($schema: String!, $storageUnit: String!, $values: [RecordInput!]!) {
-  AddRow(schema: $schema, storageUnit: $storageUnit, values: $values) {
+mutation AddRow($ref: SourceObjectRefInput!, $values: [RecordInput!]!) {
+  AddRow: AddSourceRow(ref: $ref, values: $values) {
     Status
   }
 }

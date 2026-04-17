@@ -30,7 +30,7 @@ func TestQueryProfilesMapsAliasCustomIDAndSSL(t *testing.T) {
 		Alias:    "Reporting",
 		Hostname: "db.internal",
 		Database: "analytics",
-		Source:   "env",
+		Source:   "environment",
 		Advanced: map[string]string{
 			ssl.KeySSLMode: string(ssl.SSLModeRequired),
 		},
@@ -43,15 +43,15 @@ func TestQueryProfilesMapsAliasCustomIDAndSSL(t *testing.T) {
 		Source:   "env",
 	})
 
-	profiles, err := (&Resolver{}).Query().Profiles(context.Background())
+	profiles, err := (&Resolver{}).Query().SourceProfiles(context.Background())
 	if err != nil {
 		t.Fatalf("expected profiles query to succeed, got %v", err)
 	}
 
-	var reportingProfile *model.LoginProfile
-	var mysqlProfile *model.LoginProfile
+	var reportingProfile *model.SourceProfile
+	var mysqlProfile *model.SourceProfile
 	for _, profile := range profiles {
-		if profile.Alias != nil && *profile.Alias == "Reporting" {
+		if profile.DisplayName == "Reporting" {
 			reportingProfile = profile
 		}
 		if profile.ID == "mysql-profile" {
@@ -71,13 +71,13 @@ func TestQueryProfilesMapsAliasCustomIDAndSSL(t *testing.T) {
 }
 
 func TestQueryDatabaseUsesMinimalConfigWithoutSessionCredentials(t *testing.T) {
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	mock.GetDatabasesFunc = func(config *engine.PluginConfig) ([]string, error) {
 		if config == nil || config.Credentials == nil {
 			t.Fatal("expected credentials to be present")
 		}
-		if config.Credentials.Type != "Test" {
-			t.Fatalf("expected type Test, got %q", config.Credentials.Type)
+		if config.Credentials.Type != "Postgres" {
+			t.Fatalf("expected type Postgres, got %q", config.Credentials.Type)
 		}
 		if config.Credentials.Hostname != "" {
 			t.Fatalf("expected no session credentials to be used, got hostname %q", config.Credentials.Hostname)
@@ -86,7 +86,7 @@ func TestQueryDatabaseUsesMinimalConfigWithoutSessionCredentials(t *testing.T) {
 	}
 	setEngineMock(t, mock)
 
-	databases, err := (&Resolver{}).Query().Database(context.Background(), "Test")
+	databases, err := (&Resolver{}).Query().SourceFieldOptions(context.Background(), "Postgres", "Database", nil)
 	if err != nil {
 		t.Fatalf("expected database query to succeed, got %v", err)
 	}
@@ -103,14 +103,14 @@ func TestQueryRowValidatesPaginationAndEnrichesColumns(t *testing.T) {
 			env.MaxPageSize = originalMaxPageSize
 		})
 
-		_, err := (&Resolver{}).Query().Row(context.Background(), "public", "orders", nil, nil, 11, 0)
+		_, err := (&Resolver{}).Query().SourceRows(context.Background(), testSourceRef(model.SourceObjectKindTable, "app", "public", "orders"), nil, nil, 11, 0)
 		if err == nil || !strings.Contains(err.Error(), "pageSize must not exceed 10") {
 			t.Fatalf("expected max page size validation error, got %v", err)
 		}
 	})
 
 	t.Run("maps row and column metadata", func(t *testing.T) {
-		mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+		mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 		mock.StorageUnitExistsFunc = func(*engine.PluginConfig, string, string) (bool, error) { return true, nil }
 		mock.GetRowsFunc = func(*engine.PluginConfig, *engine.GetRowsRequest) (*engine.GetRowsResult, error) {
 			return &engine.GetRowsResult{
@@ -132,8 +132,8 @@ func TestQueryRowValidatesPaginationAndEnrichesColumns(t *testing.T) {
 		}
 		setEngineMock(t, mock)
 
-		ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"})
-		result, err := (&Resolver{}).Query().Row(ctx, "public", "orders", nil, nil, 5, 0)
+		ctx := testSourceContext("Postgres", map[string]string{"Database": "app"})
+		result, err := (&Resolver{}).Query().SourceRows(ctx, testSourceRef(model.SourceObjectKindTable, "app", "public", "orders"), nil, nil, 5, 0)
 		if err != nil {
 			t.Fatalf("expected row query to succeed, got %v", err)
 		}
@@ -150,7 +150,7 @@ func TestQueryRowValidatesPaginationAndEnrichesColumns(t *testing.T) {
 }
 
 func TestQueryColumnsBatchSkipsFailedTables(t *testing.T) {
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	mock.StorageUnitExistsFunc = func(*engine.PluginConfig, string, string) (bool, error) { return true, nil }
 	mock.GetColumnsForTableFunc = func(_ *engine.PluginConfig, _ string, storageUnit string) ([]engine.Column, error) {
 		if storageUnit == "broken" {
@@ -160,55 +160,64 @@ func TestQueryColumnsBatchSkipsFailedTables(t *testing.T) {
 	}
 	setEngineMock(t, mock)
 
-	ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"})
-	result, err := (&Resolver{}).Query().ColumnsBatch(ctx, "public", []string{"users", "broken"})
+	ctx := testSourceContext("Postgres", map[string]string{"Database": "app"})
+	result, err := (&Resolver{}).Query().SourceColumnsBatch(ctx, []*model.SourceObjectRefInput{
+		testSourceRefPtr(model.SourceObjectKindTable, "app", "public", "users"),
+		testSourceRefPtr(model.SourceObjectKindTable, "app", "public", "broken"),
+	})
 	if err != nil {
 		t.Fatalf("expected columns batch to succeed, got %v", err)
 	}
-	if len(result) != 1 || result[0].StorageUnit != "users" {
+	if len(result) != 1 || result[0].Ref == nil || result[0].Ref.Path[len(result[0].Ref.Path)-1] != "users" {
 		t.Fatalf("expected only successful tables to be returned, got %#v", result)
 	}
 }
 
-func TestQueryConnectableDatabasesMapsCatalogEntries(t *testing.T) {
-	result, err := (&Resolver{}).Query().ConnectableDatabases(context.Background())
+func TestQuerySourceTypesMapsCatalogEntries(t *testing.T) {
+	result, err := (&Resolver{}).Query().SourceTypes(context.Background())
 	if err != nil {
-		t.Fatalf("expected connectable databases query to succeed, got %v", err)
+		t.Fatalf("expected source types query to succeed, got %v", err)
 	}
 	if len(result) == 0 {
-		t.Fatal("expected connectable databases to be returned")
+		t.Fatal("expected source types to be returned")
 	}
 
-	var postgres *model.ConnectableDatabase
+	var postgres *model.SourceType
 	for _, entry := range result {
-		if entry.ID == string(engine.DatabaseType_Postgres) {
+		if entry.ID == "Postgres" {
 			postgres = entry
 			break
 		}
 	}
 	if postgres == nil {
-		t.Fatalf("expected %q entry to be present in connectable databases", engine.DatabaseType_Postgres)
+		t.Fatalf("expected Postgres source type to be present")
 	}
-	if postgres.Fields == nil || !postgres.Fields.Hostname || !postgres.RequiredFields.Database {
-		t.Fatalf("expected postgres field metadata to be mapped, got %#v / %#v", postgres.Fields, postgres.RequiredFields)
+
+	fieldByKey := map[string]*model.SourceConnectionField{}
+	for _, field := range postgres.ConnectionFields {
+		fieldByKey[field.Key] = field
 	}
-	if len(postgres.SslModes) == 0 {
+	if fieldByKey["Hostname"] == nil || !fieldByKey["Hostname"].Required {
+		t.Fatalf("expected Hostname connection field to be mapped, got %#v", postgres.ConnectionFields)
+	}
+	if fieldByKey["Database"] == nil || !fieldByKey["Database"].Required {
+		t.Fatalf("expected Database connection field to be required, got %#v", postgres.ConnectionFields)
+	}
+	if len(postgres.SSLModes) == 0 {
 		t.Fatal("expected postgres SSL modes to be exposed")
 	}
-	portFound := false
-	for _, record := range postgres.Extra {
-		if record.Key == "Port" && record.Value == "5432" {
-			portFound = true
-			break
-		}
+	if postgres.Contract == nil || postgres.Contract.DefaultObjectKind != model.SourceObjectKindTable {
+		t.Fatalf("expected Postgres source contract to be mapped, got %#v", postgres.Contract)
 	}
-	if !portFound {
-		t.Fatalf("expected postgres default port to be included, got %#v", postgres.Extra)
+
+	portField := fieldByKey["Port"]
+	if portField == nil || portField.DefaultValue == nil || *portField.DefaultValue != "5432" {
+		t.Fatalf("expected default port field to be included, got %#v", postgres.ConnectionFields)
 	}
 }
 
-func TestQueryDatabaseQuerySuggestionsCapsAtThree(t *testing.T) {
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+func TestQuerySourceQuerySuggestionsCapsAtThree(t *testing.T) {
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	mock.GetStorageUnitsFunc = func(*engine.PluginConfig, string) ([]engine.StorageUnit, error) {
 		return []engine.StorageUnit{
 			{Name: "users"},
@@ -219,8 +228,8 @@ func TestQueryDatabaseQuerySuggestionsCapsAtThree(t *testing.T) {
 	}
 	setEngineMock(t, mock)
 
-	ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"})
-	suggestions, err := (&Resolver{}).Query().DatabaseQuerySuggestions(ctx, "public")
+	ctx := testSourceContext("Postgres", map[string]string{"Database": "app"})
+	suggestions, err := (&Resolver{}).Query().SourceQuerySuggestions(ctx, testSourceRefPtr(model.SourceObjectKindSchema, "app", "public"))
 	if err != nil {
 		t.Fatalf("expected suggestions query to succeed, got %v", err)
 	}
@@ -239,11 +248,11 @@ func TestQueryDatabaseQuerySuggestionsCapsAtThree(t *testing.T) {
 
 func TestQueryHealthReportsDatabaseStatus(t *testing.T) {
 	t.Run("healthy plugin reports healthy database", func(t *testing.T) {
-		mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+		mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 		mock.IsAvailableFunc = func(context.Context, *engine.PluginConfig) bool { return true }
 		setEngineMock(t, mock)
 
-		ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"})
+		ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres"})
 		status, err := (&Resolver{}).Query().Health(ctx)
 		if err != nil {
 			t.Fatalf("expected health query to succeed, got %v", err)
@@ -254,11 +263,11 @@ func TestQueryHealthReportsDatabaseStatus(t *testing.T) {
 	})
 
 	t.Run("failed availability reports database error", func(t *testing.T) {
-		mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+		mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 		mock.IsAvailableFunc = func(context.Context, *engine.PluginConfig) bool { return false }
 		setEngineMock(t, mock)
 
-		ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"})
+		ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres"})
 		status, err := (&Resolver{}).Query().Health(ctx)
 		if err != nil {
 			t.Fatalf("expected health query to succeed, got %v", err)
@@ -271,7 +280,7 @@ func TestQueryHealthReportsDatabaseStatus(t *testing.T) {
 
 func TestMutationExecuteConfirmedSQLMapsResultsAndErrors(t *testing.T) {
 	t.Run("successful execution returns query result", func(t *testing.T) {
-		mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+		mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 		mock.RawExecuteFunc = func(*engine.PluginConfig, string, ...any) (*engine.GetRowsResult, error) {
 			return &engine.GetRowsResult{
 				Columns: []engine.Column{{Name: "id", Type: "INTEGER"}},
@@ -280,7 +289,7 @@ func TestMutationExecuteConfirmedSQLMapsResultsAndErrors(t *testing.T) {
 		}
 		setEngineMock(t, mock)
 
-		ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"})
+		ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres"})
 		message, err := (&Resolver{}).Mutation().ExecuteConfirmedSQL(ctx, "SELECT 1", "sql:get")
 		if err != nil {
 			t.Fatalf("expected confirmed SQL execution to succeed, got %v", err)
@@ -291,13 +300,13 @@ func TestMutationExecuteConfirmedSQLMapsResultsAndErrors(t *testing.T) {
 	})
 
 	t.Run("execution errors become error messages", func(t *testing.T) {
-		mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+		mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 		mock.RawExecuteFunc = func(*engine.PluginConfig, string, ...any) (*engine.GetRowsResult, error) {
 			return nil, errors.New("query failed")
 		}
 		setEngineMock(t, mock)
 
-		ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"})
+		ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres"})
 		message, err := (&Resolver{}).Mutation().ExecuteConfirmedSQL(ctx, "DELETE FROM orders", "sql:delete")
 		if err != nil {
 			t.Fatalf("expected confirmed SQL execution to return a mapped message, got %v", err)
@@ -310,10 +319,10 @@ func TestMutationExecuteConfirmedSQLMapsResultsAndErrors(t *testing.T) {
 
 func TestMutationImportSQLValidatesSourcesAndExecutesScripts(t *testing.T) {
 	mutation := (&Resolver{}).Mutation()
-	ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"})
+	ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres"})
 
 	t.Run("rejects missing or conflicting SQL sources", func(t *testing.T) {
-		setEngineMock(t, testutil.NewPluginMock(engine.DatabaseType("Test")))
+		setEngineMock(t, testutil.NewPluginMock(engine.DatabaseType("Postgres")))
 
 		result, err := mutation.ImportSQL(ctx, model.ImportSQLInput{})
 		if err != nil {
@@ -338,7 +347,7 @@ func TestMutationImportSQLValidatesSourcesAndExecutesScripts(t *testing.T) {
 	})
 
 	t.Run("executes script with multistatement enabled", func(t *testing.T) {
-		mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+		mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 		mock.RawExecuteFunc = func(config *engine.PluginConfig, query string, _ ...any) (*engine.GetRowsResult, error) {
 			if !config.MultiStatement {
 				t.Fatal("expected SQL import to enable multistatement mode")
@@ -361,7 +370,7 @@ func TestMutationImportSQLValidatesSourcesAndExecutesScripts(t *testing.T) {
 	})
 
 	t.Run("maps unsupported multistatement errors to validation keys", func(t *testing.T) {
-		mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+		mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 		mock.RawExecuteFunc = func(*engine.PluginConfig, string, ...any) (*engine.GetRowsResult, error) {
 			return nil, engine.ErrMultiStatementUnsupported
 		}

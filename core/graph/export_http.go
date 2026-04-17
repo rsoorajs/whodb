@@ -23,8 +23,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src"
-	"github.com/clidey/whodb/core/src/auth"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/xuri/excelize/v2"
 )
@@ -39,7 +39,7 @@ const (
 
 // NDJSONExporter allows plugins to stream newline-delimited JSON.
 type NDJSONExporter interface {
-	ExportDataNDJSON(config *engine.PluginConfig, schema string, storageUnit string, writer func(string) error, selectedRows []map[string]any) error
+	ExportDataNDJSON(config *engine.PluginConfig, namespace string, objectName string, writer func(string) error, selectedRows []map[string]any) error
 }
 
 // InvalidDelimiters contains characters that cannot be used as CSV delimiters
@@ -76,11 +76,11 @@ func HandleExport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Schema       string           `json:"schema"`
-		StorageUnit  string           `json:"storageUnit"`
-		Delimiter    string           `json:"delimiter,omitempty"`
-		Format       string           `json:"format,omitempty"`
-		SelectedRows []map[string]any `json:"selectedRows,omitempty"`
+		Ref          *model.SourceObjectRefInput `json:"ref"`
+		FileBaseName string                      `json:"fileBaseName,omitempty"`
+		Delimiter    string                      `json:"delimiter,omitempty"`
+		Format       string                      `json:"format,omitempty"`
+		SelectedRows []map[string]any            `json:"selectedRows,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -88,8 +88,6 @@ func HandleExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	schema := req.Schema
-	storageUnit := req.StorageUnit
 	delimiter := req.Delimiter
 	format := strings.ToLower(strings.TrimSpace(req.Format))
 
@@ -115,39 +113,54 @@ func HandleExport(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if schema == "" && storageUnit == "" {
+	if req.Ref == nil && len(req.SelectedRows) == 0 {
+		http.Error(w, "Missing required parameters", http.StatusBadRequest)
+		return
+	}
+	if req.Ref == nil && strings.TrimSpace(req.FileBaseName) == "" {
 		http.Error(w, "Missing required parameters", http.StatusBadRequest)
 		return
 	}
 
-	credentials := auth.GetCredentials(r.Context())
-	if credentials == nil {
+	spec, credentials, err := getSourceSpecForContext(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	resolvedRef := sourceRefFromInput(req.Ref)
+	plugin := src.MainEngine.Choose(engine.DatabaseType(spec.Connector))
+	if plugin == nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	pluginConfig := engine.NewPluginConfig(credentials)
-	plugin := src.MainEngine.Choose(engine.DatabaseType(credentials.Type))
+	pluginConfig := engine.NewPluginConfig(sourceEngineCredentialsForRef(spec, credentials, resolvedRef))
+	namespace := sourceNamespaceForRef(spec, resolvedRef)
+	objectName := sourceObjectName(resolvedRef)
+	if objectName == "" {
+		objectName = strings.TrimSpace(req.FileBaseName)
+	}
+	fileBaseName := sourceFileBaseName(resolvedRef, strings.TrimSpace(req.FileBaseName))
+	if objectName == "" || fileBaseName == "" {
+		http.Error(w, "Missing required parameters", http.StatusBadRequest)
+		return
+	}
 
 	switch format {
 	case "excel":
-		handleExcelExport(w, plugin, pluginConfig, schema, storageUnit, req.SelectedRows)
+		handleExcelExport(w, plugin, pluginConfig, namespace, objectName, fileBaseName, req.SelectedRows)
 	case "ndjson":
-		handleNDJSONExport(w, plugin, pluginConfig, schema, storageUnit, req.SelectedRows)
+		handleNDJSONExport(w, plugin, pluginConfig, namespace, objectName, fileBaseName, req.SelectedRows)
 	default:
-		handleCSVExport(w, plugin, pluginConfig, schema, storageUnit, delimiter, req.SelectedRows)
+		handleCSVExport(w, plugin, pluginConfig, namespace, objectName, fileBaseName, delimiter, req.SelectedRows)
 	}
 }
 
-func handleCSVExport(w http.ResponseWriter, plugin *engine.Plugin, pluginConfig *engine.PluginConfig, schema, storageUnit, delimiter string, selectedRows []map[string]any) {
+func handleCSVExport(w http.ResponseWriter, plugin *engine.Plugin, pluginConfig *engine.PluginConfig, namespace string, objectName string, fileBaseName string, delimiter string, selectedRows []map[string]any) {
 	delimRune := rune(delimiter[0])
 
-	var filename string
-	if schema != "" {
-		filename = fmt.Sprintf("%s_%s.csv", schema, storageUnit)
-	} else {
-		filename = fmt.Sprintf("%s.csv", storageUnit)
-	}
+	filename := fmt.Sprintf("%s.csv", fileBaseName)
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
@@ -178,7 +191,7 @@ func handleCSVExport(w http.ResponseWriter, plugin *engine.Plugin, pluginConfig 
 	}
 
 	// Export rows (all or selected) using the unified method
-	err := plugin.ExportData(pluginConfig, schema, storageUnit, writerFunc, selectedRows)
+	err := plugin.ExportData(pluginConfig, namespace, objectName, writerFunc, selectedRows)
 	if err != nil {
 		if rowsWritten == 0 {
 			http.Error(w, "Export failed. Please check your file and try again.", http.StatusInternalServerError)
@@ -187,7 +200,7 @@ func handleCSVExport(w http.ResponseWriter, plugin *engine.Plugin, pluginConfig 
 	}
 }
 
-func handleExcelExport(w http.ResponseWriter, plugin *engine.Plugin, pluginConfig *engine.PluginConfig, schema, storageUnit string, selectedRows []map[string]any) {
+func handleExcelExport(w http.ResponseWriter, plugin *engine.Plugin, pluginConfig *engine.PluginConfig, namespace string, objectName string, fileBaseName string, selectedRows []map[string]any) {
 	f := excelize.NewFile()
 	defer f.Close()
 
@@ -255,7 +268,7 @@ func handleExcelExport(w http.ResponseWriter, plugin *engine.Plugin, pluginConfi
 	}
 
 	// Export rows using the plugin
-	err = plugin.ExportData(pluginConfig, schema, storageUnit, writerFunc, selectedRows)
+	err = plugin.ExportData(pluginConfig, namespace, objectName, writerFunc, selectedRows)
 	if err != nil {
 		http.Error(w, "Export failed", http.StatusInternalServerError)
 		return
@@ -273,13 +286,7 @@ func handleExcelExport(w http.ResponseWriter, plugin *engine.Plugin, pluginConfi
 		return
 	}
 
-	// Include schema in filename only if it exists (for SQLite, schema is empty)
-	var filename string
-	if schema != "" {
-		filename = fmt.Sprintf("%s_%s.xlsx", schema, storageUnit)
-	} else {
-		filename = fmt.Sprintf("%s.xlsx", storageUnit)
-	}
+	filename := fmt.Sprintf("%s.xlsx", fileBaseName)
 	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
@@ -293,19 +300,14 @@ func handleExcelExport(w http.ResponseWriter, plugin *engine.Plugin, pluginConfi
 	}
 }
 
-func handleNDJSONExport(w http.ResponseWriter, plugin *engine.Plugin, pluginConfig *engine.PluginConfig, schema, storageUnit string, selectedRows []map[string]any) {
+func handleNDJSONExport(w http.ResponseWriter, plugin *engine.Plugin, pluginConfig *engine.PluginConfig, namespace string, objectName string, fileBaseName string, selectedRows []map[string]any) {
 	exporter, ok := plugin.PluginFunctions.(NDJSONExporter)
 	if !ok {
 		http.Error(w, "NDJSON export not supported for this database", http.StatusBadRequest)
 		return
 	}
 
-	var filename string
-	if schema != "" {
-		filename = fmt.Sprintf("%s_%s.ndjson", schema, storageUnit)
-	} else {
-		filename = fmt.Sprintf("%s.ndjson", storageUnit)
-	}
+	filename := fmt.Sprintf("%s.ndjson", fileBaseName)
 
 	w.Header().Set("Content-Type", "application/x-ndjson; charset=utf-8")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
@@ -327,7 +329,7 @@ func handleNDJSONExport(w http.ResponseWriter, plugin *engine.Plugin, pluginConf
 		return nil
 	}
 
-	if err := exporter.ExportDataNDJSON(pluginConfig, schema, storageUnit, writerFunc, selectedRows); err != nil && rowsWritten == 0 {
+	if err := exporter.ExportDataNDJSON(pluginConfig, namespace, objectName, writerFunc, selectedRows); err != nil && rowsWritten == 0 {
 		http.Error(w, "Export failed. Please try again.", http.StatusInternalServerError)
 		return
 	}

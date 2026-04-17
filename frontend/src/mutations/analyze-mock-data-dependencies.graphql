@@ -1,5 +1,5 @@
-query AnalyzeMockDataDependencies($schema: String!, $storageUnit: String!, $rowCount: Int!, $fkDensityRatio: Int) {
-  AnalyzeMockDataDependencies(schema: $schema, storageUnit: $storageUnit, rowCount: $rowCount, fkDensityRatio: $fkDensityRatio) {
+query AnalyzeMockDataDependencies($ref: SourceObjectRefInput!, $rowCount: Int!, $fkDensityRatio: Int) {
+  AnalyzeMockDataDependencies(ref: $ref, rowCount: $rowCount, fkDensityRatio: $fkDensityRatio) {
     GenerationOrder
     Tables {
       Table

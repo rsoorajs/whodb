@@ -14,29 +14,28 @@
  * limitations under the License.
  */
 
-import { DatabaseType } from '@graphql';
-import { getDatabaseMetadataState } from './database-metadata-cache';
+import { DatabaseType } from '../config/source-types';
+import { getSourceSessionMetadataState } from './source-session-metadata-cache';
 
 /**
- * Get valid operators for a database type from the backend-driven Redux store.
+ * Get valid operators for a source type from the backend-driven Apollo store.
  *
- * @param databaseType The database type (can be any registered type)
- * @returns Array of valid operators for the database
+ * @param sourceType The source type (can be any registered type)
+ * @returns Array of valid operators for the source
  */
-export function getDatabaseOperators(databaseType: DatabaseType | string): string[] {
-    const metadataState = getDatabaseMetadataState();
+export function getSourceOperators(sourceType: DatabaseType | string): string[] {
+    const metadataState = getSourceSessionMetadataState();
 
     if (
-        metadataState.databaseType === databaseType &&
+        metadataState.sourceType === sourceType &&
         metadataState.operators.length > 0
     ) {
         return metadataState.operators;
     }
 
-    // If we reach here, metadata hasn't been fetched yet.
     console.warn(
-        `[database-operators] No operators found for ${databaseType}. ` +
-            `Ensure DatabaseMetadata query has completed.`
+        `[source-operators] No operators found for ${sourceType}. ` +
+            `Ensure SourceSessionMetadata query has completed.`
     );
     return [];
 }

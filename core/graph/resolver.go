@@ -273,7 +273,7 @@ func discoveredConnectionToModel(conn *providers.DiscoveredConnection) *model.Di
 		ProviderType: mapProviderTypeToModel(conn.ProviderType),
 		ProviderID:   conn.ProviderID,
 		Name:         conn.Name,
-		DatabaseType: string(conn.DatabaseType),
+		SourceType:   string(conn.DatabaseType),
 		Region:       region,
 		Status:       mapConnectionStatusToModel(conn.Status),
 		Metadata:     metadata,

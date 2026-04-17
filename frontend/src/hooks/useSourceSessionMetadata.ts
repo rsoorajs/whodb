@@ -16,80 +16,80 @@
 
 import { useLazyQuery } from '@apollo/client/react';
 import { useEffect, useCallback } from 'react';
-import { GetDatabaseMetadataDocument } from '@graphql';
+import { SourceSessionMetadataDocument } from '@graphql';
 import { useAppSelector } from '../store/hooks';
 import {
-    clearDatabaseMetadata,
-    setDatabaseMetadata,
-    setDatabaseMetadataLoading,
-    shouldRefreshDatabaseMetadata,
-    useDatabaseMetadataState,
-} from '../utils/database-metadata-cache';
+    clearSourceSessionMetadata,
+    setSourceSessionMetadata,
+    setSourceSessionMetadataLoading,
+    shouldRefreshSourceSessionMetadata,
+    useSourceSessionMetadataState,
+} from '../utils/source-session-metadata-cache';
 
 /**
- * Hook that fetches and caches database metadata from the backend.
+ * Hook that fetches and caches source session metadata from the backend.
  *
- * Use this hook in components that need access to database metadata.
+ * Use this hook in components that need access to source session metadata.
  * The metadata is automatically fetched when:
- * - User logs in (database type changes)
+ * - User logs in (source type changes)
  * - Cache expires (5 minutes)
  * - Manual refresh is triggered
  *
  * @returns Object with metadata state and refresh function
  */
-export const useDatabaseMetadata = () => {
+export const useSourceSessionMetadata = () => {
     const auth = useAppSelector(state => state.auth);
-    const metadata = useDatabaseMetadataState();
-    const currentDbType = auth.current?.Type;
+    const metadata = useSourceSessionMetadataState();
+    const currentSourceType = auth.current?.Type;
 
-    const [fetchMetadata, { data, error, loading }] = useLazyQuery(GetDatabaseMetadataDocument, {
+    const [fetchMetadata, { data, error, loading }] = useLazyQuery(SourceSessionMetadataDocument, {
         fetchPolicy: 'network-only',
     });
 
     useEffect(() => {
-        if (data?.DatabaseMetadata) {
-            setDatabaseMetadata(data.DatabaseMetadata);
+        if (data?.SourceSessionMetadata) {
+            setSourceSessionMetadata(data.SourceSessionMetadata);
         }
-    }, [data?.DatabaseMetadata]);
+    }, [data?.SourceSessionMetadata]);
 
     useEffect(() => {
         if (error) {
-            console.error('Failed to fetch database metadata:', error);
-            setDatabaseMetadataLoading(false);
+            console.error('Failed to fetch source session metadata:', error);
+            setSourceSessionMetadataLoading(false);
         }
     }, [error]);
 
-    // Fetch metadata when database type changes or the session cache expires.
+    // Fetch metadata when source type changes or the session cache expires.
     useEffect(() => {
-        if (auth.status === 'logged-in' && currentDbType) {
-            if (shouldRefreshDatabaseMetadata(currentDbType)) {
-                setDatabaseMetadataLoading(true);
+        if (auth.status === 'logged-in' && currentSourceType) {
+            if (shouldRefreshSourceSessionMetadata(currentSourceType)) {
+                setSourceSessionMetadataLoading(true);
                 void fetchMetadata();
             }
         }
-    }, [auth.status, currentDbType, fetchMetadata, metadata.databaseType, metadata.lastFetched]);
+    }, [auth.status, currentSourceType, fetchMetadata, metadata.lastFetched, metadata.sourceType]);
 
     // Clear metadata on logout.
     useEffect(() => {
         if (auth.status === 'unauthorized') {
-            clearDatabaseMetadata();
+            clearSourceSessionMetadata();
         }
     }, [auth.status]);
 
     // Manual refresh function.
     const refresh = useCallback(() => {
         if (auth.status === 'logged-in') {
-            setDatabaseMetadataLoading(true);
+            setSourceSessionMetadataLoading(true);
             void fetchMetadata();
         }
     }, [auth.status, fetchMetadata]);
 
     return {
+        queryLanguages: metadata.queryLanguages,
         typeDefinitions: metadata.typeDefinitions,
         operators: metadata.operators,
         aliasMap: metadata.aliasMap,
-        capabilities: metadata.capabilities,
-        databaseType: metadata.databaseType,
+        sourceType: metadata.sourceType,
         loading: loading || metadata.loading,
         hasFetched: metadata.lastFetched !== null,
         refresh,

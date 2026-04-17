@@ -1,5 +1,5 @@
-mutation AddStorageUnit($schema: String!, $storageUnit: String!, $fields: [RecordInput!]!) {
-    AddStorageUnit(schema: $schema, storageUnit: $storageUnit, fields: $fields) {
+mutation AddStorageUnit($parent: SourceObjectRefInput, $storageUnit: String!, $fields: [RecordInput!]!) {
+    AddStorageUnit: CreateSourceObject(parent: $parent, name: $storageUnit, fields: $fields) {
         Status
     }
 }

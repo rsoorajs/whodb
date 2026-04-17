@@ -1,14 +1,71 @@
 package graph
 
 import (
+	"context"
 	"testing"
 	"time"
 
+	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/internal/testutil"
+	"github.com/clidey/whodb/core/src/auth"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/providers"
 	"github.com/clidey/whodb/core/src/settings"
+	"github.com/clidey/whodb/core/src/source"
 )
+
+func testSourceContext(sourceType string, values map[string]string) context.Context {
+	engineCredentials := &engine.Credentials{
+		Type: sourceType,
+	}
+	for key, value := range values {
+		switch key {
+		case "Hostname":
+			engineCredentials.Hostname = value
+		case "Username":
+			engineCredentials.Username = value
+		case "Password":
+			engineCredentials.Password = value
+		case "Database":
+			engineCredentials.Database = value
+		default:
+			engineCredentials.Advanced = append(engineCredentials.Advanced, engine.Record{
+				Key:   key,
+				Value: value,
+			})
+		}
+	}
+
+	ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, engineCredentials)
+	return context.WithValue(ctx, auth.AuthKey_Source, &source.Credentials{
+		SourceType: sourceType,
+		Values:     cloneStringMap(values),
+	})
+}
+
+func testSourceRef(kind model.SourceObjectKind, path ...string) model.SourceObjectRefInput {
+	return model.SourceObjectRefInput{
+		Kind: kind,
+		Path: path,
+	}
+}
+
+func testSourceRefPtr(kind model.SourceObjectKind, path ...string) *model.SourceObjectRefInput {
+	ref := testSourceRef(kind, path...)
+	return &ref
+}
+
+func cloneStringMap(values map[string]string) map[string]string {
+	if values == nil {
+		return map[string]string{}
+	}
+
+	cloned := make(map[string]string, len(values))
+	for key, value := range values {
+		cloned[key] = value
+	}
+	return cloned
+}
 
 func TestMapColumnsToModelAndFetchColumnsForStorageUnit(t *testing.T) {
 	refTable := "users"
@@ -210,5 +267,4 @@ func TestResolverHelperFallbacks(t *testing.T) {
 	}
 }
 
-func stringPtr(value string) *string { return &value }
-func boolPtr(value bool) *bool       { return &value }
+func boolPtr(value bool) *bool { return &value }

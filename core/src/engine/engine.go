@@ -72,7 +72,6 @@ func (e *Engine) RegistryPlugin(plugin *Plugin) {
 
 // Choose returns the plugin that matches the given database type, or nil if not found.
 func (e *Engine) Choose(databaseType DatabaseType) *Plugin {
-	// resolve databases from their name to their underlying type
 	resolvedType := resolvePluginType(databaseType)
 
 	for _, plugin := range e.Plugins {
@@ -83,25 +82,12 @@ func (e *Engine) Choose(databaseType DatabaseType) *Plugin {
 	return nil
 }
 
-// resolvePluginType maps display database types to their underlying plugin types.
+// resolvePluginType maps registered alias database types to their underlying plugin types.
 func resolvePluginType(dbType DatabaseType) DatabaseType {
-	switch dbType {
-	case DatabaseType_ElastiCache, DatabaseType_Valkey, DatabaseType_Dragonfly:
-		return DatabaseType_Redis
-	case DatabaseType_DocumentDB, DatabaseType_FerretDB:
-		return DatabaseType_MongoDB
-	case DatabaseType_OpenSearch:
-		return DatabaseType_ElasticSearch
-	case DatabaseType_StarRocks:
-		return DatabaseType_MySQL
-	case DatabaseType_YugabyteDB, DatabaseType_QuestDB:
-		return DatabaseType_Postgres
-	default:
-		if resolved, ok := pluginTypeAliases[dbType]; ok {
-			return resolved
-		}
-		return dbType
+	if resolved, ok := pluginTypeAliases[dbType]; ok {
+		return resolved
 	}
+	return dbType
 }
 
 // AddLoginProfile adds database credentials to the engine's profile list.
@@ -120,8 +106,8 @@ func (e *Engine) RegisterProfileRetriever(retriever LoginProfileRetriever) {
 	e.ProfileRetrievers = append(e.ProfileRetrievers, retriever)
 }
 
-// GetStorageUnitModel converts an engine StorageUnit to a GraphQL model StorageUnit.
-func GetStorageUnitModel(unit StorageUnit) *model.StorageUnit {
+// GetStorageUnitModel converts an engine StorageUnit to a GraphQL source object.
+func GetStorageUnitModel(unit StorageUnit) *model.SourceObject {
 	var attributes []*model.Record
 	for _, attribute := range unit.Attributes {
 		attributes = append(attributes, &model.Record{
@@ -129,9 +115,32 @@ func GetStorageUnitModel(unit StorageUnit) *model.StorageUnit {
 			Value: attribute.Value,
 		})
 	}
-	return &model.StorageUnit{
-		Name:                        unit.Name,
-		Attributes:                  attributes,
-		IsMockDataGenerationAllowed: false, // Will be set in resolver
+
+	kind := model.SourceObjectKindTable
+	for _, attribute := range unit.Attributes {
+		if !strings.EqualFold(attribute.Key, "Type") {
+			continue
+		}
+
+		switch {
+		case strings.EqualFold(attribute.Value, "view"):
+			kind = model.SourceObjectKindView
+		case strings.EqualFold(attribute.Value, "collection"):
+			kind = model.SourceObjectKindCollection
+		}
+		break
+	}
+
+	return &model.SourceObject{
+		Ref: &model.SourceObjectRef{
+			Kind: kind,
+			Path: []string{unit.Name},
+		},
+		Kind:        kind,
+		Name:        unit.Name,
+		Path:        []string{unit.Name},
+		HasChildren: false,
+		Actions:     []model.SourceAction{},
+		Metadata:    attributes,
 	}
 }

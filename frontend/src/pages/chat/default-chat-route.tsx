@@ -16,20 +16,20 @@
 
 import {skipToken, useQuery} from "@apollo/client/react";
 import { FC } from "react";
-import { DatabaseType, GetAiModelsDocument } from '@graphql';
+import { GetAiModelsDocument } from '@graphql';
 import { Loading } from "../../components/loading";
 import { Navigate } from "react-router-dom";
 import { InternalRoutes } from "../../config/routes";
-import { useDatabaseTraits } from "../../hooks/useDatabaseTraits";
+import { useSourceContract } from "../../hooks/useSourceContract";
 import { InternalPage } from "../../components/page";
 import { useAppSelector } from "../../store/hooks";
 import { availableInternalModelTypes } from "../../store/ai-models";
 
 export const NavigateToDefault: FC = () => {
     const current = useAppSelector(state => state.auth.current);
-    const { isNoSQL } = useDatabaseTraits(current?.Type);
+    const { supportsChat } = useSourceContract(current?.Type);
     const defaultModelType = availableInternalModelTypes[0];
-    const aiModelsQueryOptions = current && !isNoSQL && defaultModelType
+    const aiModelsQueryOptions = current && supportsChat && defaultModelType
         ? {
             variables: {
                 modelType: defaultModelType,
@@ -38,7 +38,7 @@ export const NavigateToDefault: FC = () => {
         : skipToken;
     const { data, error } = useQuery(GetAiModelsDocument, aiModelsQueryOptions);
 
-    if (isNoSQL ||  error != null) {
+    if (!supportsChat ||  error != null) {
         return <Navigate to={InternalRoutes.Dashboard.StorageUnit.path} />
     }
 

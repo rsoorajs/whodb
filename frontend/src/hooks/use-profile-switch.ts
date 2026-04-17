@@ -18,7 +18,7 @@ import { useMutation } from '@apollo/client/react';
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@clidey/ux';
-import { DatabaseType, LoginDocument, LoginWithProfileDocument } from '@graphql';
+import { LoginSourceDocument, LoginWithSourceProfileDocument } from '@graphql';
 import { useAppDispatch } from '@/store/hooks';
 import { AuthActions, LocalLoginProfile } from '@/store/auth';
 import { DatabaseActions } from '@/store/database';
@@ -36,16 +36,16 @@ interface UseProfileSwitchOptions {
  * Shared hook for switching between profiles.
  * Handles both backend-known profiles (saved/environment-defined) and local profiles.
  *
- * Backend-known profiles: Uses LoginWithProfile mutation (AWS, config, env vars)
- * Local profiles: Uses Login mutation with full credentials
+ * Backend-known profiles: Uses LoginWithSourceProfile mutation (AWS, config, env vars)
+ * Local profiles: Uses LoginSource mutation with full credentials
  */
 export const useProfileSwitch = (options?: UseProfileSwitchOptions) => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const [login, { loading: loginLoading }] = useMutation(LoginDocument);
-    const [loginWithProfile, { loading: loginWithProfileLoading }] = useMutation(LoginWithProfileDocument);
+    const [login, { loading: loginLoading }] = useMutation(LoginSourceDocument);
+    const [loginWithSourceProfile, { loading: loginWithSourceProfileLoading }] = useMutation(LoginWithSourceProfileDocument);
 
-    const loading = loginLoading || loginWithProfileLoading;
+    const loading = loginLoading || loginWithSourceProfileLoading;
 
     const switchProfile = useCallback(async (profile: LocalLoginProfile, database?: string) => {
         const targetDatabase = database ?? profile.Database;
@@ -53,31 +53,36 @@ export const useProfileSwitch = (options?: UseProfileSwitchOptions) => {
         // Clear schema before switching
         dispatch(DatabaseActions.setSchema(""));
 
-        // Use LoginWithProfile for saved/environment-defined profiles (backend knows about them)
-        // Use Login for local profiles (only stored in frontend)
+        // Use LoginWithSourceProfile for saved/environment-defined profiles (backend knows about them)
+        // Use LoginSource for local profiles (only stored in frontend)
         try {
             const switchSucceeded = profile.Saved || profile.IsEnvironmentDefined
-                ? (await loginWithProfile({
+                ? (await loginWithSourceProfile({
                     variables: {
                         profile: {
                             Id: profile.Id,
-                            Type: profile.Type as DatabaseType,
-                            Database: targetDatabase,
+                            Values: targetDatabase ? [{ Key: "Database", Value: targetDatabase }] : [],
                         }
                     },
-                })).data?.LoginWithProfile.Status
+                })).data?.LoginWithSourceProfile.Status
                 : (await login({
                     variables: {
                         credentials: {
-                            Type: profile.Type,
-                            Database: targetDatabase,
-                            Hostname: profile.Hostname,
-                            Password: profile.Password,
-                            Username: profile.Username,
-                            Advanced: profile.Advanced,
+                            Id: profile.Id,
+                            SourceType: profile.SourceType,
+                            Values: profile.Database === targetDatabase
+                                ? profile.Values
+                                : profile.Values.map(value =>
+                                    value.Key === "Database" ? { ...value, Value: targetDatabase } : value
+                                  ).concat(
+                                    profile.Values.some(value => value.Key === "Database")
+                                      ? []
+                                      : [{ Key: "Database", Value: targetDatabase }]
+                                  ),
+                            AccessToken: profile.AccessToken,
                         }
                     },
-                })).data?.Login.Status;
+                })).data?.LoginSource.Status;
 
             if (!switchSucceeded) {
                 const errorMsg = options?.errorMessage ?? 'Failed to switch profile';
@@ -101,7 +106,7 @@ export const useProfileSwitch = (options?: UseProfileSwitchOptions) => {
             toast.error(errorMsg);
             options?.onError?.(errorMessage);
         }
-    }, [login, loginWithProfile, dispatch, navigate, options]);
+    }, [dispatch, login, loginWithSourceProfile, navigate, options]);
 
     return {
         switchProfile,

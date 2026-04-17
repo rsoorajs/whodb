@@ -18,13 +18,11 @@ import { useLazyQuery, useMutation, useQuery } from "@apollo/client/react";
 import {Badge, Button, Card, cn, Input, Label, ModeToggle, Separator, toast, useTheme} from '@clidey/ux';
 import {SearchSelect} from '../../components/ux';
 import {
-    DatabaseType,
-    GetDatabaseDocument,
-    GetProfilesDocument,
-    LoginCredentials,
-    LoginDocument,
-    LoginWithProfileDocument,
     SettingsConfigDocument,
+    SourceFieldOptionsDocument,
+    SourceProfilesDocument,
+    LoginSourceDocument,
+    LoginWithSourceProfileDocument,
 } from '@graphql';
 import camelCase from "lodash/camelCase";
 import classNames from "classnames";
@@ -47,10 +45,10 @@ import {Icons} from "../../components/icons";
 import {Loading} from "../../components/loading";
 import {Container} from "../../components/page";
 import {updateProfileLastAccessed} from "../../components/profile-info-tooltip";
-import {IDatabaseDropdownItem} from "../../config/database-types";
+import {SourceTypeItem} from "../../config/source-types";
 import {extensions, featureFlags, getAppName, sources} from '../../config/features';
 import {InternalRoutes} from "../../config/routes";
-import {useDatabaseTypeDropdownItems} from "../../hooks/useDatabaseCatalog";
+import {useSourceTypeItems} from "../../hooks/useSourceCatalog";
 import {useDesktopFile} from '../../hooks/useDesktop';
 import {useTranslation} from '@/hooks/use-translation';
 import {AuthActions} from "../../store/auth";
@@ -77,6 +75,14 @@ import {ConnectionPrefillData, isAwsHostname, isAzureHostname, isGcpHostname} fr
 import {SSL_KEYS, SSLConfig} from '../../components/ssl-config';
 import {ServerError} from '@apollo/client/errors';
 import { clearGraphqlStore } from '@/config/graphql-client';
+import {
+    buildRecordInputs,
+    buildSourceValues,
+    createProfilePayload,
+    createProfilePayloadFromSourceProfile,
+    getValue,
+} from '../../utils/source-credentials';
+import { DatabaseType } from "../../config/source-types";
 
 /**
  * URL params that are reserved for the standard login form fields and control flags.
@@ -93,22 +99,22 @@ const LOGIN_RESERVED_PARAMS = new Set([
  */
 const LOGIN_UI_PARAMS = new Set(["locale", "mode", "theme", "os"]);
 
-const EMPTY_DATABASE_TYPE: IDatabaseDropdownItem = {
+const EMPTY_DATABASE_TYPE: SourceTypeItem = {
     id: "",
     label: "",
-    pluginType: "",
+    connector: "",
     icon: <span className="w-6 h-6" />,
     extra: {},
     fields: {},
     requiredFields: {},
 };
 
-function isFileBasedDatabaseType(databaseType: IDatabaseDropdownItem): boolean {
+function isFileBasedDatabaseType(databaseType: SourceTypeItem): boolean {
     return !databaseType.fields?.hostname && databaseType.fields?.database === true;
 }
 
 function canSubmitDatabaseCredentials(
-    databaseType: IDatabaseDropdownItem,
+    databaseType: SourceTypeItem,
     hostName: string,
     username: string,
     password: string,
@@ -182,7 +188,7 @@ export const LoginForm: FC<LoginFormProps> = ({
     const shouldUpdateLastAccessed = useRef(false);
     const usernameInputRef = useRef<HTMLInputElement>(null);
     const handleSubmitRef = useRef<() => void>(() => {});
-    const handleLoginWithProfileSubmitRef = useRef<(overrideProfileId?: string) => void>(() => {});
+    const handleLoginWithSourceProfileSubmitRef = useRef<(overrideProfileId?: string) => void>(() => {});
     const [pendingAutoLogin, setPendingAutoLogin] = useState(false);
     const { setTheme } = useTheme();
 
@@ -191,10 +197,10 @@ export const LoginForm: FC<LoginFormProps> = ({
         return !localStorage.getItem(FIRST_LOGIN_KEY);
     });
 
-    const [login, { loading: loginLoading }] = useMutation(LoginDocument);
-    const [loginWithProfile, { loading: loginWithProfileLoading }] = useMutation(LoginWithProfileDocument);
-    const [getDatabases, { loading: databasesLoading, data: foundDatabases }] = useLazyQuery(GetDatabaseDocument);
-    const { loading: profilesLoading, data: profiles } = useQuery(GetProfilesDocument);
+    const [login, { loading: loginLoading }] = useMutation(LoginSourceDocument);
+    const [loginWithSourceProfile, { loading: loginWithSourceProfileLoading }] = useMutation(LoginWithSourceProfileDocument);
+    const [getDatabases, { loading: databasesLoading, data: foundDatabases }] = useLazyQuery(SourceFieldOptionsDocument);
+    const { loading: profilesLoading, data: profiles } = useQuery(SourceProfilesDocument);
     const { data: settingsData } = useQuery(SettingsConfigDocument);
     const cloudProvidersEnabled = settingsData?.SettingsConfig?.CloudProvidersEnabled ?? false;
     const disableCredentialForm = settingsData?.SettingsConfig?.DisableCredentialForm ?? false;
@@ -203,11 +209,11 @@ export const LoginForm: FC<LoginFormProps> = ({
         items: databaseTypeItems,
         loading: databaseTypesLoading,
         error: databaseTypesError,
-    } = useDatabaseTypeDropdownItems({ cloudProvidersEnabled });
+    } = useSourceTypeItems({ cloudProvidersEnabled });
     const [searchParams, setSearchParams] = useSearchParams();
 
     const databaseTypesLoaded = !databaseTypesLoading;
-    const [databaseType, setDatabaseType] = useState<IDatabaseDropdownItem>(EMPTY_DATABASE_TYPE);
+    const [databaseType, setDatabaseType] = useState<SourceTypeItem>(EMPTY_DATABASE_TYPE);
     const [hostName, setHostName] = useState("");
     const [database, setDatabase] = useState("");
     const [username, setUsername] = useState("");
@@ -246,13 +252,13 @@ export const LoginForm: FC<LoginFormProps> = ({
 
     useEffect(() => {
         if (databaseTypesError) {
-            console.error('Failed to load connectable database catalog:', databaseTypesError);
+            console.error('Failed to load source catalog:', databaseTypesError);
         }
     }, [databaseTypesError]);
 
     const loading = useMemo(() => {
-        return loginLoading || loginWithProfileLoading || isAutoLoggingIn;
-    }, [loginLoading, loginWithProfileLoading, isAutoLoggingIn]);
+        return loginLoading || loginWithSourceProfileLoading || isAutoLoggingIn;
+    }, [loginLoading, loginWithSourceProfileLoading, isAutoLoggingIn]);
 
     const markFirstLoginComplete = useCallback(() => {
         if (isFirstLogin) {
@@ -301,14 +307,11 @@ export const LoginForm: FC<LoginFormProps> = ({
         // Generate ID only for desktop apps, using consistent ID for same credentials
         const credentialId = generateCredentialId(databaseType.id, hostName, username, database);
 
-        const credentials: LoginCredentials = {
+        const values = buildSourceValues(hostName, database, username, password, advancedForm);
+        const credentials = {
             Id: credentialId,
-            Type: databaseType.id,
-            Hostname: hostName,
-            Database: database,
-            Username: username,
-            Password: password,
-            Advanced: Object.entries(advancedForm).map(([Key, Value]) => ({ Key, Value })),
+            SourceType: databaseType.id,
+            Values: buildRecordInputs(hostName, database, username, password, advancedForm),
         };
 
         void (async () => {
@@ -319,17 +322,16 @@ export const LoginForm: FC<LoginFormProps> = ({
                     },
                 });
 
-                if (!data?.Login.Status) {
+                if (!data?.LoginSource.Status) {
                     setIsAutoLoggingIn(false);
                     toast.error(t('loginFailed'));
                     return;
                 }
 
                 const sslMode = advancedForm[SSL_KEYS.MODE];
-                const profileData = {
-                    ...credentials,
+                const profileData = createProfilePayload(credentialId, databaseType.id, values, {
                     SSLConfigured: sslMode != null && sslMode !== 'disabled' && sslMode !== '',
-                };
+                });
 
                 await clearGraphqlStore();
                 shouldUpdateLastAccessed.current = true;
@@ -360,27 +362,26 @@ export const LoginForm: FC<LoginFormProps> = ({
         })();
     }, [advancedForm, database, databaseType, dispatch, handleLoginError, hostName, login, markFirstLoginComplete, navigate, onLoginSuccess, password, searchParams, setSearchParams, t, username]);
 
-    const handleLoginWithProfileSubmit = useCallback((overrideProfileId?: string) => {
+    const handleLoginWithSourceProfileSubmit = useCallback((overrideProfileId?: string) => {
         const profileId = overrideProfileId ?? selectedAvailableProfile;
         if (profileId == null) {
             return setError(t('selectProfile'));
         }
         setError(undefined);
 
-        const profile = profiles?.Profiles.find(p => p.Id === profileId);
+        const profile = profiles?.SourceProfiles.find(p => p.Id === profileId);
 
         void (async () => {
             try {
-                const { data } = await loginWithProfile({
+                const { data } = await loginWithSourceProfile({
                     variables: {
                         profile: {
                             Id:  profileId,
-                            Type: profile?.Type as DatabaseType,
                         },
                     },
                 });
 
-                if (!data?.LoginWithProfile.Status) {
+                if (!data?.LoginWithSourceProfile.Status) {
                     setIsAutoLoggingIn(false);
                     toast.error(t('loginFailed'));
                     return;
@@ -388,17 +389,9 @@ export const LoginForm: FC<LoginFormProps> = ({
 
                 updateProfileLastAccessed(profileId);
                 await clearGraphqlStore();
-                dispatch(AuthActions.login({
-                    Type: profile?.Type as DatabaseType,
-                    Id: profileId,
-                    Database: profile?.Database ?? "",
-                    Hostname: "",
-                    Password: "",
-                    Username: "",
-                    Saved: true,
-                    IsEnvironmentDefined: profile?.IsEnvironmentDefined ?? false,
-                    SSLConfigured: profile?.SSLConfigured ?? false,
-                }));
+                if (profile != null) {
+                    dispatch(AuthActions.login(createProfilePayloadFromSourceProfile(profile)));
+                }
                 markFirstLoginComplete();
 
                 // Clear login-related URL params before navigation
@@ -418,14 +411,14 @@ export const LoginForm: FC<LoginFormProps> = ({
                 handleLoginError(error);
             }
         })();
-    }, [dispatch, handleLoginError, loginWithProfile, markFirstLoginComplete, navigate, onLoginSuccess, profiles?.Profiles, searchParams, selectedAvailableProfile, setSearchParams, t]);
+    }, [dispatch, handleLoginError, loginWithSourceProfile, markFirstLoginComplete, navigate, onLoginSuccess, profiles?.SourceProfiles, searchParams, selectedAvailableProfile, setSearchParams, t]);
 
     // Keep refs in sync with latest callback versions each render to avoid stale closures
     handleSubmitRef.current = handleSubmit;
-    handleLoginWithProfileSubmitRef.current = handleLoginWithProfileSubmit;
+    handleLoginWithSourceProfileSubmitRef.current = handleLoginWithSourceProfileSubmit;
 
     const handleSampleDatabaseLogin = useCallback(() => {
-        const sampleProfile = profiles?.Profiles.find(p => p.Source === "builtin");
+        const sampleProfile = profiles?.SourceProfiles.find(p => p.Source === "builtin");
         if (!sampleProfile) {
             return toast.error(t('sampleDatabaseNotFound'));
         }
@@ -434,16 +427,15 @@ export const LoginForm: FC<LoginFormProps> = ({
 
         void (async () => {
             try {
-                const { data } = await loginWithProfile({
+                const { data } = await loginWithSourceProfile({
                     variables: {
                         profile: {
                             Id: sampleProfile.Id,
-                            Type: sampleProfile.Type as DatabaseType,
                         },
                     },
                 });
 
-                if (!data?.LoginWithProfile.Status) {
+                if (!data?.LoginWithSourceProfile.Status) {
                     setIsAutoLoggingIn(false);
                     toast.error(t('loginFailed'));
                     return;
@@ -451,17 +443,7 @@ export const LoginForm: FC<LoginFormProps> = ({
 
                 updateProfileLastAccessed(sampleProfile.Id);
                 await clearGraphqlStore();
-                dispatch(AuthActions.login({
-                    Type: sampleProfile.Type as DatabaseType,
-                    Id: sampleProfile.Id,
-                    Database: sampleProfile.Database ?? "",
-                    Hostname: "",
-                    Password: "",
-                    Username: "",
-                    Saved: true,
-                    IsEnvironmentDefined: sampleProfile.IsEnvironmentDefined ?? false,
-                    SSLConfigured: sampleProfile.SSLConfigured ?? false,
-                }));
+                dispatch(AuthActions.login(createProfilePayloadFromSourceProfile(sampleProfile)));
                 markFirstLoginComplete();
                 if (featureFlags.autoStartTourOnLogin) {
                     dispatch(TourActions.scheduleTourOnLoad('sample-database-tour'));
@@ -476,9 +458,9 @@ export const LoginForm: FC<LoginFormProps> = ({
                 handleLoginError(error);
             }
         })();
-    }, [appName, dispatch, handleLoginError, loginWithProfile, markFirstLoginComplete, navigate, onLoginSuccess, profiles?.Profiles, t]);
+    }, [appName, dispatch, handleLoginError, loginWithSourceProfile, markFirstLoginComplete, navigate, onLoginSuccess, profiles?.SourceProfiles, t]);
 
-    const handleDatabaseTypeChange = useCallback((item: IDatabaseDropdownItem) => {
+    const handleDatabaseTypeChange = useCallback((item: SourceTypeItem) => {
         setHostName("");
         setUsername("");
         setPassword("");
@@ -496,10 +478,10 @@ export const LoginForm: FC<LoginFormProps> = ({
     // This must be in useEffect (not in handleDatabaseTypeChange) because
     // setFormResetKey causes a re-mount that resets the useLazyQuery hook state.
     useEffect(() => {
-        if (databaseType.pluginType === DatabaseType.Sqlite3 || databaseType.pluginType === DatabaseType.DuckDb) {
-            getDatabases({ variables: { type: databaseType.pluginType as DatabaseType } });
+        if (databaseType.connector === DatabaseType.Sqlite3 || databaseType.connector === DatabaseType.DuckDb) {
+            getDatabases({ variables: { sourceType: databaseType.id } });
         }
-    }, [databaseType.pluginType, getDatabases, formResetKey]);
+    }, [databaseType.connector, getDatabases, formResetKey]);
 
     const handleAdvancedForm = useCallback((key: string, value: string) => {
         setAdvancedForm(form => {
@@ -553,7 +535,7 @@ export const LoginForm: FC<LoginFormProps> = ({
 
     const handleBrowseDatabaseFile = useCallback(async () => {
         try {
-            const filePath = await selectDatabaseFile(databaseType.pluginType);
+            const filePath = await selectDatabaseFile(databaseType.connector);
             if (filePath) {
                 setDatabase(filePath);
             }
@@ -561,7 +543,7 @@ export const LoginForm: FC<LoginFormProps> = ({
             console.error('Failed to select database file:', error);
             toast.error(t('failedToSelectDatabaseFile'));
         }
-    }, [selectDatabaseFile, databaseType.pluginType, t]);
+    }, [selectDatabaseFile, databaseType.connector, t]);
 
     useEffect(() => {
         dispatch(DatabaseActions.setSchema(""));
@@ -626,10 +608,17 @@ export const LoginForm: FC<LoginFormProps> = ({
     }, [currentProfile]);
 
     const availableProfiles = useMemo(() => {
-        return profiles?.Profiles
+        return profiles?.SourceProfiles
             .filter(profile => profile.Source !== "builtin")
             // Filter out AWS-hosted profiles when cloud providers are disabled
-            .filter(profile => cloudProvidersEnabled || (!isAwsHostname(profile.Hostname) && !isAzureHostname(profile.Hostname) && !isGcpHostname(profile.Hostname)))
+            .filter(profile => {
+                if (cloudProvidersEnabled) {
+                    return true;
+                }
+
+                const hostname = getValue(profile.Values, "Hostname");
+                return !isAwsHostname(hostname) && !isAzureHostname(hostname) && !isGcpHostname(hostname);
+            })
             .map(profile => ({
                 value: profile.Id,
                 label: profile.Alias ?? profile.Id,
@@ -643,13 +632,13 @@ export const LoginForm: FC<LoginFormProps> = ({
                 ),
                 rightIcon: sources[profile.Source],
             })) ?? [];
-    }, [profiles?.Profiles, cloudProvidersEnabled]);
+    }, [profiles?.SourceProfiles, cloudProvidersEnabled]);
 
     const hasAvailableProfiles = availableProfiles.length > 0;
 
     const sampleProfile = useMemo(() => {
-        return profiles?.Profiles.find(p => p.Source === "builtin");
-    }, [profiles?.Profiles]);
+        return profiles?.SourceProfiles.find(p => p.Source === "builtin");
+    }, [profiles?.SourceProfiles]);
 
     // Handle URL parameters for pre-filling credentials or auto-login
     // Note: This effect intentionally does NOT clear selectedAvailableProfile because:
@@ -761,7 +750,7 @@ export const LoginForm: FC<LoginFormProps> = ({
             const selectedProfile = availableProfiles.find(profile => profile.value === searchParams.get("resource"));
             if (selectedProfile?.value) {
                 setSelectedAvailableProfile(selectedProfile.value);
-                handleLoginWithProfileSubmitRef.current(selectedProfile.value);
+                handleLoginWithSourceProfileSubmitRef.current(selectedProfile.value);
             }
         } else if (searchParams.has("login")) {
             setPendingAutoLogin(true);
@@ -769,7 +758,7 @@ export const LoginForm: FC<LoginFormProps> = ({
             newParams.delete("login");
             setSearchParams(newParams, { replace: true });
         }
-    }, [searchParams, databaseTypeItems, databaseTypesLoaded, profiles?.Profiles, availableProfiles, handleDatabaseTypeChange]);
+    }, [searchParams, databaseTypeItems, databaseTypesLoaded, profiles?.SourceProfiles, availableProfiles, handleDatabaseTypeChange]);
 
     // Fire credential-based login after React has committed all form-field state updates.
     // Using a state flag (not a ref) ensures this effect runs on the render AFTER the parsing
@@ -781,9 +770,9 @@ export const LoginForm: FC<LoginFormProps> = ({
     }, [pendingAutoLogin]);
 
     const handleHostNameChange = useCallback((newHostName: string) => {
-        if (databaseType.pluginType !== DatabaseType.MongoDb || !newHostName.startsWith("mongodb+srv://")) {
+        if (databaseType.connector !== DatabaseType.MongoDb || !newHostName.startsWith("mongodb+srv://")) {
             // Checks the valid postgres URL
-            if (databaseType.pluginType === DatabaseType.Postgres && (newHostName.startsWith("postgres://") || newHostName.startsWith("postgresql://"))) {
+            if (databaseType.connector === DatabaseType.Postgres && (newHostName.startsWith("postgres://") || newHostName.startsWith("postgresql://"))) {
                 try {
                     const url = new URL(newHostName);
                     const hostname = url.hostname;
@@ -831,7 +820,7 @@ export const LoginForm: FC<LoginFormProps> = ({
             setAdvancedForm(advancedForm);
             setShowAdvanced(true);
         }
-    }, [databaseType.pluginType, t]);
+    }, [databaseType.connector, t]);
 
     const fields = useMemo(() => {
         if (databaseType.customFormRenderer) {
@@ -880,7 +869,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                             options={
                                 databasesLoading
                                     ? []
-                                    : foundDatabases?.Database?.map(db => ({
+                                    : foundDatabases?.SourceFieldOptions?.map(db => ({
                                     value: db,
                                     label: db,
                                     icon: <CircleStackIcon className="w-4 h-4"/>,
@@ -903,7 +892,7 @@ export const LoginForm: FC<LoginFormProps> = ({
         return <div className="flex flex-col gap-lg w-full">
             { databaseType.fields?.hostname && (
                 <div className="flex flex-col gap-sm w-full">
-                    <Label htmlFor="login-hostname">{databaseType.pluginType === DatabaseType.MongoDb || databaseType.pluginType === DatabaseType.Postgres ? t('hostNameOrUrl') : t('hostName')}</Label>
+                    <Label htmlFor="login-hostname">{databaseType.connector === DatabaseType.MongoDb || databaseType.connector === DatabaseType.Postgres ? t('hostNameOrUrl') : t('hostName')}</Label>
                     <Input id="login-hostname" value={hostName} onChange={(e) => handleHostNameChange(e.target.value)} data-testid="hostname" placeholder={t('enterHostName')} aria-required="true" aria-invalid={error ? "true" : undefined} aria-describedby={error ? "login-error" : undefined} />
                 </div>
             )}
@@ -932,7 +921,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                 </div>
             )}
         </div>
-    }, [database, databaseType, databasesLoading, foundDatabases?.Database, handleHostNameChange, hostName, password, username, isDesktop, handleBrowseDatabaseFile, advancedForm, formResetKey, t, error]);
+    }, [database, databaseType, databasesLoading, foundDatabases?.SourceFieldOptions, handleHostNameChange, hostName, password, username, isDesktop, handleBrowseDatabaseFile, advancedForm, formResetKey, t, error]);
 
     const loginWithCredentialsEnabled = useMemo(() => {
         if (databaseType.customFormRenderer) {
@@ -941,7 +930,7 @@ export const LoginForm: FC<LoginFormProps> = ({
         return canSubmitDatabaseCredentials(databaseType, hostName, username, password, database);
     }, [databaseType, hostName, username, password, database, advancedForm]);
 
-    const loginWithProfileEnabled = useMemo(() => {
+    const loginWithSourceProfileEnabled = useMemo(() => {
         return selectedAvailableProfile != null;
     }, [selectedAvailableProfile]);
 
@@ -1118,7 +1107,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                                 }}
                                 rightIcon={<ChevronDownIcon className="w-4 h-4"/>}
                             />
-                            <Button onClick={() => handleLoginWithProfileSubmit()} data-testid="login-with-profile-button" variant={loginWithProfileEnabled ? "default" : "secondary"} disabled={!loginWithProfileEnabled}>
+                            <Button onClick={() => handleLoginWithSourceProfileSubmit()} data-testid="login-with-profile-button" variant={loginWithSourceProfileEnabled ? "default" : "secondary"} disabled={!loginWithSourceProfileEnabled}>
                                 <CheckCircleIcon className="w-4 h-4" /> {t('title')}
                             </Button>
                         </div>

@@ -28,7 +28,7 @@ import {useTranslation} from "@/hooks/use-translation";
 import {MagnifyingGlassIcon, QuestionMarkCircleIcon} from "./heroicons";
 import {getKeyDisplay} from "@/utils/platform";
 import {useEffectiveIsMac} from "@/hooks/useEffectiveIsMac";
-import {useDatabaseMetadata} from "@/hooks/useDatabaseMetadata";
+import {useSourceSessionMetadata} from "@/hooks/useSourceSessionMetadata";
 
 type IPageProps = {
     wrapperClassName?: string;
@@ -129,9 +129,9 @@ const KeyboardShortcutsHint: FC = () => {
 export const InternalPage: FC<IInternalPageProps> = (props) => {
     const current = useAppSelector(state => state.auth.current);
 
-    // Fetch database metadata when logged in so Apollo session state is ready
-    // for utilities like getDatabaseOperators and getDatabaseTypeDefinitions.
-    useDatabaseMetadata();
+    // Fetch source session metadata when logged in so Apollo state is ready
+    // for source-operator and column-type helpers.
+    useSourceSessionMetadata();
 
     return (
         <Container>

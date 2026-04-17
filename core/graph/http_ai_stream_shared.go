@@ -17,7 +17,9 @@
 package graph
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -26,18 +28,19 @@ import (
 	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
+	"github.com/clidey/whodb/core/src/source"
 	"golang.org/x/sync/errgroup"
 )
 
 // StreamRequest represents the incoming SSE request
 type StreamRequest struct {
-	ModelType  string          `json:"modelType"`
-	Token      string          `json:"token"`
-	Model      string          `json:"model"`
-	Endpoint   string          `json:"endpoint"`
-	Schema     string          `json:"schema"`
-	ProviderId string          `json:"providerId"`
-	Input      model.ChatInput `json:"input"`
+	ModelType  string                      `json:"modelType"`
+	Token      string                      `json:"token"`
+	Model      string                      `json:"model"`
+	Endpoint   string                      `json:"endpoint"`
+	Ref        *model.SourceObjectRefInput `json:"ref"`
+	ProviderId string                      `json:"providerId"`
+	Input      model.ChatInput             `json:"input"`
 }
 
 // StreamContext contains all context needed for streaming
@@ -69,34 +72,45 @@ func SetupSSEHeaders(w http.ResponseWriter) http.Flusher {
 	return flusher
 }
 
-// BuildTableDetails builds the table schema string for BAML context.
-// Uses concurrent column fetching (up to 10 parallel) to avoid N+1 queries.
-func BuildTableDetails(plugin *engine.Plugin, config *engine.PluginConfig, schema string) (string, error) {
-	storageUnits, err := plugin.GetStorageUnits(config, schema)
+// BuildObjectDetails builds the browse-object schema string for BAML context.
+// It fetches column metadata concurrently to avoid N+1 query latency.
+func BuildObjectDetails(ctx context.Context, session source.SourceSession, parent *source.ObjectRef, kind source.ObjectKind) (string, error) {
+	browser, ok := session.(source.SourceBrowser)
+	if !ok {
+		return "", errors.New("source browsing is not supported")
+	}
+
+	reader, ok := session.(source.TabularReader)
+	if !ok {
+		return "", errors.New("source rows are not supported")
+	}
+
+	objects, err := browser.ListObjects(ctx, parent, []source.ObjectKind{kind})
 	if err != nil {
 		return "", err
 	}
 
-	type tableResult struct {
+	type objectResult struct {
 		name    string
+		kind    source.ObjectKind
 		columns []engine.Column
 	}
 
-	results := make([]tableResult, len(storageUnits))
+	results := make([]objectResult, len(objects))
 	var mu sync.Mutex
 	g := new(errgroup.Group)
 	g.SetLimit(10)
 
-	for i, unit := range storageUnits {
-		i, unit := i, unit
+	for i, object := range objects {
+		i, object := i, object
 		g.Go(func() error {
-			columns, err := plugin.GetColumnsForTable(config, schema, unit.Name)
+			columns, err := reader.Columns(ctx, object.Ref)
 			if err != nil {
-				log.WithError(err).Warnf("Failed to get columns for table %s in streaming chat", unit.Name)
+				log.WithError(err).Warnf("Failed to get columns for %s %s in streaming chat", object.Kind, object.Name)
 				return nil
 			}
 			mu.Lock()
-			results[i] = tableResult{name: unit.Name, columns: columns}
+			results[i] = objectResult{name: object.Name, kind: object.Kind, columns: columns}
 			mu.Unlock()
 			return nil
 		})
@@ -111,7 +125,7 @@ func BuildTableDetails(plugin *engine.Plugin, config *engine.PluginConfig, schem
 		if r.name == "" {
 			continue
 		}
-		fmt.Fprintf(&b, "table: %s\n", r.name)
+		fmt.Fprintf(&b, "%s: %s\n", strings.ToLower(string(r.kind)), r.name)
 		for _, col := range r.columns {
 			fmt.Fprintf(&b, "- %s (%s)\n", col.Name, col.Type)
 		}

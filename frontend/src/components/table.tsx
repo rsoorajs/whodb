@@ -74,13 +74,14 @@ import {
     DeleteRowDocument,
     GenerateMockDataDocument,
     MockDataMaxRowCountDocument,
+    type SourceObjectRefInput,
 } from '@graphql';
 import {FC, Suspense, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {Export} from "./export";
 import {ImportData} from "./import-data";
 import {useTranslation} from '@/hooks/use-translation';
 import {copyToClipboard} from '@/services/clipboard';
-import {useDatabaseTraits} from "@/hooks/useDatabaseTraits";
+import {useSourceContract} from "@/hooks/useSourceContract";
 import {
     ArrowDownCircleIcon,
     ArrowDownTrayIcon,
@@ -126,8 +127,8 @@ const EEExport = null;
 const DynamicExport: FC<{
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    schema: string;
     storageUnit: string;
+    objectRef?: SourceObjectRefInput;
     hasSelectedRows: boolean;
     selectedRowsData?: Record<string, any>[];
     checkedRowsCount: number;
@@ -291,6 +292,7 @@ interface TableProps {
     limitContextMenu?: boolean;
     schema?: string;
     storageUnit?: string;
+    objectRef?: SourceObjectRefInput;
     onRefresh?: () => void;
     children?: React.ReactNode;
     onColumnSort?: (column: string) => void;
@@ -330,6 +332,7 @@ export const StorageUnitTable: FC<TableProps> = ({
     limitContextMenu = false,
     schema,
     storageUnit,
+    objectRef,
     onRefresh,
     children,
     onColumnSort,
@@ -379,7 +382,7 @@ export const StorageUnitTable: FC<TableProps> = ({
     const [mockDataOverwriteExisting, setMockDataOverwriteExisting] = useState("append");
     const [mockDataFkDensityRatio, setMockDataFkDensityRatio] = useState("20");
     const [showMockDataConfirmation, setShowMockDataConfirmation] = useState(false);
-    const { isNoSQL, supportsMockData } = useDatabaseTraits(databaseType);
+    const { isNoSQL, supportsMockData } = useSourceContract(databaseType);
     const isMockDataSupported = supportsMockData && isMockDataGenerationAllowed;
     const isClickHouse = databaseType === "ClickHouse";
     const isImportSupported = !isNoSQL;
@@ -474,6 +477,10 @@ export const StorageUnitTable: FC<TableProps> = ({
 
     // Delete logic, adapted from explore-storage-unit.tsx
     const doDeleteRows = useCallback(async (indexesToDelete: number[]) => {
+        if (!objectRef) {
+            toast.error(t('storageUnitRequired'));
+            return;
+        }
         let unableToDeleteAll = false;
         toast.info(t('deletingRows', { count: indexesToDelete.length }));
         for (const index of indexesToDelete) {
@@ -486,8 +493,7 @@ export const StorageUnitTable: FC<TableProps> = ({
             try {
                 await deleteRow({
                     variables: {
-                        schema: schema || '',
-                        storageUnit: storageUnit || '',
+                        ref: objectRef,
                         values,
                     },
                 });
@@ -501,7 +507,7 @@ export const StorageUnitTable: FC<TableProps> = ({
             toast.success(t('rowDeleted'));
         }
         onRefresh?.();
-    }, [deleteRow, schema, storageUnit, rows, columns, onRefresh, t]);
+    }, [columns, deleteRow, objectRef, onRefresh, rows, t]);
 
     const handleDeleteRow = useCallback((rowIndex: number) => {
         if (!rows || !columns) return;
@@ -684,7 +690,7 @@ export const StorageUnitTable: FC<TableProps> = ({
 
     const handleMockDataGenerate = useCallback(async () => {
         // For databases without schemas (like SQLite), only storageUnit is required
-        if (!storageUnit) {
+        if (!storageUnit || !objectRef) {
             toast.error(t('storageUnitRequired'));
             return;
         }
@@ -711,8 +717,7 @@ export const StorageUnitTable: FC<TableProps> = ({
             const result = await generateMockData({
                 variables: {
                     input: {
-                        Schema: schema || "",  // Use empty string if schema is null/undefined (SQLite case)
-                        StorageUnit: storageUnit,
+                        Ref: objectRef,
                         RowCount: count,
                         Method: mockDataMethod,
                         OverwriteExisting: mockDataOverwriteExisting === "overwrite",
@@ -740,7 +745,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                 toast.error(t('mockDataFailed', { message: error.message }));
             }
         }
-    }, [generateMockData, schema, storageUnit, mockDataRowCount, mockDataMethod, mockDataOverwriteExisting, mockDataFkDensityRatio, showMockDataConfirmation, maxRowCount, onRefresh, t]);
+    }, [generateMockData, maxRowCount, mockDataFkDensityRatio, mockDataMethod, mockDataOverwriteExisting, mockDataRowCount, objectRef, onRefresh, showMockDataConfirmation, storageUnit, t]);
 
     const columnIcons = useMemo(() => getColumnIcons(columns, columnTypes, t), [columns, columnTypes, t]);
 
@@ -755,20 +760,19 @@ export const StorageUnitTable: FC<TableProps> = ({
 
     useEffect(() => {
         // Note: schema can be empty for SQLite which doesn't use schemas
-        if (showMockDataSheet && storageUnit) {
+        if (showMockDataSheet && objectRef) {
             const rowCount = parseInt(mockDataRowCount) || 100;
             if (rowCount > 0 && rowCount <= maxRowCount) {
                 analyzeDependencies({
                     variables: {
-                        schema: schema || "",
-                        storageUnit,
+                        ref: objectRef,
                         rowCount,
                         fkDensityRatio: null,
                     },
                 });
             }
         }
-    }, [showMockDataSheet, schema, storageUnit, mockDataRowCount, maxRowCount, analyzeDependencies]);
+    }, [analyzeDependencies, maxRowCount, mockDataRowCount, objectRef, showMockDataSheet]);
 
     const adjustedDepAnalysis = useMemo(() => {
         const analysis = depAnalysis?.AnalyzeMockDataDependencies;
@@ -1876,8 +1880,8 @@ export const StorageUnitTable: FC<TableProps> = ({
                 <DynamicExport
                     open={showExportConfirm}
                     onOpenChange={setShowExportConfirm}
-                    schema={schema || ''}
                     storageUnit={rawQuery ? 'query_export' : (storageUnit || '')}
+                    objectRef={objectRef}
                     hasSelectedRows={hasSelectedRows}
                     selectedRowsData={selectedRowsData}
                     checkedRowsCount={checked.length}
@@ -1891,9 +1895,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                 <ImportData
                     open={showImport}
                     onOpenChange={setShowImport}
-                    schema={schema || ''}
-                    storageUnit={storageUnit || ''}
-                    columns={columns}
+                    objectRef={objectRef}
                     onImportSuccess={onRefresh}
                 />
             )}

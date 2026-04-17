@@ -64,15 +64,28 @@ func TestGetStorageUnitModel(t *testing.T) {
 	if model.Name != "users" {
 		t.Fatalf("expected name to be carried over")
 	}
-	if len(model.Attributes) != 2 {
-		t.Fatalf("expected attributes to be copied, got %d", len(model.Attributes))
+	if len(model.Metadata) != 2 {
+		t.Fatalf("expected attributes to be copied, got %d", len(model.Metadata))
 	}
-	if model.IsMockDataGenerationAllowed {
-		t.Fatalf("IsMockDataGenerationAllowed is set by resolver and should default to false")
+	if model.Kind != "Table" {
+		t.Fatalf("expected default kind Table, got %s", model.Kind)
+	}
+	if model.Ref == nil || len(model.Ref.Path) != 1 || model.Ref.Path[0] != "users" {
+		t.Fatalf("expected source object ref path to include storage unit name")
 	}
 }
 
 func TestChooseResolvesDisplayTypesToUnderlyingPlugins(t *testing.T) {
+	original := make(map[DatabaseType]DatabaseType)
+	for k, v := range pluginTypeAliases {
+		original[k] = v
+	}
+	defer func() {
+		pluginTypeAliases = original
+	}()
+
+	pluginTypeAliases = map[DatabaseType]DatabaseType{}
+
 	engine := &Engine{}
 	postgres := &Plugin{Type: DatabaseType_Postgres}
 	mysql := &Plugin{Type: DatabaseType_MySQL}
@@ -103,6 +116,10 @@ func TestChooseResolvesDisplayTypesToUnderlyingPlugins(t *testing.T) {
 		// Postgres aliases
 		{DatabaseType_YugabyteDB, postgres},
 		{DatabaseType_QuestDB, postgres},
+	}
+
+	for _, tt := range tests {
+		RegisterPluginTypeAlias(tt.alias, tt.expect.Type)
 	}
 
 	for _, tt := range tests {

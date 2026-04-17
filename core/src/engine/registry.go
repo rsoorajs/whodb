@@ -21,7 +21,7 @@ package engine
 var globalPlugins []*Plugin
 
 // pluginTypeAliases maps alias database types to their underlying plugin types.
-// Populated via RegisterPluginTypeAlias (e.g., by EE init code).
+// Populated via RegisterPluginTypeAlias by catalog packages and extensions.
 var pluginTypeAliases = map[DatabaseType]DatabaseType{}
 
 // RegisterPlugin adds a plugin to the global registry.

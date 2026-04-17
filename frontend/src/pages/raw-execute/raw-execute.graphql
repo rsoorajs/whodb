@@ -1,5 +1,5 @@
 query RawExecute($query: String!) {
-  RawExecute(query: $query) {
+  RawExecute: RunSourceQuery(query: $query) {
       Columns {
           Type
           Name

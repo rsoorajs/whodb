@@ -47,7 +47,7 @@ import {
     TabsTrigger,
     toast
 } from "@clidey/ux";
-import { DatabaseType, RowsResult } from '@graphql';
+import { RowsResult } from '@graphql';
 import classNames from "classnames";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -89,6 +89,7 @@ import { copyToClipboard } from "../../services/clipboard";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ScratchpadActions } from "../../store/scratchpad";
 import { featureFlags } from "../../config/features";
+import { DatabaseType } from "../../config/source-types";
 import { isDesktopApp } from "../../utils/external-links";
 import { IPluginProps, QueryView } from "./query-view";
 

@@ -1,0 +1,38 @@
+query SourceTypes {
+  SourceTypes {
+    id: Id
+    label: Label
+    connector: Connector
+    category: Category
+    connectionFields: ConnectionFields {
+      Key
+      Kind
+      Section
+      Required
+      LabelKey
+      PlaceholderKey
+      DefaultValue
+      SupportsOptions
+    }
+    contract: Contract {
+      Model
+      Surfaces
+      BrowsePath
+      DefaultObjectKind
+      GraphScopeKind
+      ObjectTypes {
+        Kind
+        DataShape
+        Actions
+        Views
+        SingularLabel
+        PluralLabel
+      }
+    }
+    isAwsManaged: IsAWSManaged
+    sslModes: SSLModes {
+      value
+      aliases
+    }
+  }
+}

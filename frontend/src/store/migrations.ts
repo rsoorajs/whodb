@@ -333,6 +333,19 @@ function clearDatabaseMetadataStateV6(): void {
 }
 
 /**
+ * Clear persisted auth state again after the source-first Authorization header
+ * contract corrections so stale logged-in sessions from earlier source-refactor
+ * builds do not survive.
+ */
+function clearAuthStateV8(): void {
+  try {
+    localStorage.removeItem('persist:auth');
+  } catch (error) {
+    console.error('Error clearing auth state:', error);
+  }
+}
+
+/**
  * Run all necessary migrations
  */
 export function runMigrations(): void {
@@ -362,6 +375,11 @@ export function runMigrations(): void {
   if (currentVersion < 6) {
     clearDatabaseMetadataStateV6();
     setMigrationVersion(6);
+  }
+
+  if (currentVersion < 8) {
+    clearAuthStateV8();
+    setMigrationVersion(8);
   }
 
   // Always ensure AI models state is valid

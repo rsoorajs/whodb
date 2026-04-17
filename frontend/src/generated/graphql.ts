@@ -121,16 +121,6 @@ export type AzureSubscription = {
   TenantID: Scalars['String']['output'];
 };
 
-export type Capabilities = {
-  __typename?: 'Capabilities';
-  supportsChat: Scalars['Boolean']['output'];
-  supportsDatabaseSwitch: Scalars['Boolean']['output'];
-  supportsGraph: Scalars['Boolean']['output'];
-  supportsModifiers: Scalars['Boolean']['output'];
-  supportsSchema: Scalars['Boolean']['output'];
-  supportsScratchpad: Scalars['Boolean']['output'];
-};
-
 export type ChatInput = {
   Model: Scalars['String']['input'];
   PreviousConversation: Scalars['String']['input'];
@@ -175,48 +165,6 @@ export type Column = {
   Type: Scalars['String']['output'];
 };
 
-export type ConnectableDatabase = {
-  __typename?: 'ConnectableDatabase';
-  extra: Array<Record>;
-  fields: ConnectableDatabaseFields;
-  id: Scalars['String']['output'];
-  isAwsManaged: Scalars['Boolean']['output'];
-  label: Scalars['String']['output'];
-  pluginType: Scalars['String']['output'];
-  requiredFields: ConnectableDatabaseRequiredFields;
-  sslModes: Array<ConnectableDatabaseSslMode>;
-  supportsDatabaseSwitching: Scalars['Boolean']['output'];
-  supportsMockData: Scalars['Boolean']['output'];
-  supportsModifiers: Scalars['Boolean']['output'];
-  supportsSchema: Scalars['Boolean']['output'];
-  supportsScratchpad: Scalars['Boolean']['output'];
-  usesDatabaseInsteadOfSchema: Scalars['Boolean']['output'];
-  usesSchemaForGraph: Scalars['Boolean']['output'];
-};
-
-export type ConnectableDatabaseFields = {
-  __typename?: 'ConnectableDatabaseFields';
-  database: Scalars['Boolean']['output'];
-  hostname: Scalars['Boolean']['output'];
-  password: Scalars['Boolean']['output'];
-  searchPath: Scalars['Boolean']['output'];
-  username: Scalars['Boolean']['output'];
-};
-
-export type ConnectableDatabaseRequiredFields = {
-  __typename?: 'ConnectableDatabaseRequiredFields';
-  database: Scalars['Boolean']['output'];
-  hostname: Scalars['Boolean']['output'];
-  password: Scalars['Boolean']['output'];
-  username: Scalars['Boolean']['output'];
-};
-
-export type ConnectableDatabaseSslMode = {
-  __typename?: 'ConnectableDatabaseSSLMode';
-  aliases: Array<Scalars['String']['output']>;
-  value: Scalars['String']['output'];
-};
-
 export enum ConnectionStatus {
   Available = 'Available',
   Deleting = 'Deleting',
@@ -226,53 +174,23 @@ export enum ConnectionStatus {
   Unknown = 'Unknown'
 }
 
-export type DatabaseMetadata = {
-  __typename?: 'DatabaseMetadata';
-  aliasMap: Array<Record>;
-  capabilities: Capabilities;
-  databaseType: Scalars['String']['output'];
-  operators: Array<Scalars['String']['output']>;
-  typeDefinitions: Array<TypeDefinition>;
-};
-
-export type DatabaseQuerySuggestion = {
-  __typename?: 'DatabaseQuerySuggestion';
-  category: Scalars['String']['output'];
-  description: Scalars['String']['output'];
-};
-
-export enum DatabaseType {
-  ClickHouse = 'ClickHouse',
-  CockroachDb = 'CockroachDB',
-  DocumentDb = 'DocumentDB',
-  Dragonfly = 'Dragonfly',
-  DuckDb = 'DuckDB',
-  ElastiCache = 'ElastiCache',
-  ElasticSearch = 'ElasticSearch',
-  FerretDb = 'FerretDB',
-  MariaDb = 'MariaDB',
-  Memcached = 'Memcached',
-  MongoDb = 'MongoDB',
-  MySql = 'MySQL',
-  OpenSearch = 'OpenSearch',
-  Postgres = 'Postgres',
-  QuestDb = 'QuestDB',
-  Redis = 'Redis',
-  Sqlite3 = 'Sqlite3',
-  TiDb = 'TiDB',
-  Valkey = 'Valkey',
-  YugabyteDb = 'YugabyteDB'
+export enum DataShape {
+  Content = 'Content',
+  Document = 'Document',
+  Graph = 'Graph',
+  Metadata = 'Metadata',
+  Tabular = 'Tabular'
 }
 
 export type DiscoveredConnection = {
   __typename?: 'DiscoveredConnection';
-  DatabaseType: Scalars['String']['output'];
   Id: Scalars['ID']['output'];
   Metadata: Array<Record>;
   Name: Scalars['String']['output'];
   ProviderID: Scalars['String']['output'];
   ProviderType: CloudProviderType;
   Region?: Maybe<Scalars['String']['output']>;
+  SourceType: Scalars['String']['output'];
   Status: ConnectionStatus;
 };
 
@@ -326,7 +244,7 @@ export type GenerateChatTitleResponse = {
 export type GraphUnit = {
   __typename?: 'GraphUnit';
   Relations: Array<GraphUnitRelationship>;
-  Unit: StorageUnit;
+  Unit: SourceObject;
 };
 
 export type GraphUnitRelationship = {
@@ -374,8 +292,7 @@ export type ImportFileInput = {
   Mapping: Array<ImportColumnMapping>;
   Mode: ImportMode;
   Options: ImportFileOptions;
-  Schema: Scalars['String']['input'];
-  StorageUnit: Scalars['String']['input'];
+  Ref: SourceObjectRefInput;
 };
 
 export type ImportFileOptions = {
@@ -432,34 +349,6 @@ export type LocalGcpProject = {
   Source: Scalars['String']['output'];
 };
 
-export type LoginCredentials = {
-  Advanced?: InputMaybe<Array<RecordInput>>;
-  Database: Scalars['String']['input'];
-  Hostname: Scalars['String']['input'];
-  Id?: InputMaybe<Scalars['String']['input']>;
-  Password: Scalars['String']['input'];
-  Type: Scalars['String']['input'];
-  Username: Scalars['String']['input'];
-};
-
-export type LoginProfile = {
-  __typename?: 'LoginProfile';
-  Alias?: Maybe<Scalars['String']['output']>;
-  Database?: Maybe<Scalars['String']['output']>;
-  Hostname?: Maybe<Scalars['String']['output']>;
-  Id: Scalars['String']['output'];
-  IsEnvironmentDefined: Scalars['Boolean']['output'];
-  SSLConfigured: Scalars['Boolean']['output'];
-  Source: Scalars['String']['output'];
-  Type: DatabaseType;
-};
-
-export type LoginProfileInput = {
-  Database?: InputMaybe<Scalars['String']['input']>;
-  Id: Scalars['String']['input'];
-  Type: DatabaseType;
-};
-
 export type MockDataDependencyAnalysis = {
   __typename?: 'MockDataDependencyAnalysis';
   Error?: Maybe<Scalars['String']['output']>;
@@ -473,9 +362,8 @@ export type MockDataGenerationInput = {
   FkDensityRatio?: InputMaybe<Scalars['Int']['input']>;
   Method: Scalars['String']['input'];
   OverwriteExisting: Scalars['Boolean']['input'];
+  Ref: SourceObjectRefInput;
   RowCount: Scalars['Int']['input'];
-  Schema: Scalars['String']['input'];
-  StorageUnit: Scalars['String']['input'];
 };
 
 export type MockDataGenerationStatus = {
@@ -504,9 +392,9 @@ export type Mutation = {
   AddAWSProvider: AwsProvider;
   AddAzureProvider: AzureProvider;
   AddGCPProvider: GcpProvider;
-  AddRow: StatusResponse;
-  AddStorageUnit: StatusResponse;
-  DeleteRow: StatusResponse;
+  AddSourceRow: StatusResponse;
+  CreateSourceObject: StatusResponse;
+  DeleteSourceRow: StatusResponse;
   ExecuteConfirmedSQL: AiChatMessage;
   GenerateAzureADToken: Scalars['String']['output'];
   GenerateChatTitle: GenerateChatTitleResponse;
@@ -515,9 +403,9 @@ export type Mutation = {
   GenerateRDSAuthToken: Scalars['String']['output'];
   ImportPreview: ImportPreview;
   ImportSQL: ImportResult;
-  ImportTableFile: ImportResult;
-  Login: StatusResponse;
-  LoginWithProfile: StatusResponse;
+  ImportSourceObjectFile: ImportResult;
+  LoginSource: StatusResponse;
+  LoginWithSourceProfile: StatusResponse;
   Logout: StatusResponse;
   RefreshAzureProvider: AzureProvider;
   RefreshCloudProvider: CloudProvider;
@@ -531,7 +419,7 @@ export type Mutation = {
   UpdateAzureProvider: AzureProvider;
   UpdateGCPProvider: GcpProvider;
   UpdateSettings: StatusResponse;
-  UpdateStorageUnit: StatusResponse;
+  UpdateSourceObject: StatusResponse;
 };
 
 
@@ -550,23 +438,21 @@ export type MutationAddGcpProviderArgs = {
 };
 
 
-export type MutationAddRowArgs = {
-  schema: Scalars['String']['input'];
-  storageUnit: Scalars['String']['input'];
+export type MutationAddSourceRowArgs = {
+  ref: SourceObjectRefInput;
   values: Array<RecordInput>;
 };
 
 
-export type MutationAddStorageUnitArgs = {
+export type MutationCreateSourceObjectArgs = {
   fields: Array<RecordInput>;
-  schema: Scalars['String']['input'];
-  storageUnit: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  parent?: InputMaybe<SourceObjectRefInput>;
 };
 
 
-export type MutationDeleteRowArgs = {
-  schema: Scalars['String']['input'];
-  storageUnit: Scalars['String']['input'];
+export type MutationDeleteSourceRowArgs = {
+  ref: SourceObjectRefInput;
   values: Array<RecordInput>;
 };
 
@@ -611,8 +497,7 @@ export type MutationGenerateRdsAuthTokenArgs = {
 export type MutationImportPreviewArgs = {
   file: Scalars['Upload']['input'];
   options: ImportFileOptions;
-  schema?: InputMaybe<Scalars['String']['input']>;
-  storageUnit?: InputMaybe<Scalars['String']['input']>;
+  ref?: InputMaybe<SourceObjectRefInput>;
   useHeaderMapping?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
@@ -622,18 +507,18 @@ export type MutationImportSqlArgs = {
 };
 
 
-export type MutationImportTableFileArgs = {
+export type MutationImportSourceObjectFileArgs = {
   input: ImportFileInput;
 };
 
 
-export type MutationLoginArgs = {
-  credentials: LoginCredentials;
+export type MutationLoginSourceArgs = {
+  credentials: SourceLoginInput;
 };
 
 
-export type MutationLoginWithProfileArgs = {
-  profile: LoginProfileInput;
+export type MutationLoginWithSourceProfileArgs = {
+  profile: SourceProfileLoginInput;
 };
 
 
@@ -700,9 +585,8 @@ export type MutationUpdateSettingsArgs = {
 };
 
 
-export type MutationUpdateStorageUnitArgs = {
-  schema: Scalars['String']['input'];
-  storageUnit: Scalars['String']['input'];
+export type MutationUpdateSourceObjectArgs = {
+  ref: SourceObjectRefInput;
   updatedColumns: Array<Scalars['String']['input']>;
   values: Array<RecordInput>;
 };
@@ -724,29 +608,29 @@ export type Query = {
   AzureSubscriptions: Array<AzureSubscription>;
   CloudProvider?: Maybe<CloudProvider>;
   CloudProviders: Array<CloudProvider>;
-  Columns: Array<Column>;
-  ColumnsBatch: Array<StorageUnitColumns>;
-  ConnectableDatabases: Array<ConnectableDatabase>;
-  Database: Array<Scalars['String']['output']>;
-  DatabaseMetadata?: Maybe<DatabaseMetadata>;
-  DatabaseQuerySuggestions: Array<DatabaseQuerySuggestion>;
   DiscoveredConnections: Array<DiscoveredConnection>;
   GCPProvider?: Maybe<GcpProvider>;
   GCPProviders: Array<GcpProvider>;
   GCPRegions: Array<GcpRegion>;
-  Graph: Array<GraphUnit>;
   Health: HealthStatus;
   LocalAWSProfiles: Array<LocalAwsProfile>;
   LocalGCPProjects: Array<LocalGcpProject>;
   MockDataMaxRowCount: Scalars['Int']['output'];
-  Profiles: Array<LoginProfile>;
   ProviderConnections: Array<DiscoveredConnection>;
-  RawExecute: RowsResult;
-  Row: RowsResult;
+  RunSourceQuery: RowsResult;
   SSLStatus?: Maybe<SslStatus>;
-  Schema: Array<Scalars['String']['output']>;
   SettingsConfig: SettingsConfig;
-  StorageUnit: Array<StorageUnit>;
+  SourceColumns: Array<Column>;
+  SourceColumnsBatch: Array<SourceObjectColumns>;
+  SourceFieldOptions: Array<Scalars['String']['output']>;
+  SourceGraph: Array<GraphUnit>;
+  SourceObject?: Maybe<SourceObject>;
+  SourceObjects: Array<SourceObject>;
+  SourceProfiles: Array<SourceProfile>;
+  SourceQuerySuggestions: Array<SourceQuerySuggestion>;
+  SourceRows: RowsResult;
+  SourceSessionMetadata?: Maybe<SourceSessionMetadata>;
+  SourceTypes: Array<SourceType>;
   UpdateInfo: UpdateInfo;
   Version: Scalars['String']['output'];
 };
@@ -756,7 +640,7 @@ export type QueryAiChatArgs = {
   input: ChatInput;
   modelType: Scalars['String']['input'];
   providerId?: InputMaybe<Scalars['String']['input']>;
-  schema: Scalars['String']['input'];
+  ref?: InputMaybe<SourceObjectRefInput>;
   token?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -770,9 +654,8 @@ export type QueryAiModelArgs = {
 
 export type QueryAnalyzeMockDataDependenciesArgs = {
   fkDensityRatio?: InputMaybe<Scalars['Int']['input']>;
+  ref: SourceObjectRefInput;
   rowCount: Scalars['Int']['input'];
-  schema: Scalars['String']['input'];
-  storageUnit: Scalars['String']['input'];
 };
 
 
@@ -786,35 +669,8 @@ export type QueryCloudProviderArgs = {
 };
 
 
-export type QueryColumnsArgs = {
-  schema: Scalars['String']['input'];
-  storageUnit: Scalars['String']['input'];
-};
-
-
-export type QueryColumnsBatchArgs = {
-  schema: Scalars['String']['input'];
-  storageUnits: Array<Scalars['String']['input']>;
-};
-
-
-export type QueryDatabaseArgs = {
-  type: Scalars['String']['input'];
-};
-
-
-export type QueryDatabaseQuerySuggestionsArgs = {
-  schema: Scalars['String']['input'];
-};
-
-
 export type QueryGcpProviderArgs = {
   id: Scalars['ID']['input'];
-};
-
-
-export type QueryGraphArgs = {
-  schema: Scalars['String']['input'];
 };
 
 
@@ -823,23 +679,55 @@ export type QueryProviderConnectionsArgs = {
 };
 
 
-export type QueryRawExecuteArgs = {
+export type QueryRunSourceQueryArgs = {
   query: Scalars['String']['input'];
 };
 
 
-export type QueryRowArgs = {
-  pageOffset: Scalars['Int']['input'];
-  pageSize: Scalars['Int']['input'];
-  schema: Scalars['String']['input'];
-  sort?: InputMaybe<Array<SortCondition>>;
-  storageUnit: Scalars['String']['input'];
-  where?: InputMaybe<WhereCondition>;
+export type QuerySourceColumnsArgs = {
+  ref: SourceObjectRefInput;
 };
 
 
-export type QueryStorageUnitArgs = {
-  schema: Scalars['String']['input'];
+export type QuerySourceColumnsBatchArgs = {
+  refs: Array<SourceObjectRefInput>;
+};
+
+
+export type QuerySourceFieldOptionsArgs = {
+  fieldKey: Scalars['String']['input'];
+  sourceType: Scalars['String']['input'];
+  values?: InputMaybe<Array<RecordInput>>;
+};
+
+
+export type QuerySourceGraphArgs = {
+  ref?: InputMaybe<SourceObjectRefInput>;
+};
+
+
+export type QuerySourceObjectArgs = {
+  ref: SourceObjectRefInput;
+};
+
+
+export type QuerySourceObjectsArgs = {
+  kinds?: InputMaybe<Array<SourceObjectKind>>;
+  parent?: InputMaybe<SourceObjectRefInput>;
+};
+
+
+export type QuerySourceQuerySuggestionsArgs = {
+  ref?: InputMaybe<SourceObjectRefInput>;
+};
+
+
+export type QuerySourceRowsArgs = {
+  pageOffset: Scalars['Int']['input'];
+  pageSize: Scalars['Int']['input'];
+  ref: SourceObjectRefInput;
+  sort?: InputMaybe<Array<SortCondition>>;
+  where?: InputMaybe<WhereCondition>;
 };
 
 export type Record = {
@@ -890,16 +778,201 @@ export enum SortDirection {
   Desc = 'DESC'
 }
 
+export enum SourceAction {
+  Browse = 'Browse',
+  CreateChild = 'CreateChild',
+  Delete = 'Delete',
+  Execute = 'Execute',
+  GenerateMockData = 'GenerateMockData',
+  ImportData = 'ImportData',
+  InsertData = 'InsertData',
+  Inspect = 'Inspect',
+  UpdateData = 'UpdateData',
+  ViewContent = 'ViewContent',
+  ViewDefinition = 'ViewDefinition',
+  ViewGraph = 'ViewGraph',
+  ViewRows = 'ViewRows'
+}
+
+export enum SourceCategory {
+  Cache = 'Cache',
+  Database = 'Database',
+  FileStore = 'FileStore',
+  ObjectStore = 'ObjectStore',
+  Search = 'Search'
+}
+
+export type SourceConnectionField = {
+  __typename?: 'SourceConnectionField';
+  DefaultValue?: Maybe<Scalars['String']['output']>;
+  Key: Scalars['String']['output'];
+  Kind: SourceConnectionFieldKind;
+  LabelKey: Scalars['String']['output'];
+  PlaceholderKey?: Maybe<Scalars['String']['output']>;
+  Required: Scalars['Boolean']['output'];
+  Section: SourceConnectionFieldSection;
+  SupportsOptions: Scalars['Boolean']['output'];
+};
+
+export enum SourceConnectionFieldKind {
+  FilePath = 'FilePath',
+  Password = 'Password',
+  Text = 'Text'
+}
+
+export enum SourceConnectionFieldSection {
+  Advanced = 'Advanced',
+  Primary = 'Primary'
+}
+
+export type SourceContract = {
+  __typename?: 'SourceContract';
+  BrowsePath: Array<SourceObjectKind>;
+  DefaultObjectKind: SourceObjectKind;
+  GraphScopeKind?: Maybe<SourceObjectKind>;
+  Model: SourceModel;
+  ObjectTypes: Array<SourceObjectType>;
+  Surfaces: Array<SourceSurface>;
+};
+
+export type SourceLoginInput = {
+  AccessToken?: InputMaybe<Scalars['String']['input']>;
+  Id?: InputMaybe<Scalars['String']['input']>;
+  SourceType: Scalars['String']['input'];
+  Values: Array<RecordInput>;
+};
+
+export enum SourceModel {
+  Document = 'Document',
+  Graph = 'Graph',
+  KeyValue = 'KeyValue',
+  Object = 'Object',
+  Relational = 'Relational',
+  Search = 'Search'
+}
+
+export type SourceObject = {
+  __typename?: 'SourceObject';
+  Actions: Array<SourceAction>;
+  HasChildren: Scalars['Boolean']['output'];
+  Kind: SourceObjectKind;
+  Metadata: Array<Record>;
+  Name: Scalars['String']['output'];
+  Path: Array<Scalars['String']['output']>;
+  Ref: SourceObjectRef;
+};
+
+export type SourceObjectColumns = {
+  __typename?: 'SourceObjectColumns';
+  Columns: Array<Column>;
+  Ref: SourceObjectRef;
+};
+
+export enum SourceObjectKind {
+  Collection = 'Collection',
+  Database = 'Database',
+  Function = 'Function',
+  Index = 'Index',
+  Item = 'Item',
+  Key = 'Key',
+  Procedure = 'Procedure',
+  Schema = 'Schema',
+  Sequence = 'Sequence',
+  Table = 'Table',
+  Trigger = 'Trigger',
+  View = 'View'
+}
+
+export type SourceObjectRef = {
+  __typename?: 'SourceObjectRef';
+  Kind: SourceObjectKind;
+  Path: Array<Scalars['String']['output']>;
+};
+
+export type SourceObjectRefInput = {
+  Kind: SourceObjectKind;
+  Path: Array<Scalars['String']['input']>;
+};
+
+export type SourceObjectType = {
+  __typename?: 'SourceObjectType';
+  Actions: Array<SourceAction>;
+  DataShape: DataShape;
+  Kind: SourceObjectKind;
+  PluralLabel: Scalars['String']['output'];
+  SingularLabel: Scalars['String']['output'];
+  Views: Array<SourceView>;
+};
+
+export type SourceProfile = {
+  __typename?: 'SourceProfile';
+  DisplayName: Scalars['String']['output'];
+  Id: Scalars['String']['output'];
+  IsEnvironmentDefined: Scalars['Boolean']['output'];
+  SSLConfigured: Scalars['Boolean']['output'];
+  Source: Scalars['String']['output'];
+  SourceType: Scalars['String']['output'];
+  Values: Array<Record>;
+};
+
+export type SourceProfileLoginInput = {
+  Id: Scalars['String']['input'];
+  Values?: InputMaybe<Array<RecordInput>>;
+};
+
+export type SourceQuerySuggestion = {
+  __typename?: 'SourceQuerySuggestion';
+  category: Scalars['String']['output'];
+  description: Scalars['String']['output'];
+};
+
+export type SourceSslMode = {
+  __typename?: 'SourceSSLMode';
+  aliases: Array<Scalars['String']['output']>;
+  value: Scalars['String']['output'];
+};
+
+export type SourceSessionMetadata = {
+  __typename?: 'SourceSessionMetadata';
+  AliasMap: Array<Record>;
+  Operators: Array<Scalars['String']['output']>;
+  QueryLanguages: Array<Scalars['String']['output']>;
+  SourceType: Scalars['String']['output'];
+  TypeDefinitions: Array<TypeDefinition>;
+};
+
+export enum SourceSurface {
+  Browser = 'Browser',
+  Chat = 'Chat',
+  Graph = 'Graph',
+  Query = 'Query'
+}
+
+export type SourceType = {
+  __typename?: 'SourceType';
+  Category: SourceCategory;
+  ConnectionFields: Array<SourceConnectionField>;
+  Connector: Scalars['String']['output'];
+  Contract: SourceContract;
+  Id: Scalars['String']['output'];
+  IsAWSManaged: Scalars['Boolean']['output'];
+  Label: Scalars['String']['output'];
+  SSLModes: Array<SourceSslMode>;
+};
+
+export enum SourceView {
+  Binary = 'Binary',
+  Graph = 'Graph',
+  Grid = 'Grid',
+  Json = 'JSON',
+  Metadata = 'Metadata',
+  Sql = 'SQL',
+  Text = 'Text'
+}
+
 export type StatusResponse = {
   __typename?: 'StatusResponse';
   Status: Scalars['Boolean']['output'];
-};
-
-export type StorageUnit = {
-  __typename?: 'StorageUnit';
-  Attributes: Array<Record>;
-  IsMockDataGenerationAllowed: Scalars['Boolean']['output'];
-  Name: Scalars['String']['output'];
 };
 
 export type StorageUnitColumns = {
@@ -952,15 +1025,18 @@ export enum WhereConditionType {
   Or = 'Or'
 }
 
-export type GetProfilesQueryVariables = Exact<{ [key: string]: never; }>;
+export type SourceProfilesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetProfilesQuery = { __typename?: 'Query', Profiles: Array<{ __typename?: 'LoginProfile', Alias?: string | null, Id: string, Type: DatabaseType, Hostname?: string | null, Database?: string | null, IsEnvironmentDefined: boolean, Source: string, SSLConfigured: boolean }> };
+export type SourceProfilesQuery = { __typename?: 'Query', SourceProfiles: Array<{ __typename?: 'SourceProfile', Id: string, IsEnvironmentDefined: boolean, Source: string, SSLConfigured: boolean, Alias: string, Type: string, Values: Array<{ __typename?: 'Record', Key: string, Value: string }> }> };
 
-export type GetSchemaQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetSchemaQueryVariables = Exact<{
+  parent?: InputMaybe<SourceObjectRefInput>;
+  kinds?: InputMaybe<Array<SourceObjectKind> | SourceObjectKind>;
+}>;
 
 
-export type GetSchemaQuery = { __typename?: 'Query', Schema: Array<string> };
+export type GetSchemaQuery = { __typename?: 'Query', Schema: Array<{ __typename?: 'SourceObject', Name: string, Kind: SourceObjectKind, Ref: { __typename?: 'SourceObjectRef', Kind: SourceObjectKind, Path: Array<string> } }> };
 
 export type GetUpdateInfoQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -971,16 +1047,6 @@ export type GetVersionQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type GetVersionQuery = { __typename?: 'Query', Version: string };
-
-export type GetConnectableDatabasesQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type GetConnectableDatabasesQuery = { __typename?: 'Query', ConnectableDatabases: Array<{ __typename?: 'ConnectableDatabase', id: string, label: string, pluginType: string, supportsModifiers: boolean, supportsScratchpad: boolean, supportsSchema: boolean, supportsDatabaseSwitching: boolean, usesSchemaForGraph: boolean, usesDatabaseInsteadOfSchema: boolean, supportsMockData: boolean, isAwsManaged: boolean, extra: Array<{ __typename?: 'Record', Key: string, Value: string }>, fields: { __typename?: 'ConnectableDatabaseFields', hostname: boolean, username: boolean, password: boolean, database: boolean, searchPath: boolean }, requiredFields: { __typename?: 'ConnectableDatabaseRequiredFields', hostname: boolean, username: boolean, password: boolean, database: boolean }, sslModes: Array<{ __typename?: 'ConnectableDatabaseSSLMode', value: string, aliases: Array<string> }> }> };
-
-export type GetDatabaseMetadataQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type GetDatabaseMetadataQuery = { __typename?: 'Query', DatabaseMetadata?: { __typename?: 'DatabaseMetadata', databaseType: string, operators: Array<string>, typeDefinitions: Array<{ __typename?: 'TypeDefinition', id: string, label: string, hasLength: boolean, hasPrecision: boolean, defaultLength?: number | null, defaultPrecision?: number | null, category: TypeCategory }>, aliasMap: Array<{ __typename?: 'Record', Key: string, Value: string }>, capabilities: { __typename?: 'Capabilities', supportsScratchpad: boolean, supportsChat: boolean, supportsGraph: boolean, supportsSchema: boolean, supportsDatabaseSwitch: boolean, supportsModifiers: boolean } } | null };
 
 export type ExecuteConfirmedSqlMutationVariables = Exact<{
   query: Scalars['String']['input'];
@@ -1005,8 +1071,7 @@ export type GetHealthQuery = { __typename?: 'Query', Health: { __typename?: 'Hea
 export type ImportPreviewMutationVariables = Exact<{
   file: Scalars['Upload']['input'];
   options: ImportFileOptions;
-  schema?: InputMaybe<Scalars['String']['input']>;
-  storageUnit?: InputMaybe<Scalars['String']['input']>;
+  ref?: InputMaybe<SourceObjectRefInput>;
   useHeaderMapping?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
@@ -1027,14 +1092,23 @@ export type ImportTableFileMutationVariables = Exact<{
 
 export type ImportTableFileMutation = { __typename?: 'Mutation', ImportTableFile: { __typename?: 'ImportResult', Status: boolean, Message: string, Detail?: string | null } };
 
+export type SourceSessionMetadataQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type SourceSessionMetadataQuery = { __typename?: 'Query', SourceSessionMetadata?: { __typename?: 'SourceSessionMetadata', sourceType: string, queryLanguages: Array<string>, operators: Array<string>, typeDefinitions: Array<{ __typename?: 'TypeDefinition', id: string, label: string, hasLength: boolean, hasPrecision: boolean, defaultLength?: number | null, defaultPrecision?: number | null, category: TypeCategory }>, aliasMap: Array<{ __typename?: 'Record', Key: string, Value: string }> } | null };
+
+export type SourceTypesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type SourceTypesQuery = { __typename?: 'Query', SourceTypes: Array<{ __typename?: 'SourceType', id: string, label: string, connector: string, category: SourceCategory, isAwsManaged: boolean, connectionFields: Array<{ __typename?: 'SourceConnectionField', Key: string, Kind: SourceConnectionFieldKind, Section: SourceConnectionFieldSection, Required: boolean, LabelKey: string, PlaceholderKey?: string | null, DefaultValue?: string | null, SupportsOptions: boolean }>, contract: { __typename?: 'SourceContract', Model: SourceModel, Surfaces: Array<SourceSurface>, BrowsePath: Array<SourceObjectKind>, DefaultObjectKind: SourceObjectKind, GraphScopeKind?: SourceObjectKind | null, ObjectTypes: Array<{ __typename?: 'SourceObjectType', Kind: SourceObjectKind, DataShape: DataShape, Actions: Array<SourceAction>, Views: Array<SourceView>, SingularLabel: string, PluralLabel: string }> }, sslModes: Array<{ __typename?: 'SourceSSLMode', value: string, aliases: Array<string> }> }> };
+
 export type GetSslStatusQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type GetSslStatusQuery = { __typename?: 'Query', SSLStatus?: { __typename?: 'SSLStatus', IsEnabled: boolean, Mode: string } | null };
 
 export type AnalyzeMockDataDependenciesQueryVariables = Exact<{
-  schema: Scalars['String']['input'];
-  storageUnit: Scalars['String']['input'];
+  ref: SourceObjectRefInput;
   rowCount: Scalars['Int']['input'];
   fkDensityRatio?: InputMaybe<Scalars['Int']['input']>;
 }>;
@@ -1054,26 +1128,27 @@ export type GenerateMockDataMutationVariables = Exact<{
 
 export type GenerateMockDataMutation = { __typename?: 'Mutation', GenerateMockData: { __typename?: 'MockDataGenerationStatus', AmountGenerated: number, Details?: Array<{ __typename?: 'MockDataTableDetail', Table: string, RowsGenerated: number, UsedExistingData: boolean }> | null } };
 
-export type GetDatabaseQueryVariables = Exact<{
-  type: Scalars['String']['input'];
+export type SourceFieldOptionsQueryVariables = Exact<{
+  sourceType: Scalars['String']['input'];
+  values?: InputMaybe<Array<RecordInput> | RecordInput>;
 }>;
 
 
-export type GetDatabaseQuery = { __typename?: 'Query', Database: Array<string> };
+export type SourceFieldOptionsQuery = { __typename?: 'Query', SourceFieldOptions: Array<string> };
 
-export type LoginWithProfileMutationVariables = Exact<{
-  profile: LoginProfileInput;
+export type LoginWithSourceProfileMutationVariables = Exact<{
+  profile: SourceProfileLoginInput;
 }>;
 
 
-export type LoginWithProfileMutation = { __typename?: 'Mutation', LoginWithProfile: { __typename?: 'StatusResponse', Status: boolean } };
+export type LoginWithSourceProfileMutation = { __typename?: 'Mutation', LoginWithSourceProfile: { __typename?: 'StatusResponse', Status: boolean } };
 
-export type LoginMutationVariables = Exact<{
-  credentials: LoginCredentials;
+export type LoginSourceMutationVariables = Exact<{
+  credentials: SourceLoginInput;
 }>;
 
 
-export type LoginMutation = { __typename?: 'Mutation', Login: { __typename?: 'StatusResponse', Status: boolean } };
+export type LoginSourceMutation = { __typename?: 'Mutation', LoginSource: { __typename?: 'StatusResponse', Status: boolean } };
 
 export type LogoutMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -1089,7 +1164,7 @@ export type GetAiChatQueryVariables = Exact<{
   providerId?: InputMaybe<Scalars['String']['input']>;
   modelType: Scalars['String']['input'];
   token?: InputMaybe<Scalars['String']['input']>;
-  schema: Scalars['String']['input'];
+  ref?: InputMaybe<SourceObjectRefInput>;
   previousConversation: Scalars['String']['input'];
   query: Scalars['String']['input'];
   model: Scalars['String']['input'];
@@ -1099,11 +1174,11 @@ export type GetAiChatQueryVariables = Exact<{
 export type GetAiChatQuery = { __typename?: 'Query', AIChat: Array<{ __typename?: 'AIChatMessage', Type: string, Text: string, Result?: { __typename?: 'RowsResult', Rows: Array<Array<string>>, Columns: Array<{ __typename?: 'Column', Type: string, Name: string }> } | null }> };
 
 export type GetDatabaseQuerySuggestionsQueryVariables = Exact<{
-  schema: Scalars['String']['input'];
+  ref?: InputMaybe<SourceObjectRefInput>;
 }>;
 
 
-export type GetDatabaseQuerySuggestionsQuery = { __typename?: 'Query', DatabaseQuerySuggestions: Array<{ __typename?: 'DatabaseQuerySuggestion', description: string, category: string }> };
+export type GetDatabaseQuerySuggestionsQuery = { __typename?: 'Query', DatabaseQuerySuggestions: Array<{ __typename?: 'SourceQuerySuggestion', description: string, category: string }> };
 
 export type GetAiModelsQueryVariables = Exact<{
   providerId?: InputMaybe<Scalars['String']['input']>;
@@ -1115,23 +1190,21 @@ export type GetAiModelsQueryVariables = Exact<{
 export type GetAiModelsQuery = { __typename?: 'Query', AIModel: Array<string> };
 
 export type GetColumnsQueryVariables = Exact<{
-  schema: Scalars['String']['input'];
-  storageUnit: Scalars['String']['input'];
+  ref: SourceObjectRefInput;
 }>;
 
 
 export type GetColumnsQuery = { __typename?: 'Query', Columns: Array<{ __typename?: 'Column', Name: string, Type: string, IsPrimary: boolean, IsForeignKey: boolean, ReferencedTable?: string | null, ReferencedColumn?: string | null, Length?: number | null, Precision?: number | null, Scale?: number | null }> };
 
 export type GetGraphQueryVariables = Exact<{
-  schema: Scalars['String']['input'];
+  ref?: InputMaybe<SourceObjectRefInput>;
 }>;
 
 
-export type GetGraphQuery = { __typename?: 'Query', Graph: Array<{ __typename?: 'GraphUnit', Unit: { __typename?: 'StorageUnit', Name: string, Attributes: Array<{ __typename?: 'Record', Key: string, Value: string }> }, Relations: Array<{ __typename?: 'GraphUnitRelationship', Name: string, Relationship: GraphUnitRelationshipType, SourceColumn?: string | null, TargetColumn?: string | null }> }> };
+export type GetGraphQuery = { __typename?: 'Query', Graph: Array<{ __typename?: 'GraphUnit', Unit: { __typename?: 'SourceObject', Kind: SourceObjectKind, Name: string, Ref: { __typename?: 'SourceObjectRef', Kind: SourceObjectKind, Path: Array<string> }, Attributes: Array<{ __typename?: 'Record', Key: string, Value: string }> }, Relations: Array<{ __typename?: 'GraphUnitRelationship', Name: string, Relationship: GraphUnitRelationshipType, SourceColumn?: string | null, TargetColumn?: string | null }> }> };
 
 export type ColumnsQueryVariables = Exact<{
-  schema: Scalars['String']['input'];
-  storageUnit: Scalars['String']['input'];
+  ref: SourceObjectRefInput;
 }>;
 
 
@@ -1159,14 +1232,14 @@ export type GetCloudProviderQuery = { __typename?: 'Query', CloudProvider?: { __
 export type GetDiscoveredConnectionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetDiscoveredConnectionsQuery = { __typename?: 'Query', DiscoveredConnections: Array<{ __typename?: 'DiscoveredConnection', Id: string, ProviderType: CloudProviderType, ProviderID: string, Name: string, DatabaseType: string, Region?: string | null, Status: ConnectionStatus, Metadata: Array<{ __typename?: 'Record', Key: string, Value: string }> }> };
+export type GetDiscoveredConnectionsQuery = { __typename?: 'Query', DiscoveredConnections: Array<{ __typename?: 'DiscoveredConnection', Id: string, ProviderType: CloudProviderType, ProviderID: string, Name: string, Region?: string | null, Status: ConnectionStatus, DatabaseType: string, Metadata: Array<{ __typename?: 'Record', Key: string, Value: string }> }> };
 
 export type GetProviderConnectionsQueryVariables = Exact<{
   providerId: Scalars['ID']['input'];
 }>;
 
 
-export type GetProviderConnectionsQuery = { __typename?: 'Query', ProviderConnections: Array<{ __typename?: 'DiscoveredConnection', Id: string, ProviderType: CloudProviderType, ProviderID: string, Name: string, DatabaseType: string, Region?: string | null, Status: ConnectionStatus, Metadata: Array<{ __typename?: 'Record', Key: string, Value: string }> }> };
+export type GetProviderConnectionsQuery = { __typename?: 'Query', ProviderConnections: Array<{ __typename?: 'DiscoveredConnection', Id: string, ProviderType: CloudProviderType, ProviderID: string, Name: string, Region?: string | null, Status: ConnectionStatus, DatabaseType: string, Metadata: Array<{ __typename?: 'Record', Key: string, Value: string }> }> };
 
 export type GetLocalAwsProfilesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1363,8 +1436,7 @@ export type UpdateSettingsMutationVariables = Exact<{
 export type UpdateSettingsMutation = { __typename?: 'Mutation', UpdateSettings: { __typename?: 'StatusResponse', Status: boolean } };
 
 export type AddRowMutationVariables = Exact<{
-  schema: Scalars['String']['input'];
-  storageUnit: Scalars['String']['input'];
+  ref: SourceObjectRefInput;
   values: Array<RecordInput> | RecordInput;
 }>;
 
@@ -1372,7 +1444,7 @@ export type AddRowMutationVariables = Exact<{
 export type AddRowMutation = { __typename?: 'Mutation', AddRow: { __typename?: 'StatusResponse', Status: boolean } };
 
 export type AddStorageUnitMutationVariables = Exact<{
-  schema: Scalars['String']['input'];
+  parent?: InputMaybe<SourceObjectRefInput>;
   storageUnit: Scalars['String']['input'];
   fields: Array<RecordInput> | RecordInput;
 }>;
@@ -1381,8 +1453,7 @@ export type AddStorageUnitMutationVariables = Exact<{
 export type AddStorageUnitMutation = { __typename?: 'Mutation', AddStorageUnit: { __typename?: 'StatusResponse', Status: boolean } };
 
 export type DeleteRowMutationVariables = Exact<{
-  schema: Scalars['String']['input'];
-  storageUnit: Scalars['String']['input'];
+  ref: SourceObjectRefInput;
   values: Array<RecordInput> | RecordInput;
 }>;
 
@@ -1390,16 +1461,14 @@ export type DeleteRowMutationVariables = Exact<{
 export type DeleteRowMutation = { __typename?: 'Mutation', DeleteRow: { __typename?: 'StatusResponse', Status: boolean } };
 
 export type GetColumnsBatchQueryVariables = Exact<{
-  schema: Scalars['String']['input'];
-  storageUnits: Array<Scalars['String']['input']> | Scalars['String']['input'];
+  refs: Array<SourceObjectRefInput> | SourceObjectRefInput;
 }>;
 
 
-export type GetColumnsBatchQuery = { __typename?: 'Query', ColumnsBatch: Array<{ __typename?: 'StorageUnitColumns', StorageUnit: string, Columns: Array<{ __typename?: 'Column', Name: string, Type: string, IsPrimary: boolean, IsForeignKey: boolean, ReferencedTable?: string | null, ReferencedColumn?: string | null, Length?: number | null, Precision?: number | null, Scale?: number | null }> }> };
+export type GetColumnsBatchQuery = { __typename?: 'Query', ColumnsBatch: Array<{ __typename?: 'SourceObjectColumns', StorageUnit: { __typename?: 'SourceObjectRef', Path: Array<string> }, Columns: Array<{ __typename?: 'Column', Name: string, Type: string, IsPrimary: boolean, IsForeignKey: boolean, ReferencedTable?: string | null, ReferencedColumn?: string | null, Length?: number | null, Precision?: number | null, Scale?: number | null }> }> };
 
 export type GetStorageUnitRowsQueryVariables = Exact<{
-  schema: Scalars['String']['input'];
-  storageUnit: Scalars['String']['input'];
+  ref: SourceObjectRefInput;
   where?: InputMaybe<WhereCondition>;
   sort?: InputMaybe<Array<SortCondition> | SortCondition>;
   pageSize: Scalars['Int']['input'];
@@ -1410,15 +1479,14 @@ export type GetStorageUnitRowsQueryVariables = Exact<{
 export type GetStorageUnitRowsQuery = { __typename?: 'Query', Row: { __typename?: 'RowsResult', Rows: Array<Array<string>>, DisableUpdate: boolean, TotalCount: number, Columns: Array<{ __typename?: 'Column', Type: string, Name: string, IsPrimary: boolean, IsForeignKey: boolean, ReferencedTable?: string | null, ReferencedColumn?: string | null, Length?: number | null, Precision?: number | null, Scale?: number | null }> } };
 
 export type GetStorageUnitsQueryVariables = Exact<{
-  schema: Scalars['String']['input'];
+  parent?: InputMaybe<SourceObjectRefInput>;
 }>;
 
 
-export type GetStorageUnitsQuery = { __typename?: 'Query', StorageUnit: Array<{ __typename?: 'StorageUnit', Name: string, IsMockDataGenerationAllowed: boolean, Attributes: Array<{ __typename?: 'Record', Key: string, Value: string }> }> };
+export type GetStorageUnitsQuery = { __typename?: 'Query', StorageUnit: Array<{ __typename?: 'SourceObject', Kind: SourceObjectKind, Name: string, Actions: Array<SourceAction>, HasChildren: boolean, Ref: { __typename?: 'SourceObjectRef', Kind: SourceObjectKind, Path: Array<string> }, Attributes: Array<{ __typename?: 'Record', Key: string, Value: string }> }> };
 
 export type UpdateStorageUnitMutationVariables = Exact<{
-  schema: Scalars['String']['input'];
-  storageUnit: Scalars['String']['input'];
+  ref: SourceObjectRefInput;
   values: Array<RecordInput> | RecordInput;
   updatedColumns: Array<Scalars['String']['input']> | Scalars['String']['input'];
 }>;
@@ -1427,38 +1495,38 @@ export type UpdateStorageUnitMutationVariables = Exact<{
 export type UpdateStorageUnitMutation = { __typename?: 'Mutation', UpdateStorageUnit: { __typename?: 'StatusResponse', Status: boolean } };
 
 
-export const GetProfilesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetProfiles"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Profiles"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Alias"}},{"kind":"Field","name":{"kind":"Name","value":"Id"}},{"kind":"Field","name":{"kind":"Name","value":"Type"}},{"kind":"Field","name":{"kind":"Name","value":"Hostname"}},{"kind":"Field","name":{"kind":"Name","value":"Database"}},{"kind":"Field","name":{"kind":"Name","value":"IsEnvironmentDefined"}},{"kind":"Field","name":{"kind":"Name","value":"Source"}},{"kind":"Field","name":{"kind":"Name","value":"SSLConfigured"}}]}}]}}]} as unknown as DocumentNode<GetProfilesQuery, GetProfilesQueryVariables>;
-export const GetSchemaDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetSchema"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Schema"}}]}}]} as unknown as DocumentNode<GetSchemaQuery, GetSchemaQueryVariables>;
+export const SourceProfilesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SourceProfiles"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"SourceProfiles"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"Alias"},"name":{"kind":"Name","value":"DisplayName"}},{"kind":"Field","name":{"kind":"Name","value":"Id"}},{"kind":"Field","alias":{"kind":"Name","value":"Type"},"name":{"kind":"Name","value":"SourceType"}},{"kind":"Field","name":{"kind":"Name","value":"Values"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Key"}},{"kind":"Field","name":{"kind":"Name","value":"Value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"IsEnvironmentDefined"}},{"kind":"Field","name":{"kind":"Name","value":"Source"}},{"kind":"Field","name":{"kind":"Name","value":"SSLConfigured"}}]}}]}}]} as unknown as DocumentNode<SourceProfilesQuery, SourceProfilesQueryVariables>;
+export const GetSchemaDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetSchema"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"parent"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"SourceObjectRefInput"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"kinds"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SourceObjectKind"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"Schema"},"name":{"kind":"Name","value":"SourceObjects"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"parent"},"value":{"kind":"Variable","name":{"kind":"Name","value":"parent"}}},{"kind":"Argument","name":{"kind":"Name","value":"kinds"},"value":{"kind":"Variable","name":{"kind":"Name","value":"kinds"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"Kind"}},{"kind":"Field","name":{"kind":"Name","value":"Ref"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Kind"}},{"kind":"Field","name":{"kind":"Name","value":"Path"}}]}}]}}]}}]} as unknown as DocumentNode<GetSchemaQuery, GetSchemaQueryVariables>;
 export const GetUpdateInfoDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetUpdateInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"UpdateInfo"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"currentVersion"}},{"kind":"Field","name":{"kind":"Name","value":"latestVersion"}},{"kind":"Field","name":{"kind":"Name","value":"updateAvailable"}},{"kind":"Field","name":{"kind":"Name","value":"releaseURL"}}]}}]}}]} as unknown as DocumentNode<GetUpdateInfoQuery, GetUpdateInfoQueryVariables>;
 export const GetVersionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetVersion"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Version"}}]}}]} as unknown as DocumentNode<GetVersionQuery, GetVersionQueryVariables>;
-export const GetConnectableDatabasesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetConnectableDatabases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ConnectableDatabases"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"pluginType"}},{"kind":"Field","name":{"kind":"Name","value":"extra"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Key"}},{"kind":"Field","name":{"kind":"Name","value":"Value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"fields"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hostname"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"password"}},{"kind":"Field","name":{"kind":"Name","value":"database"}},{"kind":"Field","name":{"kind":"Name","value":"searchPath"}}]}},{"kind":"Field","name":{"kind":"Name","value":"requiredFields"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"hostname"}},{"kind":"Field","name":{"kind":"Name","value":"username"}},{"kind":"Field","name":{"kind":"Name","value":"password"}},{"kind":"Field","name":{"kind":"Name","value":"database"}}]}},{"kind":"Field","name":{"kind":"Name","value":"supportsModifiers"}},{"kind":"Field","name":{"kind":"Name","value":"supportsScratchpad"}},{"kind":"Field","name":{"kind":"Name","value":"supportsSchema"}},{"kind":"Field","name":{"kind":"Name","value":"supportsDatabaseSwitching"}},{"kind":"Field","name":{"kind":"Name","value":"usesSchemaForGraph"}},{"kind":"Field","name":{"kind":"Name","value":"usesDatabaseInsteadOfSchema"}},{"kind":"Field","name":{"kind":"Name","value":"supportsMockData"}},{"kind":"Field","name":{"kind":"Name","value":"isAwsManaged"}},{"kind":"Field","name":{"kind":"Name","value":"sslModes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"aliases"}}]}}]}}]}}]} as unknown as DocumentNode<GetConnectableDatabasesQuery, GetConnectableDatabasesQueryVariables>;
-export const GetDatabaseMetadataDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetDatabaseMetadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"DatabaseMetadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"databaseType"}},{"kind":"Field","name":{"kind":"Name","value":"typeDefinitions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"hasLength"}},{"kind":"Field","name":{"kind":"Name","value":"hasPrecision"}},{"kind":"Field","name":{"kind":"Name","value":"defaultLength"}},{"kind":"Field","name":{"kind":"Name","value":"defaultPrecision"}},{"kind":"Field","name":{"kind":"Name","value":"category"}}]}},{"kind":"Field","name":{"kind":"Name","value":"operators"}},{"kind":"Field","name":{"kind":"Name","value":"aliasMap"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Key"}},{"kind":"Field","name":{"kind":"Name","value":"Value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"capabilities"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"supportsScratchpad"}},{"kind":"Field","name":{"kind":"Name","value":"supportsChat"}},{"kind":"Field","name":{"kind":"Name","value":"supportsGraph"}},{"kind":"Field","name":{"kind":"Name","value":"supportsSchema"}},{"kind":"Field","name":{"kind":"Name","value":"supportsDatabaseSwitch"}},{"kind":"Field","name":{"kind":"Name","value":"supportsModifiers"}}]}}]}}]}}]} as unknown as DocumentNode<GetDatabaseMetadataQuery, GetDatabaseMetadataQueryVariables>;
 export const ExecuteConfirmedSqlDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ExecuteConfirmedSQL"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"query"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"operationType"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ExecuteConfirmedSQL"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"query"},"value":{"kind":"Variable","name":{"kind":"Name","value":"query"}}},{"kind":"Argument","name":{"kind":"Name","value":"operationType"},"value":{"kind":"Variable","name":{"kind":"Name","value":"operationType"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Type"}},{"kind":"Field","name":{"kind":"Name","value":"Text"}},{"kind":"Field","name":{"kind":"Name","value":"Result"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Columns"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Type"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"IsPrimary"}},{"kind":"Field","name":{"kind":"Name","value":"IsForeignKey"}},{"kind":"Field","name":{"kind":"Name","value":"ReferencedTable"}},{"kind":"Field","name":{"kind":"Name","value":"ReferencedColumn"}},{"kind":"Field","name":{"kind":"Name","value":"Length"}},{"kind":"Field","name":{"kind":"Name","value":"Precision"}},{"kind":"Field","name":{"kind":"Name","value":"Scale"}}]}},{"kind":"Field","name":{"kind":"Name","value":"Rows"}},{"kind":"Field","name":{"kind":"Name","value":"DisableUpdate"}},{"kind":"Field","name":{"kind":"Name","value":"TotalCount"}}]}},{"kind":"Field","name":{"kind":"Name","value":"RequiresConfirmation"}}]}}]}}]} as unknown as DocumentNode<ExecuteConfirmedSqlMutation, ExecuteConfirmedSqlMutationVariables>;
 export const GenerateChatTitleDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"GenerateChatTitle"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"GenerateChatTitleInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"GenerateChatTitle"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Title"}}]}}]}}]} as unknown as DocumentNode<GenerateChatTitleMutation, GenerateChatTitleMutationVariables>;
 export const GetHealthDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetHealth"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Health"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Server"}},{"kind":"Field","name":{"kind":"Name","value":"Database"}}]}}]}}]} as unknown as DocumentNode<GetHealthQuery, GetHealthQueryVariables>;
-export const ImportPreviewDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ImportPreview"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"file"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Upload"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"options"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ImportFileOptions"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"schema"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"useHeaderMapping"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ImportPreview"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"file"},"value":{"kind":"Variable","name":{"kind":"Name","value":"file"}}},{"kind":"Argument","name":{"kind":"Name","value":"options"},"value":{"kind":"Variable","name":{"kind":"Name","value":"options"}}},{"kind":"Argument","name":{"kind":"Name","value":"schema"},"value":{"kind":"Variable","name":{"kind":"Name","value":"schema"}}},{"kind":"Argument","name":{"kind":"Name","value":"storageUnit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}}},{"kind":"Argument","name":{"kind":"Name","value":"useHeaderMapping"},"value":{"kind":"Variable","name":{"kind":"Name","value":"useHeaderMapping"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Sheet"}},{"kind":"Field","name":{"kind":"Name","value":"Columns"}},{"kind":"Field","name":{"kind":"Name","value":"Rows"}},{"kind":"Field","name":{"kind":"Name","value":"Truncated"}},{"kind":"Field","name":{"kind":"Name","value":"ValidationError"}},{"kind":"Field","name":{"kind":"Name","value":"RequiresAllowAutoGenerated"}},{"kind":"Field","name":{"kind":"Name","value":"AutoGeneratedColumns"}},{"kind":"Field","name":{"kind":"Name","value":"Mapping"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"SourceColumn"}},{"kind":"Field","name":{"kind":"Name","value":"TargetColumn"}}]}}]}}]}}]} as unknown as DocumentNode<ImportPreviewMutation, ImportPreviewMutationVariables>;
+export const ImportPreviewDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ImportPreview"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"file"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Upload"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"options"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ImportFileOptions"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ref"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"SourceObjectRefInput"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"useHeaderMapping"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ImportPreview"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"file"},"value":{"kind":"Variable","name":{"kind":"Name","value":"file"}}},{"kind":"Argument","name":{"kind":"Name","value":"options"},"value":{"kind":"Variable","name":{"kind":"Name","value":"options"}}},{"kind":"Argument","name":{"kind":"Name","value":"ref"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ref"}}},{"kind":"Argument","name":{"kind":"Name","value":"useHeaderMapping"},"value":{"kind":"Variable","name":{"kind":"Name","value":"useHeaderMapping"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Sheet"}},{"kind":"Field","name":{"kind":"Name","value":"Columns"}},{"kind":"Field","name":{"kind":"Name","value":"Rows"}},{"kind":"Field","name":{"kind":"Name","value":"Truncated"}},{"kind":"Field","name":{"kind":"Name","value":"ValidationError"}},{"kind":"Field","name":{"kind":"Name","value":"RequiresAllowAutoGenerated"}},{"kind":"Field","name":{"kind":"Name","value":"AutoGeneratedColumns"}},{"kind":"Field","name":{"kind":"Name","value":"Mapping"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"SourceColumn"}},{"kind":"Field","name":{"kind":"Name","value":"TargetColumn"}}]}}]}}]}}]} as unknown as DocumentNode<ImportPreviewMutation, ImportPreviewMutationVariables>;
 export const ImportSqlDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ImportSQL"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ImportSQLInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ImportSQL"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Status"}},{"kind":"Field","name":{"kind":"Name","value":"Message"}},{"kind":"Field","name":{"kind":"Name","value":"Detail"}}]}}]}}]} as unknown as DocumentNode<ImportSqlMutation, ImportSqlMutationVariables>;
-export const ImportTableFileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ImportTableFile"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ImportFileInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ImportTableFile"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Status"}},{"kind":"Field","name":{"kind":"Name","value":"Message"}},{"kind":"Field","name":{"kind":"Name","value":"Detail"}}]}}]}}]} as unknown as DocumentNode<ImportTableFileMutation, ImportTableFileMutationVariables>;
+export const ImportTableFileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ImportTableFile"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ImportFileInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"ImportTableFile"},"name":{"kind":"Name","value":"ImportSourceObjectFile"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Status"}},{"kind":"Field","name":{"kind":"Name","value":"Message"}},{"kind":"Field","name":{"kind":"Name","value":"Detail"}}]}}]}}]} as unknown as DocumentNode<ImportTableFileMutation, ImportTableFileMutationVariables>;
+export const SourceSessionMetadataDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SourceSessionMetadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"SourceSessionMetadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"sourceType"},"name":{"kind":"Name","value":"SourceType"}},{"kind":"Field","alias":{"kind":"Name","value":"queryLanguages"},"name":{"kind":"Name","value":"QueryLanguages"}},{"kind":"Field","alias":{"kind":"Name","value":"typeDefinitions"},"name":{"kind":"Name","value":"TypeDefinitions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"hasLength"}},{"kind":"Field","name":{"kind":"Name","value":"hasPrecision"}},{"kind":"Field","name":{"kind":"Name","value":"defaultLength"}},{"kind":"Field","name":{"kind":"Name","value":"defaultPrecision"}},{"kind":"Field","name":{"kind":"Name","value":"category"}}]}},{"kind":"Field","alias":{"kind":"Name","value":"operators"},"name":{"kind":"Name","value":"Operators"}},{"kind":"Field","alias":{"kind":"Name","value":"aliasMap"},"name":{"kind":"Name","value":"AliasMap"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Key"}},{"kind":"Field","name":{"kind":"Name","value":"Value"}}]}}]}}]}}]} as unknown as DocumentNode<SourceSessionMetadataQuery, SourceSessionMetadataQueryVariables>;
+export const SourceTypesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SourceTypes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"SourceTypes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"id"},"name":{"kind":"Name","value":"Id"}},{"kind":"Field","alias":{"kind":"Name","value":"label"},"name":{"kind":"Name","value":"Label"}},{"kind":"Field","alias":{"kind":"Name","value":"connector"},"name":{"kind":"Name","value":"Connector"}},{"kind":"Field","alias":{"kind":"Name","value":"category"},"name":{"kind":"Name","value":"Category"}},{"kind":"Field","alias":{"kind":"Name","value":"connectionFields"},"name":{"kind":"Name","value":"ConnectionFields"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Key"}},{"kind":"Field","name":{"kind":"Name","value":"Kind"}},{"kind":"Field","name":{"kind":"Name","value":"Section"}},{"kind":"Field","name":{"kind":"Name","value":"Required"}},{"kind":"Field","name":{"kind":"Name","value":"LabelKey"}},{"kind":"Field","name":{"kind":"Name","value":"PlaceholderKey"}},{"kind":"Field","name":{"kind":"Name","value":"DefaultValue"}},{"kind":"Field","name":{"kind":"Name","value":"SupportsOptions"}}]}},{"kind":"Field","alias":{"kind":"Name","value":"contract"},"name":{"kind":"Name","value":"Contract"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Model"}},{"kind":"Field","name":{"kind":"Name","value":"Surfaces"}},{"kind":"Field","name":{"kind":"Name","value":"BrowsePath"}},{"kind":"Field","name":{"kind":"Name","value":"DefaultObjectKind"}},{"kind":"Field","name":{"kind":"Name","value":"GraphScopeKind"}},{"kind":"Field","name":{"kind":"Name","value":"ObjectTypes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Kind"}},{"kind":"Field","name":{"kind":"Name","value":"DataShape"}},{"kind":"Field","name":{"kind":"Name","value":"Actions"}},{"kind":"Field","name":{"kind":"Name","value":"Views"}},{"kind":"Field","name":{"kind":"Name","value":"SingularLabel"}},{"kind":"Field","name":{"kind":"Name","value":"PluralLabel"}}]}}]}},{"kind":"Field","alias":{"kind":"Name","value":"isAwsManaged"},"name":{"kind":"Name","value":"IsAWSManaged"}},{"kind":"Field","alias":{"kind":"Name","value":"sslModes"},"name":{"kind":"Name","value":"SSLModes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"aliases"}}]}}]}}]}}]} as unknown as DocumentNode<SourceTypesQuery, SourceTypesQueryVariables>;
 export const GetSslStatusDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetSSLStatus"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"SSLStatus"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"IsEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"Mode"}}]}}]}}]} as unknown as DocumentNode<GetSslStatusQuery, GetSslStatusQueryVariables>;
-export const AnalyzeMockDataDependenciesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"AnalyzeMockDataDependencies"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"schema"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"rowCount"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"fkDensityRatio"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"AnalyzeMockDataDependencies"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"schema"},"value":{"kind":"Variable","name":{"kind":"Name","value":"schema"}}},{"kind":"Argument","name":{"kind":"Name","value":"storageUnit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}}},{"kind":"Argument","name":{"kind":"Name","value":"rowCount"},"value":{"kind":"Variable","name":{"kind":"Name","value":"rowCount"}}},{"kind":"Argument","name":{"kind":"Name","value":"fkDensityRatio"},"value":{"kind":"Variable","name":{"kind":"Name","value":"fkDensityRatio"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"GenerationOrder"}},{"kind":"Field","name":{"kind":"Name","value":"Tables"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Table"}},{"kind":"Field","name":{"kind":"Name","value":"RowsToGenerate"}},{"kind":"Field","name":{"kind":"Name","value":"IsBlocked"}},{"kind":"Field","name":{"kind":"Name","value":"UsesExistingData"}}]}},{"kind":"Field","name":{"kind":"Name","value":"TotalRows"}},{"kind":"Field","name":{"kind":"Name","value":"Warnings"}},{"kind":"Field","name":{"kind":"Name","value":"Error"}}]}}]}}]} as unknown as DocumentNode<AnalyzeMockDataDependenciesQuery, AnalyzeMockDataDependenciesQueryVariables>;
+export const AnalyzeMockDataDependenciesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"AnalyzeMockDataDependencies"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ref"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SourceObjectRefInput"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"rowCount"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"fkDensityRatio"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"AnalyzeMockDataDependencies"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ref"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ref"}}},{"kind":"Argument","name":{"kind":"Name","value":"rowCount"},"value":{"kind":"Variable","name":{"kind":"Name","value":"rowCount"}}},{"kind":"Argument","name":{"kind":"Name","value":"fkDensityRatio"},"value":{"kind":"Variable","name":{"kind":"Name","value":"fkDensityRatio"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"GenerationOrder"}},{"kind":"Field","name":{"kind":"Name","value":"Tables"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Table"}},{"kind":"Field","name":{"kind":"Name","value":"RowsToGenerate"}},{"kind":"Field","name":{"kind":"Name","value":"IsBlocked"}},{"kind":"Field","name":{"kind":"Name","value":"UsesExistingData"}}]}},{"kind":"Field","name":{"kind":"Name","value":"TotalRows"}},{"kind":"Field","name":{"kind":"Name","value":"Warnings"}},{"kind":"Field","name":{"kind":"Name","value":"Error"}}]}}]}}]} as unknown as DocumentNode<AnalyzeMockDataDependenciesQuery, AnalyzeMockDataDependenciesQueryVariables>;
 export const MockDataMaxRowCountDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"MockDataMaxRowCount"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"MockDataMaxRowCount"}}]}}]} as unknown as DocumentNode<MockDataMaxRowCountQuery, MockDataMaxRowCountQueryVariables>;
 export const GenerateMockDataDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"GenerateMockData"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"MockDataGenerationInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"GenerateMockData"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"AmountGenerated"}},{"kind":"Field","name":{"kind":"Name","value":"Details"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Table"}},{"kind":"Field","name":{"kind":"Name","value":"RowsGenerated"}},{"kind":"Field","name":{"kind":"Name","value":"UsedExistingData"}}]}}]}}]}}]} as unknown as DocumentNode<GenerateMockDataMutation, GenerateMockDataMutationVariables>;
-export const GetDatabaseDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetDatabase"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"type"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Database"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"type"},"value":{"kind":"Variable","name":{"kind":"Name","value":"type"}}}]}]}}]} as unknown as DocumentNode<GetDatabaseQuery, GetDatabaseQueryVariables>;
-export const LoginWithProfileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"LoginWithProfile"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"profile"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"LoginProfileInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"LoginWithProfile"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"profile"},"value":{"kind":"Variable","name":{"kind":"Name","value":"profile"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Status"}}]}}]}}]} as unknown as DocumentNode<LoginWithProfileMutation, LoginWithProfileMutationVariables>;
-export const LoginDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"Login"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"credentials"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"LoginCredentials"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Login"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"credentials"},"value":{"kind":"Variable","name":{"kind":"Name","value":"credentials"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Status"}}]}}]}}]} as unknown as DocumentNode<LoginMutation, LoginMutationVariables>;
+export const SourceFieldOptionsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SourceFieldOptions"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sourceType"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"values"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"RecordInput"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"SourceFieldOptions"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"sourceType"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sourceType"}}},{"kind":"Argument","name":{"kind":"Name","value":"fieldKey"},"value":{"kind":"StringValue","value":"Database","block":false}},{"kind":"Argument","name":{"kind":"Name","value":"values"},"value":{"kind":"Variable","name":{"kind":"Name","value":"values"}}}]}]}}]} as unknown as DocumentNode<SourceFieldOptionsQuery, SourceFieldOptionsQueryVariables>;
+export const LoginWithSourceProfileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"LoginWithSourceProfile"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"profile"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SourceProfileLoginInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"LoginWithSourceProfile"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"profile"},"value":{"kind":"Variable","name":{"kind":"Name","value":"profile"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Status"}}]}}]}}]} as unknown as DocumentNode<LoginWithSourceProfileMutation, LoginWithSourceProfileMutationVariables>;
+export const LoginSourceDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"LoginSource"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"credentials"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SourceLoginInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"LoginSource"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"credentials"},"value":{"kind":"Variable","name":{"kind":"Name","value":"credentials"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Status"}}]}}]}}]} as unknown as DocumentNode<LoginSourceMutation, LoginSourceMutationVariables>;
 export const LogoutDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"Logout"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Logout"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Status"}}]}}]}}]} as unknown as DocumentNode<LogoutMutation, LogoutMutationVariables>;
 export const GetAiProvidersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetAIProviders"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"AIProviders"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Type"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"ProviderId"}},{"kind":"Field","name":{"kind":"Name","value":"IsEnvironmentDefined"}},{"kind":"Field","name":{"kind":"Name","value":"IsGeneric"}}]}}]}}]} as unknown as DocumentNode<GetAiProvidersQuery, GetAiProvidersQueryVariables>;
-export const GetAiChatDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetAIChat"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"providerId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"modelType"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"token"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"schema"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"previousConversation"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"query"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"model"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"AIChat"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"providerId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"providerId"}}},{"kind":"Argument","name":{"kind":"Name","value":"modelType"},"value":{"kind":"Variable","name":{"kind":"Name","value":"modelType"}}},{"kind":"Argument","name":{"kind":"Name","value":"token"},"value":{"kind":"Variable","name":{"kind":"Name","value":"token"}}},{"kind":"Argument","name":{"kind":"Name","value":"schema"},"value":{"kind":"Variable","name":{"kind":"Name","value":"schema"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"PreviousConversation"},"value":{"kind":"Variable","name":{"kind":"Name","value":"previousConversation"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"Query"},"value":{"kind":"Variable","name":{"kind":"Name","value":"query"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"Model"},"value":{"kind":"Variable","name":{"kind":"Name","value":"model"}}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Type"}},{"kind":"Field","name":{"kind":"Name","value":"Result"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Columns"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Type"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"Rows"}}]}},{"kind":"Field","name":{"kind":"Name","value":"Text"}}]}}]}}]} as unknown as DocumentNode<GetAiChatQuery, GetAiChatQueryVariables>;
-export const GetDatabaseQuerySuggestionsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetDatabaseQuerySuggestions"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"schema"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"DatabaseQuerySuggestions"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"schema"},"value":{"kind":"Variable","name":{"kind":"Name","value":"schema"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"category"}}]}}]}}]} as unknown as DocumentNode<GetDatabaseQuerySuggestionsQuery, GetDatabaseQuerySuggestionsQueryVariables>;
+export const GetAiChatDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetAIChat"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"providerId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"modelType"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"token"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ref"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"SourceObjectRefInput"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"previousConversation"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"query"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"model"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"AIChat"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"providerId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"providerId"}}},{"kind":"Argument","name":{"kind":"Name","value":"modelType"},"value":{"kind":"Variable","name":{"kind":"Name","value":"modelType"}}},{"kind":"Argument","name":{"kind":"Name","value":"token"},"value":{"kind":"Variable","name":{"kind":"Name","value":"token"}}},{"kind":"Argument","name":{"kind":"Name","value":"ref"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ref"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"PreviousConversation"},"value":{"kind":"Variable","name":{"kind":"Name","value":"previousConversation"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"Query"},"value":{"kind":"Variable","name":{"kind":"Name","value":"query"}}},{"kind":"ObjectField","name":{"kind":"Name","value":"Model"},"value":{"kind":"Variable","name":{"kind":"Name","value":"model"}}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Type"}},{"kind":"Field","name":{"kind":"Name","value":"Result"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Columns"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Type"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"Rows"}}]}},{"kind":"Field","name":{"kind":"Name","value":"Text"}}]}}]}}]} as unknown as DocumentNode<GetAiChatQuery, GetAiChatQueryVariables>;
+export const GetDatabaseQuerySuggestionsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetDatabaseQuerySuggestions"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ref"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"SourceObjectRefInput"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"DatabaseQuerySuggestions"},"name":{"kind":"Name","value":"SourceQuerySuggestions"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ref"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ref"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"category"}}]}}]}}]} as unknown as DocumentNode<GetDatabaseQuerySuggestionsQuery, GetDatabaseQuerySuggestionsQueryVariables>;
 export const GetAiModelsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetAIModels"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"providerId"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"modelType"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"token"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"AIModel"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"providerId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"providerId"}}},{"kind":"Argument","name":{"kind":"Name","value":"modelType"},"value":{"kind":"Variable","name":{"kind":"Name","value":"modelType"}}},{"kind":"Argument","name":{"kind":"Name","value":"token"},"value":{"kind":"Variable","name":{"kind":"Name","value":"token"}}}]}]}}]} as unknown as DocumentNode<GetAiModelsQuery, GetAiModelsQueryVariables>;
-export const GetColumnsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetColumns"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"schema"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Columns"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"schema"},"value":{"kind":"Variable","name":{"kind":"Name","value":"schema"}}},{"kind":"Argument","name":{"kind":"Name","value":"storageUnit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"Type"}},{"kind":"Field","name":{"kind":"Name","value":"IsPrimary"}},{"kind":"Field","name":{"kind":"Name","value":"IsForeignKey"}},{"kind":"Field","name":{"kind":"Name","value":"ReferencedTable"}},{"kind":"Field","name":{"kind":"Name","value":"ReferencedColumn"}},{"kind":"Field","name":{"kind":"Name","value":"Length"}},{"kind":"Field","name":{"kind":"Name","value":"Precision"}},{"kind":"Field","name":{"kind":"Name","value":"Scale"}}]}}]}}]} as unknown as DocumentNode<GetColumnsQuery, GetColumnsQueryVariables>;
-export const GetGraphDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetGraph"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"schema"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Graph"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"schema"},"value":{"kind":"Variable","name":{"kind":"Name","value":"schema"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Unit"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"Attributes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Key"}},{"kind":"Field","name":{"kind":"Name","value":"Value"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"Relations"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"Relationship"}},{"kind":"Field","name":{"kind":"Name","value":"SourceColumn"}},{"kind":"Field","name":{"kind":"Name","value":"TargetColumn"}}]}}]}}]}}]} as unknown as DocumentNode<GetGraphQuery, GetGraphQueryVariables>;
-export const ColumnsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Columns"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"schema"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Columns"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"schema"},"value":{"kind":"Variable","name":{"kind":"Name","value":"schema"}}},{"kind":"Argument","name":{"kind":"Name","value":"storageUnit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"Type"}},{"kind":"Field","name":{"kind":"Name","value":"IsPrimary"}},{"kind":"Field","name":{"kind":"Name","value":"IsForeignKey"}},{"kind":"Field","name":{"kind":"Name","value":"ReferencedTable"}},{"kind":"Field","name":{"kind":"Name","value":"ReferencedColumn"}},{"kind":"Field","name":{"kind":"Name","value":"Length"}},{"kind":"Field","name":{"kind":"Name","value":"Precision"}},{"kind":"Field","name":{"kind":"Name","value":"Scale"}}]}}]}}]} as unknown as DocumentNode<ColumnsQuery, ColumnsQueryVariables>;
-export const RawExecuteDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"RawExecute"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"query"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"RawExecute"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"query"},"value":{"kind":"Variable","name":{"kind":"Name","value":"query"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Columns"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Type"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"Rows"}},{"kind":"Field","name":{"kind":"Name","value":"TotalCount"}}]}}]}}]} as unknown as DocumentNode<RawExecuteQuery, RawExecuteQueryVariables>;
+export const GetColumnsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetColumns"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ref"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SourceObjectRefInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"Columns"},"name":{"kind":"Name","value":"SourceColumns"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ref"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ref"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"Type"}},{"kind":"Field","name":{"kind":"Name","value":"IsPrimary"}},{"kind":"Field","name":{"kind":"Name","value":"IsForeignKey"}},{"kind":"Field","name":{"kind":"Name","value":"ReferencedTable"}},{"kind":"Field","name":{"kind":"Name","value":"ReferencedColumn"}},{"kind":"Field","name":{"kind":"Name","value":"Length"}},{"kind":"Field","name":{"kind":"Name","value":"Precision"}},{"kind":"Field","name":{"kind":"Name","value":"Scale"}}]}}]}}]} as unknown as DocumentNode<GetColumnsQuery, GetColumnsQueryVariables>;
+export const GetGraphDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetGraph"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ref"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"SourceObjectRefInput"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"Graph"},"name":{"kind":"Name","value":"SourceGraph"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ref"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ref"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Unit"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Ref"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Kind"}},{"kind":"Field","name":{"kind":"Name","value":"Path"}}]}},{"kind":"Field","name":{"kind":"Name","value":"Kind"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","alias":{"kind":"Name","value":"Attributes"},"name":{"kind":"Name","value":"Metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Key"}},{"kind":"Field","name":{"kind":"Name","value":"Value"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"Relations"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"Relationship"}},{"kind":"Field","name":{"kind":"Name","value":"SourceColumn"}},{"kind":"Field","name":{"kind":"Name","value":"TargetColumn"}}]}}]}}]}}]} as unknown as DocumentNode<GetGraphQuery, GetGraphQueryVariables>;
+export const ColumnsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Columns"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ref"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SourceObjectRefInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"Columns"},"name":{"kind":"Name","value":"SourceColumns"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ref"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ref"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"Type"}},{"kind":"Field","name":{"kind":"Name","value":"IsPrimary"}},{"kind":"Field","name":{"kind":"Name","value":"IsForeignKey"}},{"kind":"Field","name":{"kind":"Name","value":"ReferencedTable"}},{"kind":"Field","name":{"kind":"Name","value":"ReferencedColumn"}},{"kind":"Field","name":{"kind":"Name","value":"Length"}},{"kind":"Field","name":{"kind":"Name","value":"Precision"}},{"kind":"Field","name":{"kind":"Name","value":"Scale"}}]}}]}}]} as unknown as DocumentNode<ColumnsQuery, ColumnsQueryVariables>;
+export const RawExecuteDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"RawExecute"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"query"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"RawExecute"},"name":{"kind":"Name","value":"RunSourceQuery"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"query"},"value":{"kind":"Variable","name":{"kind":"Name","value":"query"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Columns"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Type"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"Rows"}},{"kind":"Field","name":{"kind":"Name","value":"TotalCount"}}]}}]}}]} as unknown as DocumentNode<RawExecuteQuery, RawExecuteQueryVariables>;
 export const GetCloudProvidersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetCloudProviders"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"CloudProviders"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"AWSProvider"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Id"}},{"kind":"Field","name":{"kind":"Name","value":"ProviderType"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"Region"}},{"kind":"Field","name":{"kind":"Name","value":"Status"}},{"kind":"Field","name":{"kind":"Name","value":"LastDiscoveryAt"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoveredCount"}},{"kind":"Field","name":{"kind":"Name","value":"Error"}},{"kind":"Field","name":{"kind":"Name","value":"ProfileName"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverRDS"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverElastiCache"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverDocumentDB"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"AzureProvider"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Id"}},{"kind":"Field","name":{"kind":"Name","value":"ProviderType"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"Region"}},{"kind":"Field","name":{"kind":"Name","value":"Status"}},{"kind":"Field","name":{"kind":"Name","value":"LastDiscoveryAt"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoveredCount"}},{"kind":"Field","name":{"kind":"Name","value":"Error"}},{"kind":"Field","name":{"kind":"Name","value":"SubscriptionID"}},{"kind":"Field","name":{"kind":"Name","value":"TenantID"}},{"kind":"Field","name":{"kind":"Name","value":"ResourceGroup"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverPostgreSQL"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverMySQL"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverRedis"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverCosmosDB"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"GCPProvider"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Id"}},{"kind":"Field","name":{"kind":"Name","value":"ProviderType"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"Region"}},{"kind":"Field","name":{"kind":"Name","value":"Status"}},{"kind":"Field","name":{"kind":"Name","value":"LastDiscoveryAt"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoveredCount"}},{"kind":"Field","name":{"kind":"Name","value":"Error"}},{"kind":"Field","name":{"kind":"Name","value":"ProjectID"}},{"kind":"Field","name":{"kind":"Name","value":"ServiceAccountKeyPath"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverCloudSQL"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverAlloyDB"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverMemorystore"}}]}}]}}]}}]} as unknown as DocumentNode<GetCloudProvidersQuery, GetCloudProvidersQueryVariables>;
 export const GetCloudProviderDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetCloudProvider"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"CloudProvider"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"AWSProvider"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Id"}},{"kind":"Field","name":{"kind":"Name","value":"ProviderType"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"Region"}},{"kind":"Field","name":{"kind":"Name","value":"Status"}},{"kind":"Field","name":{"kind":"Name","value":"LastDiscoveryAt"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoveredCount"}},{"kind":"Field","name":{"kind":"Name","value":"Error"}},{"kind":"Field","name":{"kind":"Name","value":"ProfileName"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverRDS"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverElastiCache"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverDocumentDB"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"AzureProvider"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Id"}},{"kind":"Field","name":{"kind":"Name","value":"ProviderType"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"Region"}},{"kind":"Field","name":{"kind":"Name","value":"Status"}},{"kind":"Field","name":{"kind":"Name","value":"LastDiscoveryAt"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoveredCount"}},{"kind":"Field","name":{"kind":"Name","value":"Error"}},{"kind":"Field","name":{"kind":"Name","value":"SubscriptionID"}},{"kind":"Field","name":{"kind":"Name","value":"TenantID"}},{"kind":"Field","name":{"kind":"Name","value":"ResourceGroup"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverPostgreSQL"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverMySQL"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverRedis"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverCosmosDB"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"GCPProvider"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Id"}},{"kind":"Field","name":{"kind":"Name","value":"ProviderType"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"Region"}},{"kind":"Field","name":{"kind":"Name","value":"Status"}},{"kind":"Field","name":{"kind":"Name","value":"LastDiscoveryAt"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoveredCount"}},{"kind":"Field","name":{"kind":"Name","value":"Error"}},{"kind":"Field","name":{"kind":"Name","value":"ProjectID"}},{"kind":"Field","name":{"kind":"Name","value":"ServiceAccountKeyPath"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverCloudSQL"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverAlloyDB"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverMemorystore"}}]}}]}}]}}]} as unknown as DocumentNode<GetCloudProviderQuery, GetCloudProviderQueryVariables>;
-export const GetDiscoveredConnectionsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetDiscoveredConnections"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"DiscoveredConnections"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Id"}},{"kind":"Field","name":{"kind":"Name","value":"ProviderType"}},{"kind":"Field","name":{"kind":"Name","value":"ProviderID"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"DatabaseType"}},{"kind":"Field","name":{"kind":"Name","value":"Region"}},{"kind":"Field","name":{"kind":"Name","value":"Status"}},{"kind":"Field","name":{"kind":"Name","value":"Metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Key"}},{"kind":"Field","name":{"kind":"Name","value":"Value"}}]}}]}}]}}]} as unknown as DocumentNode<GetDiscoveredConnectionsQuery, GetDiscoveredConnectionsQueryVariables>;
-export const GetProviderConnectionsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetProviderConnections"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"providerId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ProviderConnections"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"providerID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"providerId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Id"}},{"kind":"Field","name":{"kind":"Name","value":"ProviderType"}},{"kind":"Field","name":{"kind":"Name","value":"ProviderID"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"DatabaseType"}},{"kind":"Field","name":{"kind":"Name","value":"Region"}},{"kind":"Field","name":{"kind":"Name","value":"Status"}},{"kind":"Field","name":{"kind":"Name","value":"Metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Key"}},{"kind":"Field","name":{"kind":"Name","value":"Value"}}]}}]}}]}}]} as unknown as DocumentNode<GetProviderConnectionsQuery, GetProviderConnectionsQueryVariables>;
+export const GetDiscoveredConnectionsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetDiscoveredConnections"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"DiscoveredConnections"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Id"}},{"kind":"Field","name":{"kind":"Name","value":"ProviderType"}},{"kind":"Field","name":{"kind":"Name","value":"ProviderID"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","alias":{"kind":"Name","value":"DatabaseType"},"name":{"kind":"Name","value":"SourceType"}},{"kind":"Field","name":{"kind":"Name","value":"Region"}},{"kind":"Field","name":{"kind":"Name","value":"Status"}},{"kind":"Field","name":{"kind":"Name","value":"Metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Key"}},{"kind":"Field","name":{"kind":"Name","value":"Value"}}]}}]}}]}}]} as unknown as DocumentNode<GetDiscoveredConnectionsQuery, GetDiscoveredConnectionsQueryVariables>;
+export const GetProviderConnectionsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetProviderConnections"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"providerId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ProviderConnections"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"providerID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"providerId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Id"}},{"kind":"Field","name":{"kind":"Name","value":"ProviderType"}},{"kind":"Field","name":{"kind":"Name","value":"ProviderID"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","alias":{"kind":"Name","value":"DatabaseType"},"name":{"kind":"Name","value":"SourceType"}},{"kind":"Field","name":{"kind":"Name","value":"Region"}},{"kind":"Field","name":{"kind":"Name","value":"Status"}},{"kind":"Field","name":{"kind":"Name","value":"Metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Key"}},{"kind":"Field","name":{"kind":"Name","value":"Value"}}]}}]}}]}}]} as unknown as DocumentNode<GetProviderConnectionsQuery, GetProviderConnectionsQueryVariables>;
 export const GetLocalAwsProfilesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetLocalAWSProfiles"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"LocalAWSProfiles"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"Region"}},{"kind":"Field","name":{"kind":"Name","value":"Source"}},{"kind":"Field","name":{"kind":"Name","value":"AuthType"}},{"kind":"Field","name":{"kind":"Name","value":"IsDefault"}}]}}]}}]} as unknown as DocumentNode<GetLocalAwsProfilesQuery, GetLocalAwsProfilesQueryVariables>;
 export const GetAwsRegionsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetAWSRegions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"AWSRegions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Id"}},{"kind":"Field","name":{"kind":"Name","value":"Description"}},{"kind":"Field","name":{"kind":"Name","value":"Partition"}}]}}]}}]} as unknown as DocumentNode<GetAwsRegionsQuery, GetAwsRegionsQueryVariables>;
 export const AddAwsProviderDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"AddAWSProvider"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"AWSProviderInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"AddAWSProvider"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Id"}},{"kind":"Field","name":{"kind":"Name","value":"ProviderType"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"Region"}},{"kind":"Field","name":{"kind":"Name","value":"ProfileName"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverRDS"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverElastiCache"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoverDocumentDB"}},{"kind":"Field","name":{"kind":"Name","value":"Status"}},{"kind":"Field","name":{"kind":"Name","value":"LastDiscoveryAt"}},{"kind":"Field","name":{"kind":"Name","value":"DiscoveredCount"}},{"kind":"Field","name":{"kind":"Name","value":"Error"}}]}}]}}]} as unknown as DocumentNode<AddAwsProviderMutation, AddAwsProviderMutationVariables>;
@@ -1488,10 +1556,10 @@ export const RefreshGcpProviderDocument = {"kind":"Document","definitions":[{"ki
 export const GenerateCloudSqliamAuthTokenDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"GenerateCloudSQLIAMAuthToken"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"providerID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"username"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"GenerateCloudSQLIAMAuthToken"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"providerID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"providerID"}}},{"kind":"Argument","name":{"kind":"Name","value":"username"},"value":{"kind":"Variable","name":{"kind":"Name","value":"username"}}}]}]}}]} as unknown as DocumentNode<GenerateCloudSqliamAuthTokenMutation, GenerateCloudSqliamAuthTokenMutationVariables>;
 export const SettingsConfigDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SettingsConfig"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"SettingsConfig"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"MetricsEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"CloudProvidersEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"DisableCredentialForm"}},{"kind":"Field","name":{"kind":"Name","value":"MaxPageSize"}}]}}]}}]} as unknown as DocumentNode<SettingsConfigQuery, SettingsConfigQueryVariables>;
 export const UpdateSettingsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateSettings"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"newSettings"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SettingsConfigInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"UpdateSettings"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"newSettings"},"value":{"kind":"Variable","name":{"kind":"Name","value":"newSettings"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Status"}}]}}]}}]} as unknown as DocumentNode<UpdateSettingsMutation, UpdateSettingsMutationVariables>;
-export const AddRowDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"AddRow"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"schema"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"values"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"RecordInput"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"AddRow"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"schema"},"value":{"kind":"Variable","name":{"kind":"Name","value":"schema"}}},{"kind":"Argument","name":{"kind":"Name","value":"storageUnit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}}},{"kind":"Argument","name":{"kind":"Name","value":"values"},"value":{"kind":"Variable","name":{"kind":"Name","value":"values"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Status"}}]}}]}}]} as unknown as DocumentNode<AddRowMutation, AddRowMutationVariables>;
-export const AddStorageUnitDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"AddStorageUnit"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"schema"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"fields"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"RecordInput"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"AddStorageUnit"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"schema"},"value":{"kind":"Variable","name":{"kind":"Name","value":"schema"}}},{"kind":"Argument","name":{"kind":"Name","value":"storageUnit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}}},{"kind":"Argument","name":{"kind":"Name","value":"fields"},"value":{"kind":"Variable","name":{"kind":"Name","value":"fields"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Status"}}]}}]}}]} as unknown as DocumentNode<AddStorageUnitMutation, AddStorageUnitMutationVariables>;
-export const DeleteRowDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteRow"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"schema"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"values"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"RecordInput"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"DeleteRow"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"schema"},"value":{"kind":"Variable","name":{"kind":"Name","value":"schema"}}},{"kind":"Argument","name":{"kind":"Name","value":"storageUnit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}}},{"kind":"Argument","name":{"kind":"Name","value":"values"},"value":{"kind":"Variable","name":{"kind":"Name","value":"values"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Status"}}]}}]}}]} as unknown as DocumentNode<DeleteRowMutation, DeleteRowMutationVariables>;
-export const GetColumnsBatchDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetColumnsBatch"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"schema"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"storageUnits"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ColumnsBatch"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"schema"},"value":{"kind":"Variable","name":{"kind":"Name","value":"schema"}}},{"kind":"Argument","name":{"kind":"Name","value":"storageUnits"},"value":{"kind":"Variable","name":{"kind":"Name","value":"storageUnits"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"StorageUnit"}},{"kind":"Field","name":{"kind":"Name","value":"Columns"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"Type"}},{"kind":"Field","name":{"kind":"Name","value":"IsPrimary"}},{"kind":"Field","name":{"kind":"Name","value":"IsForeignKey"}},{"kind":"Field","name":{"kind":"Name","value":"ReferencedTable"}},{"kind":"Field","name":{"kind":"Name","value":"ReferencedColumn"}},{"kind":"Field","name":{"kind":"Name","value":"Length"}},{"kind":"Field","name":{"kind":"Name","value":"Precision"}},{"kind":"Field","name":{"kind":"Name","value":"Scale"}}]}}]}}]}}]} as unknown as DocumentNode<GetColumnsBatchQuery, GetColumnsBatchQueryVariables>;
-export const GetStorageUnitRowsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetStorageUnitRows"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"schema"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"where"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"WhereCondition"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sort"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SortCondition"}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"pageSize"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"pageOffset"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Row"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"schema"},"value":{"kind":"Variable","name":{"kind":"Name","value":"schema"}}},{"kind":"Argument","name":{"kind":"Name","value":"storageUnit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}},{"kind":"Argument","name":{"kind":"Name","value":"sort"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sort"}}},{"kind":"Argument","name":{"kind":"Name","value":"pageSize"},"value":{"kind":"Variable","name":{"kind":"Name","value":"pageSize"}}},{"kind":"Argument","name":{"kind":"Name","value":"pageOffset"},"value":{"kind":"Variable","name":{"kind":"Name","value":"pageOffset"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Columns"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Type"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"IsPrimary"}},{"kind":"Field","name":{"kind":"Name","value":"IsForeignKey"}},{"kind":"Field","name":{"kind":"Name","value":"ReferencedTable"}},{"kind":"Field","name":{"kind":"Name","value":"ReferencedColumn"}},{"kind":"Field","name":{"kind":"Name","value":"Length"}},{"kind":"Field","name":{"kind":"Name","value":"Precision"}},{"kind":"Field","name":{"kind":"Name","value":"Scale"}}]}},{"kind":"Field","name":{"kind":"Name","value":"Rows"}},{"kind":"Field","name":{"kind":"Name","value":"DisableUpdate"}},{"kind":"Field","name":{"kind":"Name","value":"TotalCount"}}]}}]}}]} as unknown as DocumentNode<GetStorageUnitRowsQuery, GetStorageUnitRowsQueryVariables>;
-export const GetStorageUnitsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetStorageUnits"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"schema"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"StorageUnit"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"schema"},"value":{"kind":"Variable","name":{"kind":"Name","value":"schema"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"Attributes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Key"}},{"kind":"Field","name":{"kind":"Name","value":"Value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"IsMockDataGenerationAllowed"}}]}}]}}]} as unknown as DocumentNode<GetStorageUnitsQuery, GetStorageUnitsQueryVariables>;
-export const UpdateStorageUnitDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateStorageUnit"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"schema"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"values"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"RecordInput"}}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"updatedColumns"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"UpdateStorageUnit"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"schema"},"value":{"kind":"Variable","name":{"kind":"Name","value":"schema"}}},{"kind":"Argument","name":{"kind":"Name","value":"storageUnit"},"value":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}}},{"kind":"Argument","name":{"kind":"Name","value":"values"},"value":{"kind":"Variable","name":{"kind":"Name","value":"values"}}},{"kind":"Argument","name":{"kind":"Name","value":"updatedColumns"},"value":{"kind":"Variable","name":{"kind":"Name","value":"updatedColumns"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Status"}}]}}]}}]} as unknown as DocumentNode<UpdateStorageUnitMutation, UpdateStorageUnitMutationVariables>;
+export const AddRowDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"AddRow"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ref"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SourceObjectRefInput"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"values"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"RecordInput"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"AddRow"},"name":{"kind":"Name","value":"AddSourceRow"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ref"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ref"}}},{"kind":"Argument","name":{"kind":"Name","value":"values"},"value":{"kind":"Variable","name":{"kind":"Name","value":"values"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Status"}}]}}]}}]} as unknown as DocumentNode<AddRowMutation, AddRowMutationVariables>;
+export const AddStorageUnitDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"AddStorageUnit"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"parent"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"SourceObjectRefInput"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"fields"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"RecordInput"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"AddStorageUnit"},"name":{"kind":"Name","value":"CreateSourceObject"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"parent"},"value":{"kind":"Variable","name":{"kind":"Name","value":"parent"}}},{"kind":"Argument","name":{"kind":"Name","value":"name"},"value":{"kind":"Variable","name":{"kind":"Name","value":"storageUnit"}}},{"kind":"Argument","name":{"kind":"Name","value":"fields"},"value":{"kind":"Variable","name":{"kind":"Name","value":"fields"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Status"}}]}}]}}]} as unknown as DocumentNode<AddStorageUnitMutation, AddStorageUnitMutationVariables>;
+export const DeleteRowDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteRow"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ref"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SourceObjectRefInput"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"values"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"RecordInput"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"DeleteRow"},"name":{"kind":"Name","value":"DeleteSourceRow"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ref"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ref"}}},{"kind":"Argument","name":{"kind":"Name","value":"values"},"value":{"kind":"Variable","name":{"kind":"Name","value":"values"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Status"}}]}}]}}]} as unknown as DocumentNode<DeleteRowMutation, DeleteRowMutationVariables>;
+export const GetColumnsBatchDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetColumnsBatch"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"refs"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SourceObjectRefInput"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"ColumnsBatch"},"name":{"kind":"Name","value":"SourceColumnsBatch"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"refs"},"value":{"kind":"Variable","name":{"kind":"Name","value":"refs"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"StorageUnit"},"name":{"kind":"Name","value":"Ref"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Path"}}]}},{"kind":"Field","name":{"kind":"Name","value":"Columns"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"Type"}},{"kind":"Field","name":{"kind":"Name","value":"IsPrimary"}},{"kind":"Field","name":{"kind":"Name","value":"IsForeignKey"}},{"kind":"Field","name":{"kind":"Name","value":"ReferencedTable"}},{"kind":"Field","name":{"kind":"Name","value":"ReferencedColumn"}},{"kind":"Field","name":{"kind":"Name","value":"Length"}},{"kind":"Field","name":{"kind":"Name","value":"Precision"}},{"kind":"Field","name":{"kind":"Name","value":"Scale"}}]}}]}}]}}]} as unknown as DocumentNode<GetColumnsBatchQuery, GetColumnsBatchQueryVariables>;
+export const GetStorageUnitRowsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetStorageUnitRows"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ref"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SourceObjectRefInput"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"where"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"WhereCondition"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sort"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SortCondition"}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"pageSize"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"pageOffset"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"Row"},"name":{"kind":"Name","value":"SourceRows"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ref"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ref"}}},{"kind":"Argument","name":{"kind":"Name","value":"where"},"value":{"kind":"Variable","name":{"kind":"Name","value":"where"}}},{"kind":"Argument","name":{"kind":"Name","value":"sort"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sort"}}},{"kind":"Argument","name":{"kind":"Name","value":"pageSize"},"value":{"kind":"Variable","name":{"kind":"Name","value":"pageSize"}}},{"kind":"Argument","name":{"kind":"Name","value":"pageOffset"},"value":{"kind":"Variable","name":{"kind":"Name","value":"pageOffset"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Columns"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Type"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","name":{"kind":"Name","value":"IsPrimary"}},{"kind":"Field","name":{"kind":"Name","value":"IsForeignKey"}},{"kind":"Field","name":{"kind":"Name","value":"ReferencedTable"}},{"kind":"Field","name":{"kind":"Name","value":"ReferencedColumn"}},{"kind":"Field","name":{"kind":"Name","value":"Length"}},{"kind":"Field","name":{"kind":"Name","value":"Precision"}},{"kind":"Field","name":{"kind":"Name","value":"Scale"}}]}},{"kind":"Field","name":{"kind":"Name","value":"Rows"}},{"kind":"Field","name":{"kind":"Name","value":"DisableUpdate"}},{"kind":"Field","name":{"kind":"Name","value":"TotalCount"}}]}}]}}]} as unknown as DocumentNode<GetStorageUnitRowsQuery, GetStorageUnitRowsQueryVariables>;
+export const GetStorageUnitsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetStorageUnits"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"parent"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"SourceObjectRefInput"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"StorageUnit"},"name":{"kind":"Name","value":"SourceObjects"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"parent"},"value":{"kind":"Variable","name":{"kind":"Name","value":"parent"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Ref"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Kind"}},{"kind":"Field","name":{"kind":"Name","value":"Path"}}]}},{"kind":"Field","name":{"kind":"Name","value":"Kind"}},{"kind":"Field","name":{"kind":"Name","value":"Name"}},{"kind":"Field","alias":{"kind":"Name","value":"Attributes"},"name":{"kind":"Name","value":"Metadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Key"}},{"kind":"Field","name":{"kind":"Name","value":"Value"}}]}},{"kind":"Field","name":{"kind":"Name","value":"Actions"}},{"kind":"Field","name":{"kind":"Name","value":"HasChildren"}}]}}]}}]} as unknown as DocumentNode<GetStorageUnitsQuery, GetStorageUnitsQueryVariables>;
+export const UpdateStorageUnitDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateStorageUnit"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ref"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SourceObjectRefInput"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"values"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"RecordInput"}}}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"updatedColumns"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"UpdateStorageUnit"},"name":{"kind":"Name","value":"UpdateSourceObject"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ref"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ref"}}},{"kind":"Argument","name":{"kind":"Name","value":"values"},"value":{"kind":"Variable","name":{"kind":"Name","value":"values"}}},{"kind":"Argument","name":{"kind":"Name","value":"updatedColumns"},"value":{"kind":"Variable","name":{"kind":"Name","value":"updatedColumns"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Status"}}]}}]}}]} as unknown as DocumentNode<UpdateStorageUnitMutation, UpdateStorageUnitMutationVariables>;

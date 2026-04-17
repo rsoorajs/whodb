@@ -30,10 +30,11 @@ import {FolderIcon, TableCellsIcon} from "./heroicons";
 import {FC, useCallback, useEffect, useMemo, useState} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
 import {InternalRoutes} from "../config/routes";
-import {useDatabaseTraits} from "../hooks/useDatabaseTraits";
+import {useSourceContract} from "../hooks/useSourceContract";
 import {useAppSelector} from "../store/hooks";
 import {Loading} from "./loading";
 import {useTranslation} from "@/hooks/use-translation";
+import {buildSourceParentRef} from "@/utils/source-refs";
 
 function groupByType(units: StorageUnit[]) {
     const groups: Record<string, any[]> = {};
@@ -50,19 +51,18 @@ export const SchemaViewer: FC = () => {
     const { t } = useTranslation('components/schema-viewer');
     const current = useAppSelector(state => state.auth.current);
     const selectedSchema = useAppSelector(state => state.database.schema);
-    const { storageUnitLabel, usesDatabaseInsteadOfSchema } = useDatabaseTraits(current?.Type);
+    const { item, storageUnitLabel, supportsSchema } = useSourceContract(current?.Type);
     const navigate = useNavigate();
     const state = useLocation().state as { unit: StorageUnit } | undefined;
 
     // Search state
     const [search, setSearch] = useState("");
 
-    // For databases that use database instead of schema, determine the schema value
-    const schemaValue = usesDatabaseInsteadOfSchema ? (current?.Database ?? '') : selectedSchema;
-    const storageUnitsQueryOptions = current && schemaValue
+    const parentRef = useMemo(() => buildSourceParentRef(item, current, selectedSchema), [current, item, selectedSchema]);
+    const storageUnitsQueryOptions = current && (!supportsSchema || selectedSchema !== "")
         ? {
             variables: {
-                schema: schemaValue,
+                parent: parentRef,
             },
         }
         : skipToken;
@@ -79,17 +79,21 @@ export const SchemaViewer: FC = () => {
         }
     }, [currentProfileId, currentDatabase, refetch]);
 
+    const storageUnits = useMemo(() => {
+        return (data?.StorageUnit ?? []) as StorageUnit[];
+    }, [data?.StorageUnit]);
+
     // Group storage units by type for tree display, with search filter
     const treeData: TreeDataItem[] = useMemo(() => {
-        if (!data?.StorageUnit) return [];
-        const grouped = groupByType(data.StorageUnit);
+        if (storageUnits.length === 0) return [];
+        const grouped = groupByType(storageUnits);
 
         // If searching, flatten all units and filter by name, then group again
         if (search.trim() !== "") {
             const searchLower = search.trim().toLowerCase();
             // Flatten all units
-            const filteredUnits = data.StorageUnit.filter(unit =>
-                unit.Name.toLowerCase().includes(searchLower)
+            const filteredUnits = storageUnits.filter(unit =>
+                (unit.Name ?? "").toLowerCase().includes(searchLower)
             );
             const filteredGrouped = groupByType(filteredUnits);
             return Object.entries(filteredGrouped).map(([type, units]) => ({
@@ -115,7 +119,7 @@ export const SchemaViewer: FC = () => {
                 icon: TableCellsIcon as TreeDataItem["icon"],
             })),
         }));
-    }, [data, search]);
+    }, [search, storageUnits]);
 
     const handleSelect = useCallback((item: TreeDataItem | undefined) => {
         // Only leaf nodes (tables) are selectable
@@ -123,7 +127,7 @@ export const SchemaViewer: FC = () => {
         if (tableId == null || tableId === state?.unit.Name) {
             return
         }
-        const unit = data?.StorageUnit.find(u => u.Name === tableId);
+        const unit = storageUnits.find(u => u.Name === tableId);
         if (unit == null) {
             return;
         }
@@ -132,11 +136,11 @@ export const SchemaViewer: FC = () => {
                 unit,
             },
         });
-    }, [navigate, state, data]);
+    }, [navigate, state, storageUnits]);
 
     // Only hide sidebar if there's truly no data (no connection, no schema, etc.)
     // Don't hide when search returns empty results
-    if (!data?.StorageUnit || (treeData.length === 0 && search.trim() === "")) {
+    if (storageUnits.length === 0 && search.trim() === "") {
         return null;
     }
 

@@ -1,0 +1,351 @@
+/*
+ * Copyright 2026 Clidey, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Package source defines the source-first public contract that sits above the
+// existing database plugin layer.
+package source
+
+import (
+	"strings"
+
+	"github.com/clidey/whodb/core/src/common/ssl"
+	"github.com/clidey/whodb/core/src/engine"
+)
+
+// Category identifies the broad family a source belongs to.
+type Category string
+
+const (
+	// CategoryDatabase is used for database sources.
+	CategoryDatabase Category = "Database"
+	// CategoryCache is used for cache sources.
+	CategoryCache Category = "Cache"
+	// CategorySearch is used for search/index sources.
+	CategorySearch Category = "Search"
+	// CategoryObjectStore is used for object storage sources.
+	CategoryObjectStore Category = "ObjectStore"
+	// CategoryFileStore is used for filesystem-like sources.
+	CategoryFileStore Category = "FileStore"
+)
+
+// Model identifies the primary data model of a source.
+type Model string
+
+const (
+	// ModelRelational is used for relational sources.
+	ModelRelational Model = "Relational"
+	// ModelDocument is used for document sources.
+	ModelDocument Model = "Document"
+	// ModelKeyValue is used for key-value sources.
+	ModelKeyValue Model = "KeyValue"
+	// ModelSearch is used for search/index sources.
+	ModelSearch Model = "Search"
+	// ModelGraph is used for graph sources.
+	ModelGraph Model = "Graph"
+	// ModelObject is used for object storage sources.
+	ModelObject Model = "Object"
+)
+
+// Surface identifies a top-level application surface exposed for a source.
+type Surface string
+
+const (
+	// SurfaceBrowser enables the object browser.
+	SurfaceBrowser Surface = "Browser"
+	// SurfaceQuery enables query/scratchpad execution.
+	SurfaceQuery Surface = "Query"
+	// SurfaceGraph enables graph visualisation.
+	SurfaceGraph Surface = "Graph"
+	// SurfaceChat enables AI chat.
+	SurfaceChat Surface = "Chat"
+)
+
+// ObjectKind identifies a browseable object inside a source.
+type ObjectKind string
+
+const (
+	// ObjectKindDatabase identifies a database/container root.
+	ObjectKindDatabase ObjectKind = "Database"
+	// ObjectKindSchema identifies a schema/namespace.
+	ObjectKindSchema ObjectKind = "Schema"
+	// ObjectKindTable identifies a table.
+	ObjectKindTable ObjectKind = "Table"
+	// ObjectKindView identifies a view.
+	ObjectKindView ObjectKind = "View"
+	// ObjectKindCollection identifies a document collection.
+	ObjectKindCollection ObjectKind = "Collection"
+	// ObjectKindIndex identifies an index.
+	ObjectKindIndex ObjectKind = "Index"
+	// ObjectKindKey identifies a key.
+	ObjectKindKey ObjectKind = "Key"
+	// ObjectKindItem identifies an item-like entry.
+	ObjectKindItem ObjectKind = "Item"
+	// ObjectKindFunction identifies a function.
+	ObjectKindFunction ObjectKind = "Function"
+	// ObjectKindProcedure identifies a procedure.
+	ObjectKindProcedure ObjectKind = "Procedure"
+	// ObjectKindTrigger identifies a trigger.
+	ObjectKindTrigger ObjectKind = "Trigger"
+	// ObjectKindSequence identifies a sequence.
+	ObjectKindSequence ObjectKind = "Sequence"
+)
+
+// Action identifies an operation supported for an object kind.
+type Action string
+
+const (
+	// ActionBrowse indicates the object can be navigated into or listed.
+	ActionBrowse Action = "Browse"
+	// ActionInspect indicates metadata can be inspected.
+	ActionInspect Action = "Inspect"
+	// ActionViewRows indicates tabular rows can be viewed.
+	ActionViewRows Action = "ViewRows"
+	// ActionViewContent indicates blob/text content can be viewed.
+	ActionViewContent Action = "ViewContent"
+	// ActionViewDefinition indicates a definition/source view is available.
+	ActionViewDefinition Action = "ViewDefinition"
+	// ActionCreateChild indicates child objects can be created.
+	ActionCreateChild Action = "CreateChild"
+	// ActionDelete indicates the object can be removed.
+	ActionDelete Action = "Delete"
+	// ActionInsertData indicates rows/documents can be inserted.
+	ActionInsertData Action = "InsertData"
+	// ActionUpdateData indicates rows/documents can be updated.
+	ActionUpdateData Action = "UpdateData"
+	// ActionImportData indicates import is supported.
+	ActionImportData Action = "ImportData"
+	// ActionGenerateMockData indicates mock data generation is supported.
+	ActionGenerateMockData Action = "GenerateMockData"
+	// ActionExecute indicates an executable object or query surface is available.
+	ActionExecute Action = "Execute"
+	// ActionViewGraph indicates the object can be visualised in graph form.
+	ActionViewGraph Action = "ViewGraph"
+)
+
+// View identifies a UI view that can render an object.
+type View string
+
+const (
+	// ViewGrid renders a tabular grid.
+	ViewGrid View = "Grid"
+	// ViewJSON renders JSON content.
+	ViewJSON View = "JSON"
+	// ViewText renders plain text content.
+	ViewText View = "Text"
+	// ViewSQL renders SQL/DDL definitions.
+	ViewSQL View = "SQL"
+	// ViewBinary renders binary/file metadata.
+	ViewBinary View = "Binary"
+	// ViewMetadata renders object metadata.
+	ViewMetadata View = "Metadata"
+	// ViewGraph renders a graph.
+	ViewGraph View = "Graph"
+)
+
+// DataShape identifies the primary data shape exposed by an object kind.
+type DataShape string
+
+const (
+	// DataShapeTabular is used for row/column data.
+	DataShapeTabular DataShape = "Tabular"
+	// DataShapeDocument is used for JSON/document data.
+	DataShapeDocument DataShape = "Document"
+	// DataShapeContent is used for blob/text content.
+	DataShapeContent DataShape = "Content"
+	// DataShapeGraph is used for graph data.
+	DataShapeGraph DataShape = "Graph"
+	// DataShapeMetadata is used for metadata-only objects.
+	DataShapeMetadata DataShape = "Metadata"
+)
+
+// ConnectionFieldKind identifies how a connection field is rendered.
+type ConnectionFieldKind string
+
+const (
+	// ConnectionFieldKindText is a plain text input.
+	ConnectionFieldKindText ConnectionFieldKind = "Text"
+	// ConnectionFieldKindPassword is a secret/password input.
+	ConnectionFieldKindPassword ConnectionFieldKind = "Password"
+	// ConnectionFieldKindFilePath is a file path input.
+	ConnectionFieldKindFilePath ConnectionFieldKind = "FilePath"
+)
+
+// ConnectionFieldSection controls where a connection field appears in the UI.
+type ConnectionFieldSection string
+
+const (
+	// ConnectionFieldSectionPrimary is shown in the main form.
+	ConnectionFieldSectionPrimary ConnectionFieldSection = "Primary"
+	// ConnectionFieldSectionAdvanced is shown in the advanced section.
+	ConnectionFieldSectionAdvanced ConnectionFieldSection = "Advanced"
+)
+
+// CredentialField identifies how a connection field maps into engine credentials.
+type CredentialField string
+
+const (
+	// CredentialFieldHostname maps to engine credentials Hostname.
+	CredentialFieldHostname CredentialField = "Hostname"
+	// CredentialFieldUsername maps to engine credentials Username.
+	CredentialFieldUsername CredentialField = "Username"
+	// CredentialFieldPassword maps to engine credentials Password.
+	CredentialFieldPassword CredentialField = "Password"
+	// CredentialFieldDatabase maps to engine credentials Database.
+	CredentialFieldDatabase CredentialField = "Database"
+	// CredentialFieldAdvanced maps to engine credentials Advanced records.
+	CredentialFieldAdvanced CredentialField = "Advanced"
+)
+
+// ConnectionField describes one source connection field.
+type ConnectionField struct {
+	Key             string
+	Kind            ConnectionFieldKind
+	Section         ConnectionFieldSection
+	Required        bool
+	LabelKey        string
+	PlaceholderKey  string
+	DefaultValue    string
+	SupportsOptions bool
+	CredentialField CredentialField
+	AdvancedKey     string
+}
+
+// Contract describes the type-level support surface for a source type.
+type Contract struct {
+	Model             Model
+	Surfaces          []Surface
+	BrowsePath        []ObjectKind
+	DefaultObjectKind ObjectKind
+	GraphScopeKind    *ObjectKind
+	ObjectTypes       []ObjectType
+}
+
+// SupportsSurface reports whether the contract exposes a given surface.
+func (c Contract) SupportsSurface(surface Surface) bool {
+	for _, candidate := range c.Surfaces {
+		if candidate == surface {
+			return true
+		}
+	}
+	return false
+}
+
+// ObjectTypeForKind looks up the declared object-type contract by kind.
+func (c Contract) ObjectTypeForKind(kind ObjectKind) (ObjectType, bool) {
+	for _, objectType := range c.ObjectTypes {
+		if objectType.Kind == kind {
+			return objectType, true
+		}
+	}
+	return ObjectType{}, false
+}
+
+// ObjectType describes support for one source object kind.
+type ObjectType struct {
+	Kind          ObjectKind
+	DataShape     DataShape
+	Actions       []Action
+	Views         []View
+	SingularLabel string
+	PluralLabel   string
+}
+
+// TypeSpec describes a connectable source type.
+type TypeSpec struct {
+	ID               string
+	Label            string
+	Connector        string
+	Category         Category
+	ConnectionFields []ConnectionField
+	Contract         Contract
+	IsAWSManaged     bool
+	SSLModes         []ssl.SSLModeInfo
+}
+
+// ConnectionFieldByKey looks up a connection field by key.
+func (s TypeSpec) ConnectionFieldByKey(key string) (ConnectionField, bool) {
+	for _, field := range s.ConnectionFields {
+		if strings.EqualFold(field.Key, key) {
+			return field, true
+		}
+	}
+	return ConnectionField{}, false
+}
+
+// Credentials contains the values needed to open a source session.
+type Credentials struct {
+	ID          *string           `json:"Id,omitempty"`
+	SourceType  string            `json:"SourceType"`
+	Values      map[string]string `json:"Values,omitempty"`
+	AccessToken *string           `json:"AccessToken,omitempty"`
+	IsProfile   bool              `json:"IsProfile,omitempty"`
+}
+
+// CloneValues returns a copy of the stored credential values.
+func (c *Credentials) CloneValues() map[string]string {
+	if c == nil || c.Values == nil {
+		return map[string]string{}
+	}
+
+	values := make(map[string]string, len(c.Values))
+	for key, value := range c.Values {
+		values[key] = value
+	}
+	return values
+}
+
+// ObjectRef identifies an object within a source.
+type ObjectRef struct {
+	Kind ObjectKind
+	Path []string
+}
+
+// Object represents one browseable object in a source.
+type Object struct {
+	Ref         ObjectRef
+	Kind        ObjectKind
+	Name        string
+	Path        []string
+	HasChildren bool
+	Actions     []Action
+	Metadata    []engine.Record
+}
+
+// ObjectColumns pairs an object reference with its resolved columns.
+type ObjectColumns struct {
+	Ref     ObjectRef
+	Columns []engine.Column
+}
+
+// SessionMetadata contains query-builder/editor metadata for an active session.
+type SessionMetadata struct {
+	SourceType      string
+	QueryLanguages  []string
+	TypeDefinitions []engine.TypeDefinition
+	Operators       []string
+	AliasMap        map[string]string
+}
+
+// Profile describes a saved or environment-defined source profile.
+type Profile struct {
+	ID                   string
+	DisplayName          string
+	SourceType           string
+	Values               map[string]string
+	IsEnvironmentDefined bool
+	Source               string
+	SSLConfigured        bool
+}

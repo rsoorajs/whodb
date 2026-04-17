@@ -75,7 +75,7 @@ import {ScratchpadActions} from "../../store/scratchpad";
 import {featureFlags} from "../../config/features";
 import {chooseRandomItems} from "../../utils/functions";
 import {getComponent} from "../../config/component-registry";
-import {useDatabaseTraits} from "../../hooks/useDatabaseTraits";
+import {useSourceContract} from "../../hooks/useSourceContract";
 import {useNavigate} from "react-router-dom";
 import {useChatExamples} from "./examples";
 import {useTranslation} from '@/hooks/use-translation';
@@ -83,6 +83,7 @@ import {addAuthHeader} from "../../utils/auth-headers";
 import {withBasePath} from "../../utils/base-path";
 import {matchesShortcut, SHORTCUTS} from "../../utils/shortcuts";
 import {useContainerWidth} from "../../hooks/use-container-width";
+import {buildSourceScopeRef} from "../../utils/source-refs";
 
 // Chart components from the component registry
 const LineChart = getComponent('line-chart');
@@ -133,7 +134,7 @@ const TablePreview: FC<{ type: string, data: TableData, text: string, containerW
     const navigate = useNavigate();
     const current = useAppSelector(state => state.auth.current);
     const { pages, activePageId } = useAppSelector(state => state.scratchpad);
-    const { supportsScratchpad } = useDatabaseTraits(current?.Type);
+    const { supportsScratchpad } = useSourceContract(current?.Type);
 
     const handleCodeToggle = useCallback(() => {
         setShowSQL(status => !status);
@@ -337,20 +338,12 @@ export const ChatPage: FC = () => {
     const containerWidth = useContainerWidth(scrollContainerRef);
     const schemaFromState = useAppSelector(state => state.database.schema);
     const authProfile = useAppSelector(state => state.auth.current);
-    const { usesDatabaseInsteadOfSchema } = useDatabaseTraits(authProfile?.Type);
+    const { item } = useSourceContract(authProfile?.Type);
     const [executingConfirmedId, setExecutingConfirmedId] = useState<number | null>(null);
     const [showQueryForId, setShowQueryForId] = useState<number | null>(null);
     const [copiedSqlId, setCopiedSqlId] = useState<number | null>(null);
     const messageIdCounter = useRef(0);
-
-    // For databases that use "database" instead of "schema" (MySQL, MariaDB, etc.),
-    // we need to pass the database value where the backend expects "schema"
-    const schema = useMemo(() => {
-        if (usesDatabaseInsteadOfSchema) {
-            return authProfile?.Database || '';
-        }
-        return schemaFromState;
-    }, [authProfile?.Database, schemaFromState, usesDatabaseInsteadOfSchema]);
+    const sourceScopeRef = useMemo(() => buildSourceScopeRef(item, authProfile, schemaFromState), [authProfile, item, schemaFromState]);
     const [currentSearchIndex, setCurrentSearchIndex] = useState<number>();
 
     const dispatch = useAppDispatch();
@@ -473,7 +466,7 @@ export const ChatPage: FC = () => {
                     'Content-Type': 'application/json',
                 }),
                 body: JSON.stringify({
-                    schema,
+                    ref: sourceScopeRef,
                     modelType: modelType.modelType,
                     providerId: modelType.id || '',
                     token: modelType.token || '',
@@ -623,7 +616,7 @@ export const ChatPage: FC = () => {
             setLoading(false);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [chats, currentModel, modelType, query, schema, dispatch, t, scrollContainerRef, getUniqueMessageId, activeSessionId, sessions]);
+    }, [chats, currentModel, modelType, query, sourceScopeRef, dispatch, t, scrollContainerRef, getUniqueMessageId, activeSessionId, sessions]);
 
     // Helper function to generate and update chat title
     const generateChatTitle = useCallback(async (userQuery: string) => {
@@ -835,7 +828,7 @@ export const ChatPage: FC = () => {
             hasFetchedSuggestionsRef.current = true;
             getDatabaseSuggestions({
                 variables: {
-                    schema,
+                    ref: sourceScopeRef,
                 },
             }).then(({ data }) => {
                 if (data?.DatabaseQuerySuggestions && data.DatabaseQuerySuggestions.length > 0) {
@@ -854,7 +847,7 @@ export const ChatPage: FC = () => {
                 setUseDatabaseSuggestions(false);
             });
         }
-    }, [modelAvailable, currentModel, chats.length, schema, getDatabaseSuggestions]);
+    }, [chats.length, currentModel, getDatabaseSuggestions, modelAvailable, sourceScopeRef]);
 
     return (
         <InternalPage routes={[InternalRoutes.Chat]} className="h-full" sidebar={<ChatHistorySidebar />}>

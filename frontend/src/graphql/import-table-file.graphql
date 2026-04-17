@@ -1,5 +1,5 @@
 mutation ImportTableFile($input: ImportFileInput!) {
-  ImportTableFile(input: $input) {
+  ImportTableFile: ImportSourceObjectFile(input: $input) {
     Status
     Message
     Detail
