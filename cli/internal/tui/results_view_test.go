@@ -679,6 +679,9 @@ func TestResultsView_View_ShowsERDiagramShortcut(t *testing.T) {
 	v.totalRows = 1
 
 	view := v.View()
+	if !strings.Contains(view, Keys.Global.SchemaDiff.Help().Key) {
+		t.Fatalf("expected results help to show %q, got: %s", Keys.Global.SchemaDiff.Help().Key, view)
+	}
 	if !strings.Contains(view, Keys.Global.ERDiagram.Help().Key) {
 		t.Fatalf("expected results help to show %q, got: %s", Keys.Global.ERDiagram.Help().Key, view)
 	}

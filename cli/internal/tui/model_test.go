@@ -418,6 +418,7 @@ func (v ViewMode) String() string {
 		"ViewJSON",
 		"ViewCmdLog",
 		"ViewExplain",
+		"ViewDiff",
 		"ViewERD",
 		"ViewAudit",
 		"ViewProfiles",

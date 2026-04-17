@@ -13,8 +13,11 @@ An interactive, production-ready command-line interface for WhoDB with a Claude 
 - **Responsive Data Viewer** - Paginated results with horizontal column scrolling
 - **Column Selection** - Choose which columns are visible in results
 - **Export Capabilities** - Export to CSV and Excel formats
-- **Schema Diff** - Compare schema metadata across environments
+- **Schema Diff** - Compare schema metadata across environments in the CLI and TUI
+- **ERD Graph Output** - Inspect backend graph metadata from the CLI or TUI
+- **Explain Plans** - Run database-native `EXPLAIN` from the CLI or TUI
 - **Backend Query Suggestions** - Shared onboarding suggestions in the CLI and TUI editor
+- **Bookmarks and Profiles** - Shared saved queries and connection profiles across CLI and TUI
 - **Query History** - Persistent history with re-execution
 - **Shell Completion** - Bash/Zsh/Fish install plus PowerShell script generation
 - **Programmatic Mode** - JSON/NDJSON/CSV/plain output for scripting and automation
@@ -322,7 +325,21 @@ Install paths (bash/zsh rc files updated automatically):
 These commands output structured data for scripting, automation, and AI integration.
 
 - Query and list commands such as `query`, `schemas`, `tables`, `columns`, `connections list`, and `history list/search` keep their existing raw JSON array output.
-- Action and analysis commands such as `connections add/remove/test`, `history clear`, `audit`, and `mock-data` return a JSON envelope with `command`, `success`, and `data` when you pass `--format json`.
+- Action and analysis commands such as `connections add/remove/test`, `history clear`, `audit`, `mock-data`, `diff`, `erd`, `bookmarks save/delete`, and `profiles save/delete` return a JSON envelope with `command`, `success`, and `data` when you pass `--format json`.
+
+### explain
+
+Run `EXPLAIN` using the current database plugin's native explain prefix.
+
+```bash
+whodb-cli explain --connection my-postgres "SELECT * FROM users"
+whodb-cli explain --connection my-postgres --format json "SELECT * FROM users"
+```
+
+Flags:
+- `--connection, -c`: Connection name to use
+- `--format, -f`: Output format: `auto`, `table`, `plain`, `json`, `ndjson`, `csv`
+- `--quiet, -q`: Suppress informational messages
 
 ### schemas
 
@@ -419,6 +436,21 @@ Flags:
 - `--format, -f`: Output format: `table` or `json`
 - `--quiet, -q`: Suppress informational messages
 
+### erd
+
+Render the same backend graph metadata used by the TUI ER diagram view.
+
+```bash
+whodb-cli erd --connection my-postgres
+whodb-cli erd --connection my-postgres --schema public --format json
+```
+
+Flags:
+- `--connection, -c`: Connection name to use
+- `--schema, -s`: Schema name
+- `--format, -f`: Output format: `text` or `json`
+- `--quiet, -q`: Suppress informational messages
+
 ### export
 
 Export table data or query results to file.
@@ -463,6 +495,29 @@ Flags:
 - `--limit, -l`: Limit number of results (0 = no limit)
 - `--format, -f`: Output format: `auto`, `table`, `plain`, `json`, `csv`
 - `--quiet, -q`: Suppress informational messages
+
+### bookmarks
+
+Manage the same saved query bookmarks used by the TUI editor.
+
+```bash
+whodb-cli bookmarks list
+whodb-cli bookmarks save recent-users "SELECT * FROM users ORDER BY id DESC"
+whodb-cli bookmarks load recent-users
+whodb-cli bookmarks delete recent-users --format json
+```
+
+### profiles
+
+Manage the same saved connection profiles used by the TUI.
+
+```bash
+whodb-cli profiles list
+whodb-cli profiles save production --connection prod --theme Dracula --page-size 100 --timeout 30
+whodb-cli profiles show production --format json
+whodb-cli profiles delete production --format json
+whodb-cli --profile production
+```
 
 ## MCP Server
 

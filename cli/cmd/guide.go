@@ -97,6 +97,10 @@ SQL EDITOR
   When the editor is empty, backend-generated suggestions appear
   based on the tables in the active schema or database.
 
+  CLI:
+    whodb-cli explain --connection mydb "SELECT * FROM users"
+    whodb-cli explain --connection mydb --format json "SELECT * FROM users"
+
 BROWSING DATA
 ─────────────
   In the Browser view:
@@ -158,6 +162,18 @@ MOCK DATA
   data in the correct order. Blocked tables reuse existing rows instead
   of writing new data.
 
+SCHEMA DIFF
+───────────
+  Ctrl+V      Open schema diff in the TUI
+
+  Compare two saved connections, adjust schema overrides if needed,
+  then browse the shared diff output in a scrollable view.
+
+  CLI:
+    whodb-cli diff --from staging --to prod
+    whodb-cli diff --from staging --to prod --schema public
+    whodb-cli diff --from staging --to prod --format json
+
 AI CHAT
 ───────
   Ctrl+A      Open AI chat
@@ -189,6 +205,10 @@ ER DIAGRAM
   z           Toggle zoom (compact / expanded)
   ↑↓          Scroll
 
+  CLI:
+    whodb-cli erd --connection mydb
+    whodb-cli erd --connection mydb --format json
+
 BOOKMARKS
 ─────────
   Ctrl+B      Open bookmarks
@@ -196,6 +216,12 @@ BOOKMARKS
   Save frequently used queries with a custom name.
   Press s to save the current editor query, Enter to load
   a saved bookmark, d to delete.
+
+  CLI:
+    whodb-cli bookmarks list
+    whodb-cli bookmarks save recent-users "SELECT * FROM users ORDER BY id DESC"
+    whodb-cli bookmarks load recent-users
+    whodb-cli bookmarks delete recent-users
 
 COMMAND LOG
 ───────────
@@ -257,6 +283,11 @@ CONNECTION PROFILES
   To delete:  Select and press d
 
   CLI: whodb-cli --profile production
+  CLI management:
+    whodb-cli profiles list
+    whodb-cli profiles save production --connection prod --theme Dracula --page-size 100 --timeout 30
+    whodb-cli profiles show production
+    whodb-cli profiles delete production
 
   Useful for switching between dev/staging/prod with different
   visual cues (e.g., red theme for production).
@@ -305,7 +336,13 @@ PROGRAMMATIC USAGE
   whodb-cli tables -c mydb --include-columns
   whodb-cli columns -c mydb -t users
   whodb-cli diff --from staging --to prod --format json
+  whodb-cli explain --connection mydb --format json "SELECT * FROM users"
+  whodb-cli erd --connection mydb --format json
   whodb-cli suggestions --connection mydb --format json
+  whodb-cli bookmarks list --format json
+  whodb-cli bookmarks load recent-users --format json
+  whodb-cli profiles list --format json
+  whodb-cli profiles show production --format json
   whodb-cli history --format json
   whodb-cli connections list
   whodb-cli connections test mydb --format json

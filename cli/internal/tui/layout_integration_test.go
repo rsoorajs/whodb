@@ -211,6 +211,9 @@ func TestGlobalHelpBar_ContainsGlobalShortcuts(t *testing.T) {
 	if !strings.Contains(helpBar, "history") {
 		t.Error("Global help bar should contain 'history'")
 	}
+	if !strings.Contains(helpBar, "schema diff") {
+		t.Error("Global help bar should contain 'schema diff'")
+	}
 	if !strings.Contains(helpBar, "layout") {
 		t.Error("Global help bar should contain 'layout'")
 	}

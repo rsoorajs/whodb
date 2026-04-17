@@ -53,6 +53,7 @@ const (
 	ViewJSON
 	ViewCmdLog
 	ViewExplain
+	ViewDiff
 	ViewERD
 	ViewAudit
 	ViewProfiles
@@ -89,6 +90,7 @@ type MainModel struct {
 	jsonViewer     *JSONViewer
 	cmdLogView     *CmdLogView
 	explainView    *ExplainView
+	diffView       *SchemaDiffView
 	erdView        *ERDView
 	auditView      *AuditView
 	profilesView   *ProfilesView
@@ -148,6 +150,7 @@ func NewMainModel() *MainModel {
 	m.jsonViewer = NewJSONViewer(m)
 	m.cmdLogView = NewCmdLogView(m)
 	m.explainView = NewExplainView(m)
+	m.diffView = NewSchemaDiffView(m)
 	m.erdView = NewERDView(m)
 	m.auditView = NewAuditView(m)
 	m.profilesView = NewProfilesView(m)
@@ -170,6 +173,7 @@ func NewMainModel() *MainModel {
 		ViewJSON:       m.jsonViewer,
 		ViewCmdLog:     m.cmdLogView,
 		ViewExplain:    m.explainView,
+		ViewDiff:       m.diffView,
 		ViewERD:        m.erdView,
 		ViewAudit:      m.auditView,
 		ViewProfiles:   m.profilesView,
@@ -299,6 +303,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.jsonViewer, _ = m.jsonViewer.Update(msg)
 		m.cmdLogView, _ = m.cmdLogView.Update(msg)
 		m.explainView, _ = m.explainView.Update(msg)
+		m.diffView, _ = m.diffView.Update(msg)
 		m.erdView, _ = m.erdView.Update(msg)
 		m.auditView, _ = m.auditView.Update(msg)
 		m.profilesView, _ = m.profilesView.Update(msg)
@@ -408,6 +413,15 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
+		case "ctrl+v":
+			// Global shortcut: open schema diff
+			if m.dbManager.GetCurrentConnection() != nil && m.mode != ViewDiff {
+				m.suspendLayout()
+				m.diffView.prepare()
+				m.PushView(ViewDiff)
+				return m, nil
+			}
+
 		case "ctrl+k":
 			// Global shortcut: open ER diagram
 			if m.dbManager.GetCurrentConnection() != nil && m.mode != ViewERD {
@@ -449,6 +463,9 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Let modal views handle Tab themselves (e.g., ERD table cycling)
 			if m.mode == ViewERD {
 				return m.updateERDView(msg)
+			}
+			if m.mode == ViewDiff {
+				return m.updateDiffView(msg)
 			}
 			// Let connection view handle Tab for its own navigation
 			if m.mode == ViewConnection {
@@ -499,6 +516,8 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateRowWriteView(msg)
 	case explainResultMsg:
 		return m.updateExplainView(msg)
+	case schemaDiffResultMsg:
+		return m.updateDiffView(msg)
 	case erdDataLoadedMsg:
 		return m.updateERDView(msg)
 	case auditResultMsg:
@@ -540,6 +559,8 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateCmdLogView(msg)
 	case ViewExplain:
 		return m.updateExplainView(msg)
+	case ViewDiff:
+		return m.updateDiffView(msg)
 	case ViewERD:
 		return m.updateERDView(msg)
 	case ViewAudit:
@@ -566,6 +587,12 @@ func (m *MainModel) updateCmdLogView(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *MainModel) updateExplainView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.explainView, cmd = m.explainView.Update(msg)
+	return m, cmd
+}
+
+func (m *MainModel) updateDiffView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	m.diffView, cmd = m.diffView.Update(msg)
 	return m, cmd
 }
 
@@ -675,6 +702,8 @@ func (m *MainModel) View() string {
 			content = m.cmdLogView.View()
 		case ViewExplain:
 			content = m.explainView.View()
+		case ViewDiff:
+			content = m.diffView.View()
 		case ViewERD:
 			content = m.erdView.View()
 		case ViewAudit:
@@ -728,6 +757,7 @@ func (m *MainModel) isLoading() bool {
 		m.mockDataView.analyzing ||
 		m.mockDataView.generating ||
 		m.rowWriteView.working ||
+		m.diffView.loading ||
 		m.erdView.loading ||
 		m.auditView.loading
 }
@@ -804,6 +834,8 @@ func (m *MainModel) isHelpSafe() bool {
 		return m.connectionView.mode == "list"
 	case ViewProfiles:
 		return !m.profilesView.naming
+	case ViewDiff:
+		return m.diffView.HelpSafe()
 	case ViewMockData:
 		return false
 	case ViewRowWrite:
@@ -831,6 +863,7 @@ func (m *MainModel) renderHelpOverlay() string {
 			Keys.Browser.Editor,
 			Keys.Browser.AIChat,
 			Keys.Browser.History,
+			Keys.Global.SchemaDiff,
 			Keys.Global.ERDiagram,
 			Keys.Global.MockData,
 			Keys.Browser.Filter,
@@ -850,6 +883,7 @@ func (m *MainModel) renderHelpOverlay() string {
 			Keys.Results.EditRow,
 			Keys.Results.DeleteRow,
 			Keys.Results.Export,
+			Keys.Global.SchemaDiff,
 			Keys.Global.ERDiagram,
 			Keys.Global.MockData,
 			Keys.Results.PageSize,
@@ -952,6 +986,27 @@ func (m *MainModel) renderHelpOverlay() string {
 			Keys.Bookmarks.Delete,
 			Keys.Global.Back,
 		))
+
+	case ViewDiff:
+		b.WriteString(styles.RenderKey("Schema Diff\n\n"))
+		if m.diffView.HelpSafe() {
+			b.WriteString(RenderBindingHelp(
+				Keys.SchemaDiff.Recompare,
+				Keys.SchemaDiff.Edit,
+				Keys.SchemaDiff.ScrollUp,
+				Keys.SchemaDiff.ScrollDown,
+				Keys.Global.Back,
+			))
+		} else {
+			b.WriteString(RenderBindingHelp(
+				Keys.SchemaDiff.PrevField,
+				Keys.SchemaDiff.NextField,
+				Keys.SchemaDiff.OptionLeft,
+				Keys.SchemaDiff.OptionRight,
+				Keys.SchemaDiff.Compare,
+				Keys.Global.Back,
+			))
+		}
 
 	case ViewERD:
 		b.WriteString(styles.RenderKey("ER Diagram\n\n"))
@@ -1090,6 +1145,7 @@ func (m *MainModel) renderGlobalHelpBar() string {
 		Keys.Browser.AIChat,
 		Keys.Global.Profiles,
 		Keys.Global.CmdLog,
+		Keys.Global.SchemaDiff,
 		Keys.Global.ERDiagram,
 		Keys.Global.Audit,
 		Keys.Global.Import,

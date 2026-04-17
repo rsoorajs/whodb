@@ -27,6 +27,7 @@ import (
 	"github.com/clidey/whodb/cli/internal/config"
 	dbmgr "github.com/clidey/whodb/cli/internal/database"
 	"github.com/clidey/whodb/cli/internal/history"
+	"github.com/clidey/whodb/cli/internal/schemadiff"
 	"github.com/spf13/cobra"
 )
 
@@ -857,7 +858,7 @@ func TestDiffCmd_JSONEnvelope(t *testing.T) {
 		t.Fatalf("Diff command failed: %v", err)
 	}
 
-	envelope := decodeJSONEnvelope[schemaDiffOutput](t, outBuf)
+	envelope := decodeJSONEnvelope[schemadiff.Result](t, outBuf)
 	if envelope.Command != "diff" {
 		t.Errorf("Expected command diff, got %q", envelope.Command)
 	}
@@ -881,6 +882,15 @@ func TestDiffCmd_JSONEnvelope(t *testing.T) {
 	}
 	if envelope.Data.Summary.ChangedColumns != 1 {
 		t.Errorf("Expected 1 changed column, got %d", envelope.Data.Summary.ChangedColumns)
+	}
+	if envelope.Data.Summary.AddedRelationships != 0 {
+		t.Errorf("Expected 0 added relationships, got %d", envelope.Data.Summary.AddedRelationships)
+	}
+	if envelope.Data.Summary.RemovedRelationships != 0 {
+		t.Errorf("Expected 0 removed relationships, got %d", envelope.Data.Summary.RemovedRelationships)
+	}
+	if envelope.Data.Summary.ChangedRelationships != 0 {
+		t.Errorf("Expected 0 changed relationships, got %d", envelope.Data.Summary.ChangedRelationships)
 	}
 	if len(envelope.Data.StorageUnits) != 3 {
 		t.Fatalf("Expected 3 storage unit diffs, got %d", len(envelope.Data.StorageUnits))
@@ -1360,6 +1370,212 @@ func TestMockDataCmd_Analyze_JSONEnvelope(t *testing.T) {
 	}
 }
 
+func TestExplainCmd_Exists(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	found := false
+	for _, cmd := range rootCmd.Commands() {
+		if cmd.Use == "explain [SQL]" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("Expected 'explain' command to be registered")
+	}
+}
+
+func TestExplainCmd_JSON(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	dbPath := createSQLiteTestDatabase(t,
+		"explain-test.db",
+		"CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)",
+		"INSERT INTO users (name) VALUES ('alice')",
+	)
+	saveTestConnection(t, config.Connection{
+		Name:     "explain-json",
+		Type:     "Sqlite3",
+		Host:     dbPath,
+		Database: dbPath,
+	})
+
+	explainConnection = "explain-json"
+	explainFormat = "json"
+	explainQuiet = false
+
+	outBuf, errBuf := setCommandBuffers(t, explainCmd)
+
+	if err := explainCmd.RunE(explainCmd, []string{"SELECT * FROM users"}); err != nil {
+		t.Fatalf("Explain command failed: %v", err)
+	}
+
+	var rows []map[string]any
+	if err := json.Unmarshal(outBuf.Bytes(), &rows); err != nil {
+		t.Fatalf("Failed to decode explain JSON: %v", err)
+	}
+	if len(rows) == 0 {
+		t.Fatal("Expected explain output rows")
+	}
+	if errBuf.Len() != 0 {
+		t.Errorf("Expected no stderr output, got %q", errBuf.String())
+	}
+}
+
+func TestBookmarksCmd_SaveLoadDelete(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	bookmarkFormat = "json"
+	bookmarkQuiet = false
+
+	saveOut, saveErr := setCommandBuffers(t, bookmarksSaveCmd)
+	if err := bookmarksSaveCmd.RunE(bookmarksSaveCmd, []string{"users", "SELECT * FROM users"}); err != nil {
+		t.Fatalf("bookmarks save failed: %v", err)
+	}
+	saveEnvelope := decodeJSONEnvelope[config.SavedQuery](t, saveOut)
+	if saveEnvelope.Command != "bookmarks.save" {
+		t.Fatalf("expected bookmarks.save command, got %q", saveEnvelope.Command)
+	}
+	if saveEnvelope.Data.Name != "users" {
+		t.Fatalf("expected bookmark name users, got %q", saveEnvelope.Data.Name)
+	}
+	if saveErr.Len() != 0 {
+		t.Fatalf("expected no stderr from save, got %q", saveErr.String())
+	}
+
+	bookmarkFormat = "plain"
+	loadOut, _ := setCommandBuffers(t, bookmarksLoadCmd)
+	if err := bookmarksLoadCmd.RunE(bookmarksLoadCmd, []string{"users"}); err != nil {
+		t.Fatalf("bookmarks load failed: %v", err)
+	}
+	if strings.TrimSpace(loadOut.String()) != "SELECT * FROM users" {
+		t.Fatalf("unexpected loaded bookmark query %q", loadOut.String())
+	}
+
+	bookmarkFormat = "json"
+	deleteOut, deleteErr := setCommandBuffers(t, bookmarksDeleteCmd)
+	if err := bookmarksDeleteCmd.RunE(bookmarksDeleteCmd, []string{"users"}); err != nil {
+		t.Fatalf("bookmarks delete failed: %v", err)
+	}
+	deleteEnvelope := decodeJSONEnvelope[struct {
+		Name string `json:"name"`
+	}](t, deleteOut)
+	if deleteEnvelope.Command != "bookmarks.delete" {
+		t.Fatalf("expected bookmarks.delete command, got %q", deleteEnvelope.Command)
+	}
+	if deleteEnvelope.Data.Name != "users" {
+		t.Fatalf("expected deleted bookmark users, got %q", deleteEnvelope.Data.Name)
+	}
+	if deleteErr.Len() != 0 {
+		t.Fatalf("expected no stderr from delete, got %q", deleteErr.String())
+	}
+}
+
+func TestProfilesCmd_SaveShowDelete(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	saveTestConnection(t, config.Connection{
+		Name:     "profile-conn",
+		Type:     "Sqlite3",
+		Host:     "/tmp/profile.db",
+		Database: "/tmp/profile.db",
+	})
+
+	profilesFormat = "json"
+	profilesQuiet = false
+	profilesSaveConn = "profile-conn"
+	profilesSaveTheme = "Nord"
+	profilesSavePageSize = 50
+	profilesSaveTimeout = 15
+
+	saveOut, saveErr := setCommandBuffers(t, profilesSaveCmd)
+	if err := profilesSaveCmd.RunE(profilesSaveCmd, []string{"prod"}); err != nil {
+		t.Fatalf("profiles save failed: %v", err)
+	}
+	saveEnvelope := decodeJSONEnvelope[config.Profile](t, saveOut)
+	if saveEnvelope.Command != "profiles.save" {
+		t.Fatalf("expected profiles.save command, got %q", saveEnvelope.Command)
+	}
+	if saveEnvelope.Data.Connection != "profile-conn" {
+		t.Fatalf("expected profile connection profile-conn, got %q", saveEnvelope.Data.Connection)
+	}
+	if saveErr.Len() != 0 {
+		t.Fatalf("expected no stderr from profiles save, got %q", saveErr.String())
+	}
+
+	showOut, _ := setCommandBuffers(t, profilesShowCmd)
+	if err := profilesShowCmd.RunE(profilesShowCmd, []string{"prod"}); err != nil {
+		t.Fatalf("profiles show failed: %v", err)
+	}
+	var shown config.Profile
+	if err := json.Unmarshal(showOut.Bytes(), &shown); err != nil {
+		t.Fatalf("failed to decode profile JSON: %v", err)
+	}
+	if shown.Name != "prod" {
+		t.Fatalf("expected shown profile prod, got %q", shown.Name)
+	}
+
+	deleteOut, deleteErr := setCommandBuffers(t, profilesDeleteCmd)
+	if err := profilesDeleteCmd.RunE(profilesDeleteCmd, []string{"prod"}); err != nil {
+		t.Fatalf("profiles delete failed: %v", err)
+	}
+	deleteEnvelope := decodeJSONEnvelope[struct {
+		Name string `json:"name"`
+	}](t, deleteOut)
+	if deleteEnvelope.Command != "profiles.delete" {
+		t.Fatalf("expected profiles.delete command, got %q", deleteEnvelope.Command)
+	}
+	if deleteEnvelope.Data.Name != "prod" {
+		t.Fatalf("expected deleted profile prod, got %q", deleteEnvelope.Data.Name)
+	}
+	if deleteErr.Len() != 0 {
+		t.Fatalf("expected no stderr from profiles delete, got %q", deleteErr.String())
+	}
+}
+
+func TestERDCmd_JSONEnvelope(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	dbPath := createSQLiteTestDatabase(t,
+		"erd-test.db",
+		"PRAGMA foreign_keys = ON",
+		"CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)",
+		"CREATE TABLE orders (id INTEGER PRIMARY KEY, user_id INTEGER, FOREIGN KEY(user_id) REFERENCES users(id))",
+	)
+	saveTestConnection(t, config.Connection{
+		Name:     "erd-json",
+		Type:     "Sqlite3",
+		Host:     dbPath,
+		Database: dbPath,
+	})
+
+	erdConnection = "erd-json"
+	erdSchema = ""
+	erdFormat = "json"
+	erdQuiet = false
+
+	outBuf, errBuf := setCommandBuffers(t, erdCmd)
+	if err := erdCmd.RunE(erdCmd, []string{}); err != nil {
+		t.Fatalf("ERD command failed: %v", err)
+	}
+
+	envelope := decodeJSONEnvelope[erdCommandOutput](t, outBuf)
+	if envelope.Command != "erd" {
+		t.Fatalf("expected erd command envelope, got %q", envelope.Command)
+	}
+	if len(envelope.Data.StorageUnits) == 0 {
+		t.Fatal("expected ERD output to contain storage units")
+	}
+	if errBuf.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", errBuf.String())
+	}
+}
+
 // TestAllNewCommandsRegistered verifies all new commands are registered on rootCmd
 func TestAllNewCommandsRegistered(t *testing.T) {
 	cleanup := setupTestEnv(t)
@@ -1371,13 +1587,17 @@ func TestAllNewCommandsRegistered(t *testing.T) {
 		"columns",
 		"connections",
 		"diff",
+		"erd",
+		"explain",
 		"export",
 		"history",
+		"bookmarks",
+		"profiles",
 	}
 
 	registeredCommands := make(map[string]bool)
 	for _, cmd := range rootCmd.Commands() {
-		registeredCommands[cmd.Use] = true
+		registeredCommands[cmd.Name()] = true
 	}
 
 	for _, expected := range expectedCommands {

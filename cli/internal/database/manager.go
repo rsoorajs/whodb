@@ -1025,6 +1025,32 @@ func (m *Manager) GetColumns(schema, storageUnit string) ([]engine.Column, error
 	return columns, nil
 }
 
+// GetColumnConstraints returns database-specific column constraints for a
+// storage unit, such as uniqueness, default values, and check values.
+func (m *Manager) GetColumnConstraints(schema, storageUnit string) (map[string]map[string]any, error) {
+	if m.currentConnection == nil {
+		return nil, fmt.Errorf("not connected to any database")
+	}
+
+	dbType := engine.DatabaseType(m.currentConnection.Type)
+	plugin := m.engine.Choose(dbType)
+	if plugin == nil {
+		return nil, fmt.Errorf("plugin not found")
+	}
+
+	credentials := m.buildCredentials(m.currentConnection)
+	pluginConfig := engine.NewPluginConfig(credentials)
+
+	start := time.Now()
+	constraints, err := plugin.GetColumnConstraints(pluginConfig, schema, storageUnit)
+	m.logOperation(fmt.Sprintf("GetColumnConstraints(%s.%s)", schema, storageUnit), start, len(constraints), err)
+	if err != nil {
+		return nil, err
+	}
+
+	return constraints, nil
+}
+
 func (m *Manager) ExportToCSV(schema, storageUnit, filename, delimiter string) error {
 	start := time.Now()
 	defer func() {

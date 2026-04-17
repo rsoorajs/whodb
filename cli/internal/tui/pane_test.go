@@ -34,7 +34,7 @@ func TestPaneRegistryPopulated(t *testing.T) {
 		ViewConnection, ViewBrowser, ViewEditor, ViewResults,
 		ViewHistory, ViewExport, ViewWhere, ViewColumns,
 		ViewChat, ViewSchema, ViewImport, ViewMockData, ViewBookmarks, ViewJSON,
-		ViewRowWrite, ViewCmdLog, ViewExplain, ViewERD, ViewAudit, ViewProfiles,
+		ViewRowWrite, ViewCmdLog, ViewExplain, ViewDiff, ViewERD, ViewAudit, ViewProfiles,
 	}
 
 	if len(m.panes) != len(expectedModes) {

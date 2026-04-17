@@ -40,6 +40,7 @@ var (
 	_ Pane = (*JSONViewer)(nil)
 	_ Pane = (*CmdLogView)(nil)
 	_ Pane = (*ExplainView)(nil)
+	_ Pane = (*SchemaDiffView)(nil)
 	_ Pane = (*ERDView)(nil)
 	_ Pane = (*AuditView)(nil)
 	_ Pane = (*ProfilesView)(nil)
@@ -307,6 +308,27 @@ func (v *ExplainView) OnFocus()                        {}
 func (v *ExplainView) OnBlur()                         {}
 func (v *ExplainView) SetCompact(bool)                 {}
 func (v *ExplainView) HelpBindings() []key.Binding     { return nil }
+
+// ---------------------------------------------------------------------------
+// SchemaDiffView
+// ---------------------------------------------------------------------------
+
+func (v *SchemaDiffView) UpdatePane(msg tea.Msg) tea.Cmd { _, cmd := v.Update(msg); return cmd }
+func (v *SchemaDiffView) SetDimensions(width, height int) {
+	v.width = width
+	v.height = height
+	if v.result != nil && !v.editing {
+		v.rebuildViewport()
+	}
+}
+func (v *SchemaDiffView) Focusable() bool { return true }
+func (v *SchemaDiffView) OnFocus()        { v.syncFocus() }
+func (v *SchemaDiffView) OnBlur() {
+	v.fromSchemaInput.Blur()
+	v.toSchemaInput.Blur()
+}
+func (v *SchemaDiffView) SetCompact(bool)             {}
+func (v *SchemaDiffView) HelpBindings() []key.Binding { return nil }
 
 // ---------------------------------------------------------------------------
 // AuditView

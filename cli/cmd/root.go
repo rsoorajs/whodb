@@ -45,19 +45,19 @@ Features:
   - Multi-database support (PostgreSQL, MySQL, SQLite, MongoDB, Redis, ClickHouse, etc.)
   - SQL editor with context-aware autocomplete, formatting (Ctrl+F), multi-tab buffers
   - External editor support (Ctrl+O opens $EDITOR)
-  - ER diagram visualization (Ctrl+K)
-  - EXPLAIN query plan viewer (Ctrl+X)
+  - ER diagram visualization (Ctrl+K) plus scriptable graph output (erd)
+  - EXPLAIN query plan viewer (Ctrl+X) plus CLI explain output (explain)
   - Data import/export (CSV, Excel) — Ctrl+G for import wizard
   - FK-aware mock data generation (mock-data) with dependency analysis
-  - Schema diff between saved connections (diff)
+  - Schema diff between saved connections in the TUI (Ctrl+V) and CLI (diff)
   - Backend-generated query suggestions (suggestions + editor empty state)
   - AI chat with streaming responses (OpenAI, Anthropic, Ollama, LM Studio)
   - SSH tunnel support for remote databases
   - SSL mode + certificate file support in commands and the TUI
   - Docker container auto-detection
-  - Query bookmarks (Ctrl+B), history (Ctrl+H), command log (Ctrl+D)
+  - Query bookmarks in the TUI (Ctrl+B) and CLI (bookmarks), history (Ctrl+H), command log (Ctrl+D)
   - Nested WHERE builder with AND/OR grouping
-  - Connection profiles (Ctrl+P) — bundle connection + theme + settings
+  - Connection profiles in the TUI (Ctrl+P) and CLI (profiles) — bundle connection + theme + settings
   - Data quality audit with configurable thresholds (Ctrl+U)
   - Read-only mode (Ctrl+Y)
   - JSON cell viewer, fish-style history suggestions

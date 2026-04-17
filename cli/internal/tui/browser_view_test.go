@@ -433,6 +433,9 @@ func TestBrowserView_View_ShowsERDiagramShortcut(t *testing.T) {
 	v.filteredTables = v.tables
 
 	view := v.View()
+	if !strings.Contains(view, Keys.Global.SchemaDiff.Help().Key) {
+		t.Fatalf("expected browser help to show %q, got: %s", Keys.Global.SchemaDiff.Help().Key, view)
+	}
 	if !strings.Contains(view, Keys.Global.ERDiagram.Help().Key) {
 		t.Fatalf("expected browser help to show %q, got: %s", Keys.Global.ERDiagram.Help().Key, view)
 	}
