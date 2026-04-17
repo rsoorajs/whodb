@@ -321,6 +321,18 @@ function migrateLanguageCodesV5(): void {
 }
 
 /**
+ * Remove the orphaned persisted database metadata state now that metadata is
+ * owned by Apollo session state instead of Redux persistence.
+ */
+function clearDatabaseMetadataStateV6(): void {
+  try {
+    localStorage.removeItem('persist:databaseMetadata');
+  } catch (error) {
+    console.error('Error clearing database metadata state:', error);
+  }
+}
+
+/**
  * Run all necessary migrations
  */
 export function runMigrations(): void {
@@ -345,6 +357,11 @@ export function runMigrations(): void {
   if (currentVersion < 5) {
     migrateLanguageCodesV5();
     setMigrationVersion(5);
+  }
+
+  if (currentVersion < 6) {
+    clearDatabaseMetadataStateV6();
+    setMigrationVersion(6);
   }
 
   // Always ensure AI models state is valid

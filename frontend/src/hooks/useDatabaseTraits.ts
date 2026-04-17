@@ -16,13 +16,12 @@
 
 import { useMemo } from "react";
 import { IDatabaseDropdownItem } from "../config/database-types";
-import { useAppSelector } from "../store/hooks";
-import { BackendCapabilities } from "../store/database-metadata";
 import { resolveDatabaseFeatureFlags, type DatabaseFeatureFlags } from "../utils/database-features";
 import {
     getDatabaseStorageUnitLabelForDatabaseType,
     isNoSQLDatabaseType,
 } from "../utils/functions";
+import { DatabaseMetadataCapabilities, useDatabaseMetadataState } from "../utils/database-metadata-cache";
 import { useDatabaseTypeDropdownItem } from "./useDatabaseCatalog";
 
 /**
@@ -46,8 +45,8 @@ export interface DatabaseTraits extends DatabaseFeatureFlags {
 function resolveLiveCapabilities(
     metadataDatabaseType: string | null,
     pluginType: string | undefined,
-    capabilities: BackendCapabilities | null
-): BackendCapabilities | null {
+    capabilities: DatabaseMetadataCapabilities | null
+): DatabaseMetadataCapabilities | null {
     if (!pluginType || metadataDatabaseType !== pluginType) {
         return null;
     }
@@ -67,15 +66,14 @@ function resolveLiveCapabilities(
  */
 export function useDatabaseTraits(databaseType: string | undefined): DatabaseTraits {
     const { item, loading } = useDatabaseTypeDropdownItem(databaseType);
-    const metadataDatabaseType = useAppSelector(state => state.databaseMetadata.databaseType);
-    const metadataCapabilities = useAppSelector(state => state.databaseMetadata.capabilities);
+    const metadata = useDatabaseMetadataState();
 
     return useMemo(() => {
         const pluginType = item?.pluginType ?? databaseType;
         const liveCapabilities = resolveLiveCapabilities(
-            metadataDatabaseType,
+            metadata.databaseType,
             pluginType,
-            metadataCapabilities
+            metadata.capabilities
         );
         const featureFlags = resolveDatabaseFeatureFlags(item, liveCapabilities);
 
@@ -88,5 +86,5 @@ export function useDatabaseTraits(databaseType: string | undefined): DatabaseTra
             singularStorageUnitLabel: getDatabaseStorageUnitLabelForDatabaseType(databaseType, pluginType, true),
             ...featureFlags,
         };
-    }, [databaseType, item, loading, metadataCapabilities, metadataDatabaseType]);
+    }, [databaseType, item, loading, metadata.capabilities, metadata.databaseType]);
 }

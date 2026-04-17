@@ -15,7 +15,7 @@
  */
 
 import { DatabaseType } from '@graphql';
-import { reduxStore } from '../store';
+import { getDatabaseMetadataState } from './database-metadata-cache';
 
 /**
  * Get valid operators for a database type from the backend-driven Redux store.
@@ -24,7 +24,7 @@ import { reduxStore } from '../store';
  * @returns Array of valid operators for the database
  */
 export function getDatabaseOperators(databaseType: DatabaseType | string): string[] {
-    const metadataState = reduxStore.getState().databaseMetadata;
+    const metadataState = getDatabaseMetadataState();
 
     if (
         metadataState.databaseType === databaseType &&

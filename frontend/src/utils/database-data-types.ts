@@ -16,7 +16,7 @@
 
 import { DatabaseType } from '@graphql';
 import { TypeDefinition } from '../config/database-types';
-import { reduxStore } from '../store';
+import { getDatabaseMetadataState } from './database-metadata-cache';
 
 /**
  * Get type definitions for a database from the backend-driven Redux store.
@@ -25,7 +25,7 @@ import { reduxStore } from '../store';
  * @returns Array of TypeDefinition objects for the database
  */
 export function getDatabaseTypeDefinitions(databaseType: DatabaseType | string): TypeDefinition[] {
-    const metadataState = reduxStore.getState().databaseMetadata;
+    const metadataState = getDatabaseMetadataState();
 
     if (
         metadataState.databaseType === databaseType &&
@@ -58,7 +58,7 @@ export function getDatabaseTypeDefinitions(databaseType: DatabaseType | string):
  * @returns Record mapping aliases to canonical type names
  */
 export function getDatabaseAliasMap(databaseType: DatabaseType | string): Record<string, string> {
-    const metadataState = reduxStore.getState().databaseMetadata;
+    const metadataState = getDatabaseMetadataState();
 
     if (
         metadataState.databaseType === databaseType &&

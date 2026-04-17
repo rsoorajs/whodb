@@ -35,6 +35,7 @@ import {withBasePath} from '../utils/base-path';
 import {isAwsHostname} from '../utils/cloud-connection-prefill';
 import {getTranslation, loadTranslationsSync} from '../utils/i18n';
 import {type SupportedLanguage, DEFAULT_LANGUAGE} from '../utils/languages';
+import {clearDatabaseMetadata} from '../utils/database-metadata-cache';
 
 // Always use an application-relative URI so that:
 // - Desktop/Wails uses the embedded router handler
@@ -210,4 +211,5 @@ export const graphqlClient = new ApolloClient({
  */
 export async function clearGraphqlStore(): Promise<void> {
     await graphqlClient.clearStore();
+    clearDatabaseMetadata();
 }

@@ -15,7 +15,7 @@
  */
 
 import type { IDatabaseDropdownItem } from '../config/database-types';
-import type { BackendCapabilities } from '../store/database-metadata';
+import type { DatabaseMetadataCapabilities } from './database-metadata-cache';
 
 /**
  * Catalog-backed database feature flags resolved for the current UI.
@@ -43,7 +43,7 @@ export interface DatabaseFeatureFlags {
  */
 export function resolveDatabaseFeatureFlags(
     item: IDatabaseDropdownItem | undefined,
-    capabilities: BackendCapabilities | null
+    capabilities: DatabaseMetadataCapabilities | null
 ): DatabaseFeatureFlags {
     return {
         supportsScratchpad: capabilities?.supportsScratchpad ?? item?.supportsScratchpad ?? false,

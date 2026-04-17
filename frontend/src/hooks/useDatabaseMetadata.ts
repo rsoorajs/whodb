@@ -17,11 +17,14 @@
 import { useLazyQuery } from '@apollo/client/react';
 import { useEffect, useCallback } from 'react';
 import { GetDatabaseMetadataDocument } from '@graphql';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { useAppSelector } from '../store/hooks';
 import {
-    DatabaseMetadataActions,
-    shouldRefreshMetadata,
-} from '../store/database-metadata';
+    clearDatabaseMetadata,
+    setDatabaseMetadata,
+    setDatabaseMetadataLoading,
+    shouldRefreshDatabaseMetadata,
+    useDatabaseMetadataState,
+} from '../utils/database-metadata-cache';
 
 /**
  * Hook that fetches and caches database metadata from the backend.
@@ -35,9 +38,8 @@ import {
  * @returns Object with metadata state and refresh function
  */
 export const useDatabaseMetadata = () => {
-    const dispatch = useAppDispatch();
     const auth = useAppSelector(state => state.auth);
-    const metadata = useAppSelector(state => state.databaseMetadata);
+    const metadata = useDatabaseMetadataState();
     const currentDbType = auth.current?.Type;
 
     const [fetchMetadata, { data, error, loading }] = useLazyQuery(GetDatabaseMetadataDocument, {
@@ -45,62 +47,51 @@ export const useDatabaseMetadata = () => {
     });
 
     useEffect(() => {
-        if (data?.DatabaseMetadata && currentDbType) {
-            dispatch(DatabaseMetadataActions.setMetadata({
-                ...data.DatabaseMetadata,
-                databaseType: currentDbType,
-            }));
+        if (data?.DatabaseMetadata) {
+            setDatabaseMetadata(data.DatabaseMetadata);
         }
-    }, [currentDbType, data?.DatabaseMetadata, dispatch]);
+    }, [data?.DatabaseMetadata]);
 
     useEffect(() => {
         if (error) {
             console.error('Failed to fetch database metadata:', error);
-            dispatch(DatabaseMetadataActions.setLoading(false));
+            setDatabaseMetadataLoading(false);
         }
-    }, [dispatch, error]);
+    }, [error]);
 
-    // Fetch metadata when database type changes or cache expires
+    // Fetch metadata when database type changes or the session cache expires.
     useEffect(() => {
         if (auth.status === 'logged-in' && currentDbType) {
-            if (shouldRefreshMetadata(metadata, currentDbType)) {
-                dispatch(DatabaseMetadataActions.setLoading(true));
+            if (shouldRefreshDatabaseMetadata(currentDbType)) {
+                setDatabaseMetadataLoading(true);
                 void fetchMetadata();
             }
         }
-    }, [auth.status, currentDbType, dispatch, fetchMetadata, metadata]);
+    }, [auth.status, currentDbType, fetchMetadata, metadata.databaseType, metadata.lastFetched]);
 
-    // Clear metadata on logout
+    // Clear metadata on logout.
     useEffect(() => {
         if (auth.status === 'unauthorized') {
-            dispatch(DatabaseMetadataActions.clearMetadata());
+            clearDatabaseMetadata();
         }
-    }, [auth.status, dispatch]);
+    }, [auth.status]);
 
-    // Manual refresh function
+    // Manual refresh function.
     const refresh = useCallback(() => {
         if (auth.status === 'logged-in') {
-            dispatch(DatabaseMetadataActions.setLoading(true));
+            setDatabaseMetadataLoading(true);
             void fetchMetadata();
         }
-    }, [auth.status, dispatch, fetchMetadata]);
+    }, [auth.status, fetchMetadata]);
 
     return {
-        /** Type definitions for the current database */
         typeDefinitions: metadata.typeDefinitions,
-        /** Valid operators for the current database */
         operators: metadata.operators,
-        /** Alias map for the current database */
         aliasMap: metadata.aliasMap,
-        /** Capabilities declared by the backend plugin */
         capabilities: metadata.capabilities,
-        /** Current database type */
         databaseType: metadata.databaseType,
-        /** Whether metadata is being fetched */
         loading: loading || metadata.loading,
-        /** Whether metadata has been fetched */
         hasFetched: metadata.lastFetched !== null,
-        /** Manually refresh metadata */
         refresh,
     };
 };

@@ -129,8 +129,8 @@ const KeyboardShortcutsHint: FC = () => {
 export const InternalPage: FC<IInternalPageProps> = (props) => {
     const current = useAppSelector(state => state.auth.current);
 
-    // Fetch database metadata when logged in - this populates Redux store
-    // for utilities like getDatabaseOperators and getDatabaseTypeDefinitions
+    // Fetch database metadata when logged in so Apollo session state is ready
+    // for utilities like getDatabaseOperators and getDatabaseTypeDefinitions.
     useDatabaseMetadata();
 
     return (
