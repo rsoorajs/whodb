@@ -709,20 +709,8 @@ func (v *ConnectionView) renderForm() string {
 		body.WriteString("  Database Type:")
 	}
 	body.WriteString("\n  ")
-	for i, dbType := range v.dbTypes {
-		if i > 0 {
-			body.WriteString("  ")
-		}
-		if i == v.dbTypeIndex {
-			if v.focusIndex == focusDBType {
-				body.WriteString(styles.ActiveListItemStyle.Render(dbType))
-			} else {
-				body.WriteString(styles.RenderKey(dbType))
-			}
-		} else {
-			body.WriteString(styles.RenderMuted(dbType))
-		}
-	}
+	dbTypeOptions, _ := renderWrappedSelectableOptions(v.dbTypes, v.dbTypeIndex, v.focusIndex == focusDBType, v.selectorWrapWidth())
+	body.WriteString(dbTypeOptions)
 	body.WriteString("\n\n")
 
 	fieldLabels := map[int]string{
@@ -799,20 +787,8 @@ func (v *ConnectionView) renderForm() string {
 			body.WriteString("  SSL Mode:")
 		}
 		body.WriteString("\n  ")
-		for i, mode := range sslModes {
-			if i > 0 {
-				body.WriteString("  ")
-			}
-			if i == v.sslModeIndex {
-				if v.focusIndex == focusSSLMode {
-					body.WriteString(styles.ActiveListItemStyle.Render(mode))
-				} else {
-					body.WriteString(styles.RenderKey(mode))
-				}
-			} else {
-				body.WriteString(styles.RenderMuted(mode))
-			}
-		}
+		sslModeOptions, _ := renderWrappedSelectableOptions(sslModes, v.sslModeIndex, v.focusIndex == focusSSLMode, v.selectorWrapWidth())
+		body.WriteString(sslModeOptions)
 		body.WriteString("\n\n")
 
 		if v.sslFieldsVisible() {
@@ -922,6 +898,96 @@ func (v *ConnectionView) renderForm() string {
 	return out.String()
 }
 
+func renderWrappedSelectableOptions(options []string, selectedIndex int, focused bool, maxWidth int) (string, int) {
+	if len(options) == 0 {
+		return "", 0
+	}
+
+	if maxWidth <= 0 {
+		maxWidth = 80
+	}
+
+	lines := make([]string, 0, len(options))
+	var currentLine string
+	currentWidth := 0
+
+	for i, option := range options {
+		part := renderSelectableOption(option, i == selectedIndex, focused)
+		partWidth := lipgloss.Width(part)
+		separatorWidth := 0
+		if currentLine != "" {
+			separatorWidth = 2
+		}
+
+		if currentLine != "" && currentWidth+separatorWidth+partWidth > maxWidth {
+			lines = append(lines, currentLine)
+			currentLine = part
+			currentWidth = partWidth
+			continue
+		}
+
+		if currentLine != "" {
+			currentLine += "  "
+			currentWidth += separatorWidth
+		}
+		currentLine += part
+		currentWidth += partWidth
+	}
+
+	if currentLine != "" {
+		lines = append(lines, currentLine)
+	}
+
+	return strings.Join(lines, "\n  "), len(lines)
+}
+
+func renderSelectableOption(option string, selected bool, focused bool) string {
+	if selected {
+		if focused {
+			return styles.ActiveListItemStyle.Render(option)
+		}
+		return styles.RenderKey(option)
+	}
+	return styles.RenderMuted(option)
+}
+
+func (v *ConnectionView) selectorWrapWidth() int {
+	width := v.width
+	if width <= 0 {
+		width = v.parent.width
+	}
+	if width <= 0 {
+		width = 80
+	}
+
+	wrapWidth := width - 8
+	if wrapWidth < 20 {
+		return 20
+	}
+	return wrapWidth
+}
+
+func (v *ConnectionView) dbTypeSectionHeight() int {
+	_, lineCount := renderWrappedSelectableOptions(v.dbTypes, v.dbTypeIndex, v.focusIndex == focusDBType, v.selectorWrapWidth())
+	if lineCount == 0 {
+		lineCount = 1
+	}
+	return lineCount + 2
+}
+
+func (v *ConnectionView) sslModeSectionHeight() int {
+	sslModes := v.sslModes()
+	if len(sslModes) == 0 {
+		return 0
+	}
+
+	_, lineCount := renderWrappedSelectableOptions(sslModes, v.sslModeIndex, v.focusIndex == focusSSLMode, v.selectorWrapWidth())
+	if lineCount == 0 {
+		lineCount = 1
+	}
+	return lineCount + 2
+}
+
 func (v *ConnectionView) refreshList() {
 	var items []list.Item
 	for _, info := range v.parent.dbManager.ListConnectionsWithSource() {
@@ -1022,7 +1088,7 @@ func (v *ConnectionView) scrollToFocused() {
 		return
 	}
 
-	line += 3
+	line += v.dbTypeSectionHeight()
 	for _, idx := range v.visibleFields {
 		if idx == v.focusIndex {
 			break
@@ -1050,7 +1116,7 @@ func (v *ConnectionView) scrollToFocused() {
 		if v.focusIndex == focusSSLMode {
 			// Current line already points at the SSL mode section.
 		} else {
-			line += 3
+			line += v.sslModeSectionHeight()
 			if v.sslFieldsVisible() {
 				for _, idx := range []int{fieldSSLCAFile, fieldSSLCertFile, fieldSSLKeyFile, fieldSSLServer} {
 					if idx == v.focusIndex {

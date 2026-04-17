@@ -14,17 +14,33 @@
  * limitations under the License.
  */
 
-package main
+// Package app runs the shared WhoDB CLI runtime for both CE and EE entry
+// points.
+package app
 
 import (
-	cliapp "github.com/clidey/whodb/cli/app"
-	"github.com/clidey/whodb/cli/internal/bootstrap"
+	"github.com/clidey/whodb/cli/cmd"
+	"github.com/clidey/whodb/cli/internal/baml"
+	"github.com/clidey/whodb/cli/pkg/crash"
 	"github.com/clidey/whodb/cli/pkg/identity"
 )
 
-func main() {
-	cliapp.Run(cliapp.Config{
-		Identity:  identity.CE(),
-		Bootstrap: bootstrap.Ensure,
-	})
+// Config describes the edition-specific dependencies needed to run the CLI.
+type Config struct {
+	Identity  identity.Config
+	Bootstrap func()
+}
+
+// Run starts the shared CLI runtime with the provided identity and bootstrap.
+func Run(config Config) {
+	identity.SetCurrent(config.Identity)
+
+	if config.Bootstrap != nil {
+		config.Bootstrap()
+	}
+
+	baml.Ensure()
+
+	defer crash.Handler()
+	cmd.Execute()
 }

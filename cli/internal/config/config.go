@@ -23,14 +23,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/clidey/whodb/cli/pkg/identity"
 	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src/common/config"
 	"github.com/clidey/whodb/core/src/common/datadir"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/zalando/go-keyring"
 )
-
-const keyringService = "WhoDB-CLI"
 
 var (
 	globalUseKeyring bool
@@ -232,7 +231,7 @@ func isKeyringAvailable() bool {
 		return *keyringAvailable
 	}
 
-	_, err := keyring.Get(keyringService, "whodb-cli-test-availability")
+	_, err := keyring.Get(identity.Current().KeyringService, "whodb-cli-test-availability")
 	available := err == nil || errors.Is(err, keyring.ErrNotFound)
 	keyringAvailable = &available
 
@@ -259,7 +258,7 @@ func LoadConfig() (*Config, error) {
 	if cfg.useKeyring {
 		for i := range cfg.Connections {
 			if cfg.Connections[i].Name != "" {
-				password, err := keyring.Get(keyringService, "connection:"+cfg.Connections[i].Name)
+				password, err := keyring.Get(identity.Current().KeyringService, "connection:"+cfg.Connections[i].Name)
 				if err == nil {
 					cfg.Connections[i].Password = password
 				}
@@ -286,7 +285,7 @@ func (c *Config) Save() error {
 	if c.useKeyring {
 		for _, conn := range c.Connections {
 			if conn.Name != "" && conn.Password != "" {
-				err := keyring.Set(keyringService, "connection:"+conn.Name, conn.Password)
+				err := keyring.Set(identity.Current().KeyringService, "connection:"+conn.Name, conn.Password)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Warning: Could not save password to keyring for %s: %v\n", conn.Name, err)
 					fmt.Fprintf(os.Stderr, "Password will be saved in config file.\n")
@@ -331,7 +330,7 @@ func (c *Config) RemoveConnection(name string) bool {
 			c.Connections = append(c.Connections[:i], c.Connections[i+1:]...)
 
 			if c.useKeyring {
-				_ = keyring.Delete(keyringService, "connection:"+name)
+				_ = keyring.Delete(identity.Current().KeyringService, "connection:"+name)
 			}
 
 			return true

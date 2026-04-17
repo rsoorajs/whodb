@@ -25,6 +25,7 @@ import (
 	"github.com/clidey/whodb/cli/internal/config"
 	"github.com/clidey/whodb/cli/internal/tui"
 	"github.com/clidey/whodb/cli/pkg/analytics"
+	"github.com/clidey/whodb/cli/pkg/identity"
 	"github.com/clidey/whodb/cli/pkg/styles"
 	"github.com/clidey/whodb/cli/pkg/updatecheck"
 	"github.com/clidey/whodb/cli/pkg/version"
@@ -86,13 +87,14 @@ Press ? in any view for keyboard shortcuts.`,
 			return
 		}
 		if result := updatecheck.Check(version.Version); result != nil {
-			fmt.Fprintf(os.Stderr, "\nA new version of whodb-cli is available: %s → https://github.com/clidey/whodb/releases/latest\n", result.LatestVersion)
+			fmt.Fprintf(os.Stderr, "\nA new version of %s is available: %s → %s\n", identity.Current().CommandName, result.LatestVersion, identity.Current().UpdateCheckPageURL)
 		}
 	},
 }
 
 func Execute() {
 	defer analytics.Shutdown()
+	configureRuntime()
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
@@ -176,7 +178,7 @@ func init() {
 
 func initAnalytics() {
 	// Skip analytics if disabled via flag or env
-	if viper.GetBool("no-analytics") || os.Getenv("WHODB_CLI_ANALYTICS_DISABLED") == "true" {
+	if viper.GetBool("no-analytics") || os.Getenv(identity.Current().AnalyticsDisabledEnv) == "true" {
 		return
 	}
 
@@ -201,13 +203,12 @@ func initConfig() {
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
 	} else {
-		home, err := os.UserHomeDir()
+		configDir, err := identity.HomePath()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting home directory: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Error getting config directory: %v\n", err)
 			os.Exit(1)
 		}
 
-		configDir := fmt.Sprintf("%s/.whodb-cli", home)
 		if err := os.MkdirAll(configDir, 0700); err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating config directory: %v\n", err)
 			os.Exit(1)
@@ -220,7 +221,7 @@ func initConfig() {
 		viper.SetConfigName("config")
 	}
 
-	viper.SetEnvPrefix("WHODB_CLI")
+	viper.SetEnvPrefix(identity.Current().ViperEnvPrefix)
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {

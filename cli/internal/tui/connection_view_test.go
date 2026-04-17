@@ -220,6 +220,34 @@ func TestConnectionView_ListMode_EscConfirmation_SecondEsc(t *testing.T) {
 	}
 }
 
+func TestRenderWrappedSelectableOptions_WrapsLongLists(t *testing.T) {
+	options := []string{
+		"Postgres", "MySQL", "MariaDB", "CockroachDB", "Sqlite3", "MongoDB",
+		"Redis", "ElasticSearch", "ClickHouse", "DuckDB", "Memcached", "TiDB",
+	}
+
+	rendered, lineCount := renderWrappedSelectableOptions(options, 0, false, 32)
+	if lineCount <= 1 {
+		t.Fatalf("expected wrapped options to span multiple lines, got %d", lineCount)
+	}
+	if !strings.Contains(rendered, "\n  ") {
+		t.Fatalf("expected wrapped options to contain an indented newline, got %q", rendered)
+	}
+}
+
+func TestConnectionView_DbTypeSectionHeight_GrowsWhenWrapped(t *testing.T) {
+	v, cleanup := setupConnectionViewTest(t)
+	defer cleanup()
+
+	v.width = 48
+	v.parent.width = 48
+
+	height := v.dbTypeSectionHeight()
+	if height <= 3 {
+		t.Fatalf("expected wrapped database type section height greater than 3, got %d", height)
+	}
+}
+
 func TestConnectionView_ListMode_EscTimeoutTick(t *testing.T) {
 	v, cleanup := setupConnectionViewTest(t)
 	defer cleanup()

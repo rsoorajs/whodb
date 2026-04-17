@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/clidey/whodb/cli/pkg/identity"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +28,7 @@ var guideCmd = &cobra.Command{
 	Short: "Show the full usage guide",
 	Long:  "Displays a comprehensive guide covering all features, shortcuts, and workflows.",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Print(guideText)
+		fmt.Print(identity.ReplaceText(guideText))
 	},
 }
 
