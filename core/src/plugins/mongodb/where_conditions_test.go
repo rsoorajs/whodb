@@ -1,3 +1,19 @@
+/*
+ * Copyright 2026 Clidey, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package mongodb
 
 import (
@@ -6,15 +22,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/clidey/whodb/core/graph/model"
+	"github.com/clidey/whodb/core/src/query"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
-func mongoAtomicWhere(key, operator, value string) *model.WhereCondition {
-	return &model.WhereCondition{
-		Type: model.WhereConditionTypeAtomic,
-		Atomic: &model.AtomicWhereCondition{
+func mongoAtomicWhere(key, operator, value string) *query.WhereCondition {
+	return &query.WhereCondition{
+		Type: query.WhereConditionTypeAtomic,
+		Atomic: &query.AtomicWhereCondition{
 			Key:      key,
 			Operator: operator,
 			Value:    value,
@@ -67,10 +83,10 @@ func TestConvertWhereConditionToMongoDB(t *testing.T) {
 	})
 
 	t.Run("supports nested AND trees", func(t *testing.T) {
-		filter, err := convertWhereConditionToMongoDB(&model.WhereCondition{
-			Type: model.WhereConditionTypeAnd,
-			And: &model.OperationWhereCondition{
-				Children: []*model.WhereCondition{
+		filter, err := convertWhereConditionToMongoDB(&query.WhereCondition{
+			Type: query.WhereConditionTypeAnd,
+			And: &query.OperationWhereCondition{
+				Children: []*query.WhereCondition{
 					mongoAtomicWhere("qty", "gte", "10"),
 					mongoAtomicWhere("status", "eq", "paid"),
 				},

@@ -4,6 +4,7 @@ query GetSchema($parent: SourceObjectRefInput, $kinds: [SourceObjectKind!]) {
         Kind
         Ref {
             Kind
+            Locator
             Path
         }
     }

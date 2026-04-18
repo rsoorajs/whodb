@@ -83,6 +83,30 @@ function buildRefForKind(
     };
 }
 
+function buildParentKind(
+    item: SourceTypeItem | undefined,
+    pathLength: number
+): SourceObjectKind | undefined {
+    if (!item?.contract || pathLength <= 0) {
+        return undefined;
+    }
+
+    const maxParentIndex = item.contract.BrowsePath.length - 2;
+    if (maxParentIndex < 0) {
+        return undefined;
+    }
+
+    let parentIndex = pathLength - 1;
+    if (parentIndex > maxParentIndex) {
+        parentIndex = maxParentIndex;
+    }
+    if (parentIndex < 0 || parentIndex >= item.contract.BrowsePath.length) {
+        return undefined;
+    }
+
+    return item.contract.BrowsePath[parentIndex];
+}
+
 /**
  * Builds the parent ref for the current source's default browsed object kind.
  *
@@ -127,6 +151,28 @@ export function buildSourceObjectRef(
     return {
         Kind: item?.contract?.DefaultObjectKind ?? SourceObjectKind.Table,
         Path: [...(parent?.Path ?? []), objectName],
+    };
+}
+
+/**
+ * Builds the parent ref for one concrete source object ref.
+ *
+ * @param item Active source catalog item.
+ * @param ref Source object ref to move one level up from.
+ * @returns Parent ref for the provided object, or undefined at the root.
+ */
+export function buildSourceParentObjectRef(
+    item: SourceTypeItem | undefined,
+    ref: Pick<SourceObjectRefInput, 'Kind' | 'Path' | 'Locator'>
+): SourceObjectRefInput | undefined {
+    if (ref.Path.length <= 1) {
+        return undefined;
+    }
+
+    const parentPath = ref.Path.slice(0, -1);
+    return {
+        Kind: buildParentKind(item, parentPath.length) ?? ref.Kind,
+        Path: parentPath,
     };
 }
 

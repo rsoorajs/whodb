@@ -1,3 +1,19 @@
+/*
+ * Copyright 2026 Clidey, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package elasticsearch
 
 import (
@@ -6,20 +22,20 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/query"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 )
 
 func TestConvertAtomicConditionToES(t *testing.T) {
 	tests := []struct {
 		name   string
-		atomic *model.AtomicWhereCondition
+		atomic *query.AtomicWhereCondition
 		want   map[string]any
 	}{
 		{
 			name: "id equality uses ids query",
-			atomic: &model.AtomicWhereCondition{
+			atomic: &query.AtomicWhereCondition{
 				Key: "_id", Operator: "=", Value: "doc-1",
 			},
 			want: map[string]any{
@@ -30,7 +46,7 @@ func TestConvertAtomicConditionToES(t *testing.T) {
 		},
 		{
 			name: "contains uses wildcard",
-			atomic: &model.AtomicWhereCondition{
+			atomic: &query.AtomicWhereCondition{
 				Key: "email", Operator: "CONTAINS", Value: "example.com",
 			},
 			want: map[string]any{
@@ -41,7 +57,7 @@ func TestConvertAtomicConditionToES(t *testing.T) {
 		},
 		{
 			name: "terms parses csv values",
-			atomic: &model.AtomicWhereCondition{
+			atomic: &query.AtomicWhereCondition{
 				Key: "status", Operator: "TERMS", Value: "paid, pending",
 			},
 			want: map[string]any{
@@ -52,7 +68,7 @@ func TestConvertAtomicConditionToES(t *testing.T) {
 		},
 		{
 			name: "range accepts open upper bound",
-			atomic: &model.AtomicWhereCondition{
+			atomic: &query.AtomicWhereCondition{
 				Key: "price", Operator: "RANGE", Value: "10,",
 			},
 			want: map[string]any{
@@ -63,7 +79,7 @@ func TestConvertAtomicConditionToES(t *testing.T) {
 		},
 		{
 			name: "unknown operators fall back to match",
-			atomic: &model.AtomicWhereCondition{
+			atomic: &query.AtomicWhereCondition{
 				Key: "notes", Operator: "UNSUPPORTED", Value: "needle",
 			},
 			want: map[string]any{
@@ -86,33 +102,33 @@ func TestConvertAtomicConditionToES(t *testing.T) {
 }
 
 func TestConvertWhereConditionToES(t *testing.T) {
-	where := &model.WhereCondition{
-		Type: model.WhereConditionTypeAnd,
-		And: &model.OperationWhereCondition{
-			Children: []*model.WhereCondition{
+	where := &query.WhereCondition{
+		Type: query.WhereConditionTypeAnd,
+		And: &query.OperationWhereCondition{
+			Children: []*query.WhereCondition{
 				{
-					Type: model.WhereConditionTypeAtomic,
-					Atomic: &model.AtomicWhereCondition{
+					Type: query.WhereConditionTypeAtomic,
+					Atomic: &query.AtomicWhereCondition{
 						Key:      "status",
 						Operator: "=",
 						Value:    "paid",
 					},
 				},
 				{
-					Type: model.WhereConditionTypeOr,
-					Or: &model.OperationWhereCondition{
-						Children: []*model.WhereCondition{
+					Type: query.WhereConditionTypeOr,
+					Or: &query.OperationWhereCondition{
+						Children: []*query.WhereCondition{
 							{
-								Type: model.WhereConditionTypeAtomic,
-								Atomic: &model.AtomicWhereCondition{
+								Type: query.WhereConditionTypeAtomic,
+								Atomic: &query.AtomicWhereCondition{
 									Key:      "priority",
 									Operator: "=",
 									Value:    "high",
 								},
 							},
 							{
-								Type: model.WhereConditionTypeAtomic,
-								Atomic: &model.AtomicWhereCondition{
+								Type: query.WhereConditionTypeAtomic,
+								Atomic: &query.AtomicWhereCondition{
 									Key:      "priority",
 									Operator: "=",
 									Value:    "urgent",
@@ -141,7 +157,7 @@ func TestConvertWhereConditionToES(t *testing.T) {
 		t.Fatalf("expected minimum_should_match=1, got %#v", nestedBool)
 	}
 
-	if _, err := convertWhereConditionToES(&model.WhereCondition{Type: model.WhereConditionTypeAtomic}); err == nil {
+	if _, err := convertWhereConditionToES(&query.WhereCondition{Type: query.WhereConditionTypeAtomic}); err == nil {
 		t.Fatal("expected invalid atomic condition to fail")
 	}
 }

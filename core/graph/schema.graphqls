@@ -153,6 +153,16 @@ type RowsResult {
     TotalCount: Int!
 }
 
+type SourceContent {
+  Text: String
+  MIMEType: String!
+  IsBinary: Boolean!
+  SizeBytes: String!
+  Truncated: Boolean!
+  FileName: String!
+  ModifiedAt: String
+}
+
 type Record {
   Key: String!
   Value: String!
@@ -371,6 +381,7 @@ type SourceObjectType {
 type SourceContract {
   Model: SourceModel!
   Surfaces: [SourceSurface!]!
+  RootActions: [SourceAction!]!
   BrowsePath: [SourceObjectKind!]!
   DefaultObjectKind: SourceObjectKind!
   GraphScopeKind: SourceObjectKind
@@ -395,11 +406,13 @@ type SourceSSLMode {
 
 type SourceObjectRef {
   Kind: SourceObjectKind!
+  Locator: String!
   Path: [String!]!
 }
 
 input SourceObjectRefInput {
   Kind: SourceObjectKind!
+  Locator: String
   Path: [String!]!
 }
 
@@ -668,6 +681,7 @@ type Query {
   SourceObjects(parent: SourceObjectRefInput, kinds: [SourceObjectKind!]): [SourceObject!]!
   SourceObject(ref: SourceObjectRefInput!): SourceObject
   SourceRows(ref: SourceObjectRefInput!, where: WhereCondition, sort: [SortCondition!], pageSize: Int!, pageOffset: Int!): RowsResult!
+  SourceContent(ref: SourceObjectRefInput!): SourceContent
   SourceColumns(ref: SourceObjectRefInput!): [Column!]!
   SourceColumnsBatch(refs: [SourceObjectRefInput!]!): [SourceObjectColumns!]!
   RunSourceQuery(query: String!): RowsResult!

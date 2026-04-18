@@ -24,7 +24,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/clidey/whodb/core/graph/model"
+	"github.com/clidey/whodb/core/src/query"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
 )
@@ -165,7 +165,7 @@ func (p *MemcachedPlugin) GetRows(
 }
 
 // GetRowCount returns the count of items for a key (always 0 or 1 for Memcached).
-func (p *MemcachedPlugin) GetRowCount(config *engine.PluginConfig, schema, storageUnit string, where *model.WhereCondition) (int64, error) {
+func (p *MemcachedPlugin) GetRowCount(config *engine.PluginConfig, schema, storageUnit string, where *query.WhereCondition) (int64, error) {
 	client, err := DB(config)
 	if err != nil {
 		return 0, err
@@ -232,7 +232,7 @@ func memcachedColumns() []engine.Column {
 }
 
 // filterMemcachedRows applies a where condition to memcached rows.
-func filterMemcachedRows(rows [][]string, where *model.WhereCondition) [][]string {
+func filterMemcachedRows(rows [][]string, where *query.WhereCondition) [][]string {
 	condition, err := convertWhereCondition(where)
 	if err != nil {
 		return rows
@@ -268,13 +268,13 @@ type memcachedFilter struct {
 	Value    string
 }
 
-func convertWhereCondition(where *model.WhereCondition) (map[string]memcachedFilter, error) {
+func convertWhereCondition(where *query.WhereCondition) (map[string]memcachedFilter, error) {
 	if where == nil {
 		return nil, nil
 	}
 
 	switch where.Type {
-	case model.WhereConditionTypeAtomic:
+	case query.WhereConditionTypeAtomic:
 		if where.Atomic == nil {
 			return nil, fmt.Errorf("atomic condition must have an atomicwherecondition")
 		}

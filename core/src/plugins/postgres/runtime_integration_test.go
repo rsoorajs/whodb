@@ -25,7 +25,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/clidey/whodb/core/graph/model"
+	"github.com/clidey/whodb/core/src/query"
 	"github.com/clidey/whodb/core/src/engine"
 	"gorm.io/gorm"
 )
@@ -65,7 +65,7 @@ func waitForPostgresOrders(t *testing.T, plugin *PostgresPlugin, config *engine.
 			rows, rowsErr := plugin.GetRows(config, &engine.GetRowsRequest{
 				Schema:      "test_schema",
 				StorageUnit: "orders",
-				Sort:        []*model.SortCondition{{Column: "id", Direction: model.SortDirectionAsc}},
+				Sort:        []*query.SortCondition{{Column: "id", Direction: query.SortDirectionAsc}},
 				PageSize:    1,
 			})
 			if rowsErr == nil && len(rows.Rows) > 0 {

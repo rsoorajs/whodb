@@ -1,3 +1,19 @@
+/*
+ * Copyright 2026 Clidey, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package graph
 
 import (
@@ -8,7 +24,6 @@ import (
 
 	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/internal/testutil"
-	"github.com/clidey/whodb/core/src/auth"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/settings"
@@ -227,7 +242,7 @@ func TestQuerySSLStatusHandlesMappedNilAndErrorResults(t *testing.T) {
 		mock.GetSSLStatusFunc = func(*engine.PluginConfig) (*engine.SSLStatus, error) { return nil, nil }
 		setEngineMock(t, mock)
 
-		ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres"})
+		ctx := testSourceContext("Postgres", nil)
 		status, err := (&Resolver{}).Query().SSLStatus(ctx)
 		if err != nil {
 			t.Fatalf("expected nil SSL status to succeed, got %v", err)
@@ -244,7 +259,7 @@ func TestQuerySSLStatusHandlesMappedNilAndErrorResults(t *testing.T) {
 		}
 		setEngineMock(t, mock)
 
-		ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres"})
+		ctx := testSourceContext("Postgres", nil)
 		status, err := (&Resolver{}).Query().SSLStatus(ctx)
 		if err != nil {
 			t.Fatalf("expected SSL status query to succeed, got %v", err)
@@ -390,13 +405,13 @@ func TestCloudQueriesReturnEmptyWhenProvidersDisabled(t *testing.T) {
 
 func TestQueryHealthRecoversFromPanicsAndCanceledContexts(t *testing.T) {
 	t.Run("plugin panic becomes database error", func(t *testing.T) {
-		mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+		mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 		mock.IsAvailableFunc = func(context.Context, *engine.PluginConfig) bool {
 			panic("boom")
 		}
 		setEngineMock(t, mock)
 
-		ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"})
+		ctx := testSourceContext("Postgres", nil)
 		status, err := (&Resolver{}).Query().Health(ctx)
 		if err != nil {
 			t.Fatalf("expected health query to recover panic, got %v", err)
@@ -407,7 +422,7 @@ func TestQueryHealthRecoversFromPanicsAndCanceledContexts(t *testing.T) {
 	})
 
 	t.Run("canceled context reports database error", func(t *testing.T) {
-		mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+		mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 		mock.IsAvailableFunc = func(ctx context.Context, _ *engine.PluginConfig) bool {
 			<-ctx.Done()
 			time.Sleep(10 * time.Millisecond)
@@ -415,9 +430,9 @@ func TestQueryHealthRecoversFromPanicsAndCanceledContexts(t *testing.T) {
 		}
 		setEngineMock(t, mock)
 
-		baseCtx, cancel := context.WithCancel(context.Background())
+		baseCtx, cancel := context.WithCancel(testSourceContext("Postgres", nil))
 		cancel()
-		ctx := context.WithValue(baseCtx, auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"})
+		ctx := baseCtx
 		status, err := (&Resolver{}).Query().Health(ctx)
 		if err != nil {
 			t.Fatalf("expected health query to handle canceled context, got %v", err)

@@ -18,33 +18,6 @@ package engine
 
 import "strings"
 
-// TypeCategory represents the category of a database type for UI grouping
-type TypeCategory string
-
-const (
-	TypeCategoryNumeric  TypeCategory = "numeric"
-	TypeCategoryText     TypeCategory = "text"
-	TypeCategoryBinary   TypeCategory = "binary"
-	TypeCategoryDatetime TypeCategory = "datetime"
-	TypeCategoryBoolean  TypeCategory = "boolean"
-	TypeCategoryJSON     TypeCategory = "json"
-	TypeCategoryOther    TypeCategory = "other"
-)
-
-// TypeDefinition describes a database column type with its metadata
-type TypeDefinition struct {
-	ID               string       // Canonical type name (e.g., "VARCHAR", "INTEGER")
-	Label            string       // Display label for UI (e.g., "varchar", "integer")
-	HasLength        bool         // Shows length input when selected (VARCHAR, CHAR)
-	HasPrecision     bool         // Shows precision/scale inputs (DECIMAL, NUMERIC)
-	DefaultLength    *int         // Default length for types with HasLength
-	DefaultPrecision *int         // Default precision for types with HasPrecision
-	Category         TypeCategory // Type category for grouping
-	InsertFunc       string       // Function to wrap INSERT values (e.g. "TO_BITMAP"), empty for normal types
-	TableModel       string       // Required table key model (e.g. "AGGREGATE"), empty for normal types
-	DDLSuffix        string       // Appended after type in CREATE TABLE (e.g. "BITMAP_UNION"), empty for normal types
-}
-
 // Capabilities declares which optional features a plugin supports.
 // The frontend reads these to determine which UI elements to show.
 type Capabilities struct {

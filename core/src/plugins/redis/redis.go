@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/clidey/whodb/core/graph/model"
+	"github.com/clidey/whodb/core/src/query"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/go-redis/redis/v8"
@@ -355,7 +355,7 @@ func (p *RedisPlugin) GetRows(
 	return result, nil
 }
 
-func (p *RedisPlugin) GetRowCount(config *engine.PluginConfig, schema, storageUnit string, where *model.WhereCondition) (int64, error) {
+func (p *RedisPlugin) GetRowCount(config *engine.PluginConfig, schema, storageUnit string, where *query.WhereCondition) (int64, error) {
 	ctx := config.OperationContext()
 
 	client, err := DB(config)
@@ -433,7 +433,7 @@ func (p *RedisPlugin) GetColumnsForTable(config *engine.PluginConfig, schema str
 	}
 }
 
-func filterRedisHash(field, value string, where *model.WhereCondition) bool {
+func filterRedisHash(field, value string, where *query.WhereCondition) bool {
 	condition, err := convertWhereConditionToRedisFilter(where)
 	if err != nil {
 		return true // Ignore filtering on error
@@ -453,7 +453,7 @@ func filterRedisHash(field, value string, where *model.WhereCondition) bool {
 	return true
 }
 
-func filterRedisList(value string, where *model.WhereCondition) bool {
+func filterRedisList(value string, where *query.WhereCondition) bool {
 	condition, err := convertWhereConditionToRedisFilter(where)
 	if err != nil {
 		return true // Ignore filtering on error
@@ -469,7 +469,7 @@ func filterRedisList(value string, where *model.WhereCondition) bool {
 	return true
 }
 
-func filterRedisSet(value string, where *model.WhereCondition) bool {
+func filterRedisSet(value string, where *query.WhereCondition) bool {
 	condition, err := convertWhereConditionToRedisFilter(where)
 	if err != nil {
 		return true
@@ -485,7 +485,7 @@ func filterRedisSet(value string, where *model.WhereCondition) bool {
 	return true
 }
 
-func filterRedisZSet(member string, score string, where *model.WhereCondition) bool {
+func filterRedisZSet(member string, score string, where *query.WhereCondition) bool {
 	condition, err := convertWhereConditionToRedisFilter(where)
 	if err != nil {
 		return true
@@ -511,13 +511,13 @@ type redisFilter struct {
 	Value    string
 }
 
-func convertWhereConditionToRedisFilter(where *model.WhereCondition) (map[string]redisFilter, error) {
+func convertWhereConditionToRedisFilter(where *query.WhereCondition) (map[string]redisFilter, error) {
 	if where == nil {
 		return nil, nil
 	}
 
 	switch where.Type {
-	case model.WhereConditionTypeAtomic:
+	case query.WhereConditionTypeAtomic:
 		if where.Atomic == nil {
 			return nil, fmt.Errorf("atomic condition must have an atomicwherecondition")
 		}

@@ -87,6 +87,7 @@ export interface SourceObjectTypeDescriptor {
 export interface SourceContractDescriptor {
     Model: SourceModel;
     Surfaces: SourceSurface[];
+    RootActions: SourceAction[];
     BrowsePath: SourceObjectKind[];
     DefaultObjectKind: SourceObjectKind;
     GraphScopeKind?: SourceObjectKind | null;
@@ -422,4 +423,34 @@ export function resolveSourceConnector(
     }
 
     return item?.connector ?? sourceType;
+}
+
+/**
+ * Resolves one declared source object-type descriptor by kind.
+ *
+ * @param item Decorated source type item.
+ * @param kind Source object kind to resolve.
+ * @returns Matching object-type descriptor when present.
+ */
+export function findSourceObjectType(
+    item: SourceTypeItem | undefined,
+    kind: SourceObjectKind | undefined | null
+): SourceObjectTypeDescriptor | undefined {
+    if (!item?.contract || kind == null) {
+        return undefined;
+    }
+
+    return item.contract.ObjectTypes.find(objectType => objectType.Kind === kind);
+}
+
+/**
+ * Resolves the default browsed object-type descriptor for one source type.
+ *
+ * @param item Decorated source type item.
+ * @returns The default object-type descriptor when present.
+ */
+export function getDefaultSourceObjectType(
+    item: SourceTypeItem | undefined
+): SourceObjectTypeDescriptor | undefined {
+    return findSourceObjectType(item, item?.contract?.DefaultObjectKind);
 }

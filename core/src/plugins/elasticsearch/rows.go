@@ -22,10 +22,10 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src/common/graphutil"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
+	queryast "github.com/clidey/whodb/core/src/query"
 )
 
 func (p *ElasticSearchPlugin) GetRows(config *engine.PluginConfig, req *engine.GetRowsRequest) (*engine.GetRowsResult, error) {
@@ -61,7 +61,7 @@ func (p *ElasticSearchPlugin) GetRows(config *engine.PluginConfig, req *engine.G
 				continue
 			}
 			order := "asc"
-			if s.Direction == model.SortDirectionDesc {
+			if s.Direction == queryast.SortDirectionDesc {
 				order = "desc"
 			}
 			sortArray = append(sortArray, map[string]any{
@@ -144,7 +144,7 @@ func (p *ElasticSearchPlugin) GetRows(config *engine.PluginConfig, req *engine.G
 	return result, nil
 }
 
-func (p *ElasticSearchPlugin) GetRowCount(config *engine.PluginConfig, database, index string, where *model.WhereCondition) (int64, error) {
+func (p *ElasticSearchPlugin) GetRowCount(config *engine.PluginConfig, database, index string, where *queryast.WhereCondition) (int64, error) {
 	client, err := DB(config)
 	if err != nil {
 		return 0, err

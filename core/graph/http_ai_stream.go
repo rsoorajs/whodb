@@ -27,9 +27,9 @@ import (
 	"github.com/clidey/whodb/core/baml_client/types"
 	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src/bamlconfig"
-	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/envconfig"
 	"github.com/clidey/whodb/core/src/log"
+	"github.com/clidey/whodb/core/src/source"
 )
 
 func init() {
@@ -55,30 +55,21 @@ func ceAIChatStreamHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get plugin and config
-	plugin, config := GetPluginForContext(r.Context())
-	if plugin == nil {
-		log.Debugf("AI Chat Stream: Plugin is nil")
-		SendSSEError(w, flusher, "No database plugin available")
-		return
-	}
-	if config == nil || config.Credentials == nil {
-		log.Debugf("AI Chat Stream: Config or credentials is nil")
-		SendSSEError(w, flusher, "No credentials available")
-		return
-	}
-	log.Debugf("AI Chat Stream: Plugin=%s, DB=%s", config.Credentials.Type, config.Credentials.Database)
-
 	spec, session, err := getSourceSessionForContext(r.Context())
 	if err != nil {
 		log.Debugf("AI Chat Stream: Failed to create source session: %v", err)
 		SendSSEError(w, flusher, "No source session available")
 		return
 	}
+	queryRunner, ok := session.(source.QueryRunner)
+	if !ok {
+		SendSSEError(w, flusher, "Source queries are not supported")
+		return
+	}
 
 	// Build ExternalModel, resolving credentials from environment if providerId is set
 	creds := envconfig.ResolveProviderCredentials(req.ProviderId, req.Token, req.Endpoint, req.ModelType)
-	config.ExternalModel = &engine.ExternalModel{
+	modelConfig := &source.ExternalModel{
 		Type:     creds.ModelType,
 		Token:    creds.Token,
 		Model:    req.Model,
@@ -100,7 +91,7 @@ func ceAIChatStreamHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Setup BAML context
 	dbContext := types.DatabaseContext{
-		Database_type:         config.Credentials.Type,
+		Database_type:         spec.ID,
 		Schema:                scope,
 		Tables_and_fields:     tableDetails,
 		Previous_conversation: req.Input.PreviousConversation,
@@ -109,7 +100,7 @@ func ceAIChatStreamHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create BAML stream
 	log.Debugf("AI Chat Stream: Setting up AI client...")
-	callOpts := bamlconfig.SetupAIClient(config.ExternalModel)
+	callOpts := bamlconfig.SetupAIClient(modelConfig)
 	log.Debugf("AI Chat Stream: Starting BAML GenerateSQLQuery stream...")
 	stream, err := baml_client.Stream.GenerateSQLQuery(ctx.Background(), dbContext, req.Input.Query, callOpts...)
 	if err != nil {
@@ -121,16 +112,16 @@ func ceAIChatStreamHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Process stream
 	log.Debugf("AI Chat Stream: Starting to process stream...")
-	processStream(w, flusher, stream, plugin, config)
+	processStream(r.Context(), w, flusher, stream, queryRunner)
 	log.Debugf("AI Chat Stream: Stream processing completed")
 }
 
 func processStream(
+	ctx ctx.Context,
 	w http.ResponseWriter,
 	flusher http.Flusher,
 	stream <-chan baml_client.StreamValue[[]stream_types.ChatResponse, []types.ChatResponse],
-	plugin *engine.Plugin,
-	config *engine.PluginConfig,
+	queryRunner source.QueryRunner,
 ) {
 	for chunk := range stream {
 		if chunk.IsError {
@@ -139,7 +130,7 @@ func processStream(
 		}
 
 		if chunk.IsFinal {
-			processFinalChunk(w, flusher, chunk.Final(), plugin, config)
+			processFinalChunk(ctx, w, flusher, chunk.Final(), queryRunner)
 			SendSSEDone(w, flusher)
 			return
 		}
@@ -152,25 +143,49 @@ func processStream(
 	}
 }
 
-func processFinalChunk(w http.ResponseWriter, flusher http.Flusher, responses *[]types.ChatResponse, plugin *engine.Plugin, config *engine.PluginConfig) {
+func processFinalChunk(ctx ctx.Context, w http.ResponseWriter, flusher http.Flusher, responses *[]types.ChatResponse, queryRunner source.QueryRunner) {
 	if responses == nil {
 		return
 	}
 
 	for _, bamlResp := range *responses {
-		if bamlResp.Type == types.ChatMessageTypeSQL {
-			chatMsg := bamlconfig.ProcessBAMLResponse(&bamlResp, config, plugin)
-			aiMsg := &model.AIChatMessage{
-				Type:                 chatMsg.Type,
-				Text:                 chatMsg.Text,
-				RequiresConfirmation: chatMsg.RequiresConfirmation,
-			}
-			if chatMsg.Result != nil {
-				aiMsg.Result = ConvertResultToMessage(chatMsg.Result)
-			}
-			SendSSEMessage(w, flusher, aiMsg)
-		}
+		SendSSEMessage(w, flusher, processFinalResponse(ctx, &bamlResp, queryRunner))
 	}
+}
+
+func processFinalResponse(ctx ctx.Context, bamlResp *types.ChatResponse, queryRunner source.QueryRunner) *model.AIChatMessage {
+	message := &model.AIChatMessage{
+		Type: bamlconfig.ConvertBAMLTypeToWhoDB(bamlResp.Type),
+		Text: bamlResp.Text,
+	}
+
+	if bamlResp.Type != types.ChatMessageTypeSQL || bamlResp.Operation == nil {
+		return message
+	}
+
+	isMutation := *bamlResp.Operation == types.OperationTypeINSERT ||
+		*bamlResp.Operation == types.OperationTypeUPDATE ||
+		*bamlResp.Operation == types.OperationTypeDELETE ||
+		*bamlResp.Operation == types.OperationTypeCREATE ||
+		*bamlResp.Operation == types.OperationTypeALTER ||
+		*bamlResp.Operation == types.OperationTypeDROP
+
+	if isMutation {
+		message.Type = bamlconfig.ConvertOperationType(*bamlResp.Operation)
+		message.RequiresConfirmation = true
+		return message
+	}
+
+	result, err := queryRunner.RunQuery(ctx, bamlResp.Text)
+	if err != nil {
+		message.Type = "error"
+		message.Text = err.Error()
+		return message
+	}
+
+	message.Type = bamlconfig.ConvertOperationType(*bamlResp.Operation)
+	message.Result = ConvertResultToMessage(result)
+	return message
 }
 
 func convertStreamResponse(bamlResp *stream_types.ChatResponse) map[string]any {

@@ -26,7 +26,6 @@ import (
 	"sync"
 
 	"github.com/clidey/whodb/core/graph/model"
-	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/source"
 	"golang.org/x/sync/errgroup"
@@ -41,15 +40,6 @@ type StreamRequest struct {
 	Ref        *model.SourceObjectRefInput `json:"ref"`
 	ProviderId string                      `json:"providerId"`
 	Input      model.ChatInput             `json:"input"`
-}
-
-// StreamContext contains all context needed for streaming
-type StreamContext struct {
-	Writer  http.ResponseWriter
-	Flusher http.Flusher
-	Plugin  *engine.Plugin
-	Config  *engine.PluginConfig
-	Request *StreamRequest
 }
 
 // ParseStreamRequest parses and validates the SSE request
@@ -93,7 +83,7 @@ func BuildObjectDetails(ctx context.Context, session source.SourceSession, paren
 	type objectResult struct {
 		name    string
 		kind    source.ObjectKind
-		columns []engine.Column
+		columns []source.Column
 	}
 
 	results := make([]objectResult, len(objects))
@@ -244,8 +234,8 @@ func SendSSEDone(w http.ResponseWriter, flusher http.Flusher) {
 	flusher.Flush()
 }
 
-// ConvertResultToMessage converts engine result to API message
-func ConvertResultToMessage(result *engine.GetRowsResult) *model.RowsResult {
+// ConvertResultToMessage converts a source row result to the GraphQL model.
+func ConvertResultToMessage(result *source.RowsResult) *model.RowsResult {
 	if result == nil {
 		return nil
 	}

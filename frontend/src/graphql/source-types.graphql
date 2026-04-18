@@ -17,6 +17,7 @@ query SourceTypes {
     contract: Contract {
       Model
       Surfaces
+      RootActions
       BrowsePath
       DefaultObjectKind
       GraphScopeKind

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2026 Clidey, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package graph
 
 import (
@@ -6,7 +22,6 @@ import (
 	"time"
 
 	"github.com/clidey/whodb/core/graph/model"
-	"github.com/clidey/whodb/core/internal/testutil"
 	"github.com/clidey/whodb/core/src/auth"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/providers"
@@ -67,7 +82,7 @@ func cloneStringMap(values map[string]string) map[string]string {
 	return cloned
 }
 
-func TestMapColumnsToModelAndFetchColumnsForStorageUnit(t *testing.T) {
+func TestMapColumnsToModelPreservesMetadata(t *testing.T) {
 	refTable := "users"
 	refColumn := "id"
 	length := 255
@@ -96,20 +111,6 @@ func TestMapColumnsToModelAndFetchColumnsForStorageUnit(t *testing.T) {
 	}
 	if mapped[0].ReferencedTable == nil || *mapped[0].ReferencedTable != "users" {
 		t.Fatalf("expected referenced table metadata to be preserved, got %#v", mapped[0])
-	}
-
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
-	mock.StorageUnitExistsFunc = func(*engine.PluginConfig, string, string) (bool, error) { return true, nil }
-	mock.GetColumnsForTableFunc = func(*engine.PluginConfig, string, string) ([]engine.Column, error) {
-		return columns, nil
-	}
-
-	result, err := FetchColumnsForStorageUnit(mock, engine.NewPluginConfig(&engine.Credentials{Type: "Test"}), "public", "orders")
-	if err != nil {
-		t.Fatalf("expected fetch columns to succeed, got %v", err)
-	}
-	if len(result) != 1 || result[0].Name != "id" {
-		t.Fatalf("expected fetched column metadata, got %#v", result)
 	}
 }
 

@@ -25,8 +25,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/query"
 	"gorm.io/gorm"
 )
 
@@ -65,7 +65,7 @@ func waitForMySQLOrders(t *testing.T, plugin *MySQLPlugin, config *engine.Plugin
 			rows, rowsErr := plugin.GetRows(config, &engine.GetRowsRequest{
 				Schema:      "test_db",
 				StorageUnit: "orders",
-				Sort:        []*model.SortCondition{{Column: "id", Direction: model.SortDirectionAsc}},
+				Sort:        []*query.SortCondition{{Column: "id", Direction: query.SortDirectionAsc}},
 				PageSize:    1,
 			})
 			if rowsErr == nil && len(rows.Rows) > 0 {

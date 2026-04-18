@@ -25,12 +25,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/plugins"
 	gorm_plugin "github.com/clidey/whodb/core/src/plugins/gorm"
+	queryast "github.com/clidey/whodb/core/src/query"
 	"gorm.io/gorm"
 )
 
@@ -412,7 +412,7 @@ func (p *Sqlite3Plugin) GetRows(config *engine.PluginConfig, req *engine.GetRows
 				sortList := make([]plugins.Sort, len(sort))
 				for i, s := range sort {
 					sortList[i] = plugins.Sort{Column: s.Column, Direction: plugins.Down}
-					if s.Direction == model.SortDirectionAsc {
+					if s.Direction == queryast.SortDirectionAsc {
 						sortList[i].Direction = plugins.Up
 					}
 				}
@@ -470,7 +470,7 @@ func (p *Sqlite3Plugin) GetRows(config *engine.PluginConfig, req *engine.GetRows
 				sortList := make([]plugins.Sort, len(sort))
 				for i, s := range sort {
 					sortList[i] = plugins.Sort{Column: s.Column, Direction: plugins.Down}
-					if s.Direction == model.SortDirectionAsc {
+					if s.Direction == queryast.SortDirectionAsc {
 						sortList[i].Direction = plugins.Up
 					}
 				}

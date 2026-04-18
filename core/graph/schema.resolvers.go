@@ -1,3 +1,19 @@
+/*
+ * Copyright 2026 Clidey, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package graph
 
 // This file will be automatically regenerated based on the schema, any resolver
@@ -34,7 +50,6 @@ import (
 	gcpprovider "github.com/clidey/whodb/core/src/providers/gcp"
 	"github.com/clidey/whodb/core/src/settings"
 	"github.com/clidey/whodb/core/src/source"
-	"github.com/clidey/whodb/core/src/source/adapters"
 	"github.com/clidey/whodb/core/src/sourcecatalog"
 	"github.com/clidey/whodb/core/src/version"
 )
@@ -57,19 +72,19 @@ func (r *mutationResolver) LoginWithSourceProfile(ctx context.Context, profile m
 
 // Logout is the resolver for the Logout field.
 func (r *mutationResolver) Logout(ctx context.Context) (*model.StatusResponse, error) {
-	creds := auth.GetCredentials(ctx)
+	creds := auth.GetSourceCredentials(ctx)
 	identity := strings.TrimSpace(analytics.MetadataFromContext(ctx).DistinctID)
 	hasIdentity := identity != "" && identity != "disabled"
 	hasProfile := false
-	dbType := ""
+	sourceType := ""
 	if creds != nil {
-		hasProfile = creds.Id != nil && strings.TrimSpace(*creds.Id) != ""
-		dbType = creds.Type
+		hasProfile = creds.ID != nil && strings.TrimSpace(*creds.ID) != ""
+		sourceType = creds.SourceType
 	}
 
 	if hasIdentity {
 		analytics.CaptureWithDistinctID(ctx, identity, "logout.attempt", map[string]any{
-			"database_type":      dbType,
+			"database_type":      sourceType,
 			"profile_id_present": hasProfile,
 		})
 	}
@@ -78,7 +93,7 @@ func (r *mutationResolver) Logout(ctx context.Context) (*model.StatusResponse, e
 	if err != nil {
 		if hasIdentity {
 			analytics.CaptureError(ctx, "logout.execute", err, map[string]any{
-				"database_type":      dbType,
+				"database_type":      sourceType,
 				"profile_id_present": hasProfile,
 			})
 		}
@@ -87,7 +102,7 @@ func (r *mutationResolver) Logout(ctx context.Context) (*model.StatusResponse, e
 
 	if hasIdentity {
 		analytics.CaptureWithDistinctID(ctx, identity, "logout.success", map[string]any{
-			"database_type":      dbType,
+			"database_type":      sourceType,
 			"profile_id_present": hasProfile,
 		})
 	}
@@ -126,7 +141,7 @@ func (r *mutationResolver) CreateSourceObject(ctx context.Context, parent *model
 		return nil, errors.New("source object creation is not supported")
 	}
 
-	status, err := manager.CreateObject(ctx, sourceRefFromInput(parent), name, recordInputsToEngineRecords(fields))
+	status, err := manager.CreateObject(ctx, sourceRefFromInput(parent), name, recordInputsToSourceRecords(fields))
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +181,7 @@ func (r *mutationResolver) AddSourceRow(ctx context.Context, ref model.SourceObj
 		return nil, errors.New("source row inserts are not supported")
 	}
 
-	status, err := manager.AddRow(ctx, *sourceRefFromInput(&ref), recordInputsToEngineRecords(values))
+	status, err := manager.AddRow(ctx, *sourceRefFromInput(&ref), recordInputsToSourceRecords(values))
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +216,14 @@ func (r *mutationResolver) GenerateMockData(ctx context.Context, input model.Moc
 
 // ImportSQL is the resolver for the ImportSQL field.
 func (r *mutationResolver) ImportSQL(ctx context.Context, input model.ImportSQLInput) (*model.ImportResult, error) {
-	plugin, config := GetPluginForContext(ctx)
+	_, session, err := getSourceSessionForContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	runner, ok := session.(source.ScriptRunner)
+	if !ok {
+		return nil, errors.New("source scripts are not supported")
+	}
 
 	script := ""
 	if input.Script != nil {
@@ -229,8 +251,7 @@ func (r *mutationResolver) ImportSQL(ctx context.Context, input model.ImportSQLI
 		return importResult(false, importErrorSQLTooLarge), nil
 	}
 
-	config.MultiStatement = true
-	_, err := plugin.RawExecute(config, script)
+	_, err = runner.RunScript(ctx, script, true)
 	if err != nil {
 		if errors.Is(err, engine.ErrMultiStatementUnsupported) {
 			return importResult(false, importErrorSQLMultiStatementUnsupported), nil
@@ -254,11 +275,17 @@ func (r *mutationResolver) ImportSourceObjectFile(ctx context.Context, input mod
 
 // ExecuteConfirmedSQL is the resolver for the ExecuteConfirmedSQL field.
 func (r *mutationResolver) ExecuteConfirmedSQL(ctx context.Context, query string, operationType string) (*model.AIChatMessage, error) {
-	// Get plugin and config from context
-	plugin, config := GetPluginForContext(ctx)
+	_, session, err := getSourceSessionForContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	runner, ok := session.(source.ScriptRunner)
+	if !ok {
+		return nil, errors.New("source scripts are not supported")
+	}
 
 	// Execute the SQL query
-	result, execErr := plugin.RawExecute(config, query)
+	result, execErr := runner.RunScript(ctx, query, false)
 
 	message := &model.AIChatMessage{
 		Type:                 operationType,
@@ -923,40 +950,38 @@ func (r *queryResolver) Health(ctx context.Context) (*model.HealthStatus, error)
 	}
 
 	// Check if user is authenticated and has credentials
-	credentials := auth.GetCredentials(ctx)
-	if credentials != nil && credentials.Type != "" {
-		config := engine.NewPluginConfig(credentials)
-		plugin := src.MainEngine.Choose(engine.DatabaseType(config.Credentials.Type))
+	credentials := auth.GetSourceCredentials(ctx)
+	if credentials != nil && credentials.SourceType != "" {
+		_, session, err := getSourceSessionForContext(ctx)
+		if err == nil {
+			availability, ok := session.(source.AvailabilityChecker)
+			if ok {
+				healthCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+				defer cancel()
 
-		if plugin != nil {
-			// Create a context with 5 second timeout
-			healthCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-			defer cancel()
+				done := make(chan bool, 1)
 
-			done := make(chan bool, 1)
+				go func() {
+					defer func() {
+						if r := recover(); r != nil {
+							log.Errorf("Panic during health check for source: %v", r)
+							status.Database = "error"
+						}
+						done <- true
+					}()
 
-			go func() {
-				defer func() {
-					if r := recover(); r != nil {
-						log.Errorf("Panic during health check for database: %v", r)
+					if availability.IsAvailable(healthCtx) {
+						status.Database = "healthy"
+					} else {
 						status.Database = "error"
 					}
-					done <- true
 				}()
 
-				if plugin.IsAvailable(healthCtx, config) {
-					status.Database = "healthy"
-				} else {
+				select {
+				case <-done:
+				case <-healthCtx.Done():
 					status.Database = "error"
 				}
-			}()
-
-			select {
-			case <-done:
-				// Health check completed
-			case <-healthCtx.Done():
-				// Timeout - database is not responding
-				status.Database = "error"
 			}
 		}
 	}
@@ -994,7 +1019,7 @@ func (r *queryResolver) SourceFieldOptions(ctx context.Context, sourceType strin
 		credentials.Values = mergeCredentialValues(current.CloneValues(), credentials.Values)
 	}
 
-	session, err := (&adapters.DatabaseConnector{}).Open(ctx, spec, credentials)
+	session, err := source.Open(ctx, spec, credentials)
 	if err != nil {
 		return nil, err
 	}
@@ -1087,7 +1112,7 @@ func (r *queryResolver) SourceRows(ctx context.Context, ref model.SourceObjectRe
 	}
 
 	resolvedRef := *sourceRefFromInput(&ref)
-	rowsResult, err := reader.ReadRows(ctx, resolvedRef, where, sort, pageSize, pageOffset)
+	rowsResult, err := reader.ReadRows(ctx, resolvedRef, queryWhereConditionFromModel(where), querySortConditionsFromModel(sort), pageSize, pageOffset)
 	if err != nil {
 		return nil, err
 	}
@@ -1099,6 +1124,25 @@ func (r *queryResolver) SourceRows(ctx context.Context, ref model.SourceObjectRe
 	}
 
 	return mergeRowsColumns(rowsResult, columns), nil
+}
+
+// SourceContent is the resolver for the SourceContent field.
+func (r *queryResolver) SourceContent(ctx context.Context, ref model.SourceObjectRefInput) (*model.SourceContent, error) {
+	_, session, err := getSourceSessionForContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	reader, ok := session.(source.ContentReader)
+	if !ok {
+		return nil, errors.New("source content is not supported")
+	}
+
+	content, err := reader.ReadContent(ctx, *sourceRefFromInput(&ref))
+	if err != nil {
+		return nil, err
+	}
+	return sourceContentToModel(content), nil
 }
 
 // SourceColumns is the resolver for the SourceColumns field.
@@ -1204,7 +1248,7 @@ func (r *queryResolver) AIProviders(ctx context.Context) ([]*model.AIProvider, e
 
 // AIModel is the resolver for the AIModel field.
 func (r *queryResolver) AIModel(ctx context.Context, providerID *string, modelType string, token *string) ([]string, error) {
-	config := engine.NewPluginConfig(auth.GetCredentials(ctx))
+	config := &engine.PluginConfig{}
 
 	// Initialize ExternalModel to prevent nil pointer dereference
 	config.ExternalModel = &engine.ExternalModel{
@@ -1254,12 +1298,10 @@ func (r *queryResolver) AIModel(ctx context.Context, providerID *string, modelTy
 
 // AIChat is the resolver for the AIChat field.
 func (r *queryResolver) AIChat(ctx context.Context, providerID *string, modelType string, token *string, ref *model.SourceObjectRefInput, input model.ChatInput) ([]*model.AIChatMessage, error) {
-	plugin, config := GetPluginForContext(ctx)
-	spec, _, err := getSourceSpecForContext(ctx)
+	spec, session, err := getSourceSessionForContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	typeArg := config.Credentials.Type
 	providerId := ""
 	if providerID != nil {
 		providerId = *providerID
@@ -1269,20 +1311,24 @@ func (r *queryResolver) AIChat(ctx context.Context, providerID *string, modelTyp
 		requestToken = *token
 	}
 	creds := envconfig.ResolveProviderCredentials(providerId, requestToken, "", modelType)
-	config.ExternalModel = &engine.ExternalModel{
+	assistant, ok := session.(source.ModelAwareSourceAssistant)
+	if !ok {
+		return nil, errors.New("source chat is not supported")
+	}
+	modelConfig := &source.ExternalModel{
 		Type:     creds.ModelType,
 		Token:    creds.Token,
 		Model:    input.Model,
 		Endpoint: creds.Endpoint,
 	}
 	scope := sourceScopeForChat(spec, sourceRefFromInput(ref))
-	messages, err := plugin.Chat(config, scope, input.PreviousConversation, input.Query)
+	messages, err := assistant.ReplyWithModel(ctx, sourceRefFromInput(ref), input.PreviousConversation, input.Query, modelConfig)
 
 	if err != nil {
 		log.WithFields(log.Fields{
 			"operation":     "Chat",
 			"scope":         scope,
-			"database_type": typeArg,
+			"database_type": spec.ID,
 			"model":         input.Model,
 			"model_type":    modelType,
 			"provider_id":   providerID,
@@ -1296,7 +1342,7 @@ func (r *queryResolver) AIChat(ctx context.Context, providerID *string, modelTyp
 
 	for _, message := range messages {
 		var result *model.RowsResult
-		if strings.HasPrefix(message.Type, "sql") {
+		if strings.HasPrefix(message.Type, "sql") && message.Result != nil {
 			var columns []*model.Column
 			for _, column := range message.Result.Columns {
 				columns = append(columns, &model.Column{
@@ -1343,14 +1389,18 @@ func (r *queryResolver) AnalyzeMockDataDependencies(ctx context.Context, ref mod
 
 // SSLStatus is the resolver for the SSLStatus field.
 func (r *queryResolver) SSLStatus(ctx context.Context) (*model.SSLStatus, error) {
-	plugin, config := GetPluginForContext(ctx)
-	if plugin == nil {
+	spec, session, err := getSourceSessionForContext(ctx)
+	if err != nil {
 		log.Debug("[SSL] SSLStatus resolver: no plugin context")
 		return nil, nil
 	}
+	reader, ok := session.(source.SecurityReader)
+	if !ok {
+		return nil, nil
+	}
 
-	log.Debugf("[SSL] SSLStatus resolver: querying SSL status for %s", config.Credentials.Type)
-	status, err := plugin.GetSSLStatus(config)
+	log.Debugf("[SSL] SSLStatus resolver: querying SSL status for %s", spec.ID)
+	status, err := reader.SSLStatus(ctx)
 	if err != nil {
 		log.Warnf("[SSL] SSLStatus resolver: error getting SSL status: %v", err)
 		return nil, err
@@ -1358,12 +1408,12 @@ func (r *queryResolver) SSLStatus(ctx context.Context) (*model.SSLStatus, error)
 
 	// Return nil if SSL status is not applicable (e.g., SQLite)
 	if status == nil {
-		log.Debugf("[SSL] SSLStatus resolver: SSL not applicable for %s", config.Credentials.Type)
+		log.Debugf("[SSL] SSLStatus resolver: SSL not applicable for %s", spec.ID)
 		return nil, nil
 	}
 
 	log.Infof("[SSL] SSLStatus resolver: %s connection SSL enabled=%t, mode=%s",
-		config.Credentials.Type, status.IsEnabled, status.Mode)
+		spec.ID, status.IsEnabled, status.Mode)
 
 	return &model.SSLStatus{
 		IsEnabled: status.IsEnabled,
