@@ -36,6 +36,7 @@ import (
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/envconfig"
 	"github.com/clidey/whodb/core/src/llm"
+	"github.com/clidey/whodb/core/src/querysuggestions"
 	"github.com/clidey/whodb/core/src/types"
 	"github.com/xuri/excelize/v2"
 )
@@ -66,6 +67,10 @@ type ConnectionSourceInfo struct {
 	Connection Connection
 	Source     string
 }
+
+// QuerySuggestion is a backend-generated onboarding suggestion for a connected
+// database.
+type QuerySuggestion = querysuggestions.Suggestion
 
 // DefaultCacheTTL is the default time-to-live for cached metadata
 const DefaultCacheTTL = 5 * time.Minute
@@ -473,6 +478,23 @@ func (m *Manager) logQuery(query string, start time.Time, result *engine.GetRows
 	}
 }
 
+func (m *Manager) logStreamedQuery(query string, start time.Time, rowCount int, err error) {
+	entry := QueryLogEntry{
+		Query:     query,
+		Timestamp: start,
+		Duration:  time.Since(start),
+		Success:   err == nil,
+		RowCount:  rowCount,
+	}
+	if err != nil {
+		entry.Error = err.Error()
+	}
+	m.queryLog = append(m.queryLog, entry)
+	if len(m.queryLog) > MaxQueryLogEntries {
+		m.queryLog = m.queryLog[len(m.queryLog)-MaxQueryLogEntries:]
+	}
+}
+
 // logOperation logs a non-query operation (schema/table/column fetches).
 func (m *Manager) logOperation(operation string, start time.Time, count int, err error) {
 	entry := QueryLogEntry{
@@ -500,6 +522,51 @@ func (m *Manager) GetQueryLog() []QueryLogEntry {
 
 func (m *Manager) GetCurrentConnection() *Connection {
 	return m.currentConnection
+}
+
+// ResolveSnapshotSchema resolves the schema-like namespace used for metadata
+// snapshots, diffs, ERD, and suggestions. For database-scoped engines such as
+// MySQL, it uses the configured database before falling back to GetSchemas.
+func (m *Manager) ResolveSnapshotSchema(conn *Connection, explicitSchema string) (string, error) {
+	if strings.TrimSpace(explicitSchema) != "" {
+		return explicitSchema, nil
+	}
+	if conn == nil {
+		conn = m.currentConnection
+	}
+	if conn == nil {
+		return "", fmt.Errorf("not connected to any database")
+	}
+	if entry, ok := dbcatalog.Find(conn.Type); ok && entry.UsesDatabaseInsteadOfSchema && strings.TrimSpace(conn.Database) != "" {
+		return conn.Database, nil
+	}
+	if strings.TrimSpace(conn.Schema) != "" {
+		return conn.Schema, nil
+	}
+
+	schemas, err := m.GetSchemas()
+	if err != nil || len(schemas) == 0 {
+		return "", nil
+	}
+
+	return schemas[0], nil
+}
+
+// GetQuerySuggestions returns backend-generated onboarding suggestions for the
+// current connection and schema.
+func (m *Manager) GetQuerySuggestions(schema string) ([]QuerySuggestion, error) {
+	if m.currentConnection == nil {
+		return nil, fmt.Errorf("not connected to any database")
+	}
+
+	dbType := engine.DatabaseType(m.currentConnection.Type)
+	plugin := m.engine.Choose(dbType)
+	if plugin == nil {
+		return nil, fmt.Errorf("plugin not found")
+	}
+
+	credentials := m.buildCredentials(m.currentConnection)
+	return querysuggestions.FromPlugin(plugin, engine.NewPluginConfig(credentials), schema)
 }
 
 // GetSSLStatus returns the verified SSL/TLS status for the current connection.
@@ -686,6 +753,31 @@ func (m *Manager) GetStorageUnits(schema string) ([]engine.StorageUnit, error) {
 	return tables, nil
 }
 
+// GetGraph returns graph visualization data for the current schema.
+func (m *Manager) GetGraph(schema string) ([]engine.GraphUnit, error) {
+	if m.currentConnection == nil {
+		return nil, fmt.Errorf("not connected to any database")
+	}
+
+	dbType := engine.DatabaseType(m.currentConnection.Type)
+	plugin := m.engine.Choose(dbType)
+	if plugin == nil {
+		return nil, fmt.Errorf("plugin not found")
+	}
+
+	credentials := m.buildCredentials(m.currentConnection)
+	pluginConfig := engine.NewPluginConfig(credentials)
+
+	start := time.Now()
+	graphUnits, err := plugin.GetGraph(pluginConfig, schema)
+	m.logOperation(fmt.Sprintf("GetGraph(%s)", schema), start, len(graphUnits), err)
+	if err != nil {
+		return nil, err
+	}
+
+	return graphUnits, nil
+}
+
 func (m *Manager) ExecuteQuery(query string) (*engine.GetRowsResult, error) {
 	if m.currentConnection == nil {
 		return nil, fmt.Errorf("not connected to any database")
@@ -737,8 +829,8 @@ func (m *Manager) GetRows(schema, storageUnit string, where *model.WhereConditio
 }
 
 // runWithContext runs fn in a goroutine and returns its result, or ctx.Err() if the
-// context is cancelled/times out first. The goroutine is not terminated on context
-// cancellation — only the wait is cancelled.
+// context is cancelled/times out first. Context-aware plugins can use the same
+// request context to cancel the underlying driver work as well.
 func runWithContext[T any](ctx context.Context, fn func() (T, error)) (T, error) {
 	type result struct {
 		data T
@@ -758,6 +850,26 @@ func runWithContext[T any](ctx context.Context, fn func() (T, error)) (T, error)
 	case res := <-ch:
 		return res.data, res.err
 	}
+}
+
+func newPluginConfigWithContext(credentials *engine.Credentials, ctx context.Context) *engine.PluginConfig {
+	pluginConfig := engine.NewPluginConfig(credentials)
+	pluginConfig.Context = ctx
+	return pluginConfig
+}
+
+type countingQueryStreamWriter struct {
+	writer   engine.QueryStreamWriter
+	rowCount int
+}
+
+func (w *countingQueryStreamWriter) WriteColumns(columns []engine.Column) error {
+	return w.writer.WriteColumns(columns)
+}
+
+func (w *countingQueryStreamWriter) WriteRow(row []string) error {
+	w.rowCount++
+	return w.writer.WriteRow(row)
 }
 
 // ExecuteExplain prepends the appropriate EXPLAIN prefix for the current
@@ -785,8 +897,6 @@ func (m *Manager) ExecuteExplain(query string) (*engine.GetRowsResult, error) {
 }
 
 // ExecuteQueryWithContext executes a query with context support for cancellation and timeout.
-// If the context is cancelled or times out, the function returns immediately with ctx.Err().
-// Note: The underlying database operation may continue running; only the wait is cancelled.
 func (m *Manager) ExecuteQueryWithContext(ctx context.Context, query string) (*engine.GetRowsResult, error) {
 	if m.currentConnection == nil {
 		return nil, fmt.Errorf("not connected to any database")
@@ -803,7 +913,7 @@ func (m *Manager) ExecuteQueryWithContext(ctx context.Context, query string) (*e
 	}
 
 	credentials := m.buildCredentials(m.currentConnection)
-	pluginConfig := engine.NewPluginConfig(credentials)
+	pluginConfig := newPluginConfigWithContext(credentials, ctx)
 
 	start := time.Now()
 	result, err := runWithContext(ctx, func() (*engine.GetRowsResult, error) {
@@ -811,6 +921,46 @@ func (m *Manager) ExecuteQueryWithContext(ctx context.Context, query string) (*e
 	})
 	m.logQuery(query, start, result, err)
 	return result, err
+}
+
+// ExecuteQueryStream executes a query through a plugin streaming path when the
+// selected plugin supports row-by-row raw query streaming.
+func (m *Manager) ExecuteQueryStream(ctx context.Context, query string, writer engine.QueryStreamWriter) (int, error) {
+	if m.currentConnection == nil {
+		return 0, fmt.Errorf("not connected to any database")
+	}
+	if writer == nil {
+		return 0, fmt.Errorf("stream writer is required")
+	}
+
+	if m.config.GetReadOnly() && IsMutationQuery(query) {
+		return 0, ErrReadOnly
+	}
+
+	dbType := engine.DatabaseType(m.currentConnection.Type)
+	plugin := m.engine.Choose(dbType)
+	if plugin == nil {
+		return 0, fmt.Errorf("plugin not found")
+	}
+
+	streamer, ok := plugin.PluginFunctions.(engine.QueryStreamer)
+	if !ok {
+		return 0, fmt.Errorf("streaming queries are not supported for %s", m.currentConnection.Type)
+	}
+
+	credentials := m.buildCredentials(m.currentConnection)
+	pluginConfig := newPluginConfigWithContext(credentials, ctx)
+	countingWriter := &countingQueryStreamWriter{writer: writer}
+
+	start := time.Now()
+	_, err := runWithContext(ctx, func() (int, error) {
+		if err := streamer.StreamRawExecute(pluginConfig, query, countingWriter); err != nil {
+			return 0, err
+		}
+		return countingWriter.rowCount, nil
+	})
+	m.logStreamedQuery(query, start, countingWriter.rowCount, err)
+	return countingWriter.rowCount, err
 }
 
 // ExecuteQueryWithParams executes a parameterized query against the current database.
@@ -839,8 +989,6 @@ func (m *Manager) ExecuteQueryWithParams(query string, params []any) (*engine.Ge
 }
 
 // ExecuteQueryWithContextAndParams executes a parameterized query with context support.
-// If the context is cancelled or times out, the function returns immediately with ctx.Err().
-// Note: The underlying database operation may continue running; only the wait is cancelled.
 func (m *Manager) ExecuteQueryWithContextAndParams(ctx context.Context, query string, params []any) (*engine.GetRowsResult, error) {
 	if m.currentConnection == nil {
 		return nil, fmt.Errorf("not connected to any database")
@@ -857,7 +1005,7 @@ func (m *Manager) ExecuteQueryWithContextAndParams(ctx context.Context, query st
 	}
 
 	credentials := m.buildCredentials(m.currentConnection)
-	pluginConfig := engine.NewPluginConfig(credentials)
+	pluginConfig := newPluginConfigWithContext(credentials, ctx)
 
 	start := time.Now()
 	result, err := runWithContext(ctx, func() (*engine.GetRowsResult, error) {
@@ -868,8 +1016,6 @@ func (m *Manager) ExecuteQueryWithContextAndParams(ctx context.Context, query st
 }
 
 // GetRowsWithContext fetches rows with context support for cancellation and timeout.
-// If the context is cancelled or times out, the function returns immediately with ctx.Err().
-// Note: The underlying database operation may continue running; only the wait is cancelled.
 func (m *Manager) GetRowsWithContext(ctx context.Context, schema, storageUnit string, where *model.WhereCondition, pageSize, pageOffset int) (*engine.GetRowsResult, error) {
 	if m.currentConnection == nil {
 		return nil, fmt.Errorf("not connected to any database")
@@ -882,7 +1028,7 @@ func (m *Manager) GetRowsWithContext(ctx context.Context, schema, storageUnit st
 	}
 
 	credentials := m.buildCredentials(m.currentConnection)
-	pluginConfig := engine.NewPluginConfig(credentials)
+	pluginConfig := newPluginConfigWithContext(credentials, ctx)
 
 	start := time.Now()
 	result, err := runWithContext(ctx, func() (*engine.GetRowsResult, error) {
@@ -908,7 +1054,7 @@ func (m *Manager) GetSchemasWithContext(ctx context.Context) ([]string, error) {
 	}
 
 	credentials := m.buildCredentials(m.currentConnection)
-	pluginConfig := engine.NewPluginConfig(credentials)
+	pluginConfig := newPluginConfigWithContext(credentials, ctx)
 
 	start := time.Now()
 	result, err := runWithContext(ctx, func() ([]string, error) {
@@ -931,7 +1077,7 @@ func (m *Manager) GetStorageUnitsWithContext(ctx context.Context, schema string)
 	}
 
 	credentials := m.buildCredentials(m.currentConnection)
-	pluginConfig := engine.NewPluginConfig(credentials)
+	pluginConfig := newPluginConfigWithContext(credentials, ctx)
 
 	start := time.Now()
 	result, err := runWithContext(ctx, func() ([]engine.StorageUnit, error) {
@@ -976,6 +1122,32 @@ func (m *Manager) GetColumns(schema, storageUnit string) ([]engine.Column, error
 	// Cache the result
 	m.cache.SetColumns(schema, storageUnit, columns)
 	return columns, nil
+}
+
+// GetColumnConstraints returns database-specific column constraints for a
+// storage unit, such as uniqueness, default values, and check values.
+func (m *Manager) GetColumnConstraints(schema, storageUnit string) (map[string]map[string]any, error) {
+	if m.currentConnection == nil {
+		return nil, fmt.Errorf("not connected to any database")
+	}
+
+	dbType := engine.DatabaseType(m.currentConnection.Type)
+	plugin := m.engine.Choose(dbType)
+	if plugin == nil {
+		return nil, fmt.Errorf("plugin not found")
+	}
+
+	credentials := m.buildCredentials(m.currentConnection)
+	pluginConfig := engine.NewPluginConfig(credentials)
+
+	start := time.Now()
+	constraints, err := plugin.GetColumnConstraints(pluginConfig, schema, storageUnit)
+	m.logOperation(fmt.Sprintf("GetColumnConstraints(%s.%s)", schema, storageUnit), start, len(constraints), err)
+	if err != nil {
+		return nil, err
+	}
+
+	return constraints, nil
 }
 
 func (m *Manager) ExportToCSV(schema, storageUnit, filename, delimiter string) error {
@@ -1055,6 +1227,45 @@ func (m *Manager) ExportToCSV(schema, storageUnit, filename, delimiter string) e
 	syncDir(filepath.Dir(filename))
 	_ = os.Chmod(filename, 0600)
 	return nil
+}
+
+// ExportDataStream streams storage-unit data row by row via the plugin export
+// callback and returns the number of data rows written.
+func (m *Manager) ExportDataStream(schema, storageUnit string, writer func([]string) error) (int, error) {
+	start := time.Now()
+
+	if m.currentConnection == nil {
+		return 0, fmt.Errorf("not connected to any database")
+	}
+	if writer == nil {
+		return 0, fmt.Errorf("writer is required")
+	}
+
+	dbType := engine.DatabaseType(m.currentConnection.Type)
+	plugin := m.engine.Choose(dbType)
+	if plugin == nil {
+		return 0, fmt.Errorf("plugin not found")
+	}
+
+	credentials := m.buildCredentials(m.currentConnection)
+	pluginConfig := engine.NewPluginConfig(credentials)
+
+	headerWritten := false
+	rowCount := 0
+	err := plugin.ExportData(pluginConfig, schema, storageUnit, func(record []string) error {
+		if headerWritten {
+			rowCount++
+		} else {
+			headerWritten = true
+		}
+		return writer(record)
+	}, nil)
+	m.logOperation(fmt.Sprintf("ExportDataStream(%s.%s)", schema, storageUnit), start, rowCount, err)
+	if err != nil {
+		return 0, err
+	}
+
+	return rowCount, nil
 }
 
 func (m *Manager) ExportToExcel(schema, storageUnit, filename string) error {

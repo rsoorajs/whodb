@@ -22,10 +22,9 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/clidey/whodb/cli/pkg/identity"
 	"github.com/clidey/whodb/cli/pkg/version"
 )
-
-const issueURL = "https://github.com/clidey/whodb/issues/new?template=bug_report.md"
 
 func Handler() {
 	if r := recover(); r != nil {
@@ -40,14 +39,15 @@ func printCrashReport(err any) {
 	stackTrace := string(buf[:n])
 	v := version.Get()
 	cmdLine := strings.Join(os.Args, " ")
+	cfg := identity.Current()
 
 	fmt.Fprintln(os.Stderr, "")
 	fmt.Fprintln(os.Stderr, "============================================================")
-	fmt.Fprintln(os.Stderr, "  WhoDB CLI crashed unexpectedly!")
+	fmt.Fprintf(os.Stderr, "  %s crashed unexpectedly!\n", cfg.DisplayName)
 	fmt.Fprintln(os.Stderr, "============================================================")
 	fmt.Fprintln(os.Stderr, "")
 	fmt.Fprintln(os.Stderr, "Please report this issue at:")
-	fmt.Fprintln(os.Stderr, "  "+issueURL)
+	fmt.Fprintln(os.Stderr, "  "+cfg.IssueURL)
 	fmt.Fprintln(os.Stderr, "")
 	fmt.Fprintln(os.Stderr, "Copy and paste the following into the issue:")
 	fmt.Fprintln(os.Stderr, "")
@@ -55,7 +55,7 @@ func printCrashReport(err any) {
 	fmt.Fprintln(os.Stderr, "")
 
 	fmt.Fprintf(os.Stderr, `**Describe the bug**
-WhoDB CLI crashed with an unexpected error.
+%s crashed with an unexpected error.
 
 **Error**
 %v
@@ -72,7 +72,7 @@ The command should complete without crashing.
 **Desktop (please complete the following information):**
 - OS: %s
 - Architecture: %s
-- WhoDB CLI Version: %s
+- %s Version: %s
 - Commit: %s
 - Built: %s
 - Go Version: %s
@@ -85,10 +85,12 @@ The command should complete without crashing.
 **Additional context**
 [Add any additional context here, such as what you were trying to do]
 `,
+		cfg.DisplayName,
 		err,
 		cmdLine,
 		runtime.GOOS,
 		runtime.GOARCH,
+		cfg.DisplayName,
 		v.Version,
 		v.Commit,
 		v.BuildDate,

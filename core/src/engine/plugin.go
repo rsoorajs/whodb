@@ -19,6 +19,7 @@ package engine
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/clidey/whodb/core/graph/model"
 )
@@ -52,10 +53,11 @@ type ExternalModel struct {
 type PluginConfig struct {
 	Credentials           *Credentials
 	ExternalModel         *ExternalModel
-	Transaction           any      // Optional transaction for transactional operations (e.g., *gorm.DB for SQL plugins)
-	MultiStatement        bool     // Hint for plugins that need special handling for multi-statement scripts (e.g., MySQL)
-	UpsertPKColumns       []string // PK columns for ON CONFLICT DO UPDATE; non-nil = upsert mode
-	SkipConflictPKColumns []string // PK columns for ON CONFLICT DO NOTHING (append mode — skip duplicate rows)
+	Context               context.Context // Optional request context for database operations.
+	Transaction           any             // Optional transaction for transactional operations (e.g., *gorm.DB for SQL plugins)
+	MultiStatement        bool            // Hint for plugins that need special handling for multi-statement scripts (e.g., MySQL)
+	UpsertPKColumns       []string        // PK columns for ON CONFLICT DO UPDATE; non-nil = upsert mode
+	SkipConflictPKColumns []string        // PK columns for ON CONFLICT DO NOTHING (append mode — skip duplicate rows)
 }
 
 // Record represents a key-value pair with optional extra metadata,
@@ -201,4 +203,18 @@ func NewPluginConfig(credentials *Credentials) *PluginConfig {
 	return &PluginConfig{
 		Credentials: credentials,
 	}
+}
+
+// OperationContext returns the configured request context or context.Background().
+func (c *PluginConfig) OperationContext() context.Context {
+	if c != nil && c.Context != nil {
+		return c.Context
+	}
+	return context.Background()
+}
+
+// OperationContextWithTimeout returns an operation context derived from the
+// configured request context with the provided timeout applied.
+func (c *PluginConfig) OperationContextWithTimeout(timeout time.Duration) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(c.OperationContext(), timeout)
 }

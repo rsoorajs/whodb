@@ -66,7 +66,7 @@ class HealthCheckService {
             });
 
             // Check for GraphQL errors
-            if (result.errors && result.errors.length > 0) {
+            if (result.error) {
                 return null;
             }
 

@@ -24,19 +24,35 @@ import (
 	"path"
 	"strings"
 
+	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/go-chi/chi/v5"
 )
 
+const baseHrefPlaceholder = "__WHODB_BASE_HREF__"
+
 func fileServer(r chi.Router, staticFiles embed.FS) {
+	staticFS, found := resolveStaticFS(staticFiles)
+	if !found {
+		// In dev mode (no embedded frontend), skip file serving - frontend is served separately
+		log.Warn("No embedded frontend assets found - running in API-only mode (use pnpm start for frontend)")
+		return
+	}
+
+	baseHref := "/"
+	if env.BasePath != "" {
+		baseHref = env.BasePath + "/"
+	}
+	r.Handle("/*", newStaticFileHandler(staticFS, baseHref))
+}
+
+func resolveStaticFS(staticFiles fs.FS) (fs.FS, bool) {
 	// Support assets embedded under different roots (server: "build", desktop: "frontend/dist").
 	// Prefer a root that actually contains index.html. If not found (e.g., during build-time), proceed without fatal.
 	candidates := []string{"build", "frontend/dist", "dist", "."}
-	var staticFS fs.FS
-	var err error
-	found := false
 	for _, base := range candidates {
 		var sub fs.FS
+		var err error
 		if base == "." {
 			sub = staticFiles
 		} else {
@@ -46,40 +62,28 @@ func fileServer(r chi.Router, staticFiles embed.FS) {
 		}
 		if f, openErr := sub.Open("index.html"); openErr == nil {
 			_ = f.Close()
-			staticFS = sub
-			found = true
-			break
+			return sub, true
 		}
 	}
-	if !found {
-		// In dev mode (no embedded frontend), skip file serving - frontend is served separately
-		log.Warn("No embedded frontend assets found - running in API-only mode (use pnpm start for frontend)")
-		return
-	}
 
+	return nil, false
+}
+
+func hasEmbeddedFrontend(staticFiles fs.FS) bool {
+	_, found := resolveStaticFS(staticFiles)
+	return found
+}
+
+func newStaticFileHandler(staticFS fs.FS, baseHref string) http.Handler {
 	server := http.FileServer(http.FS(staticFS))
-
-	r.Handle("/*", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if hasExtension(r.URL.Path) {
 			server.ServeHTTP(w, r)
 		} else {
-			file, err := staticFS.Open("index.html")
+			data, err := renderIndexHTML(staticFS, baseHref)
 			if err != nil {
 				http.Error(w, "index.html not found", http.StatusNotFound)
-				log.Error("Failed to open index.html:", err)
-				return
-			}
-			defer func(file fs.File) {
-				err := file.Close()
-				if err != nil {
-					log.Error("Failed to close file:", err)
-				}
-			}(file)
-
-			data, err := io.ReadAll(file)
-			if err != nil {
-				http.Error(w, "Failed to read index.html", http.StatusInternalServerError)
-				log.Error("Failed to read index.html:", err)
+				log.Error("Failed to render index.html:", err)
 				return
 			}
 
@@ -89,7 +93,28 @@ func fileServer(r chi.Router, staticFiles embed.FS) {
 				return
 			}
 		}
-	}))
+	})
+}
+
+func renderIndexHTML(staticFS fs.FS, baseHref string) ([]byte, error) {
+	file, err := staticFS.Open("index.html")
+	if err != nil {
+		return nil, err
+	}
+	defer func(file fs.File) {
+		closeErr := file.Close()
+		if closeErr != nil {
+			log.Error("Failed to close file:", closeErr)
+		}
+	}(file)
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	html := strings.ReplaceAll(string(data), baseHrefPlaceholder, baseHref)
+	return []byte(html), nil
 }
 
 func hasExtension(pathFile string) bool {

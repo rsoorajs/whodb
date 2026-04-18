@@ -93,8 +93,8 @@ func TestGetConfiguredChatProviders(t *testing.T) {
 	env.OllamaPort = "1234"
 
 	providers := GetConfiguredChatProviders()
-	if len(providers) != 3 {
-		t.Fatalf("expected three providers (OpenAI, Anthropic, Ollama), got %d", len(providers))
+	if len(providers) != 4 {
+		t.Fatalf("expected four providers (OpenAI, Anthropic, LMStudio, Ollama), got %d", len(providers))
 	}
 
 	if providers[0].Type != "OpenAI" || providers[0].Endpoint != env.OpenAIEndpoint {
@@ -103,7 +103,10 @@ func TestGetConfiguredChatProviders(t *testing.T) {
 	if providers[1].Type != "Anthropic" {
 		t.Fatalf("expected Anthropic provider present, got %+v", providers[1])
 	}
-	if providers[2].Type != "Ollama" || providers[2].Endpoint != "http://ollama.local:1234/api" {
-		t.Fatalf("expected Ollama provider to use overridden host/port, got %+v", providers[2])
+	if providers[2].Type != "LMStudio" || providers[2].ProviderId != "lmstudio-1" {
+		t.Fatalf("expected LMStudio provider to be present, got %+v", providers[2])
+	}
+	if providers[3].Type != "Ollama" || providers[3].Endpoint != "http://ollama.local:1234/api" {
+		t.Fatalf("expected Ollama provider to use overridden host/port, got %+v", providers[3])
 	}
 }

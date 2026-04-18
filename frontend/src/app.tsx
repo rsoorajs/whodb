@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
+import {useMutation} from "@apollo/client/react";
 import {Toaster} from "@clidey/ux";
-import {useUpdateSettingsMutation} from '@graphql';
+import {UpdateSettingsDocument} from '@graphql';
 import {useCallback, useEffect} from "react";
 import {Route, Routes} from "react-router-dom";
 import {getStoredConsentState, optInUser, optOutUser, resetAnalyticsIdentity} from "./config/posthog";
@@ -34,7 +35,7 @@ import {ServerDownOverlay, DatabaseDownOverlay} from "./components/health/health
 import {HealthActions} from "./store/health";
 
 export const App = () => {
-    const [updateSettings] = useUpdateSettingsMutation();
+    const [updateSettings] = useMutation(UpdateSettingsDocument);
     const dispatch = useAppDispatch();
   const metricsEnabled = useAppSelector(state => state.settings.metricsEnabled);
 

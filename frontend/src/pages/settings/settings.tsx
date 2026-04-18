@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import {useQuery} from "@apollo/client/react";
 import {FC, Suspense, useCallback, useEffect, useMemo} from "react";
 import {InternalPage} from "../../components/page";
 import {InternalRoutes} from "../../config/routes";
@@ -40,7 +41,7 @@ import {AwsProvidersSection} from "../../components/aws";
 import {AzureProvidersSection} from "../../components/azure";
 import {GcpProvidersSection} from "../../components/gcp";
 import {getComponent} from "../../config/component-registry";
-import {useSettingsConfigQuery} from "@graphql";
+import {SettingsConfigDocument} from "@graphql";
 
 export const SettingsPage: FC = () => {
     const {t} = useTranslation('pages/settings');
@@ -59,7 +60,7 @@ export const SettingsPage: FC = () => {
     const disableAnimations = useAppSelector(state => state.settings.disableAnimations);
 
     // Check if cloud providers are enabled
-    const { data: settingsData } = useSettingsConfigQuery();
+    const { data: settingsData } = useQuery(SettingsConfigDocument);
     const cloudProvidersEnabled = settingsData?.SettingsConfig?.CloudProvidersEnabled ?? false;
 
     const pageSizeOptions = useMemo(() => ({

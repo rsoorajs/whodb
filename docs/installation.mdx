@@ -149,6 +149,7 @@ The desktop app lives in `desktop-ce/` and uses the same frontend and backend co
 | `WHODB_ACCESS_LOG_FILE` | Redirect HTTP access logs to a file. `default` means `/var/log/whodb/whodb.access.log` | unset |
 | `WHODB_TOKENS` | Comma-separated static access tokens for gating the app/API | unset |
 | `WHODB_ALLOWED_ORIGINS` | Comma-separated CORS allowlist | unset |
+| `WHODB_BASE_PATH` | URL path prefix for bundled web deployments, such as `/whodb` | unset |
 | `WHODB_DISABLE_CREDENTIAL_FORM` | Hide the manual credential form and require managed profiles/providers | `false` |
 | `WHODB_MAX_PAGE_SIZE` | Maximum rows allowed per page request | `10000` |
 | `WHODB_DISABLE_MOCK_DATA_GENERATION` | Disable mock data globally or for named tables | unset |
@@ -156,6 +157,10 @@ The desktop app lives in `desktop-ce/` and uses the same frontend and backend co
 
 <Note>
 The `default` log paths write to `/var/log/whodb/`. That works naturally in Docker but usually requires a custom path for local development.
+</Note>
+
+<Note>
+`WHODB_BASE_PATH` only applies to production versions, such as the Docker image or a production binary build. It is intended for reverse-proxy subpath hosting like `/whodb/`, not split frontend/backend dev mode.
 </Note>
 
 ### AI Providers

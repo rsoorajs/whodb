@@ -17,6 +17,8 @@
 package cmd
 
 import (
+	"slices"
+
 	"github.com/clidey/whodb/cli/internal/config"
 	dbmgr "github.com/clidey/whodb/cli/internal/database"
 	"github.com/clidey/whodb/core/src/dbcatalog"
@@ -50,7 +52,7 @@ func completeDatabaseTypes(cmd *cobra.Command, args []string, toComplete string)
 
 // completeOutputFormats returns the standard output format options.
 func completeOutputFormats(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	return []string{"auto", "table", "plain", "json", "csv"}, cobra.ShellCompDirectiveNoFileComp
+	return []string{"auto", "table", "plain", "json", "ndjson", "csv"}, cobra.ShellCompDirectiveNoFileComp
 }
 
 // completeExportFormats returns export-specific format options.
@@ -90,4 +92,32 @@ func completeMCPTransports(cmd *cobra.Command, args []string, toComplete string)
 // completeMCPSecurityLevels returns supported MCP security levels.
 func completeMCPSecurityLevels(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return []string{"strict", "standard", "minimal"}, cobra.ShellCompDirectiveNoFileComp
+}
+
+// completeSSLModes returns catalog-backed SSL mode values for the selected
+// database type. If no type is selected yet, it returns the union of all known
+// SSL modes.
+func completeSSLModes(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	dbType, _ := cmd.Flags().GetString("type")
+	if entry, ok := lookupDatabaseType(dbType); ok {
+		modes := make([]string, 0, len(entry.SSLModes))
+		for _, mode := range entry.SSLModes {
+			modes = append(modes, string(mode.Value))
+		}
+		return modes, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	modeSet := map[string]struct{}{}
+	for _, entry := range dbcatalog.All() {
+		for _, mode := range entry.SSLModes {
+			modeSet[string(mode.Value)] = struct{}{}
+		}
+	}
+
+	modes := make([]string, 0, len(modeSet))
+	for mode := range modeSet {
+		modes = append(modes, mode)
+	}
+	slices.Sort(modes)
+	return modes, cobra.ShellCompDirectiveNoFileComp
 }

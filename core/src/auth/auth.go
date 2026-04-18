@@ -30,6 +30,9 @@ import (
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/log"
+	"github.com/clidey/whodb/core/src/source"
+	"github.com/clidey/whodb/core/src/source/adapters"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 type AuthKey string
@@ -37,6 +40,7 @@ type AuthKey string
 const (
 	AuthKey_Token       AuthKey = "Token"
 	AuthKey_Credentials AuthKey = "Credentials"
+	AuthKey_Source      AuthKey = "SourceCredentials"
 )
 
 const maxRequestBodySize = 1024 * 1024 // Limit request body size to 1MB
@@ -47,6 +51,15 @@ func GetCredentials(ctx context.Context) *engine.Credentials {
 		return nil
 	}
 	return credentials.(*engine.Credentials)
+}
+
+// GetSourceCredentials returns the source-first credentials from the current request context.
+func GetSourceCredentials(ctx context.Context) *source.Credentials {
+	credentials := ctx.Value(AuthKey_Source)
+	if credentials == nil {
+		return nil
+	}
+	return credentials.(*source.Credentials)
 }
 
 func isPublicRoute(r *http.Request) bool {
@@ -142,7 +155,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		credentials := &engine.Credentials{}
+		credentials := &source.Credentials{}
 		err = json.Unmarshal(decodedValue, credentials)
 		if err != nil {
 			log.Debugf("[Auth] Failed to unmarshal credentials JSON: %v", err)
@@ -156,33 +169,25 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		inline := true
-		isIdOnly := credentials.Id != nil && credentials.Type == "" && credentials.Hostname == ""
+		isSavedProfileReference := credentials.ID != nil && credentials.SourceType == ""
 
-		if credentials.Id != nil && isIdOnly {
-			// Client sent only ID - must match a saved profile or keyring entry
+		if isSavedProfileReference {
+			// Client sent a saved-profile reference. Resolve the stored credentials and
+			// apply any field overrides carried in the request payload.
 			matched := false
-			profiles := src.GetLoginProfiles()
-			for i, loginProfile := range profiles {
-				profileId := src.GetLoginProfileId(i, loginProfile)
-				if *credentials.Id == profileId {
-					profile := *src.GetLoginCredentials(loginProfile)
-					profile.Id = credentials.Id
-					if credentials.Database != "" {
-						profile.Database = credentials.Database
-					}
-					credentials = &profile
-					matched = true
-					inline = false
-					onceProfile.Do(func() { log.Info("Auth: credentials resolved via saved profile") })
-					break
-				}
+			_, storedProfile, ok := src.FindSourceProfile(*credentials.ID)
+			if ok {
+				storedProfile.ID = credentials.ID
+				storedProfile.Values = mergeCredentialValues(storedProfile.Values, credentials.Values)
+				credentials = storedProfile
+				matched = true
+				inline = false
+				onceProfile.Do(func() { log.Info("Auth: credentials resolved via saved profile") })
 			}
 			if !matched {
-				if stored, err := LoadCredentials(*credentials.Id); err == nil && stored != nil {
-					if credentials.Database != "" {
-						stored.Database = credentials.Database
-					}
-					stored.Id = credentials.Id
+				if stored, err := LoadCredentials(*credentials.ID); err == nil && stored != nil {
+					stored.ID = credentials.ID
+					stored.Values = mergeCredentialValues(stored.Values, credentials.Values)
 					credentials = stored
 					inline = false
 					onceKeyring.Do(func() { log.Info("Auth: credentials resolved via OS keyring") })
@@ -192,7 +197,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 					return
 				}
 			}
-		} else if credentials.Id != nil && !isIdOnly {
+		} else if credentials.ID != nil {
 			// Client sent full credentials with ID - validate or store for future use
 			// This is the initial login case for desktop apps
 			onceInline.Do(func() { log.Info("Auth: credentials supplied inline with ID") })
@@ -202,8 +207,16 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			onceInline.Do(func() { log.Info("Auth: credentials supplied inline") })
 		}
 
+		spec, ok := sourcecatalog.Find(credentials.SourceType)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		engineCredentials := adapters.EngineCredentials(spec, credentials)
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, AuthKey_Credentials, credentials)
+		ctx = context.WithValue(ctx, AuthKey_Source, credentials)
+		ctx = context.WithValue(ctx, AuthKey_Credentials, engineCredentials)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -254,15 +267,18 @@ func isAllowed(r *http.Request, body []byte) bool {
 		return false
 	}
 
-	if query.OperationName == "GetDatabase" {
-		dbType, _ := query.Variables["type"].(string)
-		return dbType == engine.DatabaseType_Sqlite3 || dbType == engine.DatabaseType_DuckDB
+	if query.OperationName == "SourceFieldOptions" {
+		sourceType, _ := query.Variables["sourceType"].(string)
+		return sourceType == string(engine.DatabaseType_Sqlite3) || sourceType == string(engine.DatabaseType_DuckDB)
 	}
 
 	switch query.OperationName {
-	case "Login", "LoginWithProfile", "GetProfiles", "UpdateSettings", "SettingsConfig", "GetVersion",
+	case "LoginSource",
+		"LoginWithSourceProfile",
+		"SourceProfiles",
+		"UpdateSettings", "SettingsConfig", "GetVersion",
 		"GetAWSProviders", "GetCloudProviders", "GetCloudProvider",
-		"GetDiscoveredConnections", "GetProviderConnections", "GetConnectableDatabases",
+		"GetDiscoveredConnections", "GetProviderConnections", "SourceTypes",
 		"GetLocalAWSProfiles", "GetAWSRegions",
 		"AddAWSProvider", "TestAWSCredentials", "TestCloudProvider",
 		"RefreshCloudProvider", "RemoveCloudProvider", "UpdateAWSProvider",
@@ -283,6 +299,17 @@ func isAllowed(r *http.Request, body []byte) bool {
 		}
 	}
 	return false
+}
+
+func mergeCredentialValues(base map[string]string, overrides map[string]string) map[string]string {
+	merged := map[string]string{}
+	for key, value := range base {
+		merged[key] = value
+	}
+	for key, value := range overrides {
+		merged[key] = value
+	}
+	return merged
 }
 
 func isTokenValid(token string) bool {

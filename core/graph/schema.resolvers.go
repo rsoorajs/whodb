@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 	"time"
 
@@ -22,13 +21,10 @@ import (
 	"github.com/clidey/whodb/core/src/aws"
 	"github.com/clidey/whodb/core/src/azure"
 	"github.com/clidey/whodb/core/src/common"
-	"github.com/clidey/whodb/core/src/common/ssl"
-	"github.com/clidey/whodb/core/src/dbcatalog"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/envconfig"
 	"github.com/clidey/whodb/core/src/gcp"
-	"github.com/clidey/whodb/core/src/importer"
 	"github.com/clidey/whodb/core/src/llm"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/mockdata"
@@ -37,196 +33,26 @@ import (
 	azureprovider "github.com/clidey/whodb/core/src/providers/azure"
 	gcpprovider "github.com/clidey/whodb/core/src/providers/gcp"
 	"github.com/clidey/whodb/core/src/settings"
+	"github.com/clidey/whodb/core/src/source"
+	"github.com/clidey/whodb/core/src/source/adapters"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 	"github.com/clidey/whodb/core/src/version"
-	"golang.org/x/sync/errgroup"
 )
 
-// Login is the resolver for the Login field.
-func (r *mutationResolver) Login(ctx context.Context, credentials model.LoginCredentials) (*model.StatusResponse, error) {
-	if env.DisableCredentialForm {
-		log.WithFields(log.Fields{
-			"type":     credentials.Type,
-			"hostname": credentials.Hostname,
-			"username": credentials.Username,
-			"database": credentials.Database,
-		}).Error("Login with credentials is disabled; use preconfigured connections")
-		return nil, errors.New("login with credentials is disabled; use preconfigured connections")
-	}
-
-	advanced := make([]engine.Record, 0, len(credentials.Advanced))
-	for _, recordInput := range credentials.Advanced {
-		advanced = append(advanced, engine.Record{
-			Key:   recordInput.Key,
-			Value: recordInput.Value,
-		})
-	}
-
-	hasProfileID := credentials.ID != nil && strings.TrimSpace(*credentials.ID) != ""
-	identity := strings.TrimSpace(analytics.MetadataFromContext(ctx).DistinctID)
-	hasIdentity := identity != "" && identity != "disabled"
-
-	if hasIdentity {
-		analytics.CaptureWithDistinctID(ctx, identity, "login.attempt", map[string]any{
-			"database_type":      credentials.Type,
-			"profile_id_present": hasProfileID,
-		})
-	}
-
-	plugin := src.MainEngine.Choose(engine.DatabaseType(credentials.Type))
-	if plugin == nil {
-		return nil, errors.New("unauthorized")
-	}
-
-	if !plugin.IsAvailable(ctx, &engine.PluginConfig{
-		Credentials: &engine.Credentials{
-			Type:     credentials.Type,
-			Hostname: credentials.Hostname,
-			Username: credentials.Username,
-			Password: credentials.Password,
-			Database: credentials.Database,
-			Advanced: advanced,
-		},
-	}) {
-		log.WithFields(log.Fields{
-			"type":     credentials.Type,
-			"hostname": credentials.Hostname,
-			"username": credentials.Username,
-			"database": credentials.Database,
-		}).Error("Database connection failed during login - credentials unauthorized")
-
-		if hasIdentity {
-			analytics.CaptureWithDistinctID(ctx, identity, "login.denied", map[string]any{
-				"database_type":      credentials.Type,
-				"profile_id_present": hasProfileID,
-			})
-		}
-		return nil, errors.New("unauthorized")
-	}
-
-	resp, err := auth.Login(ctx, &credentials)
-	if err != nil {
-		if hasIdentity {
-			analytics.CaptureError(ctx, "login.execute", err, map[string]any{
-				"database_type":      credentials.Type,
-				"profile_id_present": hasProfileID,
-			})
-		}
-		return nil, err
-	}
-
-	if hasIdentity {
-		traits := map[string]any{
-			"profile_id_present": hasProfileID,
-		}
-		if hashedHost := analytics.HashIdentifier(credentials.Hostname); hashedHost != "" {
-			traits["hostname_hash"] = hashedHost
-		}
-		if hashedDatabase := analytics.HashIdentifier(credentials.Database); hashedDatabase != "" {
-			traits["database_hash"] = hashedDatabase
-		}
-
-		analytics.IdentifyWithDistinctID(ctx, identity, traits)
-		analytics.CaptureWithDistinctID(ctx, identity, "login.success", map[string]any{
-			"database_type":      credentials.Type,
-			"profile_id_present": hasProfileID,
-		})
-	}
-
-	return resp, nil
+// LoginSource is the resolver for the LoginSource field.
+func (r *mutationResolver) LoginSource(ctx context.Context, credentials model.SourceLoginInput) (*model.StatusResponse, error) {
+	return performSourceLogin(ctx, sourceCredentialsFromInput(credentials), "")
 }
 
-// LoginWithProfile is the resolver for the LoginWithProfile field.
-func (r *mutationResolver) LoginWithProfile(ctx context.Context, profile model.LoginProfileInput) (*model.StatusResponse, error) {
-	profiles := src.GetLoginProfiles()
-	for i, loginProfile := range profiles {
-		profileId := src.GetLoginProfileId(i, loginProfile)
-		if profile.ID == profileId {
-
-			resolved := src.GetLoginCredentials(loginProfile)
-			credentials := &model.LoginCredentials{
-				ID:       &profile.ID,
-				Type:     resolved.Type,
-				Hostname: resolved.Hostname,
-				Username: resolved.Username,
-				Password: resolved.Password,
-				Database: resolved.Database,
-				Advanced: func() []*model.RecordInput {
-					out := make([]*model.RecordInput, 0, len(resolved.Advanced))
-					for _, rec := range resolved.Advanced {
-						out = append(out, &model.RecordInput{Key: rec.Key, Value: rec.Value})
-					}
-					return out
-				}(),
-			}
-			if profile.Database != nil && *profile.Database != "" {
-				credentials.Database = *profile.Database
-				resolved.Database = credentials.Database
-			}
-
-			identity := strings.TrimSpace(analytics.MetadataFromContext(ctx).DistinctID)
-			hasIdentity := identity != "" && identity != "disabled"
-
-			if hasIdentity {
-				analytics.CaptureWithDistinctID(ctx, identity, "login_with_profile.attempt", map[string]any{
-					"database_type":  loginProfile.Type,
-					"profile_source": loginProfile.Source,
-				})
-			}
-
-			if !src.MainEngine.Choose(engine.DatabaseType(loginProfile.Type)).IsAvailable(ctx, &engine.PluginConfig{
-				Credentials: resolved,
-			}) {
-				log.WithFields(log.Fields{
-					"profile_id": profile.ID,
-					"type":       loginProfile.Type,
-				}).Error("Database connection failed for login profile - credentials unauthorized")
-
-				if hasIdentity {
-					analytics.CaptureWithDistinctID(ctx, identity, "login_with_profile.denied", map[string]any{
-						"database_type":  loginProfile.Type,
-						"profile_source": loginProfile.Source,
-					})
-				}
-				return nil, errors.New("unauthorized")
-			}
-
-			resp, err := auth.Login(ctx, credentials)
-			if err != nil {
-				if hasIdentity {
-					analytics.CaptureError(ctx, "login_with_profile.execute", err, map[string]any{
-						"database_type":  loginProfile.Type,
-						"profile_source": loginProfile.Source,
-					})
-				}
-				return nil, err
-			}
-
-			if hasIdentity {
-				traits := map[string]any{
-					"profile_source": loginProfile.Source,
-					"saved_profile":  true,
-				}
-				if hashedHost := analytics.HashIdentifier(credentials.Hostname); hashedHost != "" {
-					traits["hostname_hash"] = hashedHost
-				}
-				if hashedDatabase := analytics.HashIdentifier(credentials.Database); hashedDatabase != "" {
-					traits["database_hash"] = hashedDatabase
-				}
-
-				analytics.IdentifyWithDistinctID(ctx, identity, traits)
-				analytics.CaptureWithDistinctID(ctx, identity, "login_with_profile.success", map[string]any{
-					"database_type":  loginProfile.Type,
-					"profile_source": loginProfile.Source,
-				})
-			}
-
-			return resp, nil
-		}
+// LoginWithSourceProfile is the resolver for the LoginWithSourceProfile field.
+func (r *mutationResolver) LoginWithSourceProfile(ctx context.Context, profile model.SourceProfileLoginInput) (*model.StatusResponse, error) {
+	sourceProfile, credentials, ok := src.FindSourceProfile(profile.ID)
+	if !ok {
+		return nil, errors.New("login profile does not exist or is not authorized")
 	}
-	log.WithFields(log.Fields{
-		"profile_id": profile.ID,
-	}).Error("Login profile not found or not authorized")
-	return nil, errors.New("login profile does not exist or is not authorized")
+
+	credentials.Values = mergeCredentialValues(credentials.Values, recordInputsToMap(profile.Values))
+	return performSourceLogin(ctx, credentials, sourceProfile.Source)
 }
 
 // Logout is the resolver for the Logout field.
@@ -288,241 +114,89 @@ func (r *mutationResolver) UpdateSettings(ctx context.Context, newSettings model
 	}, nil
 }
 
-// AddStorageUnit is the resolver for the AddStorageUnit field.
-func (r *mutationResolver) AddStorageUnit(ctx context.Context, schema string, storageUnit string, fields []*model.RecordInput) (*model.StatusResponse, error) {
-	plugin, config := GetPluginForContext(ctx)
-	typeArg := config.Credentials.Type
-	var fieldsMap []engine.Record
-	for _, field := range fields {
-		extraFields := map[string]string{}
-		for _, extraField := range field.Extra {
-			extraFields[extraField.Key] = extraField.Value
-		}
-		fieldsMap = append(fieldsMap, engine.Record{
-			Key:   field.Key,
-			Value: field.Value,
-			Extra: extraFields,
-		})
-	}
-	status, err := plugin.AddStorageUnit(config, schema, storageUnit, fieldsMap)
+// CreateSourceObject is the resolver for the CreateSourceObject field.
+func (r *mutationResolver) CreateSourceObject(ctx context.Context, parent *model.SourceObjectRefInput, name string, fields []*model.RecordInput) (*model.StatusResponse, error) {
+	_, session, err := getSourceSessionForContext(ctx)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"operation":     "AddStorageUnit",
-			"schema":        schema,
-			"storage_unit":  storageUnit,
-			"database_type": typeArg,
-		}).WithError(err).Error("Database operation failed")
-		analytics.CaptureError(ctx, "AddStorageUnit", err, map[string]any{
-			"database_type": typeArg,
-			"schema_hash":   analytics.HashIdentifier(schema),
-			"storage_hash":  analytics.HashIdentifier(storageUnit),
-		})
 		return nil, err
 	}
 
-	analytics.TrackMutation(ctx, "AddStorageUnit", map[string]any{
-		"database_type": typeArg,
-		"schema_hash":   analytics.HashIdentifier(schema),
-		"storage_hash":  analytics.HashIdentifier(storageUnit),
-		"field_count":   len(fields),
-	})
+	manager, ok := session.(source.ObjectManager)
+	if !ok {
+		return nil, errors.New("source object creation is not supported")
+	}
 
-	return &model.StatusResponse{
-		Status: status,
-	}, nil
+	status, err := manager.CreateObject(ctx, sourceRefFromInput(parent), name, recordInputsToEngineRecords(fields))
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.StatusResponse{Status: status}, nil
 }
 
-// UpdateStorageUnit is the resolver for the UpdateStorageUnit field.
-func (r *mutationResolver) UpdateStorageUnit(ctx context.Context, schema string, storageUnit string, values []*model.RecordInput, updatedColumns []string) (*model.StatusResponse, error) {
-	plugin, config := GetPluginForContext(ctx)
-	typeArg := config.Credentials.Type
-
-	if err := ValidateStorageUnit(plugin, config, schema, storageUnit); err != nil {
-		return nil, err
-	}
-
-	valuesMap := map[string]string{}
-	for _, value := range values {
-		valuesMap[value.Key] = value.Value
-	}
-	status, err := plugin.UpdateStorageUnit(config, schema, storageUnit, valuesMap, updatedColumns)
+// UpdateSourceObject is the resolver for the UpdateSourceObject field.
+func (r *mutationResolver) UpdateSourceObject(ctx context.Context, ref model.SourceObjectRefInput, values []*model.RecordInput, updatedColumns []string) (*model.StatusResponse, error) {
+	_, session, err := getSourceSessionForContext(ctx)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"operation":       "UpdateStorageUnit",
-			"schema":          schema,
-			"storage_unit":    storageUnit,
-			"database_type":   typeArg,
-			"updated_columns": len(updatedColumns),
-		}).WithError(err).Error("Database operation failed")
-		analytics.CaptureError(ctx, "UpdateStorageUnit", err, map[string]any{
-			"database_type":   typeArg,
-			"schema_hash":     analytics.HashIdentifier(schema),
-			"storage_hash":    analytics.HashIdentifier(storageUnit),
-			"updated_columns": len(updatedColumns),
-			"values_supplied": len(values),
-		})
 		return nil, err
 	}
 
-	analytics.TrackMutation(ctx, "UpdateStorageUnit", map[string]any{
-		"database_type":   typeArg,
-		"schema_hash":     analytics.HashIdentifier(schema),
-		"storage_hash":    analytics.HashIdentifier(storageUnit),
-		"updated_columns": len(updatedColumns),
-		"values_supplied": len(values),
-	})
+	manager, ok := session.(source.ObjectManager)
+	if !ok {
+		return nil, errors.New("source object updates are not supported")
+	}
 
-	return &model.StatusResponse{
-		Status: status,
-	}, nil
+	status, err := manager.UpdateObject(ctx, *sourceRefFromInput(&ref), recordInputsToMap(values), updatedColumns)
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.StatusResponse{Status: status}, nil
 }
 
-// AddRow is the resolver for the AddRow field.
-func (r *mutationResolver) AddRow(ctx context.Context, schema string, storageUnit string, values []*model.RecordInput) (*model.StatusResponse, error) {
-	plugin, config := GetPluginForContext(ctx)
-	typeArg := config.Credentials.Type
-
-	if err := ValidateStorageUnit(plugin, config, schema, storageUnit); err != nil {
-		return nil, err
-	}
-
-	log.WithFields(log.Fields{
-		"operation":     "AddRow-Resolver",
-		"schema":        schema,
-		"storage_unit":  storageUnit,
-		"database_type": typeArg,
-		"values_count":  len(values),
-	}).Debug("AddRow resolver called")
-
-	valuesRecords := []engine.Record{}
-	for _, field := range values {
-		extraFields := map[string]string{}
-		for _, extraField := range field.Extra {
-			extraFields[extraField.Key] = extraField.Value
-		}
-		valuesRecords = append(valuesRecords, engine.Record{
-			Key:   field.Key,
-			Value: field.Value,
-			Extra: extraFields,
-		})
-	}
-
-	status, err := plugin.AddRow(config, schema, storageUnit, valuesRecords)
+// AddSourceRow is the resolver for the AddSourceRow field.
+func (r *mutationResolver) AddSourceRow(ctx context.Context, ref model.SourceObjectRefInput, values []*model.RecordInput) (*model.StatusResponse, error) {
+	_, session, err := getSourceSessionForContext(ctx)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"operation":     "AddRow",
-			"schema":        schema,
-			"storage_unit":  storageUnit,
-			"database_type": typeArg,
-		}).WithError(err).Error("Database operation failed")
-		analytics.CaptureError(ctx, "AddRow", err, map[string]any{
-			"database_type": typeArg,
-			"schema_hash":   analytics.HashIdentifier(schema),
-			"storage_hash":  analytics.HashIdentifier(storageUnit),
-			"value_count":   len(values),
-		})
 		return nil, err
 	}
 
-	analytics.TrackMutation(ctx, "AddRow", map[string]any{
-		"database_type": typeArg,
-		"schema_hash":   analytics.HashIdentifier(schema),
-		"storage_hash":  analytics.HashIdentifier(storageUnit),
-		"value_count":   len(values),
-	})
+	manager, ok := session.(source.ObjectManager)
+	if !ok {
+		return nil, errors.New("source row inserts are not supported")
+	}
 
-	return &model.StatusResponse{
-		Status: status,
-	}, nil
+	status, err := manager.AddRow(ctx, *sourceRefFromInput(&ref), recordInputsToEngineRecords(values))
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.StatusResponse{Status: status}, nil
 }
 
-// DeleteRow is the resolver for the DeleteRow field.
-func (r *mutationResolver) DeleteRow(ctx context.Context, schema string, storageUnit string, values []*model.RecordInput) (*model.StatusResponse, error) {
-	plugin, config := GetPluginForContext(ctx)
-	typeArg := config.Credentials.Type
-
-	if err := ValidateStorageUnit(plugin, config, schema, storageUnit); err != nil {
-		return nil, err
-	}
-
-	valuesMap := map[string]string{}
-	for _, value := range values {
-		valuesMap[value.Key] = value.Value
-	}
-	status, err := plugin.DeleteRow(config, schema, storageUnit, valuesMap)
+// DeleteSourceRow is the resolver for the DeleteSourceRow field.
+func (r *mutationResolver) DeleteSourceRow(ctx context.Context, ref model.SourceObjectRefInput, values []*model.RecordInput) (*model.StatusResponse, error) {
+	_, session, err := getSourceSessionForContext(ctx)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"operation":     "DeleteRow",
-			"schema":        schema,
-			"storage_unit":  storageUnit,
-			"database_type": typeArg,
-		}).WithError(err).Error("Database operation failed")
-		analytics.CaptureError(ctx, "DeleteRow", err, map[string]any{
-			"database_type": typeArg,
-			"schema_hash":   analytics.HashIdentifier(schema),
-			"storage_hash":  analytics.HashIdentifier(storageUnit),
-			"value_count":   len(values),
-		})
 		return nil, err
 	}
 
-	analytics.TrackMutation(ctx, "DeleteRow", map[string]any{
-		"database_type": typeArg,
-		"schema_hash":   analytics.HashIdentifier(schema),
-		"storage_hash":  analytics.HashIdentifier(storageUnit),
-		"value_count":   len(values),
-	})
+	manager, ok := session.(source.ObjectManager)
+	if !ok {
+		return nil, errors.New("source row deletes are not supported")
+	}
 
-	return &model.StatusResponse{
-		Status: status,
-	}, nil
+	status, err := manager.DeleteRow(ctx, *sourceRefFromInput(&ref), recordInputsToMap(values))
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.StatusResponse{Status: status}, nil
 }
 
 // GenerateMockData is the resolver for the GenerateMockData field.
 func (r *mutationResolver) GenerateMockData(ctx context.Context, input model.MockDataGenerationInput) (*model.MockDataGenerationStatus, error) {
-	log.WithField("schema", input.Schema).WithField("table", input.StorageUnit).WithField("rowCount", input.RowCount).WithField("overwrite", input.OverwriteExisting).Info("Starting mock data generation")
-
-	maxRowLimit := mockdata.GetMockDataGenerationMaxRowCount()
-	if input.RowCount > maxRowLimit {
-		log.WithField("requested", input.RowCount).WithField("max", maxRowLimit).Error("Row count exceeds maximum limit")
-		return nil, fmt.Errorf("row count exceeds maximum limit of %d", maxRowLimit)
-	}
-
-	if !mockdata.IsMockDataGenerationAllowed(input.StorageUnit) {
-		log.WithField("table", input.StorageUnit).Error("Mock data generation not allowed for table")
-		return nil, errors.New("mock data generation is not allowed for this table")
-	}
-
-	plugin, config := GetPluginForContext(ctx)
-
-	fkRatio := 0
-	if input.FkDensityRatio != nil {
-		fkRatio = *input.FkDensityRatio
-	}
-	generator := src.NewMockDataGenerator(fkRatio)
-	result, err := generator.Generate(plugin, config, input.Schema, input.StorageUnit, input.RowCount, input.OverwriteExisting)
-	if err != nil {
-		log.WithError(err).Error("Mock data generation failed")
-		return nil, fmt.Errorf("mock data generation failed: %w", err)
-	}
-
-	var details []*model.MockDataTableDetail
-	if len(result.Details) > 0 {
-		details = make([]*model.MockDataTableDetail, len(result.Details))
-		for i, d := range result.Details {
-			details[i] = &model.MockDataTableDetail{
-				Table:            d.Table,
-				RowsGenerated:    d.RowsGenerated,
-				UsedExistingData: d.UsedExistingData,
-			}
-		}
-	}
-
-	log.WithField("generatedRows", result.TotalGenerated).Info("Mock data generation completed successfully")
-	return &model.MockDataGenerationStatus{
-		AmountGenerated: result.TotalGenerated,
-		Details:         details,
-	}, nil
+	return generateMockDataForRef(ctx, input)
 }
 
 // ImportSQL is the resolver for the ImportSQL field.
@@ -569,141 +243,13 @@ func (r *mutationResolver) ImportSQL(ctx context.Context, input model.ImportSQLI
 }
 
 // ImportPreview is the resolver for the ImportPreview field.
-func (r *mutationResolver) ImportPreview(ctx context.Context, file graphql.Upload, options model.ImportFileOptions, schema *string, storageUnit *string, useHeaderMapping *bool) (*model.ImportPreview, error) {
-	data, err := readUploadBytes(file, maxImportFileSizeBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	result, err := parseImportFile(data, &options, importPreviewRowLimit, false)
-	if err != nil {
-		return nil, err
-	}
-
-	preview := &model.ImportPreview{
-		Sheet:                      &result.sheet,
-		Columns:                    result.columns,
-		Rows:                       result.rows,
-		Truncated:                  result.truncated,
-		RequiresAllowAutoGenerated: false,
-		AutoGeneratedColumns:       []string{},
-	}
-
-	if schema == nil || storageUnit == nil || useHeaderMapping == nil {
-		return preview, nil
-	}
-
-	plugin, config := GetPluginForContext(ctx)
-	columns, err := plugin.GetColumnsForTable(config, *schema, *storageUnit)
-	if err != nil {
-		return nil, err
-	}
-	if err := plugin.MarkGeneratedColumns(config, *schema, *storageUnit, columns); err != nil {
-		log.WithError(err).Warn("Failed to mark generated columns for import preview")
-	}
-
-	allowAutoGenerated := *useHeaderMapping
-	mappings, autoGeneratedColumns, err := buildImportMappingInputs(
-		preview.Columns,
-		columns,
-		*useHeaderMapping,
-		allowAutoGenerated,
-	)
-	if err != nil {
-		key := validationKeyFromError(err)
-		if key != "" {
-			preview.ValidationError = &key
-		}
-		if len(autoGeneratedColumns) > 0 {
-			preview.RequiresAllowAutoGenerated = true
-			preview.AutoGeneratedColumns = autoGeneratedColumns
-			if len(mappings) > 0 {
-				preview.Mapping = make([]*model.ImportColumnMappingPreview, 0, len(mappings))
-				for _, mapping := range mappings {
-					if mapping == nil || mapping.TargetColumn == nil {
-						continue
-					}
-					preview.Mapping = append(preview.Mapping, &model.ImportColumnMappingPreview{
-						SourceColumn: mapping.SourceColumn,
-						TargetColumn: *mapping.TargetColumn,
-					})
-				}
-			}
-		}
-		return preview, nil
-	}
-
-	if len(autoGeneratedColumns) > 0 {
-		preview.RequiresAllowAutoGenerated = true
-		preview.AutoGeneratedColumns = autoGeneratedColumns
-	}
-
-	if len(mappings) > 0 {
-		preview.Mapping = make([]*model.ImportColumnMappingPreview, 0, len(mappings))
-		for _, mapping := range mappings {
-			if mapping == nil || mapping.TargetColumn == nil {
-				continue
-			}
-			preview.Mapping = append(preview.Mapping, &model.ImportColumnMappingPreview{
-				SourceColumn: mapping.SourceColumn,
-				TargetColumn: *mapping.TargetColumn,
-			})
-		}
-	}
-
-	return preview, nil
+func (r *mutationResolver) ImportPreview(ctx context.Context, file graphql.Upload, options model.ImportFileOptions, ref *model.SourceObjectRefInput, useHeaderMapping *bool) (*model.ImportPreview, error) {
+	return importPreviewForRef(ctx, file, options, ref, useHeaderMapping)
 }
 
-// ImportTableFile is the resolver for the ImportTableFile field.
-func (r *mutationResolver) ImportTableFile(ctx context.Context, input model.ImportFileInput) (*model.ImportResult, error) {
-	plugin, config := GetPluginForContext(ctx)
-
-	data, err := readUploadBytes(input.File, maxImportFileSizeBytes)
-	if err != nil {
-		return importResult(false, validationKeyFromError(err)), nil
-	}
-
-	if input.Options == nil {
-		return importResult(false, importValidationInvalidOptions), nil
-	}
-
-	parsed, err := parseImportFile(data, input.Options, maxImportRows, true)
-	if err != nil {
-		return importResult(false, validationKeyFromError(err)), nil
-	}
-
-	columns, err := plugin.GetColumnsForTable(config, input.Schema, input.StorageUnit)
-	if err != nil {
-		return importResult(false, importErrorTableColumns), nil
-	}
-	if err := plugin.MarkGeneratedColumns(config, input.Schema, input.StorageUnit, columns); err != nil {
-		log.WithError(err).Warn("Failed to mark generated columns for import")
-	}
-
-	allowAutoGenerated := false
-	if input.AllowAutoGenerated != nil {
-		allowAutoGenerated = *input.AllowAutoGenerated
-	}
-
-	_, err = importer.Execute(plugin, config, &importer.ExecuteRequest{
-		Schema:             input.Schema,
-		StorageUnit:        input.StorageUnit,
-		Mode:               importer.Mode(input.Mode),
-		Parsed:             &importer.ParsedFile{Columns: parsed.columns, Rows: parsed.rows, Truncated: parsed.truncated, Sheet: parsed.sheet},
-		Mapping:            importerColumnMappings(input.Mapping),
-		AllowAutoGenerated: allowAutoGenerated,
-		BatchSize:          importBatchSize,
-		TargetColumns:      columns,
-	})
-	if err != nil {
-		if key := importer.ErrorKeyFromError(err); key != "" {
-			return importResult(false, key), nil
-		}
-		log.WithError(err).Error("Import failed")
-		return importResult(false, importErrorImportFailed), nil
-	}
-
-	return importResult(true, ""), nil
+// ImportSourceObjectFile is the resolver for the ImportSourceObjectFile field.
+func (r *mutationResolver) ImportSourceObjectFile(ctx context.Context, input model.ImportFileInput) (*model.ImportResult, error) {
+	return importSourceObjectFile(ctx, input)
 }
 
 // ExecuteConfirmedSQL is the resolver for the ExecuteConfirmedSQL field.
@@ -1418,116 +964,108 @@ func (r *queryResolver) Health(ctx context.Context) (*model.HealthStatus, error)
 	return status, nil
 }
 
-// Profiles is the resolver for the Profiles field.
-func (r *queryResolver) Profiles(ctx context.Context) ([]*model.LoginProfile, error) {
-	var profiles []*model.LoginProfile
-	for i, profile := range src.GetLoginProfiles() {
-		profileName := src.GetLoginProfileId(i, profile)
-
-		// Check if SSL is configured (mode is set and not "disabled")
-		sslConfigured := false
-		if mode, ok := profile.Advanced[ssl.KeySSLMode]; ok && mode != "" && mode != string(ssl.SSLModeDisabled) {
-			sslConfigured = true
-		}
-
-		loginProfile := &model.LoginProfile{
-			ID:                   profileName,
-			Type:                 model.DatabaseType(profile.Type),
-			Hostname:             &profile.Hostname,
-			Database:             &profile.Database,
-			IsEnvironmentDefined: true,
-			Source:               profile.Source,
-			SSLConfigured:        sslConfigured,
-		}
-		if len(profile.Alias) > 0 {
-			loginProfile.Alias = &profile.Alias
-		}
-		if len(profile.CustomId) > 0 {
-			loginProfile.ID = profile.CustomId
-		}
-		profiles = append(profiles, loginProfile)
-	}
-	return profiles, nil
+// SourceProfiles is the resolver for the SourceProfiles field.
+func (r *queryResolver) SourceProfiles(ctx context.Context) ([]*model.SourceProfile, error) {
+	return sourceProfilesToModel(src.GetSourceProfiles()), nil
 }
 
-// Database is the resolver for the Database field.
-// This resolver is used in two scenarios:
-// 1. Login page: to get available databases (e.g., SQLite files) before authentication
-// 2. Sidebar: to get switchable databases when already logged in
-//
-// For the sidebar case, we use session credentials. For login page, we fall back
-// to a minimal config (works for SQLite which scans filesystem, not for MySQL which needs connection).
-func (r *queryResolver) Database(ctx context.Context, typeArg string) ([]string, error) {
-	plugin := src.MainEngine.Choose(engine.DatabaseType(typeArg))
-	if plugin == nil {
-		return nil, fmt.Errorf("unsupported database type: %s", typeArg)
+// SourceTypes is the resolver for the SourceTypes field.
+func (r *queryResolver) SourceTypes(ctx context.Context) ([]*model.SourceType, error) {
+	specs := sourcecatalog.All()
+	types := make([]*model.SourceType, 0, len(specs))
+	for _, spec := range specs {
+		types = append(types, sourceTypeToModel(spec))
+	}
+	return types, nil
+}
+
+// SourceFieldOptions is the resolver for the SourceFieldOptions field.
+func (r *queryResolver) SourceFieldOptions(ctx context.Context, sourceType string, fieldKey string, values []*model.RecordInput) ([]string, error) {
+	spec, ok := sourcecatalog.Find(sourceType)
+	if !ok {
+		return nil, fmt.Errorf("unsupported source type: %s", sourceType)
 	}
 
-	var config *engine.PluginConfig
-
-	// Try to get credentials from session (for sidebar when logged in)
-	credentials := auth.GetCredentials(ctx)
-	if credentials != nil && credentials.Type == typeArg {
-		config = engine.NewPluginConfig(credentials)
-	} else {
-		// No session or type mismatch - use minimal config. works for sqlite
-		config = &engine.PluginConfig{
-			Credentials: &engine.Credentials{
-				Type: typeArg,
-			},
-		}
+	credentials := &source.Credentials{
+		SourceType: sourceType,
+		Values:     recordInputsToMap(values),
+	}
+	if current := auth.GetSourceCredentials(ctx); current != nil && current.SourceType == sourceType {
+		credentials.Values = mergeCredentialValues(current.CloneValues(), credentials.Values)
 	}
 
-	databases, err := plugin.GetDatabases(config)
+	session, err := (&adapters.DatabaseConnector{}).Open(ctx, spec, credentials)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"operation":     "GetDatabases",
-			"database_type": typeArg,
-		}).WithError(err).Error("Database operation failed")
 		return nil, err
 	}
-	return databases, nil
+
+	reader, ok := session.(source.ConnectionFieldOptionsReader)
+	if !ok {
+		return []string{}, nil
+	}
+
+	return reader.ConnectionFieldOptions(ctx, fieldKey, credentials.Values)
 }
 
-// Schema is the resolver for the Schema field.
-func (r *queryResolver) Schema(ctx context.Context) ([]string, error) {
-	plugin, config := GetPluginForContext(ctx)
-	typeArg := config.Credentials.Type
-	schemas, err := plugin.GetAllSchemas(config)
+// SourceSessionMetadata is the resolver for the SourceSessionMetadata field.
+func (r *queryResolver) SourceSessionMetadata(ctx context.Context) (*model.SourceSessionMetadata, error) {
+	_, session, err := getSourceSessionForContext(ctx)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"operation":     "GetAllSchemas",
-			"database_type": typeArg,
-		}).WithError(err).Error("Database operation failed")
 		return nil, err
 	}
-	return schemas, nil
-}
 
-// StorageUnit is the resolver for the StorageUnit field.
-func (r *queryResolver) StorageUnit(ctx context.Context, schema string) ([]*model.StorageUnit, error) {
-	plugin, config := GetPluginForContext(ctx)
-	typeArg := config.Credentials.Type
-	units, err := plugin.GetStorageUnits(config, schema)
+	metadata, err := session.Metadata(ctx)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"operation":     "GetStorageUnits",
-			"schema":        schema,
-			"database_type": typeArg,
-		}).WithError(err).Error("Database operation failed")
 		return nil, err
 	}
-	var storageUnits []*model.StorageUnit
-	for _, unit := range units {
-		storageUnit := engine.GetStorageUnitModel(unit)
-		storageUnit.IsMockDataGenerationAllowed = mockdata.IsMockDataGenerationAllowed(unit.Name)
-		storageUnits = append(storageUnits, storageUnit)
-	}
-	return storageUnits, nil
+	return sourceSessionMetadataToModel(metadata), nil
 }
 
-// Row is the resolver for the Row field.
-func (r *queryResolver) Row(ctx context.Context, schema string, storageUnit string, where *model.WhereCondition, sort []*model.SortCondition, pageSize int, pageOffset int) (*model.RowsResult, error) {
+// SourceObjects is the resolver for the SourceObjects field.
+func (r *queryResolver) SourceObjects(ctx context.Context, parent *model.SourceObjectRefInput, kinds []model.SourceObjectKind) ([]*model.SourceObject, error) {
+	spec, session, err := getSourceSessionForContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	browser, ok := session.(source.SourceBrowser)
+	if !ok {
+		return nil, errors.New("source browsing is not supported")
+	}
+
+	kindFilter := make([]source.ObjectKind, 0, len(kinds))
+	for _, kind := range kinds {
+		kindFilter = append(kindFilter, source.ObjectKind(kind))
+	}
+
+	objects, err := browser.ListObjects(ctx, sourceRefFromInput(parent), kindFilter)
+	if err != nil {
+		return nil, err
+	}
+	return sourceObjectModels(spec, objects), nil
+}
+
+// SourceObject is the resolver for the SourceObject field.
+func (r *queryResolver) SourceObject(ctx context.Context, ref model.SourceObjectRefInput) (*model.SourceObject, error) {
+	_, session, err := getSourceSessionForContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	browser, ok := session.(source.SourceBrowser)
+	if !ok {
+		return nil, errors.New("source browsing is not supported")
+	}
+
+	object, err := browser.GetObject(ctx, *sourceRefFromInput(&ref))
+	if err != nil {
+		return nil, err
+	}
+	return sourceObjectToModel(*object), nil
+}
+
+// SourceRows is the resolver for the SourceRows field.
+func (r *queryResolver) SourceRows(ctx context.Context, ref model.SourceObjectRefInput, where *model.WhereCondition, sort []*model.SortCondition, pageSize int, pageOffset int) (*model.RowsResult, error) {
 	if pageSize <= 0 {
 		return nil, fmt.Errorf("pageSize must be greater than 0")
 	}
@@ -1538,214 +1076,114 @@ func (r *queryResolver) Row(ctx context.Context, schema string, storageUnit stri
 		return nil, fmt.Errorf("pageOffset must not be negative")
 	}
 
-	plugin, config := GetPluginForContext(ctx)
-	typeArg := config.Credentials.Type
-
-	if err := ValidateStorageUnit(plugin, config, schema, storageUnit); err != nil {
-		return nil, err
-	}
-
-	// Run GetRows and GetColumnsForTable in parallel
-	var rowsResult *engine.GetRowsResult
-	var tableColumns []engine.Column
-
-	g, _ := errgroup.WithContext(ctx)
-
-	g.Go(func() error {
-		var err error
-		rowsResult, err = plugin.GetRows(config, &engine.GetRowsRequest{
-			Schema:      schema,
-			StorageUnit: storageUnit,
-			Where:       where,
-			Sort:        sort,
-			PageSize:    pageSize,
-			PageOffset:  pageOffset,
-		})
-		if err != nil {
-			log.WithFields(log.Fields{
-				"operation":     "GetRows",
-				"schema":        schema,
-				"storage_unit":  storageUnit,
-				"database_type": typeArg,
-				"page_size":     pageSize,
-				"page_offset":   pageOffset,
-			}).WithError(err).Error("Database operation failed")
-			return err
-		}
-		return nil
-	})
-
-	g.Go(func() error {
-		var err error
-		tableColumns, err = plugin.GetColumnsForTable(config, schema, storageUnit)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"operation":    "GetColumnsForTable",
-				"schema":       schema,
-				"storage_unit": storageUnit,
-				"error":        err.Error(),
-			}).Warn("Failed to get table columns")
-			tableColumns = nil
-		}
-		return nil
-	})
-
-	if err := g.Wait(); err != nil {
-		return nil, err
-	}
-
-	columnInfo := make(map[string]engine.Column, len(tableColumns))
-	for _, col := range tableColumns {
-		columnInfo[col.Name] = col
-	}
-
-	var columns []*model.Column
-	for _, column := range rowsResult.Columns {
-		col := columnInfo[column.Name]
-		columns = append(columns, &model.Column{
-			Type:             column.Type,
-			Name:             column.Name,
-			IsPrimary:        col.IsPrimary,
-			IsForeignKey:     col.IsForeignKey,
-			ReferencedTable:  col.ReferencedTable,
-			ReferencedColumn: col.ReferencedColumn,
-			Length:           column.Length,
-			Precision:        column.Precision,
-			Scale:            column.Scale,
-		})
-	}
-	return &model.RowsResult{
-		Columns:       columns,
-		Rows:          rowsResult.Rows,
-		DisableUpdate: rowsResult.DisableUpdate,
-		TotalCount:    int(rowsResult.TotalCount),
-	}, nil
-}
-
-// Columns is the resolver for the Columns field.
-func (r *queryResolver) Columns(ctx context.Context, schema string, storageUnit string) ([]*model.Column, error) {
-	plugin, config := GetPluginForContext(ctx)
-	columns, err := FetchColumnsForStorageUnit(plugin, config, schema, storageUnit)
+	_, session, err := getSourceSessionForContext(ctx)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"operation":     "Columns",
-			"schema":        schema,
-			"storage_unit":  storageUnit,
-			"database_type": config.Credentials.Type,
-			"error":         err.Error(),
-		}).Error("Failed to fetch columns")
-		return nil, err
-	}
-	return columns, nil
-}
-
-// ColumnsBatch is the resolver for the ColumnsBatch field.
-func (r *queryResolver) ColumnsBatch(ctx context.Context, schema string, storageUnits []string) ([]*model.StorageUnitColumns, error) {
-	plugin, config := GetPluginForContext(ctx)
-
-	results := make([]*model.StorageUnitColumns, len(storageUnits))
-	g, _ := errgroup.WithContext(ctx)
-	g.SetLimit(10)
-
-	for i, storageUnit := range storageUnits {
-		i, storageUnit := i, storageUnit
-		g.Go(func() error {
-			columns, err := FetchColumnsForStorageUnit(plugin, config, schema, storageUnit)
-			if err != nil {
-				log.WithFields(log.Fields{
-					"operation":     "ColumnsBatch",
-					"schema":        schema,
-					"storage_unit":  storageUnit,
-					"database_type": config.Credentials.Type,
-					"error":         err.Error(),
-				}).Error("Failed to fetch columns")
-				// Don't fail the entire batch - just skip this table
-				results[i] = nil
-				return nil
-			}
-			results[i] = &model.StorageUnitColumns{
-				StorageUnit: storageUnit,
-				Columns:     columns,
-			}
-			return nil
-		})
-	}
-
-	if err := g.Wait(); err != nil {
 		return nil, err
 	}
 
-	// Filter out nil results (tables that failed to load)
-	successfulResults := make([]*model.StorageUnitColumns, 0, len(results))
-	for _, result := range results {
-		if result != nil {
-			successfulResults = append(successfulResults, result)
-		}
+	reader, ok := session.(source.TabularReader)
+	if !ok {
+		return nil, errors.New("source rows are not supported")
 	}
 
-	return successfulResults, nil
-}
-
-// RawExecute is the resolver for the RawExecute field.
-func (r *queryResolver) RawExecute(ctx context.Context, query string) (*model.RowsResult, error) {
-	plugin, config := GetPluginForContext(ctx)
-	typeArg := config.Credentials.Type
-	rowsResult, err := plugin.RawExecute(config, query)
+	resolvedRef := *sourceRefFromInput(&ref)
+	rowsResult, err := reader.ReadRows(ctx, resolvedRef, where, sort, pageSize, pageOffset)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"operation":     "RawExecute",
-			"database_type": typeArg,
-			"query":         query,
-		}).WithError(err).Error("Database operation failed")
 		return nil, err
 	}
-	var columns []*model.Column
-	for _, column := range rowsResult.Columns {
-		columns = append(columns, &model.Column{
-			Type:         column.Type,
-			Name:         column.Name,
-			IsPrimary:    column.IsPrimary,
-			IsForeignKey: column.IsForeignKey,
-		})
+
+	columns, err := reader.Columns(ctx, resolvedRef)
+	if err != nil {
+		log.WithError(err).Warn("Failed to load source columns for row metadata")
+		return rowsResultToModel(rowsResult), nil
 	}
-	return &model.RowsResult{
-		Columns:       columns,
-		Rows:          rowsResult.Rows,
-		DisableUpdate: rowsResult.DisableUpdate,
-		TotalCount:    int(rowsResult.TotalCount),
-	}, nil
+
+	return mergeRowsColumns(rowsResult, columns), nil
 }
 
-// Graph is the resolver for the Graph field.
-func (r *queryResolver) Graph(ctx context.Context, schema string) ([]*model.GraphUnit, error) {
-	plugin, config := GetPluginForContext(ctx)
-	typeArg := config.Credentials.Type
-	graphUnits, err := plugin.GetGraph(config, schema)
+// SourceColumns is the resolver for the SourceColumns field.
+func (r *queryResolver) SourceColumns(ctx context.Context, ref model.SourceObjectRefInput) ([]*model.Column, error) {
+	_, session, err := getSourceSessionForContext(ctx)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"operation":     "GetGraph",
-			"schema":        schema,
-			"database_type": typeArg,
-		}).WithError(err).Error("Database operation failed")
 		return nil, err
 	}
-	var graphUnitsModel []*model.GraphUnit
-	for _, graphUnit := range graphUnits {
-		var relations []*model.GraphUnitRelationship
-		for _, relation := range graphUnit.Relations {
-			relations = append(relations, &model.GraphUnitRelationship{
-				Name:         relation.Name,
-				Relationship: model.GraphUnitRelationshipType(relation.RelationshipType),
-				SourceColumn: relation.SourceColumn,
-				TargetColumn: relation.TargetColumn,
-			})
-		}
-		graphUnitsModel = append(graphUnitsModel, &model.GraphUnit{
-			Unit:      engine.GetStorageUnitModel(graphUnit.Unit),
-			Relations: relations,
-		})
+
+	reader, ok := session.(source.TabularReader)
+	if !ok {
+		return nil, errors.New("source columns are not supported")
 	}
-	return graphUnitsModel, nil
+
+	columns, err := reader.Columns(ctx, *sourceRefFromInput(&ref))
+	if err != nil {
+		return nil, err
+	}
+	return MapColumnsToModel(columns), nil
+}
+
+// SourceColumnsBatch is the resolver for the SourceColumnsBatch field.
+func (r *queryResolver) SourceColumnsBatch(ctx context.Context, refs []*model.SourceObjectRefInput) ([]*model.SourceObjectColumns, error) {
+	_, session, err := getSourceSessionForContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	reader, ok := session.(source.TabularReader)
+	if !ok {
+		return nil, errors.New("source columns are not supported")
+	}
+
+	sourceRefs := make([]source.ObjectRef, 0, len(refs))
+	for _, ref := range refs {
+		if ref == nil {
+			continue
+		}
+		sourceRefs = append(sourceRefs, *sourceRefFromInput(ref))
+	}
+
+	results, err := reader.ColumnsBatch(ctx, sourceRefs)
+	if err != nil {
+		return nil, err
+	}
+	return sourceObjectColumnsToModel(results), nil
+}
+
+// RunSourceQuery is the resolver for the RunSourceQuery field.
+func (r *queryResolver) RunSourceQuery(ctx context.Context, query string) (*model.RowsResult, error) {
+	_, session, err := getSourceSessionForContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	runner, ok := session.(source.QueryRunner)
+	if !ok {
+		return nil, errors.New("source queries are not supported")
+	}
+
+	rowsResult, err := runner.RunQuery(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	return rowsResultToModel(rowsResult), nil
+}
+
+// SourceGraph is the resolver for the SourceGraph field.
+func (r *queryResolver) SourceGraph(ctx context.Context, ref *model.SourceObjectRefInput) ([]*model.GraphUnit, error) {
+	spec, session, err := getSourceSessionForContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	reader, ok := session.(source.GraphReader)
+	if !ok {
+		return nil, errors.New("source graph is not supported")
+	}
+
+	resolvedRef := sourceRefFromInput(ref)
+	graphUnits, err := reader.ReadGraph(ctx, resolvedRef)
+	if err != nil {
+		return nil, err
+	}
+	return graphUnitsToModel(graphUnits, resolvedRef, spec.Contract.DefaultObjectKind), nil
 }
 
 // AIProviders is the resolver for the AIProviders field.
@@ -1815,8 +1253,12 @@ func (r *queryResolver) AIModel(ctx context.Context, providerID *string, modelTy
 }
 
 // AIChat is the resolver for the AIChat field.
-func (r *queryResolver) AIChat(ctx context.Context, providerID *string, modelType string, token *string, schema string, input model.ChatInput) ([]*model.AIChatMessage, error) {
+func (r *queryResolver) AIChat(ctx context.Context, providerID *string, modelType string, token *string, ref *model.SourceObjectRefInput, input model.ChatInput) ([]*model.AIChatMessage, error) {
 	plugin, config := GetPluginForContext(ctx)
+	spec, _, err := getSourceSpecForContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	typeArg := config.Credentials.Type
 	providerId := ""
 	if providerID != nil {
@@ -1833,12 +1275,13 @@ func (r *queryResolver) AIChat(ctx context.Context, providerID *string, modelTyp
 		Model:    input.Model,
 		Endpoint: creds.Endpoint,
 	}
-	messages, err := plugin.Chat(config, schema, input.PreviousConversation, input.Query)
+	scope := sourceScopeForChat(spec, sourceRefFromInput(ref))
+	messages, err := plugin.Chat(config, scope, input.PreviousConversation, input.Query)
 
 	if err != nil {
 		log.WithFields(log.Fields{
 			"operation":     "Chat",
-			"schema":        schema,
+			"scope":         scope,
 			"database_type": typeArg,
 			"model":         input.Model,
 			"model_type":    modelType,
@@ -1894,182 +1337,8 @@ func (r *queryResolver) MockDataMaxRowCount(ctx context.Context) (int, error) {
 }
 
 // AnalyzeMockDataDependencies analyzes FK dependencies for mock data generation.
-func (r *queryResolver) AnalyzeMockDataDependencies(ctx context.Context, schema string, storageUnit string, rowCount int, fkDensityRatio *int) (*model.MockDataDependencyAnalysis, error) {
-	maxRowLimit := mockdata.GetMockDataGenerationMaxRowCount()
-	if rowCount > maxRowLimit {
-		errMsg := fmt.Sprintf("row count exceeds maximum limit of %d", maxRowLimit)
-		return &model.MockDataDependencyAnalysis{
-			Error: &errMsg,
-		}, nil
-	}
-
-	if !mockdata.IsMockDataGenerationAllowed(storageUnit) {
-		errMsg := "mock data generation is not allowed for this table"
-		return &model.MockDataDependencyAnalysis{
-			Error: &errMsg,
-		}, nil
-	}
-
-	plugin, config := GetPluginForContext(ctx)
-	if plugin == nil {
-		return nil, errors.New("no database connection")
-	}
-
-	fkRatio := 0
-	if fkDensityRatio != nil {
-		fkRatio = *fkDensityRatio
-	}
-	generator := src.NewMockDataGenerator(fkRatio)
-	analysis, err := generator.AnalyzeDependencies(plugin, config, schema, storageUnit, rowCount)
-	if err != nil {
-		errMsg := err.Error()
-		return &model.MockDataDependencyAnalysis{
-			Error: &errMsg,
-		}, nil
-	}
-
-	tables := make([]*model.MockDataTableInfo, 0, len(analysis.Tables))
-	for _, t := range analysis.Tables {
-		tables = append(tables, &model.MockDataTableInfo{
-			Table:            t.Table,
-			RowsToGenerate:   t.RowCount,
-			IsBlocked:        t.IsBlocked,
-			UsesExistingData: t.UsesExistingData,
-		})
-	}
-
-	var errorPtr *string
-	if analysis.Error != "" {
-		errorPtr = &analysis.Error
-	}
-
-	return &model.MockDataDependencyAnalysis{
-		GenerationOrder: analysis.GenerationOrder,
-		Tables:          tables,
-		TotalRows:       analysis.TotalRows,
-		Warnings:        analysis.Warnings,
-		Error:           errorPtr,
-	}, nil
-}
-
-// ConnectableDatabases is the resolver for the ConnectableDatabases field.
-func (r *queryResolver) ConnectableDatabases(ctx context.Context) ([]*model.ConnectableDatabase, error) {
-	entries := dbcatalog.All()
-	databases := make([]*model.ConnectableDatabase, 0, len(entries))
-
-	for _, entry := range entries {
-		extraKeys := make([]string, 0, len(entry.Extra))
-		for key := range entry.Extra {
-			extraKeys = append(extraKeys, key)
-		}
-		sort.Strings(extraKeys)
-
-		extra := make([]*model.Record, 0, len(extraKeys))
-		for _, key := range extraKeys {
-			extra = append(extra, &model.Record{
-				Key:   key,
-				Value: entry.Extra[key],
-			})
-		}
-
-		sslModes := make([]*model.ConnectableDatabaseSSLMode, 0, len(entry.SSLModes))
-		for _, sslMode := range entry.SSLModes {
-			sslModes = append(sslModes, &model.ConnectableDatabaseSSLMode{
-				Value:   string(sslMode.Value),
-				Aliases: ssl.GetSSLModeAliases(entry.PluginType, sslMode.Value),
-			})
-		}
-
-		databases = append(databases, &model.ConnectableDatabase{
-			ID:         string(entry.ID),
-			Label:      entry.Label,
-			PluginType: string(entry.PluginType),
-			Extra:      extra,
-			Fields: &model.ConnectableDatabaseFields{
-				Hostname:   entry.Fields.Hostname,
-				Username:   entry.Fields.Username,
-				Password:   entry.Fields.Password,
-				Database:   entry.Fields.Database,
-				SearchPath: entry.Fields.SearchPath,
-			},
-			RequiredFields: &model.ConnectableDatabaseRequiredFields{
-				Hostname: entry.RequiredFields.Hostname,
-				Username: entry.RequiredFields.Username,
-				Password: entry.RequiredFields.Password,
-				Database: entry.RequiredFields.Database,
-			},
-			SupportsModifiers:           entry.SupportsModifiers,
-			SupportsScratchpad:          entry.SupportsScratchpad,
-			SupportsSchema:              entry.SupportsSchema,
-			SupportsDatabaseSwitching:   entry.SupportsDatabaseSwitching,
-			UsesSchemaForGraph:          entry.UsesSchemaForGraph,
-			UsesDatabaseInsteadOfSchema: entry.UsesDatabaseInsteadOfSchema,
-			SupportsMockData:            entry.SupportsMockData,
-			IsAWSManaged:                entry.IsAWSManaged,
-			SslModes:                    sslModes,
-		})
-	}
-
-	return databases, nil
-}
-
-// DatabaseMetadata is the resolver for the DatabaseMetadata field.
-func (r *queryResolver) DatabaseMetadata(ctx context.Context) (*model.DatabaseMetadata, error) {
-	plugin, _ := GetPluginForContext(ctx)
-	if plugin == nil {
-		return nil, nil
-	}
-	metadata := plugin.GetDatabaseMetadata()
-
-	// Return nil if plugin doesn't implement metadata (default GormPlugin behavior)
-	if metadata == nil {
-		return nil, nil
-	}
-
-	// Convert engine.TypeDefinition to model.TypeDefinition
-	typeDefinitions := make([]*model.TypeDefinition, 0, len(metadata.TypeDefinitions))
-	for _, td := range metadata.TypeDefinitions {
-		def := &model.TypeDefinition{
-			ID:               td.ID,
-			Label:            td.Label,
-			HasLength:        td.HasLength,
-			HasPrecision:     td.HasPrecision,
-			DefaultLength:    td.DefaultLength,
-			DefaultPrecision: td.DefaultPrecision,
-			Category:         model.TypeCategory(td.Category),
-		}
-		if td.InsertFunc != "" {
-			def.InsertFunc = &td.InsertFunc
-		}
-		if td.TableModel != "" {
-			def.TableModel = &td.TableModel
-		}
-		typeDefinitions = append(typeDefinitions, def)
-	}
-
-	// Convert map[string]string to []*model.Record
-	aliasMap := make([]*model.Record, 0, len(metadata.AliasMap))
-	for key, value := range metadata.AliasMap {
-		aliasMap = append(aliasMap, &model.Record{
-			Key:   key,
-			Value: value,
-		})
-	}
-
-	return &model.DatabaseMetadata{
-		DatabaseType:    string(metadata.DatabaseType),
-		TypeDefinitions: typeDefinitions,
-		Operators:       metadata.Operators,
-		AliasMap:        aliasMap,
-		Capabilities: &model.Capabilities{
-			SupportsScratchpad:     metadata.Capabilities.SupportsScratchpad,
-			SupportsChat:           metadata.Capabilities.SupportsChat,
-			SupportsGraph:          metadata.Capabilities.SupportsGraph,
-			SupportsSchema:         metadata.Capabilities.SupportsSchema,
-			SupportsDatabaseSwitch: metadata.Capabilities.SupportsDatabaseSwitch,
-			SupportsModifiers:      metadata.Capabilities.SupportsModifiers,
-		},
-	}, nil
+func (r *queryResolver) AnalyzeMockDataDependencies(ctx context.Context, ref model.SourceObjectRefInput, rowCount int, fkDensityRatio *int) (*model.MockDataDependencyAnalysis, error) {
+	return analyzeMockDataDependenciesForRef(ctx, ref, rowCount, fkDensityRatio)
 }
 
 // SSLStatus is the resolver for the SSLStatus field.
@@ -2102,87 +1371,9 @@ func (r *queryResolver) SSLStatus(ctx context.Context) (*model.SSLStatus, error)
 	}, nil
 }
 
-// DatabaseQuerySuggestions is the resolver for the DatabaseQuerySuggestions field.
-func (r *queryResolver) DatabaseQuerySuggestions(ctx context.Context, schema string) ([]*model.DatabaseQuerySuggestion, error) {
-	plugin, config := GetPluginForContext(ctx)
-	if plugin == nil {
-		return nil, fmt.Errorf("no active database connection")
-	}
-
-	log.WithFields(log.Fields{
-		"operation": "DatabaseQuerySuggestions",
-		"schema":    schema,
-	}).Info("Fetching database suggestions")
-
-	// Get storage units (tables) from the schema
-	units, err := plugin.GetStorageUnits(config, schema)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"operation": "DatabaseQuerySuggestions",
-			"schema":    schema,
-		}).WithError(err).Error("Failed to get storage units for suggestions")
-		return nil, err
-	}
-
-	log.WithFields(log.Fields{
-		"operation":   "DatabaseQuerySuggestions",
-		"schema":      schema,
-		"units_count": len(units),
-	}).Info("Retrieved storage units for suggestions")
-
-	suggestions := []*model.DatabaseQuerySuggestion{}
-
-	// Generate suggestions based on actual tables in the database
-	// Limit to 3 suggestions
-	maxSuggestions := 3
-	if len(units) > maxSuggestions {
-		units = units[:maxSuggestions]
-	}
-
-	for i, unit := range units {
-		var description string
-		var category string
-
-		tableName := unit.Name
-
-		// TODO: These hardcoded English strings need localization. There is currently no
-		// backend localization function available. When one is added, replace these with
-		// localized equivalents.
-		// Generate natural, conversational queries that someone would actually ask
-		switch i % 3 {
-		case 0:
-			description = fmt.Sprintf("What are the most recent records in %s?", tableName)
-			category = "SELECT"
-		case 1:
-			description = fmt.Sprintf("How many total entries are in %s?", tableName)
-			category = "AGGREGATE"
-		case 2:
-			description = fmt.Sprintf("Show me all the data in %s", tableName)
-			category = "SELECT"
-		}
-
-		suggestions = append(suggestions, &model.DatabaseQuerySuggestion{
-			Description: description,
-			Category:    category,
-		})
-	}
-
-	// If no tables found, return empty array
-	if len(suggestions) == 0 {
-		log.WithFields(log.Fields{
-			"operation": "DatabaseQuerySuggestions",
-			"schema":    schema,
-		}).Warn("No suggestions generated - no tables found")
-		return []*model.DatabaseQuerySuggestion{}, nil
-	}
-
-	log.WithFields(log.Fields{
-		"operation":         "DatabaseQuerySuggestions",
-		"schema":            schema,
-		"suggestions_count": len(suggestions),
-	}).Info("Successfully generated database suggestions")
-
-	return suggestions, nil
+// SourceQuerySuggestions is the resolver for the SourceQuerySuggestions field.
+func (r *queryResolver) SourceQuerySuggestions(ctx context.Context, ref *model.SourceObjectRefInput) ([]*model.SourceQuerySuggestion, error) {
+	return sourceQuerySuggestionsForRef(ctx, ref)
 }
 
 // CloudProviders is the resolver for the CloudProviders field.

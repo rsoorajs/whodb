@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import {useLazyQuery, useMutation, useQuery} from "@apollo/client/react";
 import {
     Badge,
     Button,
@@ -39,14 +40,13 @@ import {
     VirtualizedTableBody
 } from '@clidey/ux';
 import {TypeSelector} from "../../components/type-selector";
-import {findTypeDefinition} from "../../utils/database-data-types";
+import {findColumnTypeDefinition} from "../../utils/source-column-types";
 import {
-    DatabaseType,
+    AddStorageUnitDocument,
+    GetColumnsBatchDocument,
+    GetStorageUnitsDocument,
     RecordInput,
     StorageUnit,
-    useAddStorageUnitMutation,
-    useGetColumnsBatchLazyQuery,
-    useGetStorageUnitsQuery
 } from '@graphql';
 import {
     ArrowPathRoundedSquareIcon,
@@ -71,22 +71,24 @@ import {IGraphCardProps} from "../../components/graph/graph";
 import {Loading, LoadingPage} from "../../components/loading";
 import {InternalPage} from "../../components/page";
 import {InternalRoutes} from "../../config/routes";
-import {useDatabaseTraits} from "../../hooks/useDatabaseTraits";
+import {useSourceContract} from "../../hooks/useSourceContract";
 import {trackFrontendEvent} from "../../config/posthog";
 import {useAppDispatch, useAppSelector} from "../../store/hooks";
 import {Tip} from '../../components/tip';
 import {SettingsActions} from '../../store/settings';
 import {useTranslation} from '../../hooks/use-translation';
+import {buildSourceParentRef} from '../../utils/source-refs';
+import { DatabaseType } from '../../config/source-types';
 
-const StorageUnitCard: FC<{ unit: StorageUnit, schema: string }> = ({ unit, schema }) => {
+const StorageUnitCard: FC<{ unit: StorageUnit }> = ({ unit }) => {
     const [expanded, setExpanded] = useState(false);
     const navigate = useNavigate();
     const { t } = useTranslation('pages/storage-unit');
     const current = useAppSelector(state => state.auth.current);
-    const { pluginType } = useDatabaseTraits(current?.Type);
+    const { connector } = useSourceContract(current?.Type);
     const [columns, setColumns] = useState<any[] | undefined>(undefined);
     const [columnsLoading, setColumnsLoading] = useState(false);
-    const [fetchColumnsBatch] = useGetColumnsBatchLazyQuery();
+    const [fetchColumnsBatch] = useLazyQuery(GetColumnsBatchDocument);
 
     const handleNavigateToDatabase = useCallback(() => {
         navigate(InternalRoutes.Dashboard.ExploreStorageUnit.path, {
@@ -100,7 +102,7 @@ const StorageUnitCard: FC<{ unit: StorageUnit, schema: string }> = ({ unit, sche
         if (columns !== undefined) return;
         setColumnsLoading(true);
         fetchColumnsBatch({
-            variables: { schema, storageUnits: [unit.Name] },
+            variables: { refs: [unit.Ref] },
         }).then(result => {
             const batch = result.data?.ColumnsBatch;
             if (batch && batch.length > 0 && batch[0].Columns.length > 0) {
@@ -113,7 +115,7 @@ const StorageUnitCard: FC<{ unit: StorageUnit, schema: string }> = ({ unit, sche
         }).finally(() => {
             setColumnsLoading(false);
         });
-    }, [columns, fetchColumnsBatch, schema, unit.Name]);
+    }, [columns, fetchColumnsBatch, unit.Ref]);
 
     const handleSetExpanded = useCallback((status: boolean) => {
         setExpanded(status);
@@ -165,7 +167,7 @@ const StorageUnitCard: FC<{ unit: StorageUnit, schema: string }> = ({ unit, sche
                 <TableCellsIcon className="w-5 h-5" />
                 {unit.Name}
             </SheetTitle>
-            {(pluginType === DatabaseType.MongoDb || pluginType === DatabaseType.ElasticSearch) && (
+            {(connector === DatabaseType.MongoDb || connector === DatabaseType.ElasticSearch) && (
                 <div className="mb-2" data-testid="sampled-schema-warning">
                     <div className="flex items-center gap-xs text-sm">
                         <InformationCircleIcon className="w-4 h-4" />
@@ -240,19 +242,20 @@ export const StorageUnitPage: FC = () => {
     let schema = useAppSelector(state => state.database.schema);
     const current = useAppSelector(state => state.auth.current);
     const {
+        item,
         isNoSQL,
         singularStorageUnitLabel,
         storageUnitLabel,
         supportsModifiers,
         supportsScratchpad,
         usesDatabaseInsteadOfSchema,
-    } = useDatabaseTraits(current?.Type);
+    } = useSourceContract(current?.Type);
     const view = useAppSelector(state => state.settings.storageUnitView);
-    const [addStorageUnit,] = useAddStorageUnitMutation();
+    const [addStorageUnit,] = useMutation(AddStorageUnitDocument);
     const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
     const [expandedUnitColumns, setExpandedUnitColumns] = useState<{ name: string; columns: any[] } | null>(null);
     const [expandedUnitColumnsLoading, setExpandedUnitColumnsLoading] = useState(false);
-    const [fetchColumnsBatchForList] = useGetColumnsBatchLazyQuery();
+    const [fetchColumnsBatchForList] = useLazyQuery(GetColumnsBatchDocument);
     const dispatch = useAppDispatch();
     const { t } = useTranslation('pages/storage-unit');
 
@@ -268,11 +271,17 @@ export const StorageUnitPage: FC = () => {
         schema = current?.Database ?? '';
     }
 
-    const { loading, data, refetch } = useGetStorageUnitsQuery({
+    const parentRef = useMemo(() => buildSourceParentRef(item, current, schema), [current, item, schema]);
+
+    const { loading, data, refetch } = useQuery(GetStorageUnitsDocument, {
         variables: {
-            schema,
+            parent: parentRef,
         },
     });
+
+    const storageUnits = useMemo(() => {
+        return (data?.StorageUnit ?? []) as StorageUnit[];
+    }, [data?.StorageUnit]);
 
     // Refetch storage units when the connection context changes (profile switch or database switch)
     const currentProfileId = current?.Id;
@@ -287,9 +296,11 @@ export const StorageUnitPage: FC = () => {
     useEffect(() => {
         if (!expandedUnit) return;
         if (expandedUnitColumns?.name === expandedUnit) return;
+        const expandedSourceUnit = storageUnits.find(unit => unit.Name === expandedUnit);
+        if (!expandedSourceUnit) return;
         setExpandedUnitColumnsLoading(true);
         fetchColumnsBatchForList({
-            variables: { schema, storageUnits: [expandedUnit] },
+            variables: { refs: [expandedSourceUnit.Ref] },
         }).then(result => {
             const batch = result.data?.ColumnsBatch;
             if (batch && batch.length > 0 && batch[0].Columns.length > 0) {
@@ -302,7 +313,7 @@ export const StorageUnitPage: FC = () => {
         }).finally(() => {
             setExpandedUnitColumnsLoading(false);
         });
-    }, [expandedUnit, expandedUnitColumns?.name, fetchColumnsBatchForList, schema]);
+    }, [expandedUnit, expandedUnitColumns?.name, fetchColumnsBatchForList, storageUnits]);
 
     const [filterValue, setFilterValue] = useState("");
 
@@ -334,7 +345,7 @@ export const StorageUnitPage: FC = () => {
         setError(undefined);
         addStorageUnit({
             variables: {
-                schema,
+                parent: parentRef,
                 storageUnit: storageUnitName,
                 fields,
             },
@@ -354,7 +365,7 @@ export const StorageUnitPage: FC = () => {
                 toast.error(e.message);
             },
         });
-    }, [addStorageUnit, current?.Type, fields, isNoSQL, refetch, schema, singularStorageUnitLabel, storageUnitName, t, trackFrontendEvent]);
+    }, [addStorageUnit, current?.Type, fields, isNoSQL, parentRef, refetch, singularStorageUnitLabel, storageUnitName, t, trackFrontendEvent]);
 
     const handleAddField = useCallback(() => {
         setFields(f => [...f, { Key: "", Value: "", Extra: [] }]);
@@ -396,29 +407,29 @@ export const StorageUnitPage: FC = () => {
 
     const filterStorageUnits = useMemo(() => {
         const lowerCaseFilterValue = filterValue.toLowerCase();
-        return (data?.StorageUnit ?? []).filter(unit => unit.Name.toLowerCase().includes(lowerCaseFilterValue))
-            .sort((a, b) => a.Name.localeCompare(b.Name));
-    }, [data?.StorageUnit, filterValue]);
+        return storageUnits.filter(unit => (unit.Name ?? "").toLowerCase().includes(lowerCaseFilterValue))
+            .sort((a, b) => (a.Name ?? "").localeCompare(b.Name ?? ""));
+    }, [filterValue, storageUnits]);
 
     const showModifiers = useMemo(() => {
         return supportsModifiers;
     }, [supportsModifiers]);
 
     const sharedAttributeKeys = useMemo(() => {
-        if (!data?.StorageUnit || data.StorageUnit.length === 0) {
+        if (storageUnits.length === 0) {
             return [];
         }
 
         // Get attributes that exist in ALL storage units (intersection of all attributes)
         // Preserve the order from the first unit (backend returns metadata like Type first)
-        const firstUnitKeys = data.StorageUnit[0].Attributes.map(attr => attr.Key);
+        const firstUnitKeys = storageUnits[0]?.Attributes.map(attr => attr.Key) ?? [];
 
         return firstUnitKeys.filter(key =>
-            data.StorageUnit.every(unit =>
+            storageUnits.every(unit =>
                 unit.Attributes.some(attr => attr.Key === key)
             )
         );
-    }, [data?.StorageUnit]);
+    }, [storageUnits]);
 
     if (loading) {
         return <InternalPage routes={routes}>
@@ -495,7 +506,7 @@ export const StorageUnitPage: FC = () => {
 
                                             {(() => {
                                                 const typeDef = current?.Type && field.Value
-                                                    ? findTypeDefinition(field.Value, current.Type)
+                                                    ? findColumnTypeDefinition(field.Value, current.Type)
                                                     : undefined;
                                                 return typeDef?.tableModel ? (
                                                     <p className="text-xs text-muted-foreground">
@@ -538,8 +549,8 @@ export const StorageUnitPage: FC = () => {
                 </div>
             </ExpandableCard>}
             {
-                data != null && data.StorageUnit.length > 0 && filterStorageUnits.map(unit => (
-                    <StorageUnitCard key={unit.Name} unit={unit} schema={schema} />
+                storageUnits.length > 0 && filterStorageUnits.map(unit => (
+                    <StorageUnitCard key={unit.Name} unit={unit} />
                 ))
             }
         </div>
@@ -562,6 +573,9 @@ export const StorageUnitPage: FC = () => {
                     rowHeight={40}>
                     {(rowIndex: number) => {
                         const unit = filterStorageUnits[rowIndex];
+                        if (!unit) {
+                            return null;
+                        }
                         const attrMap = Object.fromEntries(unit.Attributes.map(attr => [attr.Key, attr.Value]));
                         return (
                             <TableRow key={unit.Name} className="group">
@@ -671,8 +685,6 @@ export const StorageUnitPage: FC = () => {
 
 export const StorageUnitGraphCard: FC<IGraphCardProps<StorageUnit & { columns?: any[] }>> = ({ data }) => {
     const navigate = useNavigate();
-    const schema = useAppSelector(state => state.database.schema);
-    const current = useAppSelector(state => state.auth.current);
     const { t } = useTranslation('pages/storage-unit');
 
     const handleNavigateTo = useCallback(() => {

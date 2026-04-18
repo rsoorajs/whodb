@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -235,6 +236,7 @@ func getOrCreateConnection(config *engine.PluginConfig, createDB DBCreationFunc)
 	key := getConnectionCacheKey(config)
 	secret := getConnectionCacheSecret(config)
 	l := log.WithFields(map[string]any{"conn_id": connID, "cache_key": shortKey(key)})
+	opCtx := config.OperationContext()
 
 	// First, check cache (with lock)
 	connectionCacheMu.Lock()
@@ -245,9 +247,11 @@ func getOrCreateConnection(config *engine.PluginConfig, createDB DBCreationFunc)
 
 		// Validate connection with ping (outside lock to avoid blocking)
 		if sqlDB, err := db.DB(); err == nil && sqlDB != nil {
-			if err := sqlDB.Ping(); err == nil {
+			if err := sqlDB.PingContext(opCtx); err == nil {
 				l.Debug("Cache HIT - connection alive")
 				return db, nil
+			} else if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return nil, err
 			}
 			l.WithError(err).Debug("Ping failed, will create new connection")
 		}
@@ -281,12 +285,15 @@ func getOrCreateConnection(config *engine.PluginConfig, createDB DBCreationFunc)
 	if cached, found := getCachedConnectionLocked(key, secret); found && cached != nil && cached.db != nil {
 		// Another goroutine won the race - use their connection, close ours
 		if sqlDB, err := cached.db.DB(); err == nil && sqlDB != nil {
-			if err := sqlDB.Ping(); err == nil {
+			if err := sqlDB.PingContext(opCtx); err == nil {
 				cached.lastUsed = time.Now()
 				l.Debug("using connection created by another goroutine")
 				// Close the connection we just created since we won't use it
 				closeGormDB(db)
 				return cached.db, nil
+			} else if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				closeGormDB(db)
+				return nil, err
 			}
 		}
 		// Their connection is stale - remove it, use ours

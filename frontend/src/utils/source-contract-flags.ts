@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-import type { IDatabaseDropdownItem } from '../config/database-types';
-import type { BackendCapabilities } from '../store/database-metadata';
+import type { SourceTypeItem } from '../config/source-types';
 
 /**
- * Catalog-backed database feature flags resolved for the current UI.
+ * Catalog-backed source contract flags resolved for the current UI.
  */
-export interface DatabaseFeatureFlags {
+export interface SourceContractFlags {
+    supportsChat: boolean;
+    supportsGraph: boolean;
     supportsScratchpad: boolean;
     supportsSchema: boolean;
     supportsDatabaseSwitching: boolean;
@@ -31,27 +32,23 @@ export interface DatabaseFeatureFlags {
 }
 
 /**
- * Resolves feature flags from the backend catalog plus live backend metadata.
- *
- * The live metadata takes precedence for capabilities that depend on the
- * active connection, while the catalog remains the source of truth for static
- * database traits.
+ * Resolves feature flags from the catalog-derived source contract.
  *
  * @param item Decorated catalog entry for the database type.
- * @param capabilities Live backend capabilities for the active plugin.
  * @returns The resolved feature flags for the database type.
  */
-export function resolveDatabaseFeatureFlags(
-    item: IDatabaseDropdownItem | undefined,
-    capabilities: BackendCapabilities | null
-): DatabaseFeatureFlags {
+export function resolveSourceContractFlags(
+    item: SourceTypeItem | undefined
+): SourceContractFlags {
     return {
-        supportsScratchpad: capabilities?.supportsScratchpad ?? item?.supportsScratchpad ?? false,
-        supportsSchema: capabilities?.supportsSchema ?? item?.supportsSchema ?? false,
-        supportsDatabaseSwitching: capabilities?.supportsDatabaseSwitch ?? item?.supportsDatabaseSwitching ?? false,
+        supportsChat: item?.supportsChat ?? false,
+        supportsGraph: item?.supportsGraph ?? false,
+        supportsScratchpad: item?.supportsScratchpad ?? false,
+        supportsSchema: item?.supportsSchema ?? false,
+        supportsDatabaseSwitching: item?.supportsDatabaseSwitching ?? false,
         usesSchemaForGraph: item?.usesSchemaForGraph ?? true,
         usesDatabaseInsteadOfSchema: item?.usesDatabaseInsteadOfSchema ?? false,
         supportsMockData: item?.supportsMockData ?? false,
-        supportsModifiers: capabilities?.supportsModifiers ?? item?.supportsModifiers ?? false,
+        supportsModifiers: item?.supportsModifiers ?? false,
     };
 }

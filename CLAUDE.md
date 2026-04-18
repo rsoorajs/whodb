@@ -1,6 +1,9 @@
 # WhoDB Development Guide
 
-WhoDB is a database management tool. The `core/` directory contains the backend and `frontend/` contains the React UI.
+WhoDB is a source-first data management tool. The public GraphQL API and frontend
+contract are built around `SourceType`, `SourceContract`, `SourceObject`,
+`SourceObjectRef`, and `SourceSessionMetadata`. The current execution layer is
+still powered mainly by database plugins under `core/src/plugins/`.
 
 If the `ee/` directory is present, read `ee/CLAUDE.md` for additional context. Do not add any code, comments, or references to `ee/` in the CE codebase.
 
@@ -26,6 +29,9 @@ core/                   # Backend (Go)
   src/src.go            # Engine initialization (collects from global plugin registry)
   src/engine/registry.go # Global plugin registry (plugins self-register via init())
   src/engine/plugin.go  # PluginFunctions interface
+  src/source/           # Source-first public contract + connector/session interfaces
+  src/sourcecatalog/    # Public source catalog exposed to GraphQL/frontend
+  src/dbcatalog/        # Internal connectable-database catalog adapted into sourcecatalog
   src/env/              # Environment variable declarations (pure, no log dependency)
   src/envconfig/        # Config-loading functions that need both env and log
   src/plugins/          # Database connectors (each has init() calling engine.RegisterPlugin)
@@ -104,8 +110,9 @@ See `.claude/docs/commands.md` for full reference.
 ## Architecture
 
 - **Plugin self-registration** — each plugin has `init() { engine.RegisterPlugin(...) }`. The entry point's blank imports control which plugins are registered
+- **Source-first public API** — new public GraphQL/frontend work should use `SourceTypes`, `SourceProfiles`, `SourceFieldOptions`, `SourceSessionMetadata`, `SourceObjects`, `SourceRows`, `RunSourceQuery`, and `SourceGraph`. Do not add new public `Database*` queries or capability surfaces
 - **AppConfig DI** — `core/src/app/app.go` defines `AppConfig` (schema, HTTP handlers). The entry point calls `app.Run(config, staticFiles)`
-- **Frontend registries** — components (`registerComponent`), database types (`registerDatabaseTypes`), icons (`registerIcons`), and functions (`registerDatabaseFunctions`) can be registered at boot. The frontend renders from registries — if something isn't registered, it's not shown
+- **Frontend registries** — components (`registerComponent`), source types (`registerSourceTypeOverrides`), icons (`registerIcons`), and source utilities (`registerSourceUtilities`) can be registered at boot. The frontend renders from registries — if something isn't registered, it's not shown
 - **Import cycle note** — `src` → `router` → `graph` → `src` cycle exists. `Run()` lives in `src/app/` (not `src/`) to avoid it. Never add router/graph imports to `src/`
 
 ## Development Principles

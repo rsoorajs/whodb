@@ -1,8 +1,10 @@
 # Environment Variables
 
-## Database Connection Profiles
+## Source Connection Profiles
 
-Database connections can be configured via environment variables using two formats.
+Connection profiles are now surfaced through the source-first login flow as
+`SourceProfiles`, but the environment-variable format is still keyed by source
+type IDs such as `WHODB_POSTGRES` and `WHODB_MONGODB`.
 
 ### Array format
 
@@ -44,13 +46,19 @@ The `advanced` field replaces the legacy `config` key. Both are accepted for bac
 
 ### Parsing logic
 
-Defined in `core/src/envconfig/envconfig.go`. The array format (`WHODB_<TYPE>`) is checked first. If empty, numbered variables (`WHODB_<TYPE>_1`, `WHODB_<TYPE>_2`, ...) are read sequentially until a gap is found. The struct is `types.DatabaseCredentials` in `core/src/types/types.go`.
+Defined in `core/src/envconfig/envconfig.go`. The array format (`WHODB_<TYPE>`)
+is checked first. If empty, numbered variables (`WHODB_<TYPE>_1`,
+`WHODB_<TYPE>_2`, ...) are read sequentially until a gap is found. These values
+are parsed into internal profile records and then exposed to the source-first
+auth layer as `SourceProfiles`.
 
 ## Advanced Connection Options
 
-These key-value pairs go in the `advanced` field of a connection profile. At runtime they are converted to `engine.Credentials.Advanced` (`[]engine.Record`) via `src.GetLoginCredentials()` in `core/src/src.go`.
+These key-value pairs go in the `advanced` field of a connection profile. At
+runtime they are carried into the credential record passed to the active source
+connector during login.
 
-### All databases
+### All source types with host/port connections
 
 | Key | Default | Description |
 |---|---|---|
@@ -73,7 +81,9 @@ Parsed in `core/src/plugins/gorm/db.go`.
 
 ### SSL/TLS options
 
-Available for all database types. Parsed in `core/src/plugins/ssl/ssl.go`. See `ssl.md` for full SSL documentation.
+Available for all source types that use the shared SSL/TLS plugin support.
+Parsed in `core/src/plugins/ssl/ssl.go`. See `ssl.md` for full SSL
+documentation.
 
 | Key | Default | Description |
 |---|---|---|
@@ -171,9 +181,26 @@ Connect any OpenAI-compatible provider. Configured via multiple variables per pr
 | `WHODB_ACCESS_LOG_FILE` | unset | Redirect HTTP access logs to a file. `default` uses `/var/log/whodb/whodb.access.log` |
 | `WHODB_TOKENS` | unset | Comma-separated static tokens to restrict API/UI access |
 | `WHODB_ALLOWED_ORIGINS` | unset | Comma-separated CORS origins (defaults to all) |
-| `WHODB_DISABLE_CREDENTIAL_FORM` | `false` | Set `true` to hide the database credential form on the login page |
+| `WHODB_BASE_PATH` | unset | URL path prefix for bundled WhoDB web builds, e.g. `/whodb`. Applies only when WhoDB serves embedded frontend assets; split frontend/backend dev mode is unchanged. Must be a slash-prefixed path with segments containing only letters, numbers, `.`, `_`, or `-` |
+| `WHODB_DISABLE_CREDENTIAL_FORM` | `false` | Set `true` to hide the source credential form on the login page |
 | `WHODB_MAX_PAGE_SIZE` | `10000` | Maximum number of rows returned per page |
 | `WHODB_DISABLE_MOCK_DATA_GENERATION` | unset | Disable mock data generation. `*` disables for all tables, or a comma-separated list of table names to disable selectively (e.g., `logs, metrics`) |
+
+### Serving WhoDB under a subpath
+
+Use `WHODB_BASE_PATH` when WhoDB serves its bundled frontend and you want the app mounted below `/`, for example behind Nginx at `/whodb/`.
+
+```bash
+WHODB_BASE_PATH=/whodb
+```
+
+This applies to bundled deployments such as the Docker image or a binary built with embedded frontend assets. It does not apply to split dev mode (`pnpm start` for the frontend and `go run` for the backend).
+
+When `WHODB_BASE_PATH=/whodb`:
+
+- Browse to `/whodb/`
+- Reverse proxy `/whodb/` to the WhoDB server
+- Keep container health checks on `/health`
 
 ## Cloud Provider Variables
 

@@ -14,31 +14,35 @@
  * limitations under the License.
  */
 
-import {ApolloClient, createHttpLink, InMemoryCache} from '@apollo/client';
-import {setContext} from '@apollo/client/link/context';
-import {onError} from '@apollo/client/link/error';
+import {ApolloClient, InMemoryCache} from '@apollo/client';
+import {ServerError} from '@apollo/client/errors';
+import {SetContextLink} from '@apollo/client/link/context';
+import {ErrorLink} from '@apollo/client/link/error';
+import {HttpLink} from '@apollo/client/link/http';
 import {toast} from '@clidey/ux';
 import {print} from 'graphql';
 import {
-    DatabaseType,
-    LoginDocument,
-    LoginMutationVariables,
-    LoginWithProfileDocument,
-    LoginWithProfileMutationVariables
+    LoginSourceDocument,
+    LoginSourceMutationVariables,
+    LoginWithSourceProfileDocument,
+    LoginWithSourceProfileMutationVariables
 } from '@graphql';
 import {LocalLoginProfile} from '../store/auth';
 import {reduxStore} from '../store';
 import {addAuthHeader} from '../utils/auth-headers';
+import {withBasePath} from '../utils/base-path';
 import {isAwsHostname} from '../utils/cloud-connection-prefill';
 import {getTranslation, loadTranslationsSync} from '../utils/i18n';
 import {type SupportedLanguage, DEFAULT_LANGUAGE} from '../utils/languages';
+import {clearSourceSessionMetadata} from '../utils/source-session-metadata-cache';
 
-// Always use a relative URI so that:
+// Always use an application-relative URI so that:
 // - Desktop/Wails uses the embedded router handler
 // - Dev server (vite) proxies to the backend via server.proxy in vite.config.ts
-const uri = "/api/query";
-const loginWithProfileQuery = print(LoginWithProfileDocument);
-const loginMutationQuery = print(LoginDocument);
+// - Bundled web builds honor WHODB_BASE_PATH
+const uri = withBasePath("/api/query");
+const loginWithSourceProfileQuery = print(LoginWithSourceProfileDocument);
+const loginMutationQuery = print(LoginSourceDocument);
 
 type GraphQLClientTranslationKey = 'sessionExpired' | 'autoLoginSuccess' | 'autoLoginFailed';
 type TranslatorFn = (key: GraphQLClientTranslationKey) => string;
@@ -55,19 +59,19 @@ const redirectToLoginWithMessage = (
 ) => {
     const t = translator ?? getTranslator();
     toast.error(t(key));
-    window.location.href = '/login';
+    window.location.href = withBasePath('/login');
 };
 
-const httpLink = createHttpLink({
+const httpLink = new HttpLink({
   uri,
   credentials: "include",
 });
 
 // Add Authorization header in desktop/webview environments where cookies are not supported.
-const authLink = setContext((_, { headers }) => {
-  return {
-    headers: addAuthHeader(headers)
-  };
+const authLink = new SetContextLink((prevContext) => {
+    return {
+        headers: addAuthHeader(prevContext.headers),
+    };
 });
 
 /**
@@ -76,15 +80,15 @@ const authLink = setContext((_, { headers }) => {
  * When a GraphQL operation returns an "unauthorized" error, this handler will:
  * 1. Check if there's a current profile stored in Redux store
  * 2. If a profile exists, automatically attempt to login using that profile
- *    - If the profile is a saved profile, use LoginWithProfile mutation
- *    - Otherwise, use Login mutation with credentials
+ *    - If the profile is a saved profile, use LoginWithSourceProfile mutation
+ *    - Otherwise, use LoginSource mutation with credentials
  * 3. If login is successful, refresh the page to reload with correct values
  * 4. If no profile exists or login fails, redirect to the login page
  *
  * This ensures seamless user experience when sessions expire.
  */
-const errorLink = onError(({networkError}) => {
-    if (networkError && 'statusCode' in networkError && networkError.statusCode === 401) {
+const errorLink = new ErrorLink(({error}) => {
+    if (ServerError.is(error) && error.statusCode === 401) {
         // @ts-ignore
         const authState = reduxStore.getState().auth;
         const currentProfile = authState.current;
@@ -93,12 +97,12 @@ const errorLink = onError(({networkError}) => {
             void handleAutoLogin(currentProfile);
         } else {
             // Don't redirect if already on login page to avoid infinite loop
-            if (!window.location.pathname.startsWith('/login')) {
+            if (!window.location.pathname.startsWith(withBasePath('/login'))) {
                 redirectToLoginWithMessage('sessionExpired');
             }
         }
-    } else if (networkError) {
-        console.error('Network error:', networkError);
+    } else {
+        console.error('Network error:', error);
     }
 });
 
@@ -116,11 +120,11 @@ async function handleAutoLogin(currentProfile: LocalLoginProfile) {
 
         let response, result;
         if (currentProfile.Saved) {
-            // Login with profile
-            const variables: LoginWithProfileMutationVariables = {
+            // Login with source profile
+            const variables: LoginWithSourceProfileMutationVariables = {
                 profile: {
                     Id: currentProfile.Id,
-                    Type: currentProfile.Type as DatabaseType,
+                    Values: currentProfile.Database ? [{ Key: "Database", Value: currentProfile.Database }] : [],
                 },
             };
             response = await fetch(uri, {
@@ -130,13 +134,13 @@ async function handleAutoLogin(currentProfile: LocalLoginProfile) {
                 }),
                 credentials: 'include',
                 body: JSON.stringify({
-                    operationName: 'LoginWithProfile',
-                    query: loginWithProfileQuery,
+                    operationName: 'LoginWithSourceProfile',
+                    query: loginWithSourceProfileQuery,
                     variables,
                 }),
             });
             result = await response.json();
-            if (result.data?.LoginWithProfile?.Status) {
+            if (result.data?.LoginWithSourceProfile?.Status) {
                 toast.success(t('autoLoginSuccess'));
                 window.location.reload();
                 return;
@@ -146,14 +150,12 @@ async function handleAutoLogin(currentProfile: LocalLoginProfile) {
             }
         } else {
             // Normal login with credentials
-            const variables: LoginMutationVariables = {
+            const variables: LoginSourceMutationVariables = {
                 credentials: {
-                    Type: currentProfile.Type,
-                    Hostname: currentProfile.Hostname,
-                    Database: currentProfile.Database,
-                    Username: currentProfile.Username,
-                    Password: currentProfile.Password,
-                    Advanced: currentProfile.Advanced || [],
+                    Id: currentProfile.Id,
+                    SourceType: currentProfile.SourceType,
+                    Values: currentProfile.Values,
+                    AccessToken: currentProfile.AccessToken,
                 },
             };
             response = await fetch(uri, {
@@ -163,13 +165,13 @@ async function handleAutoLogin(currentProfile: LocalLoginProfile) {
                 }),
                 credentials: 'include',
                 body: JSON.stringify({
-                    operationName: 'Login',
+                    operationName: 'LoginSource',
                     query: loginMutationQuery,
                     variables,
                 }),
             });
             result = await response.json();
-            if (result.data?.Login?.Status) {
+            if (result.data?.LoginSource?.Status) {
                 toast.success(t('autoLoginSuccess'));
                 window.location.reload();
                 return;
@@ -188,6 +190,10 @@ export const graphqlClient = new ApolloClient({
     link: errorLink.concat(authLink.concat(httpLink)),
   cache: new InMemoryCache(),
   defaultOptions: {
+      watchQuery: {
+        fetchPolicy: "cache-first",
+        refetchWritePolicy: "overwrite",
+      },
       query: {
         fetchPolicy: "no-cache",
       },
@@ -196,3 +202,11 @@ export const graphqlClient = new ApolloClient({
       },
   }
 });
+
+/**
+ * Clears all cached GraphQL data without refetching active queries.
+ */
+export async function clearGraphqlStore(): Promise<void> {
+    await graphqlClient.clearStore();
+    clearSourceSessionMetadata();
+}

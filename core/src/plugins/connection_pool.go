@@ -105,7 +105,7 @@ func WithConnection[T any](config *engine.PluginConfig, DB DBCreationFunc, opera
 	// Check if we're operating within a transaction
 	if config != nil && config.Transaction != nil {
 		if tx, ok := config.Transaction.(*gorm.DB); ok {
-			return operation(tx)
+			return operation(tx.WithContext(config.OperationContext()))
 		}
 	}
 
@@ -118,7 +118,7 @@ func WithConnection[T any](config *engine.PluginConfig, DB DBCreationFunc, opera
 			return zero, err
 		}
 		defer closeGormDB(db)
-		return operation(db)
+		return operation(db.WithContext(config.OperationContext()))
 	}
 
 	db, err := getOrCreateConnection(config, DB)
@@ -136,7 +136,7 @@ func WithConnection[T any](config *engine.PluginConfig, DB DBCreationFunc, opera
 		return zero, fmt.Errorf("internal error: nil database connection")
 	}
 
-	return operation(db)
+	return operation(db.WithContext(config.OperationContext()))
 }
 
 // GetCachedSSLStatus retrieves the SSL status from the connection cache.

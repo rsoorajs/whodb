@@ -377,7 +377,7 @@ func (v *ImportView) View() string {
 	}
 
 	b.WriteString("\n\n")
-	b.WriteString(RenderBindingHelpWidth(v.width,
+	b.WriteString(renderBindingHelpWidthNoHelp(v.width,
 		Keys.Global.Back,
 		Keys.Global.Quit,
 	))

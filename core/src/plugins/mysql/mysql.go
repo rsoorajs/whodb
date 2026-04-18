@@ -17,7 +17,6 @@
 package mysql
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -60,7 +59,7 @@ func (p *MySQLPlugin) GetDatabases(config *engine.PluginConfig) ([]string, error
 		if err != nil {
 			return nil, err
 		}
-		ctx := context.Background()
+		ctx := config.OperationContext()
 		conn, err := sqlDB.Conn(ctx)
 		if err != nil {
 			return nil, err

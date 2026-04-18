@@ -11,18 +11,33 @@ import (
 	"github.com/clidey/whodb/core/src"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
+	"github.com/clidey/whodb/core/src/source"
 	"github.com/clidey/whodb/core/src/types"
 	"github.com/zalando/go-keyring"
 )
 
-func TestAuthMiddlewarePrefersAuthorizationHeader(t *testing.T) {
-	creds := engine.Credentials{
-		Type:     "Postgres",
-		Hostname: "db.local",
-		Username: "alice",
-		Password: "pw",
-		Database: "app",
+func testSourceCredentials(sourceType, hostname, username, password, database string) source.Credentials {
+	values := map[string]string{}
+	if hostname != "" {
+		values["Hostname"] = hostname
 	}
+	if username != "" {
+		values["Username"] = username
+	}
+	if password != "" {
+		values["Password"] = password
+	}
+	if database != "" {
+		values["Database"] = database
+	}
+	return source.Credentials{
+		SourceType: sourceType,
+		Values:     values,
+	}
+}
+
+func TestAuthMiddlewarePrefersAuthorizationHeader(t *testing.T) {
+	creds := testSourceCredentials("Postgres", "db.local", "alice", "pw", "app")
 	payload, _ := json.Marshal(&creds)
 	token := base64.StdEncoding.EncodeToString(payload)
 
@@ -79,13 +94,7 @@ func TestAuthMiddlewareAllowsPublicRouteInDev(t *testing.T) {
 }
 
 func TestAuthMiddlewareFallsBackToCookieWhenHeaderMissing(t *testing.T) {
-	creds := engine.Credentials{
-		Type:     "Postgres",
-		Hostname: "db.local",
-		Username: "alice",
-		Password: "pw",
-		Database: "app",
-	}
+	creds := testSourceCredentials("Postgres", "db.local", "alice", "pw", "app")
 	payload, _ := json.Marshal(&creds)
 	token := base64.StdEncoding.EncodeToString(payload)
 
@@ -145,7 +154,7 @@ func TestAuthMiddlewareEnforcesAPIGatewayTokenValidation(t *testing.T) {
 	})
 
 	t.Run("missing access token", func(t *testing.T) {
-		creds := engine.Credentials{Type: "Postgres", Hostname: "h", Username: "u", Password: "p", Database: "d"}
+		creds := testSourceCredentials("Postgres", "h", "u", "p", "d")
 		payload, _ := json.Marshal(&creds)
 		token := base64.StdEncoding.EncodeToString(payload)
 
@@ -161,7 +170,8 @@ func TestAuthMiddlewareEnforcesAPIGatewayTokenValidation(t *testing.T) {
 
 	t.Run("invalid access token", func(t *testing.T) {
 		bad := "bad"
-		creds := engine.Credentials{Type: "Postgres", Hostname: "h", Username: "u", Password: "p", Database: "d", AccessToken: &bad}
+		creds := testSourceCredentials("Postgres", "h", "u", "p", "d")
+		creds.AccessToken = &bad
 		payload, _ := json.Marshal(&creds)
 		token := base64.StdEncoding.EncodeToString(payload)
 
@@ -177,7 +187,8 @@ func TestAuthMiddlewareEnforcesAPIGatewayTokenValidation(t *testing.T) {
 
 	t.Run("valid access token", func(t *testing.T) {
 		good := "good"
-		creds := engine.Credentials{Type: "Postgres", Hostname: "h", Username: "u", Password: "p", Database: "d", AccessToken: &good}
+		creds := testSourceCredentials("Postgres", "h", "u", "p", "d")
+		creds.AccessToken = &good
 		payload, _ := json.Marshal(&creds)
 		token := base64.StdEncoding.EncodeToString(payload)
 
@@ -216,9 +227,9 @@ func TestAuthMiddlewareResolvesIDOnlyCredentialsFromProfiles(t *testing.T) {
 	})
 
 	id := "profile-1"
-	creds := engine.Credentials{
-		Id:       &id,
-		Database: "override",
+	creds := source.Credentials{
+		ID:     &id,
+		Values: map[string]string{"Database": "override"},
 	}
 	payload, _ := json.Marshal(&creds)
 	token := base64.StdEncoding.EncodeToString(payload)
@@ -250,20 +261,22 @@ func TestAuthMiddlewareResolvesIDOnlyCredentialsFromKeyring(t *testing.T) {
 	t.Cleanup(func() { src.MainEngine = origEngine })
 
 	id := "keyring-1"
-	stored := &engine.Credentials{
-		Type:     "Postgres",
-		Hostname: "db.local",
-		Username: "alice",
-		Password: "pw",
-		Database: "app",
+	stored := &source.Credentials{
+		SourceType: "Postgres",
+		Values: map[string]string{
+			"Hostname": "db.local",
+			"Username": "alice",
+			"Password": "pw",
+			"Database": "app",
+		},
 	}
 	if err := SaveCredentials(id, stored); err != nil {
 		t.Fatalf("failed to seed keyring: %v", err)
 	}
 
-	requested := engine.Credentials{
-		Id:       &id,
-		Database: "override",
+	requested := source.Credentials{
+		ID:     &id,
+		Values: map[string]string{"Database": "override"},
 	}
 	payload, _ := json.Marshal(&requested)
 	token := base64.StdEncoding.EncodeToString(payload)

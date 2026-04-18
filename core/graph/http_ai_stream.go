@@ -46,7 +46,7 @@ func ceAIChatStreamHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	log.Debugf("AI Chat Stream: Request parsed - model=%s, schema=%s, query=%s", req.ModelType, req.Schema, req.Input.Query)
+	log.Debugf("AI Chat Stream: Request parsed - model=%s, ref=%+v, query=%s", req.ModelType, req.Ref, req.Input.Query)
 
 	// Setup SSE
 	flusher := SetupSSEHeaders(w)
@@ -69,6 +69,13 @@ func ceAIChatStreamHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Debugf("AI Chat Stream: Plugin=%s, DB=%s", config.Credentials.Type, config.Credentials.Database)
 
+	spec, session, err := getSourceSessionForContext(r.Context())
+	if err != nil {
+		log.Debugf("AI Chat Stream: Failed to create source session: %v", err)
+		SendSSEError(w, flusher, "No source session available")
+		return
+	}
+
 	// Build ExternalModel, resolving credentials from environment if providerId is set
 	creds := envconfig.ResolveProviderCredentials(req.ProviderId, req.Token, req.Endpoint, req.ModelType)
 	config.ExternalModel = &engine.ExternalModel{
@@ -78,20 +85,23 @@ func ceAIChatStreamHandler(w http.ResponseWriter, r *http.Request) {
 		Endpoint: creds.Endpoint,
 	}
 
-	// Build table details
-	log.Debugf("AI Chat Stream: Building table details for schema=%s", req.Schema)
-	tableDetails, err := BuildTableDetails(plugin, config, req.Schema)
+	// Build object details for the selected chat scope.
+	log.Debugf("AI Chat Stream: Building object details for ref=%+v", req.Ref)
+	resolvedRef := sourceRefFromInput(req.Ref)
+	tableDetails, err := BuildObjectDetails(r.Context(), session, resolvedRef, spec.Contract.DefaultObjectKind)
 	if err != nil {
-		log.Debugf("AI Chat Stream: BuildTableDetails failed: %v", err)
+		log.Debugf("AI Chat Stream: BuildObjectDetails failed: %v", err)
 		SendSSEError(w, flusher, "Failed to get table info: "+err.Error())
 		return
 	}
 	log.Debugf("AI Chat Stream: Table details built, length=%d", len(tableDetails))
 
+	scope := sourceScopeForChat(spec, resolvedRef)
+
 	// Setup BAML context
 	dbContext := types.DatabaseContext{
 		Database_type:         config.Credentials.Type,
-		Schema:                req.Schema,
+		Schema:                scope,
 		Tables_and_fields:     tableDetails,
 		Previous_conversation: req.Input.PreviousConversation,
 	}

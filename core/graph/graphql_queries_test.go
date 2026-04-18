@@ -30,17 +30,20 @@ import (
 	"github.com/clidey/whodb/core/internal/testutil"
 	"github.com/clidey/whodb/core/src/auth"
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/source"
 )
 
-func TestSchemaQuerySuccess(t *testing.T) {
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+func TestSourceObjectsQuerySuccess(t *testing.T) {
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	mock.GetAllSchemasFunc = func(*engine.PluginConfig) ([]string, error) { return []string{"public"}, nil }
 	setEngineMock(t, mock)
 
 	srv := handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: &Resolver{}}))
-	body, _ := json.Marshal(map[string]any{"query": `query { Schema }`})
+	body, _ := json.Marshal(map[string]any{"query": `query { SourceObjects(parent:{Kind:Database, Path:["app"]}, kinds:[Schema]){ Name } }`})
 	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewBuffer(body))
-	req = req.WithContext(context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"}))
+	ctx := context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres", Database: "app"})
+	ctx = context.WithValue(ctx, auth.AuthKey_Source, &source.Credentials{SourceType: "Postgres", Values: map[string]string{"Database": "app"}})
+	req = req.WithContext(ctx)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	srv.ServeHTTP(w, req)
@@ -53,15 +56,14 @@ func TestSchemaQuerySuccess(t *testing.T) {
 	}
 }
 
-func TestDatabaseQueryError(t *testing.T) {
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+func TestSourceFieldOptionsQueryError(t *testing.T) {
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	mock.GetDatabasesFunc = func(*engine.PluginConfig) ([]string, error) { return nil, errors.New("db error") }
 	setEngineMock(t, mock)
 
 	srv := handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: &Resolver{}}))
-	body, _ := json.Marshal(map[string]any{"query": `query { Database(type:"Test") }`})
+	body, _ := json.Marshal(map[string]any{"query": `query { SourceFieldOptions(sourceType:"Postgres", fieldKey:"Database") }`})
 	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewBuffer(body))
-	req = req.WithContext(context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"}))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	srv.ServeHTTP(w, req)
@@ -71,17 +73,19 @@ func TestDatabaseQueryError(t *testing.T) {
 	}
 }
 
-func TestStorageUnitQuerySuccess(t *testing.T) {
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+func TestSourceObjectQuerySuccess(t *testing.T) {
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	mock.GetStorageUnitsFunc = func(*engine.PluginConfig, string) ([]engine.StorageUnit, error) {
 		return []engine.StorageUnit{{Name: "users"}}, nil
 	}
 	setEngineMock(t, mock)
 
 	srv := handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: &Resolver{}}))
-	body, _ := json.Marshal(map[string]any{"query": `query { StorageUnit(schema:"public"){ Name } }`})
+	body, _ := json.Marshal(map[string]any{"query": `query { SourceObjects(parent:{Kind:Schema, Path:["app","public"]}){ Name } }`})
 	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewBuffer(body))
-	req = req.WithContext(context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"}))
+	ctx := context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres", Database: "app"})
+	ctx = context.WithValue(ctx, auth.AuthKey_Source, &source.Credentials{SourceType: "Postgres", Values: map[string]string{"Database": "app"}})
+	req = req.WithContext(ctx)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	srv.ServeHTTP(w, req)
@@ -91,17 +95,19 @@ func TestStorageUnitQuerySuccess(t *testing.T) {
 	}
 }
 
-func TestRawExecuteQueryError(t *testing.T) {
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+func TestRunSourceQueryError(t *testing.T) {
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	mock.RawExecuteFunc = func(*engine.PluginConfig, string, ...any) (*engine.GetRowsResult, error) {
 		return nil, errors.New("raw error")
 	}
 	setEngineMock(t, mock)
 
 	srv := handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: &Resolver{}}))
-	body, _ := json.Marshal(map[string]any{"query": `query { RawExecute(query:"select 1"){ Rows } }`})
+	body, _ := json.Marshal(map[string]any{"query": `query { RunSourceQuery(query:"select 1"){ Rows } }`})
 	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewBuffer(body))
-	req = req.WithContext(context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"}))
+	ctx := context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres"})
+	ctx = context.WithValue(ctx, auth.AuthKey_Source, &source.Credentials{SourceType: "Postgres"})
+	req = req.WithContext(ctx)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	srv.ServeHTTP(w, req)
@@ -112,13 +118,13 @@ func TestRawExecuteQueryError(t *testing.T) {
 }
 
 func TestAIModelQueryMissingAPIKey(t *testing.T) {
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	setEngineMock(t, mock)
 	srv := handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: &Resolver{}}))
 
 	body, _ := json.Marshal(map[string]any{"query": `query { AIModel(modelType:"OpenAI", token:"") }`})
 	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewBuffer(body))
-	req = req.WithContext(context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"}))
+	req = req.WithContext(context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres"}))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	srv.ServeHTTP(w, req)
@@ -129,7 +135,7 @@ func TestAIModelQueryMissingAPIKey(t *testing.T) {
 }
 
 func TestAIChatQueryError(t *testing.T) {
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	mock.ChatFunc = func(*engine.PluginConfig, string, string, string) ([]*engine.ChatMessage, error) {
 		return nil, errors.New("chat failed")
 	}
@@ -137,10 +143,12 @@ func TestAIChatQueryError(t *testing.T) {
 
 	srv := handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: &Resolver{}}))
 	body, _ := json.Marshal(map[string]any{
-		"query": `query { AIChat(modelType:"Test", schema:"public", input:{PreviousConversation:"", Query:"hi", Model:"m"}){ Text } }`,
+		"query": `query { AIChat(modelType:"Test", ref:{Kind:Schema, Path:["app","public"]}, input:{PreviousConversation:"", Query:"hi", Model:"m"}){ Text } }`,
 	})
 	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewBuffer(body))
-	req = req.WithContext(context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"}))
+	ctx := context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres", Database: "app"})
+	ctx = context.WithValue(ctx, auth.AuthKey_Source, &source.Credentials{SourceType: "Postgres", Values: map[string]string{"Database": "app"}})
+	req = req.WithContext(ctx)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	srv.ServeHTTP(w, req)

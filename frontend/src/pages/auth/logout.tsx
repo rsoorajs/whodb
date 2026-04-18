@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { useMutation } from "@apollo/client";
+import { useMutation } from "@apollo/client/react";
 import { FC, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { Container } from "../../components/page";
@@ -23,6 +23,7 @@ import { AuthActions } from "../../store/auth";
 import { Loading } from "../../components/loading";
 import { toast } from "@clidey/ux";
 import { useTranslation } from '@/hooks/use-translation';
+import { clearGraphqlStore } from "@/config/graphql-client";
 
 export const LogoutPage: FC = () => {
   const { t } = useTranslation('pages/logout');
@@ -30,15 +31,16 @@ export const LogoutPage: FC = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    logout({
-      onCompleted() {
+    void (async () => {
+      try {
+        await logout();
+        await clearGraphqlStore();
         dispatch(AuthActions.logout());
         toast.success(t('success'));
-      },
-      onError() {
+      } catch {
         toast.error(t('error'));
       }
-    });
+    })();
   }, [dispatch, logout, t]);
 
   return <Container>

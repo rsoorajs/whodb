@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/clidey/whodb/cli/internal/config"
 	"github.com/clidey/whodb/cli/internal/tui/layout"
 )
@@ -68,7 +69,7 @@ func TestUseMultiPane_ModalViewsFallback(t *testing.T) {
 	}
 
 	// Modal/overlay views should NOT use multi-pane
-	for _, mode := range []ViewMode{ViewExport, ViewWhere, ViewColumns, ViewSchema, ViewHistory, ViewChat} {
+	for _, mode := range []ViewMode{ViewExport, ViewWhere, ViewColumns, ViewSchema, ViewHistory, ViewChat, ViewMockData, ViewRowWrite} {
 		m.mode = mode
 		if m.useMultiPane() {
 			t.Errorf("useMultiPane() should be false for modal mode %d", mode)
@@ -210,8 +211,29 @@ func TestGlobalHelpBar_ContainsGlobalShortcuts(t *testing.T) {
 	if !strings.Contains(helpBar, "history") {
 		t.Error("Global help bar should contain 'history'")
 	}
+	if !strings.Contains(helpBar, "schema diff") {
+		t.Error("Global help bar should contain 'schema diff'")
+	}
 	if !strings.Contains(helpBar, "layout") {
 		t.Error("Global help bar should contain 'layout'")
+	}
+}
+
+func TestMultiPaneRender_PreservesWrappedGlobalHelpBar(t *testing.T) {
+	m := setupConnectedModel(t, 90, 22)
+	m.mode = ViewBrowser
+
+	helpBar := m.renderGlobalHelpBar()
+	if lipgloss.Height(helpBar) <= 2 {
+		t.Fatalf("expected wrapped global help bar height > 2 at narrow width, got %d", lipgloss.Height(helpBar))
+	}
+
+	output := m.View()
+	if !strings.Contains(output, Keys.Global.Quit.Help().Desc) {
+		t.Fatalf("expected wrapped multi-pane output to include %q, got: %s", Keys.Global.Quit.Help().Desc, output)
+	}
+	if !strings.Contains(output, Keys.Global.Help.Help().Desc) {
+		t.Fatalf("expected wrapped multi-pane output to include %q, got: %s", Keys.Global.Help.Help().Desc, output)
 	}
 }
 

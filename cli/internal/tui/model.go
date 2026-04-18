@@ -31,6 +31,7 @@ import (
 	"github.com/clidey/whodb/cli/internal/history"
 	"github.com/clidey/whodb/cli/internal/tui/layout"
 	"github.com/clidey/whodb/cli/pkg/styles"
+	"github.com/clidey/whodb/core/graph/model"
 )
 
 type ViewMode int
@@ -48,10 +49,12 @@ const (
 	ViewSchema
 	ViewImport
 	ViewMockData
+	ViewRowWrite
 	ViewBookmarks
 	ViewJSON
 	ViewCmdLog
 	ViewExplain
+	ViewDiff
 	ViewERD
 	ViewAudit
 	ViewProfiles
@@ -69,6 +72,9 @@ type MainModel struct {
 	spinner       spinner.Model
 	statusMessage string
 	viewHistory   []ViewMode
+	initCommands  []tea.Cmd
+
+	currentProfileName string
 
 	// Concrete view references — used by existing code and tests.
 	connectionView *ConnectionView
@@ -83,10 +89,12 @@ type MainModel struct {
 	schemaView     *SchemaView
 	importView     *ImportView
 	mockDataView   *MockDataView
+	rowWriteView   *RowWriteView
 	bookmarksView  *BookmarksView
 	jsonViewer     *JSONViewer
 	cmdLogView     *CmdLogView
 	explainView    *ExplainView
+	diffView       *SchemaDiffView
 	erdView        *ERDView
 	auditView      *AuditView
 	profilesView   *ProfilesView
@@ -102,6 +110,10 @@ type MainModel struct {
 }
 
 func NewMainModel() *MainModel {
+	return newMainModel(true)
+}
+
+func newMainModel(restoreWorkspace bool) *MainModel {
 	dbMgr, err := database.NewManager()
 	if err != nil {
 		return &MainModel{err: err}
@@ -141,10 +153,12 @@ func NewMainModel() *MainModel {
 	m.schemaView = NewSchemaView(m)
 	m.importView = NewImportView(m)
 	m.mockDataView = NewMockDataView(m)
+	m.rowWriteView = NewRowWriteView(m)
 	m.bookmarksView = NewBookmarksView(m)
 	m.jsonViewer = NewJSONViewer(m)
 	m.cmdLogView = NewCmdLogView(m)
 	m.explainView = NewExplainView(m)
+	m.diffView = NewSchemaDiffView(m)
 	m.erdView = NewERDView(m)
 	m.auditView = NewAuditView(m)
 	m.profilesView = NewProfilesView(m)
@@ -162,20 +176,26 @@ func NewMainModel() *MainModel {
 		ViewSchema:     m.schemaView,
 		ViewImport:     m.importView,
 		ViewMockData:   m.mockDataView,
+		ViewRowWrite:   m.rowWriteView,
 		ViewBookmarks:  m.bookmarksView,
 		ViewJSON:       m.jsonViewer,
 		ViewCmdLog:     m.cmdLogView,
 		ViewExplain:    m.explainView,
+		ViewDiff:       m.diffView,
 		ViewERD:        m.erdView,
 		ViewAudit:      m.auditView,
 		ViewProfiles:   m.profilesView,
+	}
+
+	if restoreWorkspace {
+		m.restoreWorkspace()
 	}
 
 	return m
 }
 
 func NewMainModelWithConnection(conn *config.Connection) *MainModel {
-	m := NewMainModel()
+	m := newMainModel(false)
 	if m.err != nil {
 		return m
 	}
@@ -193,8 +213,8 @@ func NewMainModelWithConnection(conn *config.Connection) *MainModel {
 // NewMainModelWithProfile creates a model that connects using the given
 // connection and applies the provided config (which already has profile
 // settings like theme, page size, and timeout applied).
-func NewMainModelWithProfile(conn *config.Connection, cfg *config.Config) *MainModel {
-	m := NewMainModel()
+func NewMainModelWithProfile(conn *config.Connection, cfg *config.Config, profileName string) *MainModel {
+	m := newMainModel(false)
 	if m.err != nil {
 		return m
 	}
@@ -208,6 +228,7 @@ func NewMainModelWithProfile(conn *config.Connection, cfg *config.Config) *MainM
 	}
 
 	m.mode = ViewBrowser
+	m.currentProfileName = profileName
 	return m
 }
 
@@ -226,7 +247,9 @@ func (m *MainModel) Init() tea.Cmd {
 	if m.mode == ViewConnection {
 		cmds = append(cmds, m.connectionView.Init())
 	}
-	if m.mode == ViewBrowser && m.dbManager.GetCurrentConnection() != nil {
+	if len(m.initCommands) > 0 {
+		cmds = append(cmds, m.initCommands...)
+	} else if m.mode == ViewBrowser && m.dbManager.GetCurrentConnection() != nil {
 		cmds = append(cmds, m.browserView.loadTables())
 	}
 	return tea.Batch(cmds...)
@@ -291,16 +314,23 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.schemaView, _ = m.schemaView.Update(msg)
 		m.exportView, _ = m.exportView.Update(msg)
 		m.whereView, _ = m.whereView.Update(msg)
+		m.rowWriteView, _ = m.rowWriteView.Update(msg)
 		m.jsonViewer, _ = m.jsonViewer.Update(msg)
 		m.cmdLogView, _ = m.cmdLogView.Update(msg)
 		m.explainView, _ = m.explainView.Update(msg)
+		m.diffView, _ = m.diffView.Update(msg)
 		m.erdView, _ = m.erdView.Update(msg)
 		m.auditView, _ = m.auditView.Update(msg)
 		m.profilesView, _ = m.profilesView.Update(msg)
 
 		// Rebuild layout on resize if connected
 		if m.dbManager.GetCurrentConnection() != nil && m.layoutRoot == nil {
-			m.initLayout()
+			if m.activeLayout == "" {
+				m.initLayout()
+			} else if m.activeLayout != layout.LayoutSingle {
+				m.rebuildLayout()
+				m.focusPaneByIndex(m.focusedPaneIdx)
+			}
 		}
 		return m, nil
 
@@ -403,6 +433,15 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
+		case "ctrl+v":
+			// Global shortcut: open schema diff
+			if m.dbManager.GetCurrentConnection() != nil && m.mode != ViewDiff {
+				m.suspendLayout()
+				m.diffView.prepare()
+				m.PushView(ViewDiff)
+				return m, nil
+			}
+
 		case "ctrl+k":
 			// Global shortcut: open ER diagram
 			if m.dbManager.GetCurrentConnection() != nil && m.mode != ViewERD {
@@ -444,6 +483,9 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Let modal views handle Tab themselves (e.g., ERD table cycling)
 			if m.mode == ViewERD {
 				return m.updateERDView(msg)
+			}
+			if m.mode == ViewDiff {
+				return m.updateDiffView(msg)
 			}
 			// Let connection view handle Tab for its own navigation
 			if m.mode == ViewConnection {
@@ -490,8 +532,12 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateImportView(msg)
 	case mockDataAnalysisMsg, mockDataResultMsg:
 		return m.updateMockDataView(msg)
+	case rowWriteResultMsg:
+		return m.updateRowWriteView(msg)
 	case explainResultMsg:
 		return m.updateExplainView(msg)
+	case schemaDiffResultMsg:
+		return m.updateDiffView(msg)
 	case erdDataLoadedMsg:
 		return m.updateERDView(msg)
 	case auditResultMsg:
@@ -523,6 +569,8 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateImportView(msg)
 	case ViewMockData:
 		return m.updateMockDataView(msg)
+	case ViewRowWrite:
+		return m.updateRowWriteView(msg)
 	case ViewBookmarks:
 		return m.updateBookmarksView(msg)
 	case ViewJSON:
@@ -531,6 +579,8 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateCmdLogView(msg)
 	case ViewExplain:
 		return m.updateExplainView(msg)
+	case ViewDiff:
+		return m.updateDiffView(msg)
 	case ViewERD:
 		return m.updateERDView(msg)
 	case ViewAudit:
@@ -557,6 +607,12 @@ func (m *MainModel) updateCmdLogView(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *MainModel) updateExplainView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.explainView, cmd = m.explainView.Update(msg)
+	return m, cmd
+}
+
+func (m *MainModel) updateDiffView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	m.diffView, cmd = m.diffView.Update(msg)
 	return m, cmd
 }
 
@@ -596,6 +652,12 @@ func (m *MainModel) updateMockDataView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+func (m *MainModel) updateRowWriteView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	m.rowWriteView, cmd = m.rowWriteView.Update(msg)
+	return m, cmd
+}
+
 func (m *MainModel) View() string {
 	if m.err != nil {
 		return renderError(m.err.Error())
@@ -611,14 +673,18 @@ func (m *MainModel) View() string {
 	var content string
 
 	if m.useMultiPane() && m.layoutRoot != nil {
-		// Multi-pane layout rendering (reserve 2 rows for the global help bar)
-		helpBarHeight := 2
+		// Multi-pane layout rendering with a footer that may wrap to multiple lines.
+		helpBar := m.renderGlobalHelpBar()
+		helpBarHeight := lipgloss.Height(helpBar)
+		if helpBarHeight < 1 {
+			helpBarHeight = 1
+		}
 		contentH := m.layoutContentHeight() - helpBarHeight
 		if contentH < MinPaneHeight {
 			contentH = MinPaneHeight
 		}
 		m.layoutRoot.Layout(0, 0, m.width, contentH)
-		content = m.layoutRoot.View() + "\n" + m.renderGlobalHelpBar()
+		content = m.layoutRoot.View() + "\n" + helpBar
 	} else {
 		// Single-pane rendering (original behavior)
 		switch m.mode {
@@ -646,6 +712,8 @@ func (m *MainModel) View() string {
 			content = m.importView.View()
 		case ViewMockData:
 			content = m.mockDataView.View()
+		case ViewRowWrite:
+			content = m.rowWriteView.View()
 		case ViewBookmarks:
 			content = m.bookmarksView.View()
 		case ViewJSON:
@@ -654,6 +722,8 @@ func (m *MainModel) View() string {
 			content = m.cmdLogView.View()
 		case ViewExplain:
 			content = m.explainView.View()
+		case ViewDiff:
+			content = m.diffView.View()
 		case ViewERD:
 			content = m.erdView.View()
 		case ViewAudit:
@@ -706,6 +776,8 @@ func (m *MainModel) isLoading() bool {
 		m.resultsView.loading ||
 		m.mockDataView.analyzing ||
 		m.mockDataView.generating ||
+		m.rowWriteView.working ||
+		m.diffView.loading ||
 		m.erdView.loading ||
 		m.auditView.loading
 }
@@ -782,7 +854,11 @@ func (m *MainModel) isHelpSafe() bool {
 		return m.connectionView.mode == "list"
 	case ViewProfiles:
 		return !m.profilesView.naming
+	case ViewDiff:
+		return m.diffView.HelpSafe()
 	case ViewMockData:
+		return false
+	case ViewRowWrite:
 		return false
 	case ViewEditor:
 		// Editor always has text input
@@ -807,6 +883,8 @@ func (m *MainModel) renderHelpOverlay() string {
 			Keys.Browser.Editor,
 			Keys.Browser.AIChat,
 			Keys.Browser.History,
+			Keys.Global.SchemaDiff,
+			Keys.Global.ERDiagram,
 			Keys.Global.MockData,
 			Keys.Browser.Filter,
 			Keys.Browser.Select,
@@ -821,7 +899,12 @@ func (m *MainModel) renderHelpOverlay() string {
 			Keys.Results.ViewCell,
 			Keys.Results.Where,
 			Keys.Results.Columns,
+			Keys.Results.AddRow,
+			Keys.Results.EditRow,
+			Keys.Results.DeleteRow,
 			Keys.Results.Export,
+			Keys.Global.SchemaDiff,
+			Keys.Global.ERDiagram,
 			Keys.Global.MockData,
 			Keys.Results.PageSize,
 			Keys.Results.CustomSize,
@@ -899,6 +982,10 @@ func (m *MainModel) renderHelpOverlay() string {
 			Keys.Global.Back,
 		))
 
+	case ViewRowWrite:
+		b.WriteString(styles.RenderKey("Row Write\n\n"))
+		b.WriteString(RenderBindingHelp(rowWriteHelpBindings(m.rowWriteView.action)...))
+
 	case ViewConnection:
 		b.WriteString(styles.RenderKey("Connection View\n\n"))
 		b.WriteString(RenderBindingHelp(
@@ -919,6 +1006,27 @@ func (m *MainModel) renderHelpOverlay() string {
 			Keys.Bookmarks.Delete,
 			Keys.Global.Back,
 		))
+
+	case ViewDiff:
+		b.WriteString(styles.RenderKey("Schema Diff\n\n"))
+		if m.diffView.HelpSafe() {
+			b.WriteString(RenderBindingHelp(
+				Keys.SchemaDiff.Recompare,
+				Keys.SchemaDiff.Edit,
+				Keys.SchemaDiff.ScrollUp,
+				Keys.SchemaDiff.ScrollDown,
+				Keys.Global.Back,
+			))
+		} else {
+			b.WriteString(RenderBindingHelp(
+				Keys.SchemaDiff.PrevField,
+				Keys.SchemaDiff.NextField,
+				Keys.SchemaDiff.OptionLeft,
+				Keys.SchemaDiff.OptionRight,
+				Keys.SchemaDiff.Compare,
+				Keys.Global.Back,
+			))
+		}
 
 	case ViewERD:
 		b.WriteString(styles.RenderKey("ER Diagram\n\n"))
@@ -1057,6 +1165,7 @@ func (m *MainModel) renderGlobalHelpBar() string {
 		Keys.Browser.AIChat,
 		Keys.Global.Profiles,
 		Keys.Global.CmdLog,
+		Keys.Global.SchemaDiff,
 		Keys.Global.ERDiagram,
 		Keys.Global.Audit,
 		Keys.Global.Import,
@@ -1067,7 +1176,10 @@ func (m *MainModel) renderGlobalHelpBar() string {
 		Keys.Browser.Disconnect,
 		Keys.Global.Quit,
 	)
-	return " " + RenderBindingHelpWidth(m.width, bindings...)
+	if m.isHelpSafe() {
+		return " " + RenderBindingHelpWidth(m.width, bindings...)
+	}
+	return " " + renderBindingHelpWidthNoHelp(m.width, bindings...)
 }
 
 // initLayout sets up the initial layout based on terminal width.
@@ -1417,4 +1529,290 @@ func renderError(message string) string {
 	errorBox := styles.RenderErrorBox(message)
 	helpText := styles.RenderHelp("esc", "dismiss", "ctrl+c", "exit")
 	return "\n" + errorBox + "\n\n" + helpText + "\n"
+}
+
+// PersistWorkspace stores the reconnectable TUI workspace so it can be
+// restored on the next plain interactive launch.
+func (m *MainModel) PersistWorkspace() error {
+	if m == nil || m.config == nil {
+		return nil
+	}
+
+	if m.dbManager == nil || m.dbManager.GetCurrentConnection() == nil {
+		m.config.ClearWorkspace()
+		return m.config.Save()
+	}
+
+	connectionName := strings.TrimSpace(m.dbManager.GetCurrentConnection().Name)
+	if connectionName == "" && strings.TrimSpace(m.currentProfileName) != "" {
+		if profile := m.config.GetProfile(m.currentProfileName); profile != nil {
+			connectionName = strings.TrimSpace(profile.Connection)
+		}
+	}
+	if connectionName == "" {
+		m.config.ClearWorkspace()
+		return m.config.Save()
+	}
+
+	m.editorView.saveCurrentBuffer()
+
+	layoutName := m.activeLayout
+	if layoutName == "" {
+		layoutName = layout.LayoutSingle
+	}
+
+	workspace := &config.WorkspaceState{
+		ConnectionName: connectionName,
+		ProfileName:    strings.TrimSpace(m.currentProfileName),
+		View:           workspaceViewName(m.workspaceViewMode()),
+		Layout:         string(layoutName),
+		FocusedPane:    m.focusedPaneIdx,
+		Browser: config.WorkspaceBrowserState{
+			Schema: m.browserView.currentSchema,
+			Table:  m.browserView.selectedTable,
+			Filter: m.browserView.filterInput.Value(),
+		},
+		Editor:  m.workspaceEditorState(),
+		Results: m.workspaceResultsState(),
+		Diff:    m.diffView.SelectionState(),
+		SavedAt: time.Now().UTC().Format(time.RFC3339),
+	}
+
+	m.config.SetWorkspace(workspace)
+	return m.config.Save()
+}
+
+func (m *MainModel) restoreWorkspace() {
+	workspace := m.config.GetWorkspace()
+	if workspace == nil {
+		return
+	}
+
+	connectionName := strings.TrimSpace(workspace.ConnectionName)
+	if connectionName == "" && strings.TrimSpace(workspace.ProfileName) != "" {
+		if profile := m.config.GetProfile(workspace.ProfileName); profile != nil {
+			connectionName = strings.TrimSpace(profile.Connection)
+		}
+	}
+	if connectionName == "" {
+		return
+	}
+
+	conn, _, err := m.dbManager.ResolveConnection(connectionName)
+	if err != nil {
+		m.clearWorkspaceSnapshot()
+		return
+	}
+	if err := m.dbManager.Connect(conn); err != nil {
+		m.clearWorkspaceSnapshot()
+		return
+	}
+
+	m.currentProfileName = strings.TrimSpace(workspace.ProfileName)
+	m.mode = parseWorkspaceView(workspace.View)
+	if workspace.Layout != "" {
+		m.activeLayout = layout.LayoutName(workspace.Layout)
+	}
+	if workspace.FocusedPane >= 0 {
+		m.focusedPaneIdx = workspace.FocusedPane
+	}
+
+	m.applyWorkspaceBrowserState(workspace.Browser)
+	m.applyWorkspaceEditorState(workspace.Editor)
+	m.applyWorkspaceResultsState(workspace.Results)
+	m.diffView.SetSelectionState(workspace.Diff)
+
+	m.initCommands = append(m.initCommands, m.browserView.loadTables())
+	if strings.TrimSpace(workspace.Results.Table) != "" {
+		m.initCommands = append(m.initCommands, m.resultsView.loadPage())
+	}
+}
+
+func (m *MainModel) clearWorkspaceSnapshot() {
+	m.config.ClearWorkspace()
+	_ = m.config.Save()
+}
+
+func (m *MainModel) applyWorkspaceBrowserState(state config.WorkspaceBrowserState) {
+	m.browserView.currentSchema = strings.TrimSpace(state.Schema)
+	m.browserView.selectedTable = strings.TrimSpace(state.Table)
+	m.browserView.filtering = false
+	m.browserView.filterInput.SetValue(state.Filter)
+}
+
+func (m *MainModel) applyWorkspaceEditorState(state config.WorkspaceEditorState) {
+	if len(state.Buffers) == 0 {
+		m.editorView.buffers = []queryBuffer{{name: "Query 1", text: ""}}
+		m.editorView.activeTab = 0
+		m.editorView.textarea.SetValue("")
+		return
+	}
+
+	buffers := make([]queryBuffer, 0, len(state.Buffers))
+	for i, buffer := range state.Buffers {
+		name := strings.TrimSpace(buffer.Name)
+		if name == "" {
+			name = fmt.Sprintf("Query %d", i+1)
+		}
+		buffers = append(buffers, queryBuffer{
+			name: name,
+			text: buffer.Query,
+		})
+	}
+
+	activeTab := state.ActiveTab
+	if activeTab < 0 || activeTab >= len(buffers) {
+		activeTab = 0
+	}
+
+	m.editorView.buffers = buffers
+	m.editorView.activeTab = activeTab
+	m.editorView.textarea.SetValue(buffers[activeTab].text)
+	m.editorView.showSuggestions = false
+}
+
+func (m *MainModel) applyWorkspaceResultsState(state config.WorkspaceResultsState) {
+	if strings.TrimSpace(state.Table) == "" {
+		return
+	}
+
+	m.resultsView.schema = strings.TrimSpace(state.Schema)
+	m.resultsView.tableName = strings.TrimSpace(state.Table)
+	m.resultsView.query = ""
+	m.resultsView.currentPage = max(state.CurrentPage, 0)
+	if state.PageSize > 0 {
+		m.resultsView.pageSize = state.PageSize
+	}
+	m.resultsView.columnOffset = max(state.ColumnOffset, 0)
+	m.resultsView.whereCondition = state.Where
+	m.resultsView.visibleColumns = append([]string(nil), state.VisibleColumns...)
+}
+
+func (m *MainModel) workspaceEditorState() config.WorkspaceEditorState {
+	buffers := make([]config.WorkspaceEditorBufferState, len(m.editorView.buffers))
+	for i, buffer := range m.editorView.buffers {
+		buffers[i] = config.WorkspaceEditorBufferState{
+			Name:  buffer.name,
+			Query: buffer.text,
+		}
+	}
+
+	return config.WorkspaceEditorState{
+		Buffers:   buffers,
+		ActiveTab: m.editorView.activeTab,
+	}
+}
+
+func (m *MainModel) workspaceResultsState() config.WorkspaceResultsState {
+	if strings.TrimSpace(m.resultsView.tableName) == "" {
+		return config.WorkspaceResultsState{}
+	}
+
+	var where *model.WhereCondition
+	if m.resultsView.whereCondition != nil {
+		where = cloneWhereCondition(m.resultsView.whereCondition)
+	}
+
+	return config.WorkspaceResultsState{
+		Schema:         m.resultsView.schema,
+		Table:          m.resultsView.tableName,
+		CurrentPage:    m.resultsView.currentPage,
+		PageSize:       m.resultsView.pageSize,
+		ColumnOffset:   m.resultsView.columnOffset,
+		VisibleColumns: append([]string(nil), m.resultsView.visibleColumns...),
+		Where:          where,
+	}
+}
+
+func (m *MainModel) workspaceViewMode() ViewMode {
+	if isWorkspaceBaseView(m.mode) {
+		return m.mode
+	}
+
+	for i := len(m.viewHistory) - 1; i >= 0; i-- {
+		if isWorkspaceBaseView(m.viewHistory[i]) {
+			return m.viewHistory[i]
+		}
+	}
+
+	if strings.TrimSpace(m.resultsView.tableName) != "" {
+		return ViewResults
+	}
+	return ViewBrowser
+}
+
+func isWorkspaceBaseView(mode ViewMode) bool {
+	switch mode {
+	case ViewBrowser, ViewEditor, ViewResults:
+		return true
+	default:
+		return false
+	}
+}
+
+func workspaceViewName(mode ViewMode) string {
+	switch mode {
+	case ViewEditor:
+		return "editor"
+	case ViewResults:
+		return "results"
+	default:
+		return "browser"
+	}
+}
+
+func parseWorkspaceView(value string) ViewMode {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "editor":
+		return ViewEditor
+	case "results":
+		return ViewResults
+	default:
+		return ViewBrowser
+	}
+}
+
+func cloneWhereCondition(condition *model.WhereCondition) *model.WhereCondition {
+	if condition == nil {
+		return nil
+	}
+
+	clone := &model.WhereCondition{
+		Type: condition.Type,
+	}
+
+	if condition.Atomic != nil {
+		clone.Atomic = &model.AtomicWhereCondition{
+			ColumnType: condition.Atomic.ColumnType,
+			Key:        condition.Atomic.Key,
+			Operator:   condition.Atomic.Operator,
+			Value:      condition.Atomic.Value,
+		}
+	}
+
+	if condition.And != nil {
+		clone.And = cloneOperationWhereCondition(condition.And)
+	}
+
+	if condition.Or != nil {
+		clone.Or = cloneOperationWhereCondition(condition.Or)
+	}
+
+	return clone
+}
+
+func cloneOperationWhereCondition(condition *model.OperationWhereCondition) *model.OperationWhereCondition {
+	if condition == nil {
+		return nil
+	}
+
+	clone := &model.OperationWhereCondition{}
+	if len(condition.Children) > 0 {
+		clone.Children = make([]*model.WhereCondition, len(condition.Children))
+		for i, child := range condition.Children {
+			clone.Children[i] = cloneWhereCondition(child)
+		}
+	}
+
+	return clone
 }

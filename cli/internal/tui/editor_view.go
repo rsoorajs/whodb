@@ -30,6 +30,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/clidey/whodb/cli/pkg/styles"
+	"github.com/clidey/whodb/core/src/querysuggestions"
 )
 
 // queryBuffer holds the content of one editor tab.
@@ -394,6 +395,11 @@ func (v *EditorView) View() string {
 		b.WriteString("\n\n")
 	}
 
+	if onboarding := v.renderOnboarding(); onboarding != "" {
+		b.WriteString(onboarding)
+		b.WriteString("\n\n")
+	}
+
 	b.WriteString(v.textarea.View())
 
 	// Ghost text: show dimmed completion from history
@@ -452,10 +458,38 @@ func (v *EditorView) View() string {
 			Keys.Global.Back,
 			Keys.Global.Quit,
 		)
-		b.WriteString(RenderBindingHelpWidth(v.width, bindings...))
+		b.WriteString(renderBindingHelpWidthNoHelp(v.width, bindings...))
 	}
 
 	return lipgloss.NewStyle().Padding(1, 2).Render(b.String())
+}
+
+func (v *EditorView) renderOnboarding() string {
+	if strings.TrimSpace(v.textarea.Value()) != "" || v.queryState == OperationRunning || v.retryPrompt.IsActive() {
+		return ""
+	}
+
+	suggestions := querysuggestions.FromStorageUnits(v.parent.browserView.tables)
+	if len(suggestions) == 0 {
+		return ""
+	}
+
+	var b strings.Builder
+	b.WriteString(styles.RenderKey("Suggested queries"))
+	b.WriteString("\n")
+	for i, suggestion := range suggestions {
+		b.WriteString(styles.RenderMuted(fmt.Sprintf("%d.", i+1)))
+		b.WriteString(" ")
+		b.WriteString(suggestion.Description)
+		if suggestion.Category != "" {
+			b.WriteString(" ")
+			b.WriteString(styles.RenderMuted("[" + suggestion.Category + "]"))
+		}
+		if i < len(suggestions)-1 {
+			b.WriteString("\n")
+		}
+	}
+	return b.String()
 }
 
 func (v *EditorView) executeQuery() tea.Cmd {

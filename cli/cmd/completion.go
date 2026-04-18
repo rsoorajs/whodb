@@ -26,11 +26,9 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/clidey/whodb/cli/pkg/identity"
 	"github.com/spf13/cobra"
 )
-
-const rcBlockStart = "# >>> whodb-cli completion >>>"
-const rcBlockEnd = "# <<< whodb-cli completion <<<"
 
 var completionCmd = &cobra.Command{
 	Use:   "completion [bash|zsh|fish|powershell]",
@@ -94,22 +92,22 @@ For bash and zsh, ensure your shell loads completions from these locations as no
 		switch sh {
 		case "bash":
 			// Standard user dir for bash-completion if installed
-			targetPath = filepath.Join(home, ".local", "share", "bash-completion", "completions", "whodb-cli")
+			targetPath = filepath.Join(home, ".local", "share", "bash-completion", "completions", completionCommandName())
 			postMsg = "Bash completion installed. Ensure bash-completion is installed and sourced. Restart your shell, or source ~/.bashrc."
 
 		case "zsh":
 			// A common per-user completions directory; user must add to fpath
-			targetPath = filepath.Join(home, ".zsh", "completions", "_whodb-cli")
+			targetPath = filepath.Join(home, ".zsh", "completions", "_"+completionCommandName())
 			postMsg = "Zsh completion installed. Add 'fpath=(~/.zsh/completions $fpath); autoload -U compinit; compinit' to your ~/.zshrc if not already configured. Then restart zsh."
 
 		case "fish":
 			// Fish automatically loads from this path
-			targetPath = filepath.Join(home, ".config", "fish", "completions", "whodb-cli.fish")
+			targetPath = filepath.Join(home, ".config", "fish", "completions", completionCommandName()+".fish")
 			postMsg = "Fish completion installed. Restart fish or run 'exec fish'."
 
 		case "powershell", "pwsh":
 			// Installing PowerShell completions varies; for now, print instructions
-			return errors.New("powershell completion install is not automated yet; run 'whodb-cli completion powershell | Out-String | Set-Content -Path $PROFILE' in PowerShell")
+			return fmt.Errorf("powershell completion install is not automated yet; run '%s completion powershell | Out-String | Set-Content -Path $PROFILE' in PowerShell", completionCommandName())
 
 		default:
 			return fmt.Errorf("unsupported shell: %s", sh)
@@ -200,12 +198,12 @@ func ensureBashRc(installPath string) error {
 		return err
 	}
 
-	block := rcBlockStart + "\n" +
+	block := completionRCBlockStart() + "\n" +
 		"# shell completion\n" +
 		"if [ -f '" + installPath + "' ]; then\n" +
 		". '" + installPath + "'\n" +
 		"fi\n" +
-		rcBlockEnd + "\n"
+		completionRCBlockEnd() + "\n"
 
 	var rcFiles []string
 	if runtime.GOOS == "darwin" {
@@ -229,11 +227,11 @@ func ensureZshRc() error {
 	}
 
 	// Ensure completions dir exists and is in fpath; init compinit
-	block := rcBlockStart + "\n" +
+	block := completionRCBlockStart() + "\n" +
 		"fpath=(~/.zsh/completions $fpath)\n" +
 		"autoload -U compinit\n" +
 		"compinit\n" +
-		rcBlockEnd + "\n"
+		completionRCBlockEnd() + "\n"
 
 	rc := filepath.Join(home, ".zshrc")
 	return ensureBlockInFile(rc, block)
@@ -255,7 +253,7 @@ func ensureBlockInFile(path string, block string) error {
 	}
 
 	content := string(data)
-	if strings.Contains(content, rcBlockStart) {
+	if strings.Contains(content, completionRCBlockStart()) {
 		return nil
 	}
 
@@ -291,17 +289,17 @@ var completionUninstallCmd = &cobra.Command{
 		var targetPath string
 		switch sh {
 		case "bash":
-			targetPath = filepath.Join(home, ".local", "share", "bash-completion", "completions", "whodb-cli")
+			targetPath = filepath.Join(home, ".local", "share", "bash-completion", "completions", completionCommandName())
 			if err := removeBashRc(); err != nil {
 				return err
 			}
 		case "zsh":
-			targetPath = filepath.Join(home, ".zsh", "completions", "_whodb-cli")
+			targetPath = filepath.Join(home, ".zsh", "completions", "_"+completionCommandName())
 			if err := removeZshRc(); err != nil {
 				return err
 			}
 		case "fish":
-			targetPath = filepath.Join(home, ".config", "fish", "completions", "whodb-cli.fish")
+			targetPath = filepath.Join(home, ".config", "fish", "completions", completionCommandName()+".fish")
 		case "powershell", "pwsh":
 			fmt.Fprintln(os.Stdout, "PowerShell uninstall is manual: remove completion lines from $PROFILE and any saved completion file.")
 			return nil
@@ -354,15 +352,15 @@ func removeBlockFromFile(path string) error {
 		return err
 	}
 	content := string(data)
-	start := strings.Index(content, rcBlockStart)
+	start := strings.Index(content, completionRCBlockStart())
 	if start == -1 {
 		return nil
 	}
-	end := strings.Index(content[start:], rcBlockEnd)
+	end := strings.Index(content[start:], completionRCBlockEnd())
 	if end == -1 {
 		return nil
 	}
-	end += start + len(rcBlockEnd)
+	end += start + len(completionRCBlockEnd())
 
 	newContent := content[:start] + content[end:]
 	newContent = strings.ReplaceAll(newContent, "\n\n\n", "\n\n")
@@ -377,4 +375,16 @@ func removeFileIfExists(path string) error {
 		return err
 	}
 	return nil
+}
+
+func completionCommandName() string {
+	return identity.Current().CommandName
+}
+
+func completionRCBlockStart() string {
+	return "# >>> " + completionCommandName() + " completion >>>"
+}
+
+func completionRCBlockEnd() string {
+	return "# <<< " + completionCommandName() + " completion <<<"
 }

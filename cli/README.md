@@ -13,9 +13,15 @@ An interactive, production-ready command-line interface for WhoDB with a Claude 
 - **Responsive Data Viewer** - Paginated results with horizontal column scrolling
 - **Column Selection** - Choose which columns are visible in results
 - **Export Capabilities** - Export to CSV and Excel formats
+- **Schema Diff** - Compare schema metadata across environments in the CLI and TUI
+- **ERD Graph Output** - Inspect backend graph metadata from the CLI or TUI
+- **Explain Plans** - Run database-native `EXPLAIN` from the CLI or TUI
+- **Backend Query Suggestions** - Shared onboarding suggestions in the CLI and TUI editor
+- **Bookmarks and Profiles** - Shared saved queries and connection profiles across CLI and TUI
+- **Workspace Restore** - Resume your last reconnectable TUI session on startup
 - **Query History** - Persistent history with re-execution
 - **Shell Completion** - Bash/Zsh/Fish install plus PowerShell script generation
-- **Programmatic Mode** - JSON/CSV/plain output for scripting and automation
+- **Programmatic Mode** - JSON/NDJSON/CSV/plain output plus streamed query/export paths for scripting and automation
 - **MCP Server** - Model Context Protocol server for AI assistants (Claude, Cursor, etc.)
 
 ## Installation
@@ -138,6 +144,19 @@ printf "%s\n" "$PGPASSWORD" | whodb-cli connect \
   --password
 ```
 
+#### PostgreSQL with SSL
+
+```bash
+whodb-cli connect \
+  --type postgres \
+  --host localhost \
+  --port 5432 \
+  --user postgres \
+  --database mydb \
+  --ssl-mode verify-ca \
+  --ssl-ca ./ca.pem
+```
+
 #### MySQL
 
 ```bash
@@ -230,6 +249,11 @@ Flags:
 - `--schema`: Preferred schema (optional)
 - `--name`: Connection name (saves for later use)
 - `--password`: Read password from stdin when not using a TTY (pipe a single line)
+- `--ssl-mode`: SSL mode for the selected database type
+- `--ssl-ca`: Path to a CA certificate PEM file
+- `--ssl-cert`: Path to a client certificate PEM file
+- `--ssl-key`: Path to a client private key PEM file
+- `--ssl-server-name`: Override server name used for SSL hostname verification
 
 On a TTY, you will be prompted for the password with input hidden.
 
@@ -244,10 +268,28 @@ whodb-cli query "SQL" [flags]
 Flags:
 
 - `--connection, -c`: Connection name to use (optional; if omitted, the first available connection is used)
-- `--format, -f`: Output format: `auto`, `table`, `plain`, `json`, `csv`
+- `--format, -f`: Output format: `auto`, `table`, `plain`, `json`, `ndjson`, `csv`
+- `--stream`: Stream result rows incrementally (supported for `plain`, `json`, `ndjson`, and `csv`)
 - `--quiet, -q`: Suppress informational messages
 
 `auto` uses table output for terminals and plain output for pipes.
+`ndjson` writes one JSON object per result row.
+
+### suggestions
+
+Show backend-generated query suggestions for a connection.
+
+```bash
+whodb-cli suggestions --connection my-postgres
+whodb-cli suggestions --connection my-postgres --format json
+```
+
+Flags:
+
+- `--connection, -c`: Connection name to use
+- `--schema, -s`: Schema to use for suggestion generation
+- `--format, -f`: Output format: `table`, `plain`, `json`, `ndjson`, `csv`
+- `--quiet, -q`: Suppress informational messages
 
 ### completion
 
@@ -283,6 +325,24 @@ Install paths (bash/zsh rc files updated automatically):
 ## Programmatic Commands
 
 These commands output structured data for scripting, automation, and AI integration.
+
+- Query and list commands such as `query`, `schemas`, `tables`, `columns`, `connections list`, and `history list/search` keep their existing raw JSON array output.
+- Action and analysis commands such as `connections add/remove/test`, `history clear`, `audit`, `mock-data`, `diff`, `erd`, `bookmarks save/delete`, and `profiles save/delete` return a JSON envelope with `command`, `success`, and `data` when you pass `--format json`.
+- `query --stream` supports `plain`, `json`, `ndjson`, and `csv`. `export --stream` supports CSV only.
+
+### explain
+
+Run `EXPLAIN` using the current database plugin's native explain prefix.
+
+```bash
+whodb-cli explain --connection my-postgres "SELECT * FROM users"
+whodb-cli explain --connection my-postgres --format json "SELECT * FROM users"
+```
+
+Flags:
+- `--connection, -c`: Connection name to use
+- `--format, -f`: Output format: `auto`, `table`, `plain`, `json`, `ndjson`, `csv`
+- `--quiet, -q`: Suppress informational messages
 
 ### schemas
 
@@ -335,17 +395,63 @@ Manage saved connections.
 whodb-cli connections list --format json
 
 # Test a connection
-whodb-cli connections test my-postgres
+whodb-cli connections test my-postgres --format json
 
 # Add a connection
-whodb-cli connections add --name prod --type postgres --host db.example.com --port 5432 --user app --database mydb
+whodb-cli connections add --name prod --type postgres --host db.example.com --port 5432 --user app --database mydb --format json
 
 # Remove a connection
-whodb-cli connections remove prod
+whodb-cli connections remove prod --format json
 ```
 
 Flags (applies to all subcommands):
 - `--format, -f`: Output format: `auto`, `table`, `plain`, `json`, `csv`
+- `--quiet, -q`: Suppress informational messages
+
+### diff
+
+Compare schema metadata between two connections.
+
+By default, `diff` uses each connection's configured schema when one exists.
+For database-scoped connections such as MySQL and MariaDB, it uses the
+connection's configured database when no schema flag is provided.
+
+```bash
+# Compare two connections using their default schemas
+whodb-cli diff --from staging --to prod
+
+# Compare the same schema on both sides
+whodb-cli diff --from staging --to prod --schema public
+
+# Compare Postgres to MySQL using each connection's configured namespace
+whodb-cli diff --from dev-e2e_postgres-1 --to dev-e2e_mysql-1
+
+# Emit machine-readable JSON
+whodb-cli diff --from staging --to prod --format json
+```
+
+Flags:
+- `--from`: Source connection name (required)
+- `--to`: Target connection name (required)
+- `--schema`: Schema name to compare on both sides
+- `--from-schema`: Source schema name
+- `--to-schema`: Target schema name
+- `--format, -f`: Output format: `table` or `json`
+- `--quiet, -q`: Suppress informational messages
+
+### erd
+
+Render the same backend graph metadata used by the TUI ER diagram view.
+
+```bash
+whodb-cli erd --connection my-postgres
+whodb-cli erd --connection my-postgres --schema public --format json
+```
+
+Flags:
+- `--connection, -c`: Connection name to use
+- `--schema, -s`: Schema name
+- `--format, -f`: Output format: `text` or `json`
 - `--quiet, -q`: Suppress informational messages
 
 ### export
@@ -371,6 +477,7 @@ Flags:
 - `--format, -f`: Export format: `csv` or `excel` (auto-detected from filename if omitted)
 - `--output, -o`: Output file path (required)
 - `--delimiter, -d`: CSV delimiter (default: comma)
+- `--stream`: Stream CSV exports incrementally to the output file
 - `--quiet, -q`: Suppress informational messages
 
 ### history
@@ -385,13 +492,36 @@ whodb-cli history list --limit 20 --format json
 whodb-cli history search "SELECT.*users"
 
 # Clear history
-whodb-cli history clear
+whodb-cli history clear --format json
 ```
 
 Flags:
 - `--limit, -l`: Limit number of results (0 = no limit)
 - `--format, -f`: Output format: `auto`, `table`, `plain`, `json`, `csv`
 - `--quiet, -q`: Suppress informational messages
+
+### bookmarks
+
+Manage the same saved query bookmarks used by the TUI editor.
+
+```bash
+whodb-cli bookmarks list
+whodb-cli bookmarks save recent-users "SELECT * FROM users ORDER BY id DESC"
+whodb-cli bookmarks load recent-users
+whodb-cli bookmarks delete recent-users --format json
+```
+
+### profiles
+
+Manage the same saved connection profiles used by the TUI.
+
+```bash
+whodb-cli profiles list
+whodb-cli profiles save production --connection prod --theme Dracula --page-size 100 --timeout 30
+whodb-cli profiles show production --format json
+whodb-cli profiles delete production --format json
+whodb-cli --profile production
+```
 
 ## MCP Server
 
@@ -418,6 +548,11 @@ This starts an MCP server that exposes these tools:
 | `whodb_query` | Execute SQL queries (results include `column_types`) |
 | `whodb_confirm` | Confirm pending write operations (only when confirm-writes is enabled) |
 | `whodb_pending` | List pending write confirmations (only when confirm-writes is enabled) |
+| `whodb_explain` | Run database-native `EXPLAIN` for a SQL query |
+| `whodb_diff` | Compare schema metadata between two connections |
+| `whodb_erd` | Inspect backend graph/ERD metadata |
+| `whodb_audit` | Run data quality audits for a schema or table |
+| `whodb_suggestions` | Get backend-generated starter queries |
 
 Write operations require confirmation by default. Use `--allow-write` to disable confirmations, or `--read-only` to block writes entirely.
 

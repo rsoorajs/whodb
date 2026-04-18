@@ -20,6 +20,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/clidey/whodb/cli/pkg/identity"
 	"github.com/clidey/whodb/core/src/log"
 
 	_ "github.com/clidey/whodb/core/src/bamlinit"
@@ -42,7 +43,7 @@ var ensureOnce sync.Once
 // and test code paths that construct managers outside the main package.
 func Ensure() {
 	ensureOnce.Do(func() {
-		os.Setenv("WHODB_CLI", "true")
+		os.Setenv(identity.Current().RuntimeEnv, "true")
 
 		// Prevent backend logs from polluting CLI output or the TUI.
 		log.DisableOutput()

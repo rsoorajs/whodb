@@ -30,6 +30,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/clidey/whodb/cli/internal/config"
+	"github.com/clidey/whodb/cli/internal/connectionopts"
 	dbmgr "github.com/clidey/whodb/cli/internal/database"
 	"github.com/clidey/whodb/cli/internal/docker"
 	"github.com/clidey/whodb/cli/pkg/styles"
@@ -130,13 +131,18 @@ const (
 	fieldSSHUser     = 8
 	fieldSSHKeyFile  = 9
 	fieldSSHPassword = 10
+	fieldSSLCAFile   = 11
+	fieldSSLCertFile = 12
+	fieldSSLKeyFile  = 13
+	fieldSSLServer   = 14
 )
 
 // Virtual focus indices (not backed by text inputs).
 const (
-	focusDBType    = 11
-	focusSSHToggle = 12
-	focusConnect   = 13
+	focusDBType    = 15
+	focusSSHToggle = 16
+	focusSSLMode   = 17
+	focusConnect   = 18
 )
 
 type ConnectionView struct {
@@ -149,6 +155,7 @@ type ConnectionView struct {
 	dbTypeIndex   int
 	visibleFields []int // indices of visible input fields for current db type
 	sshEnabled    bool  // whether the SSH tunnel section is expanded
+	sslModeIndex  int
 	connecting    bool
 	connError     error
 	// Deferred password prompt when connecting with empty password
@@ -208,7 +215,7 @@ func NewConnectionView(parent *MainModel) *ConnectionView {
 		return ti
 	}
 
-	inputs := make([]textinput.Model, 11)
+	inputs := make([]textinput.Model, 15)
 	inputs[fieldName] = newInput("My Connection", 50)
 	inputs[fieldHost] = newInput("localhost", 100)
 	inputs[fieldPort] = newInput("5432", 5)
@@ -229,6 +236,11 @@ func NewConnectionView(parent *MainModel) *ConnectionView {
 	inputs[fieldSSHPassword] = newInput("SSH password (optional)", 100)
 	inputs[fieldSSHPassword].EchoMode = textinput.EchoPassword
 	inputs[fieldSSHPassword].EchoCharacter = '•'
+
+	inputs[fieldSSLCAFile] = newInput("./ca.pem", 200)
+	inputs[fieldSSLCertFile] = newInput("./client-cert.pem", 200)
+	inputs[fieldSSLKeyFile] = newInput("./client-key.pem", 200)
+	inputs[fieldSSLServer] = newInput("db.internal", 100)
 
 	mode := "list"
 	fi := focusDBType // Start on db type selector
@@ -252,6 +264,7 @@ func NewConnectionView(parent *MainModel) *ConnectionView {
 		dbTypes:          dbTypes,
 		dbTypeIndex:      0,
 		visibleFields:    getVisibleFields(dbTypes[0]),
+		sslModeIndex:     0,
 		connecting:       false,
 		awaitingPassword: false,
 		passwordPrompt:   prompt,
@@ -310,6 +323,7 @@ func (v *ConnectionView) updateList(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 			v.parent.err = msg.err
 			return v, nil
 		}
+		v.parent.currentProfileName = ""
 		v.parent.mode = ViewBrowser
 		v.parent.initLayout()
 		conn := v.parent.dbManager.GetCurrentConnection()
@@ -479,6 +493,7 @@ func (v *ConnectionView) updateForm(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 			v.connError = msg.err
 			v.connecting = false
 		} else {
+			v.parent.currentProfileName = ""
 			v.parent.mode = ViewBrowser
 			v.parent.initLayout()
 			conn := v.parent.dbManager.GetCurrentConnection()
@@ -519,6 +534,14 @@ func (v *ConnectionView) updateForm(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 					v.dbTypeIndex = len(v.dbTypes) - 1
 				}
 				v.onDbTypeChanged()
+			} else if v.focusIndex == focusSSLMode {
+				sslModes := v.sslModes()
+				if len(sslModes) > 0 {
+					v.sslModeIndex--
+					if v.sslModeIndex < 0 {
+						v.sslModeIndex = len(sslModes) - 1
+					}
+				}
 			}
 			return v, nil
 
@@ -529,6 +552,14 @@ func (v *ConnectionView) updateForm(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 					v.dbTypeIndex = 0
 				}
 				v.onDbTypeChanged()
+			} else if v.focusIndex == focusSSLMode {
+				sslModes := v.sslModes()
+				if len(sslModes) > 0 {
+					v.sslModeIndex++
+					if v.sslModeIndex >= len(sslModes) {
+						v.sslModeIndex = 0
+					}
+				}
 			}
 			return v, nil
 
@@ -536,6 +567,20 @@ func (v *ConnectionView) updateForm(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 			if v.focusIndex == focusSSHToggle {
 				v.sshEnabled = !v.sshEnabled
 				v.visibleFields = getVisibleFields(v.dbTypes[v.dbTypeIndex])
+				return v, nil
+			}
+			if v.focusIndex == focusSSLMode {
+				if msg.String() == " " {
+					sslModes := v.sslModes()
+					if len(sslModes) > 0 {
+						v.sslModeIndex++
+						if v.sslModeIndex >= len(sslModes) {
+							v.sslModeIndex = 0
+						}
+					}
+					return v, nil
+				}
+				v.nextInput()
 				return v, nil
 			}
 			if msg.String() == " " {
@@ -664,20 +709,8 @@ func (v *ConnectionView) renderForm() string {
 		body.WriteString("  Database Type:")
 	}
 	body.WriteString("\n  ")
-	for i, dbType := range v.dbTypes {
-		if i > 0 {
-			body.WriteString("  ")
-		}
-		if i == v.dbTypeIndex {
-			if v.focusIndex == focusDBType {
-				body.WriteString(styles.ActiveListItemStyle.Render(dbType))
-			} else {
-				body.WriteString(styles.RenderKey(dbType))
-			}
-		} else {
-			body.WriteString(styles.RenderMuted(dbType))
-		}
-	}
+	dbTypeOptions, _ := renderWrappedSelectableOptions(v.dbTypes, v.dbTypeIndex, v.focusIndex == focusDBType, v.selectorWrapWidth())
+	body.WriteString(dbTypeOptions)
 	body.WriteString("\n\n")
 
 	fieldLabels := map[int]string{
@@ -747,6 +780,39 @@ func (v *ConnectionView) renderForm() string {
 		}
 	}
 
+	if sslModes := v.sslModes(); len(sslModes) > 0 {
+		if v.focusIndex == focusSSLMode {
+			body.WriteString(styles.RenderKey("▶ SSL Mode:"))
+		} else {
+			body.WriteString("  SSL Mode:")
+		}
+		body.WriteString("\n  ")
+		sslModeOptions, _ := renderWrappedSelectableOptions(sslModes, v.sslModeIndex, v.focusIndex == focusSSLMode, v.selectorWrapWidth())
+		body.WriteString(sslModeOptions)
+		body.WriteString("\n\n")
+
+		if v.sslFieldsVisible() {
+			sslLabels := map[int]string{
+				fieldSSLCAFile:   "SSL CA File:",
+				fieldSSLCertFile: "SSL Client Cert File:",
+				fieldSSLKeyFile:  "SSL Client Key File:",
+				fieldSSLServer:   "SSL Server Name:",
+			}
+			for _, i := range []int{fieldSSLCAFile, fieldSSLCertFile, fieldSSLKeyFile, fieldSSLServer} {
+				label := sslLabels[i]
+				if v.focusIndex == i {
+					label = styles.RenderKey("▶ " + label)
+				} else {
+					label = "  " + label
+				}
+				body.WriteString(label)
+				body.WriteString("\n  ")
+				body.WriteString(v.inputs[i].View())
+				body.WriteString("\n\n")
+			}
+		}
+	}
+
 	// Connect button
 	connectBtn := "[Connect]"
 	if v.focusIndex == focusConnect {
@@ -764,7 +830,7 @@ func (v *ConnectionView) renderForm() string {
 	}
 	helpText := ""
 	if len(v.parent.config.Connections) > 0 {
-		helpText = styles.RenderHelpWidth(helpWidth,
+		helpText = renderFooterHelpPairsWidthNoHelp(helpWidth,
 			Keys.ConnectionForm.Navigate.Help().Key, Keys.ConnectionForm.Navigate.Help().Desc,
 			Keys.ConnectionForm.TypeLeft.Help().Key, Keys.ConnectionForm.TypeLeft.Help().Desc,
 			Keys.ConnectionForm.ConnectForm.Help().Key, Keys.ConnectionForm.ConnectForm.Help().Desc,
@@ -773,7 +839,7 @@ func (v *ConnectionView) renderForm() string {
 			Keys.Global.Quit.Help().Key, Keys.Global.Quit.Help().Desc,
 		)
 	} else {
-		helpText = styles.RenderHelpWidth(helpWidth,
+		helpText = renderFooterHelpPairsWidthNoHelp(helpWidth,
 			Keys.ConnectionForm.Navigate.Help().Key, Keys.ConnectionForm.Navigate.Help().Desc,
 			Keys.ConnectionForm.TypeLeft.Help().Key, Keys.ConnectionForm.TypeLeft.Help().Desc,
 			Keys.ConnectionForm.ConnectForm.Help().Key, Keys.ConnectionForm.ConnectForm.Help().Desc,
@@ -832,6 +898,96 @@ func (v *ConnectionView) renderForm() string {
 	return out.String()
 }
 
+func renderWrappedSelectableOptions(options []string, selectedIndex int, focused bool, maxWidth int) (string, int) {
+	if len(options) == 0 {
+		return "", 0
+	}
+
+	if maxWidth <= 0 {
+		maxWidth = 80
+	}
+
+	lines := make([]string, 0, len(options))
+	var currentLine string
+	currentWidth := 0
+
+	for i, option := range options {
+		part := renderSelectableOption(option, i == selectedIndex, focused)
+		partWidth := lipgloss.Width(part)
+		separatorWidth := 0
+		if currentLine != "" {
+			separatorWidth = 2
+		}
+
+		if currentLine != "" && currentWidth+separatorWidth+partWidth > maxWidth {
+			lines = append(lines, currentLine)
+			currentLine = part
+			currentWidth = partWidth
+			continue
+		}
+
+		if currentLine != "" {
+			currentLine += "  "
+			currentWidth += separatorWidth
+		}
+		currentLine += part
+		currentWidth += partWidth
+	}
+
+	if currentLine != "" {
+		lines = append(lines, currentLine)
+	}
+
+	return strings.Join(lines, "\n  "), len(lines)
+}
+
+func renderSelectableOption(option string, selected bool, focused bool) string {
+	if selected {
+		if focused {
+			return styles.ActiveListItemStyle.Render(option)
+		}
+		return styles.RenderKey(option)
+	}
+	return styles.RenderMuted(option)
+}
+
+func (v *ConnectionView) selectorWrapWidth() int {
+	width := v.width
+	if width <= 0 {
+		width = v.parent.width
+	}
+	if width <= 0 {
+		width = 80
+	}
+
+	wrapWidth := width - 8
+	if wrapWidth < 20 {
+		return 20
+	}
+	return wrapWidth
+}
+
+func (v *ConnectionView) dbTypeSectionHeight() int {
+	_, lineCount := renderWrappedSelectableOptions(v.dbTypes, v.dbTypeIndex, v.focusIndex == focusDBType, v.selectorWrapWidth())
+	if lineCount == 0 {
+		lineCount = 1
+	}
+	return lineCount + 2
+}
+
+func (v *ConnectionView) sslModeSectionHeight() int {
+	sslModes := v.sslModes()
+	if len(sslModes) == 0 {
+		return 0
+	}
+
+	_, lineCount := renderWrappedSelectableOptions(sslModes, v.sslModeIndex, v.focusIndex == focusSSLMode, v.selectorWrapWidth())
+	if lineCount == 0 {
+		lineCount = 1
+	}
+	return lineCount + 2
+}
+
 func (v *ConnectionView) refreshList() {
 	var items []list.Item
 	for _, info := range v.parent.dbManager.ListConnectionsWithSource() {
@@ -866,6 +1022,13 @@ func (v *ConnectionView) getFocusOrder() []int {
 		order = append(order, focusSSHToggle)
 		if v.sshEnabled {
 			order = append(order, fieldSSHHost, fieldSSHUser, fieldSSHKeyFile, fieldSSHPassword)
+		}
+	}
+
+	if len(v.sslModes()) > 0 {
+		order = append(order, focusSSLMode)
+		if v.sslFieldsVisible() {
+			order = append(order, fieldSSLCAFile, fieldSSLCertFile, fieldSSLKeyFile, fieldSSLServer)
 		}
 	}
 
@@ -919,21 +1082,13 @@ func (v *ConnectionView) scrollToFocused() {
 		return
 	}
 
-	// Estimate the line position of the focused field in the form body.
-	// Each section: db type ~3 lines, each field ~3 lines (label + input + blank).
 	line := 0
-	if v.connError != nil {
-		line += 5
-	}
-
-	// DB type selector
 	if v.focusIndex == focusDBType {
 		v.formViewport.GotoTop()
 		return
 	}
-	line += 3 // db type label + options + blank
 
-	// Visible fields before the focused one
+	line += v.dbTypeSectionHeight()
 	for _, idx := range v.visibleFields {
 		if idx == v.focusIndex {
 			break
@@ -941,15 +1096,38 @@ func (v *ConnectionView) scrollToFocused() {
 		line += 3
 	}
 
-	// SSH toggle and fields
-	if v.focusIndex == focusSSHToggle || v.focusIndex >= fieldSSHHost {
-		// SSH section comes after visible fields
-		for range v.visibleFields {
-			// already counted above unless we hit the focused field
+	if isNetworkDatabase(v.dbTypes[v.dbTypeIndex]) {
+		if v.focusIndex == focusSSHToggle {
+			// Current line already points at the SSH toggle section.
+		} else {
+			line += 3
+			if v.sshEnabled {
+				for _, idx := range []int{fieldSSHHost, fieldSSHUser, fieldSSHKeyFile, fieldSSHPassword} {
+					if idx == v.focusIndex {
+						break
+					}
+					line += 3
+				}
+			}
 		}
 	}
 
-	// Connect button — scroll to bottom
+	if len(v.sslModes()) > 0 {
+		if v.focusIndex == focusSSLMode {
+			// Current line already points at the SSL mode section.
+		} else {
+			line += v.sslModeSectionHeight()
+			if v.sslFieldsVisible() {
+				for _, idx := range []int{fieldSSLCAFile, fieldSSLCertFile, fieldSSLKeyFile, fieldSSLServer} {
+					if idx == v.focusIndex {
+						break
+					}
+					line += 3
+				}
+			}
+		}
+	}
+
 	if v.focusIndex == focusConnect {
 		v.formViewport.GotoBottom()
 		return
@@ -981,6 +1159,7 @@ func (v *ConnectionView) resetForm() {
 	v.focusIndex = focusDBType
 	v.dbTypeIndex = 0
 	v.sshEnabled = false
+	v.sslModeIndex = 0
 	v.connError = nil
 	v.onDbTypeChanged()
 }
@@ -1011,6 +1190,9 @@ func (v *ConnectionView) prefillFromConnection(conn config.Connection) {
 	if conn.Database != "" {
 		v.inputs[fieldDatabase].SetValue(conn.Database)
 	}
+	if conn.Schema != "" {
+		v.inputs[fieldSchema].SetValue(conn.Schema)
+	}
 
 	// Prefill SSH fields if present
 	if conn.SSHHost != "" {
@@ -1022,6 +1204,19 @@ func (v *ConnectionView) prefillFromConnection(conn config.Connection) {
 		if conn.SSHKeyFile != "" {
 			v.inputs[fieldSSHKeyFile].SetValue(conn.SSHKeyFile)
 		}
+	}
+
+	sslSettings := connectionopts.SSLSettingsFromAdvanced(conn.Advanced)
+	if sslSettings.Mode != "" {
+		for i, mode := range v.sslModes() {
+			if strings.EqualFold(mode, sslSettings.Mode) {
+				v.sslModeIndex = i
+				break
+			}
+		}
+	}
+	if sslSettings.ServerName != "" {
+		v.inputs[fieldSSLServer].SetValue(sslSettings.ServerName)
 	}
 
 	// Focus on the first empty required field (usually username or database)
@@ -1050,6 +1245,35 @@ func (v *ConnectionView) getDefaultPort(dbType string) int {
 // i.e. those where SSH tunneling is applicable.
 func isNetworkDatabase(dbType string) bool {
 	return dbcatalog.IsNetworkDatabase(dbType)
+}
+
+func (v *ConnectionView) sslModes() []string {
+	entry, ok := dbcatalog.Find(v.dbTypes[v.dbTypeIndex])
+	if !ok {
+		return nil
+	}
+
+	modes := make([]string, 0, len(entry.SSLModes))
+	for _, mode := range entry.SSLModes {
+		modes = append(modes, string(mode.Value))
+	}
+	return modes
+}
+
+func (v *ConnectionView) currentSSLMode() string {
+	modes := v.sslModes()
+	if len(modes) == 0 {
+		return ""
+	}
+	if v.sslModeIndex < 0 || v.sslModeIndex >= len(modes) {
+		return modes[0]
+	}
+	return modes[v.sslModeIndex]
+}
+
+func (v *ConnectionView) sslFieldsVisible() bool {
+	mode := v.currentSSLMode()
+	return mode != "" && mode != "disabled"
 }
 
 // getVisibleFields returns the input field indices visible for the given database type.
@@ -1093,9 +1317,34 @@ func (v *ConnectionView) isFieldVisible(index int) bool {
 	return false
 }
 
+func (v *ConnectionView) isFocusableVisible(index int) bool {
+	switch index {
+	case focusDBType, focusConnect:
+		return true
+	case focusSSHToggle:
+		return isNetworkDatabase(v.dbTypes[v.dbTypeIndex])
+	case focusSSLMode:
+		return len(v.sslModes()) > 0
+	case fieldSSHHost, fieldSSHUser, fieldSSHKeyFile, fieldSSHPassword:
+		return isNetworkDatabase(v.dbTypes[v.dbTypeIndex]) && v.sshEnabled
+	case fieldSSLCAFile, fieldSSLCertFile, fieldSSLKeyFile, fieldSSLServer:
+		return len(v.sslModes()) > 0 && v.sslFieldsVisible()
+	default:
+		return v.isFieldVisible(index)
+	}
+}
+
 func (v *ConnectionView) onDbTypeChanged() {
 	v.updatePortPlaceholder()
 	v.visibleFields = getVisibleFields(v.dbTypes[v.dbTypeIndex])
+	sslModes := v.sslModes()
+	v.sslModeIndex = 0
+	for i, mode := range sslModes {
+		if mode == "disabled" {
+			v.sslModeIndex = i
+			break
+		}
+	}
 
 	// Update database placeholder for file-based databases
 	if !isNetworkDatabase(v.dbTypes[v.dbTypeIndex]) {
@@ -1108,9 +1357,14 @@ func (v *ConnectionView) onDbTypeChanged() {
 	if !isNetworkDatabase(v.dbTypes[v.dbTypeIndex]) {
 		v.sshEnabled = false
 	}
+	if len(sslModes) == 0 {
+		for _, idx := range []int{fieldSSLCAFile, fieldSSLCertFile, fieldSSLKeyFile, fieldSSLServer} {
+			v.inputs[idx].SetValue("")
+		}
+	}
 
-	// If current focus is on a hidden field, move to next visible
-	if v.focusIndex < len(v.inputs) && !v.isFieldVisible(v.focusIndex) {
+	// If current focus is on a hidden field, move to the next visible one.
+	if !v.isFocusableVisible(v.focusIndex) {
 		v.nextInput()
 	}
 }
@@ -1177,6 +1431,26 @@ func (v *ConnectionView) connect() tea.Cmd {
 		Database: database,
 		Schema:   schema,
 	}
+
+	sslMode := ""
+	if v.currentSSLMode() != "disabled" || strings.TrimSpace(v.inputs[fieldSSLCAFile].Value()) != "" ||
+		strings.TrimSpace(v.inputs[fieldSSLCertFile].Value()) != "" || strings.TrimSpace(v.inputs[fieldSSLKeyFile].Value()) != "" ||
+		strings.TrimSpace(v.inputs[fieldSSLServer].Value()) != "" {
+		sslMode = v.currentSSLMode()
+	}
+	advanced, err := connectionopts.ApplySSLSettings(dbType, conn.Advanced, connectionopts.SSLSettings{
+		Mode:           sslMode,
+		CAFile:         v.inputs[fieldSSLCAFile].Value(),
+		ClientCertFile: v.inputs[fieldSSLCertFile].Value(),
+		ClientKeyFile:  v.inputs[fieldSSLKeyFile].Value(),
+		ServerName:     v.inputs[fieldSSLServer].Value(),
+	})
+	if err != nil {
+		return func() tea.Msg {
+			return connectionResultMsg{err: err}
+		}
+	}
+	conn.Advanced = advanced
 
 	// Capture SSH tunnel fields if enabled
 	if v.sshEnabled && isNetworkDatabase(dbType) {

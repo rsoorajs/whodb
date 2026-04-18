@@ -19,7 +19,7 @@ import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SearchSelect } from './ux';
 import { DocumentTextIcon, ExclamationCircleIcon, FolderIcon } from './heroicons';
 import { useTranslation } from '@/hooks/use-translation';
-import { SSLModeOption } from '@/config/database-types';
+import { SSLModeOption } from '@/config/source-types';
 
 // SSL configuration keys that match the backend constants.
 // Note: Path-based keys are intentionally not supported to prevent path traversal attacks.
@@ -44,7 +44,7 @@ const SYSTEM_CA_ONLY_DATABASES = ['MSSQL', 'Oracle'];
 export interface SSLConfigProps {
   /** Database type (used for system CA detection) */
   databaseType: string;
-  /** SSL modes supported by this database (from database-types.ts) */
+  /** SSL modes supported by this source type (from source-types.ts) */
   sslModes?: SSLModeOption[];
   /** Current advanced form values */
   advancedForm: Record<string, string>;
@@ -63,7 +63,7 @@ function isInsecureConnection(): boolean {
 
 /**
  * SSL Configuration component that provides:
- * - Mode dropdown with database-specific options
+ * - Mode dropdown with source-specific options
  * - Certificate inputs with file picker or paste PEM
  * - HTTP security warning for private keys
  */

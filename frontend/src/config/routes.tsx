@@ -22,6 +22,7 @@ import { getComponent } from "./component-registry";
 import { featureFlags } from "./features";
 import { LoadingPage } from "../components/loading";
 import { getRegisteredRoutes } from "./route-registry";
+import { useSourceContract } from "../hooks/useSourceContract";
 export { registerRoute } from "./route-registry";
 
 // Allow EE to override the login page via the component registry (e.g. for SSO).
@@ -44,6 +45,30 @@ const LazyRoute: FC<{ component: React.ComponentType<any> }> = ({ component: Com
     <Component />
   </Suspense>
 );
+
+const SourceSurfaceRoute: FC<{
+    surface: "chat" | "graph" | "scratchpad";
+    component: ReactNode;
+}> = ({ surface, component }) => {
+    const current = useAppSelector(state => state.auth.current);
+    const { loading, supportsChat, supportsGraph, supportsScratchpad } = useSourceContract(current?.Type);
+
+    if (loading) {
+        return <LoadingPage />;
+    }
+
+    const isAllowed = surface === "chat"
+        ? supportsChat
+        : surface === "graph"
+            ? supportsGraph
+            : supportsScratchpad;
+
+    if (!isAllowed) {
+        return <Navigate to="/storage-unit" replace />;
+    }
+
+    return <>{component}</>;
+};
 
 export type IInternalRoute = {
     name: string;
@@ -76,19 +101,24 @@ export const InternalRoutes = {
     Graph: {
         name: "Graph",
         path: "/graph",
-        component: <LazyRoute component={GraphPage} />,
+        component: <SourceSurfaceRoute surface="graph" component={<LazyRoute component={GraphPage} />} />,
     },
     RawExecute: {
         name: "Scratchpad",
         path: "/scratchpad",
-        component: <LazyRoute component={RawExecutePage} />,
+        component: <SourceSurfaceRoute surface="scratchpad" component={<LazyRoute component={RawExecutePage} />} />,
     },
     Chat: {
         name: "Chat",
         path: "/chat",
-        component: SQLAgentPage
-            ? <Suspense fallback={<LoadingPage />}><SQLAgentPage /></Suspense>
-            : <LazyRoute component={ChatPage} />,
+        component: (
+            <SourceSurfaceRoute
+                surface="chat"
+                component={SQLAgentPage
+                    ? <Suspense fallback={<LoadingPage />}><SQLAgentPage /></Suspense>
+                    : <LazyRoute component={ChatPage} />}
+            />
+        ),
     },
     Logout: {
         name: "Logout",

@@ -15,6 +15,7 @@
  */
 
 import { addAuthHeader } from "@/utils/auth-headers";
+import { withBasePath } from "@/utils/base-path";
 
 export type GraphQLUploadRequest = {
   query: string;
@@ -46,7 +47,7 @@ export async function executeMultipartGraphQL<T>({
   formData.append("map", JSON.stringify({ "0": [filePath] }));
   formData.append("0", file);
 
-  const response = await fetch("/api/query", {
+  const response = await fetch(withBasePath("/api/query"), {
     method: "POST",
     credentials: "include",
     headers: addAuthHeader({}),

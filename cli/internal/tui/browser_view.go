@@ -106,6 +106,14 @@ func (v *BrowserView) Update(msg tea.Msg) (*BrowserView, tea.Cmd) {
 		v.lastRefreshed = time.Now()
 		v.applyFilter()
 		v.selectedIndex = 0
+		if v.selectedTable != "" {
+			for i, table := range v.filteredTables {
+				if table.Name == v.selectedTable {
+					v.selectedIndex = i
+					break
+				}
+			}
+		}
 
 		// Find the index of currentSchema
 		for i, s := range v.schemas {
@@ -451,7 +459,7 @@ func (v *BrowserView) View() string {
 				Keys.Global.Back,
 			))
 		} else if v.filtering {
-			b.WriteString(RenderBindingHelpWidth(v.width,
+			b.WriteString(renderBindingHelpWidthNoHelp(v.width,
 				Keys.Filter.CancelFilter,
 				Keys.Filter.ApplyFilter,
 			))
@@ -471,6 +479,8 @@ func (v *BrowserView) View() string {
 				Keys.Browser.Editor,
 				Keys.Browser.AIChat,
 				Keys.Browser.History,
+				Keys.Global.SchemaDiff,
+				Keys.Global.ERDiagram,
 				Keys.Global.MockData,
 				Keys.Browser.Refresh,
 				Keys.Global.NextView,

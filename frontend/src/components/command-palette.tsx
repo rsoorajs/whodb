@@ -31,7 +31,7 @@ import {useAppSelector} from "@/store/hooks";
 import {getKeyDisplay} from "@/utils/platform";
 import {matchesShortcut, resolveShortcut, SHORTCUTS} from "@/utils/shortcuts";
 import {useEffectiveIsMac} from "@/hooks/useEffectiveIsMac";
-import {useDatabaseTraits} from "@/hooks/useDatabaseTraits";
+import {useSourceContract} from "@/hooks/useSourceContract";
 import {InternalRoutes} from "@/config/routes";
 import {
     ArrowLeftStartOnRectangleIcon,
@@ -66,7 +66,7 @@ const CommandPalette: FC<CommandPaletteProps> = ({open, onOpenChange}) => {
     const isEmbedded = useAppSelector(state => state.auth.isEmbedded);
     const isMac = useEffectiveIsMac();
     const [availableColumns, setAvailableColumns] = useState<string[]>([]);
-    const { isNoSQL, supportsScratchpad } = useDatabaseTraits(current?.Type);
+    const { supportsChat, supportsGraph, supportsScratchpad } = useSourceContract(current?.Type);
 
     // Listen for columns broadcast from storage unit page
     useEffect(() => {
@@ -88,47 +88,54 @@ const CommandPalette: FC<CommandPaletteProps> = ({open, onOpenChange}) => {
         // Navigation actions - only show relevant ones based on database type
         const navDefs = [SHORTCUTS.navFirst, SHORTCUTS.navSecond, SHORTCUTS.navThird, SHORTCUTS.navFourth];
 
-        if (!isNoSQL) {
+        let shortcutIndex = 0;
+
+        if (supportsChat) {
             navigationActions.push({
                 id: "nav-chat",
                 label: t('goToChat'),
                 icon: <ChatBubbleLeftRightIcon className="w-4 h-4" />,
-                shortcut: resolveShortcut(navDefs[0]).displayKeys,
+                shortcut: resolveShortcut(navDefs[shortcutIndex]).displayKeys,
                 onSelect: () => {
                     navigate(InternalRoutes.Chat.path);
                     onOpenChange(false);
                 },
             });
+            shortcutIndex += 1;
         }
 
         navigationActions.push({
             id: "nav-storage-units",
             label: t('goToStorageUnits'),
             icon: <RectangleGroupIcon className="w-4 h-4" />,
-            shortcut: resolveShortcut(isNoSQL ? navDefs[0] : navDefs[1]).displayKeys,
+            shortcut: resolveShortcut(navDefs[shortcutIndex]).displayKeys,
             onSelect: () => {
                 navigate(InternalRoutes.Dashboard.StorageUnit.path);
                 onOpenChange(false);
             },
         });
+        shortcutIndex += 1;
 
-        navigationActions.push({
-            id: "nav-graph",
-            label: t('goToGraph'),
-            icon: <ShareIcon className="w-4 h-4" />,
-            shortcut: resolveShortcut(isNoSQL ? navDefs[1] : navDefs[2]).displayKeys,
-            onSelect: () => {
-                navigate(InternalRoutes.Graph.path);
-                onOpenChange(false);
-            },
-        });
+        if (supportsGraph) {
+            navigationActions.push({
+                id: "nav-graph",
+                label: t('goToGraph'),
+                icon: <ShareIcon className="w-4 h-4" />,
+                shortcut: resolveShortcut(navDefs[shortcutIndex]).displayKeys,
+                onSelect: () => {
+                    navigate(InternalRoutes.Graph.path);
+                    onOpenChange(false);
+                },
+            });
+            shortcutIndex += 1;
+        }
 
         if (supportsScratchpad) {
             navigationActions.push({
                 id: "nav-scratchpad",
                 label: t('goToScratchpad'),
                 icon: <CommandLineIcon className="w-4 h-4" />,
-                shortcut: resolveShortcut(isNoSQL ? navDefs[2] : navDefs[3]).displayKeys,
+                shortcut: resolveShortcut(navDefs[shortcutIndex]).displayKeys,
                 onSelect: () => {
                     navigate(InternalRoutes.RawExecute.path);
                     onOpenChange(false);

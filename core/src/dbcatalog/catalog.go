@@ -495,11 +495,18 @@ var catalog = []ConnectableDatabase{
 
 var registeredCatalog []ConnectableDatabase
 
+func init() {
+	for _, entry := range catalog {
+		registerPluginAlias(entry)
+	}
+}
+
 // Register appends additional catalog entries after the core catalog.
 // Extension packages use this to register edition-specific database types.
 func Register(entries ...ConnectableDatabase) {
 	for _, entry := range entries {
 		registeredCatalog = append(registeredCatalog, cloneEntry(entry))
+		registerPluginAlias(entry)
 	}
 }
 
@@ -600,4 +607,11 @@ func parsePort(raw string) (int, bool) {
 	}
 
 	return port, true
+}
+
+func registerPluginAlias(entry ConnectableDatabase) {
+	if entry.ID == entry.PluginType {
+		return
+	}
+	engine.RegisterPluginTypeAlias(entry.ID, entry.PluginType)
 }

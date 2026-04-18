@@ -248,6 +248,49 @@ func (v *ResultsView) Update(msg tea.Msg) (*ResultsView, tea.Cmd) {
 				return v, nil
 			}
 
+		case key.Matches(msg, Keys.Results.AddRow):
+			if v.tableName != "" {
+				columns, err := v.parent.dbManager.GetColumns(v.schema, v.tableName)
+				if err != nil {
+					v.parent.err = err
+					return v, nil
+				}
+				v.parent.suspendLayout()
+				v.parent.rowWriteView.SetAddContext(v.schema, v.tableName, columns)
+				v.parent.PushView(ViewRowWrite)
+				return v, nil
+			}
+
+		case key.Matches(msg, Keys.Results.EditRow):
+			if v.tableName != "" && v.results != nil && !v.results.DisableUpdate {
+				pageRows := v.currentPageRows()
+				cursor := v.table.Cursor()
+				if cursor < 0 && len(pageRows) > 0 {
+					cursor = 0
+				}
+				if cursor >= 0 && cursor < len(pageRows) {
+					v.parent.suspendLayout()
+					v.parent.rowWriteView.SetEditContext(v.schema, v.tableName, v.results.Columns, v.selectedRowValues(pageRows, cursor))
+					v.parent.PushView(ViewRowWrite)
+					return v, nil
+				}
+			}
+
+		case key.Matches(msg, Keys.Results.DeleteRow):
+			if v.tableName != "" && v.results != nil {
+				pageRows := v.currentPageRows()
+				cursor := v.table.Cursor()
+				if cursor < 0 && len(pageRows) > 0 {
+					cursor = 0
+				}
+				if cursor >= 0 && cursor < len(pageRows) {
+					v.parent.suspendLayout()
+					v.parent.rowWriteView.SetDeleteContext(v.schema, v.tableName, v.results.Columns, v.selectedRowValues(pageRows, cursor))
+					v.parent.PushView(ViewRowWrite)
+					return v, nil
+				}
+			}
+
 		case key.Matches(msg, Keys.Results.Export):
 			if v.tableName != "" {
 				// Export table data
@@ -404,7 +447,7 @@ func (v *ResultsView) View() string {
 			}
 
 			// Use static bindings for most items, but dynamic labels for where/columns/back
-			b.WriteString(styles.RenderHelp(
+			b.WriteString(renderFooterHelpPairsWidth(v.width,
 				Keys.Results.Up.Help().Key, Keys.Results.Up.Help().Desc,
 				Keys.Results.Down.Help().Key, Keys.Results.Down.Help().Desc,
 				Keys.Results.ColLeft.Help().Key, Keys.Results.ColLeft.Help().Desc,
@@ -413,15 +456,30 @@ func (v *ResultsView) View() string {
 				Keys.Results.ViewCell.Help().Key, Keys.Results.ViewCell.Help().Desc,
 				Keys.Results.Where.Help().Key, whereLabel,
 				Keys.Results.Columns.Help().Key, columnsLabel,
+				Keys.Results.AddRow.Help().Key, Keys.Results.AddRow.Help().Desc,
 				Keys.Results.Export.Help().Key, Keys.Results.Export.Help().Desc,
+				Keys.Global.SchemaDiff.Help().Key, Keys.Global.SchemaDiff.Help().Desc,
+				Keys.Global.ERDiagram.Help().Key, Keys.Global.ERDiagram.Help().Desc,
 				Keys.Global.MockData.Help().Key, Keys.Global.MockData.Help().Desc,
 				Keys.Results.NextPage.Help().Key, Keys.Results.NextPage.Help().Desc,
 				Keys.Results.PageSize.Help().Key, Keys.Results.PageSize.Help().Desc,
 				Keys.Results.CustomSize.Help().Key, Keys.Results.CustomSize.Help().Desc,
 				Keys.Global.Back.Help().Key, backTarget,
 			))
+			if v.results != nil && !v.results.DisableUpdate {
+				b.WriteString("\n")
+				b.WriteString(renderFooterHelpPairsWidthNoHelp(v.width,
+					Keys.Results.EditRow.Help().Key, Keys.Results.EditRow.Help().Desc,
+					Keys.Results.DeleteRow.Help().Key, Keys.Results.DeleteRow.Help().Desc,
+				))
+			} else {
+				b.WriteString("\n")
+				b.WriteString(renderFooterHelpPairsWidthNoHelp(v.width,
+					Keys.Results.DeleteRow.Help().Key, Keys.Results.DeleteRow.Help().Desc,
+				))
+			}
 		} else {
-			b.WriteString(styles.RenderHelp(
+			b.WriteString(renderFooterHelpPairsWidth(v.width,
 				Keys.Results.Up.Help().Key, Keys.Results.Up.Help().Desc,
 				Keys.Results.Down.Help().Key, Keys.Results.Down.Help().Desc,
 				Keys.Results.ColLeft.Help().Key, Keys.Results.ColLeft.Help().Desc,
@@ -429,6 +487,8 @@ func (v *ResultsView) View() string {
 				"scroll", "trackpad/mouse",
 				Keys.Results.ViewCell.Help().Key, Keys.Results.ViewCell.Help().Desc,
 				Keys.Results.Export.Help().Key, Keys.Results.Export.Help().Desc,
+				Keys.Global.SchemaDiff.Help().Key, Keys.Global.SchemaDiff.Help().Desc,
+				Keys.Global.ERDiagram.Help().Key, Keys.Global.ERDiagram.Help().Desc,
 				Keys.Global.MockData.Help().Key, Keys.Global.MockData.Help().Desc,
 				Keys.Results.NextPage.Help().Key, Keys.Results.NextPage.Help().Desc,
 				Keys.Results.PageSize.Help().Key, Keys.Results.PageSize.Help().Desc,
@@ -806,4 +866,19 @@ func (v *ResultsView) selectedCell(pageRows [][]string, cursor int) (string, str
 		return col.Name, row[dataIdx]
 	}
 	return col.Name, ""
+}
+
+func (v *ResultsView) selectedRowValues(pageRows [][]string, cursor int) map[string]string {
+	if v.results == nil || cursor < 0 || cursor >= len(pageRows) {
+		return nil
+	}
+
+	row := pageRows[cursor]
+	values := make(map[string]string, len(v.results.Columns))
+	for idx, column := range v.results.Columns {
+		if idx < len(row) {
+			values[column.Name] = row[idx]
+		}
+	}
+	return values
 }

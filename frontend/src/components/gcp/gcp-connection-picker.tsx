@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { useMutation, useQuery } from "@apollo/client/react";
 import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import {
     Badge,
@@ -27,9 +28,9 @@ import {
 } from "@clidey/ux";
 import {
     CloudProviderType,
-    useGetCloudProvidersQuery,
-    useGetDiscoveredConnectionsQuery,
-    useRefreshCloudProviderMutation,
+    GetCloudProvidersDocument,
+    GetDiscoveredConnectionsDocument,
+    RefreshCloudProviderDocument,
 } from "@graphql";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ProvidersActions, LocalCloudProvider, LocalDiscoveredConnection } from "../../store/providers";
@@ -85,9 +86,9 @@ export const GcpConnectionPicker: FC<GcpConnectionPickerProps> = ({
     const isModalOpen = useAppSelector(state => state.providers.isProviderModalOpen);
 
     // GraphQL
-    const { data: providersData, loading: providersLoading, refetch: refetchProviders } = useGetCloudProvidersQuery();
-    const { data: connectionsData, loading: connectionsLoading, refetch: refetchConnections } = useGetDiscoveredConnectionsQuery();
-    const [refreshProvider, { loading: refreshLoading }] = useRefreshCloudProviderMutation();
+    const { data: providersData, loading: providersLoading, refetch: refetchProviders } = useQuery(GetCloudProvidersDocument);
+    const { data: connectionsData, loading: connectionsLoading, refetch: refetchConnections } = useQuery(GetDiscoveredConnectionsDocument);
+    const [refreshProvider, { loading: refreshLoading }] = useMutation(RefreshCloudProviderDocument);
 
     // Sync GraphQL data with Redux
     useEffect(() => {

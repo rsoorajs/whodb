@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
+import { useMutation, useQuery } from "@apollo/client/react";
 import { FC, useCallback, useEffect, useMemo } from "react";
 import { Badge, Button, cn, toast } from "@clidey/ux";
 import {
     AwsProvider,
     CloudProviderStatus,
     CloudProviderType,
-    useGetCloudProvidersQuery,
-    useRefreshCloudProviderMutation,
-    useRemoveCloudProviderMutation,
+    GetCloudProvidersDocument,
+    GetDiscoveredConnectionsDocument,
+    RefreshCloudProviderDocument,
+    RemoveCloudProviderDocument,
 } from "@graphql";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ProvidersActions, LocalCloudProvider } from "../../store/providers";
@@ -36,6 +38,7 @@ import {
     PlusIcon,
     TrashIcon,
 } from "../heroicons";
+import { removeCloudProviderCache, upsertCloudProviderCache } from "../../utils/apollo-provider-cache";
 
 /**
  * Returns the appropriate badge variant for a provider status.
@@ -74,9 +77,9 @@ export const AwsProvidersSection: FC = () => {
     const isModalOpen = useAppSelector(state => state.providers.isProviderModalOpen);
 
     // GraphQL queries and mutations
-    const { data, loading, refetch } = useGetCloudProvidersQuery();
-    const [refreshProvider, { loading: refreshLoading }] = useRefreshCloudProviderMutation();
-    const [removeProvider, { loading: removeLoading }] = useRemoveCloudProviderMutation();
+    const { data, loading, refetch } = useQuery(GetCloudProvidersDocument);
+    const [refreshProvider, { loading: refreshLoading }] = useMutation(RefreshCloudProviderDocument);
+    const [removeProvider, { loading: removeLoading }] = useMutation(RemoveCloudProviderDocument);
 
     // Sync GraphQL data with Redux store on fetch
     useEffect(() => {
@@ -95,7 +98,13 @@ export const AwsProvidersSection: FC = () => {
 
     const handleRemoveProvider = useCallback(async (id: string, name: string) => {
         try {
-            const { data } = await removeProvider({ variables: { id } });
+            const { data } = await removeProvider({
+                variables: { id },
+                refetchQueries: [GetDiscoveredConnectionsDocument],
+                update(cache) {
+                    removeCloudProviderCache(cache, id);
+                },
+            });
             if (data?.RemoveCloudProvider?.Status) {
                 dispatch(ProvidersActions.removeCloudProvider({ id }));
                 toast.success(t('providerRemoved', { name }));
@@ -109,7 +118,15 @@ export const AwsProvidersSection: FC = () => {
     const handleRefreshProvider = useCallback(async (id: string) => {
         dispatch(ProvidersActions.setProviderStatus({ id, status: CloudProviderStatus.Discovering }));
         try {
-            const { data } = await refreshProvider({ variables: { id } });
+            const { data } = await refreshProvider({
+                variables: { id },
+                refetchQueries: [GetDiscoveredConnectionsDocument],
+                update(cache, result) {
+                    if (result.data?.RefreshCloudProvider) {
+                        upsertCloudProviderCache(cache, result.data.RefreshCloudProvider);
+                    }
+                },
+            });
             if (data?.RefreshCloudProvider) {
                 dispatch(ProvidersActions.updateCloudProvider(data.RefreshCloudProvider as LocalCloudProvider));
                 toast.success(t('refreshComplete', { count: data.RefreshCloudProvider.DiscoveredCount }));

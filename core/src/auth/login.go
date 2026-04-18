@@ -20,40 +20,28 @@ import (
 	"context"
 
 	"github.com/clidey/whodb/core/graph/model"
-	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
+	"github.com/clidey/whodb/core/src/source"
 )
 
-func Login(ctx context.Context, input *model.LoginCredentials) (*model.StatusResponse, error) {
-	log.Debugf("[Login] type=%s, hostname=%s, username=%s, database=%s, advanced=%d",
-		input.Type, input.Hostname, input.Username, input.Database, len(input.Advanced))
+// LoginSource persists source credentials when needed and returns a successful
+// login status response.
+func LoginSource(_ context.Context, credentials *source.Credentials) (*model.StatusResponse, error) {
+	values := credentials.CloneValues()
+	log.Debugf("[LoginSource] sourceType=%s, values=%d", credentials.SourceType, len(values))
 
-	// Note: We no longer set cookies for authentication.
-	// Credentials are sent via Authorization header on each request. This avoids the ~4KB cookie size
-	// limit which can be exceeded when SSL certificates are included.
-	log.Debugf("[Login] Login successful for %s at %s", input.Type, input.Hostname)
-
-	// Persist credentials in OS keychain when an Id is provided (for future use)
-	if input.ID != nil && *input.ID != "" {
-		advanced := make([]engine.Record, 0, len(input.Advanced))
-		for _, rec := range input.Advanced {
-			advanced = append(advanced, engine.Record{Key: rec.Key, Value: rec.Value})
+	if credentials.ID != nil && *credentials.ID != "" {
+		storedCredentials := &source.Credentials{
+			ID:          credentials.ID,
+			SourceType:  credentials.SourceType,
+			Values:      values,
+			AccessToken: credentials.AccessToken,
+			IsProfile:   false,
 		}
-		if err := SaveCredentials(*input.ID, &engine.Credentials{
-			Id:        input.ID,
-			Type:      input.Type,
-			Hostname:  input.Hostname,
-			Username:  input.Username,
-			Password:  input.Password,
-			Database:  input.Database,
-			Advanced:  advanced,
-			IsProfile: false,
-		}); err != nil {
+		if err := SaveCredentials(*credentials.ID, storedCredentials); err != nil {
 			warnKeyringUnavailableOnce(err)
 		}
 	}
 
-	return &model.StatusResponse{
-		Status: true,
-	}, nil
+	return &model.StatusResponse{Status: true}, nil
 }

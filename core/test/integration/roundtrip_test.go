@@ -63,6 +63,8 @@ func TestSQLTypeRoundTrips(t *testing.T) {
 		}
 		t.Run(target.name, func(t *testing.T) {
 			meta := target.plugin.GetDatabaseMetadata()
+			pkType := primaryKeyType(target)
+			pkValue := primaryKeyValue(target)
 			for idx, td := range meta.TypeDefinitions {
 				sample, ok, expected := sampleValue(td)
 				if !ok {
@@ -75,7 +77,7 @@ func TestSQLTypeRoundTrips(t *testing.T) {
 				fields := []engine.Record{
 					{
 						Key:   "id",
-						Value: "INT",
+						Value: pkType,
 						Extra: map[string]string{"Primary": "true", "Nullable": "false"},
 					},
 					{
@@ -96,7 +98,7 @@ func TestSQLTypeRoundTrips(t *testing.T) {
 				defer target.plugin.RawExecute(target.config, fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", target.schema, table))
 
 				valRecord := []engine.Record{
-					{Key: "id", Value: "1", Extra: map[string]string{"Type": "INT"}},
+					{Key: "id", Value: pkValue, Extra: map[string]string{"Type": pkType}},
 					{Key: "val", Value: sample, Extra: map[string]string{"Type": td.ID}},
 				}
 				inserted, err := target.plugin.AddRow(target.config, target.schema, table, valRecord)
@@ -124,7 +126,7 @@ func TestSQLTypeRoundTrips(t *testing.T) {
 				}
 
 				// Update row and read again
-				update := map[string]string{"id": "1", "val": sample}
+				update := map[string]string{"id": pkValue, "val": sample}
 				if _, err := target.plugin.UpdateStorageUnit(target.config, target.schema, table, update, []string{"val"}); err != nil {
 					if strings.Contains(err.Error(), "WHERE conditions required") || strings.Contains(err.Error(), "no rows were updated") {
 						t.Skipf("skipping update for %s on %s: %v", td.ID, target.name, err)
@@ -344,15 +346,17 @@ func TestServerSmokeAgainstPostgres(t *testing.T) {
 
 	// simple AddRow/Row via GraphQL against live DB
 	table := "intg_smoke"
+	pkType := primaryKeyType(*pgTarget)
+	pkValue := primaryKeyValue(*pgTarget)
 	_, _ = pgTarget.plugin.RawExecute(pgTarget.config, fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", pgTarget.schema, table))
 	_, err := pgTarget.plugin.AddStorageUnit(pgTarget.config, pgTarget.schema, table, []engine.Record{
-		{Key: "id", Value: "INTEGER", Extra: map[string]string{"Primary": "true", "Nullable": "false"}},
+		{Key: "id", Value: pkType, Extra: map[string]string{"Primary": "true", "Nullable": "false"}},
 	})
 	if err != nil {
 		t.Fatalf("failed to create table for smoke: %v", err)
 	}
 
-	graphAdd := `mutation($schema:String!,$table:String!){ AddRow(schema:$schema, storageUnit:$table, values:[{Key:"id", Value:"1"}]){Status}}`
+	graphAdd := fmt.Sprintf(`mutation($schema:String!,$table:String!){ AddRow(schema:$schema, storageUnit:$table, values:[{Key:"id", Value:%q}]){Status}}`, pkValue)
 	body, _ := json.Marshal(map[string]any{
 		"query":     graphAdd,
 		"variables": map[string]any{"schema": pgTarget.schema, "table": table},
@@ -366,7 +370,7 @@ func TestServerSmokeAgainstPostgres(t *testing.T) {
 		t.Fatalf("graphql add row failed: %d %s", w.Code, w.Body.String())
 	}
 
-	graphRow := `query($schema:String!,$table:String!){ Row(schema:$schema, storageUnit:$table, where:{Type:Atomic,Atomic:{Key:"id",Operator:"=",Value:"1",ColumnType:"integer"}}, sort:[{Column:"id", Direction:ASC}], pageSize:10, pageOffset:0){ Rows }}`
+	graphRow := fmt.Sprintf(`query($schema:String!,$table:String!){ Row(schema:$schema, storageUnit:$table, where:{Type:Atomic,Atomic:{Key:"id",Operator:"=",Value:%q,ColumnType:%q}}, sort:[{Column:"id", Direction:ASC}], pageSize:10, pageOffset:0){ Rows }}`, pkValue, strings.ToLower(pkType))
 	body, _ = json.Marshal(map[string]any{
 		"query":     graphRow,
 		"variables": map[string]any{"schema": pgTarget.schema, "table": table},
@@ -376,7 +380,7 @@ func TestServerSmokeAgainstPostgres(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	w = httptest.NewRecorder()
 	srv.ServeHTTP(w, req)
-	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "1") {
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), pkValue) {
 		t.Fatalf("graphql row query failed: %d %s", w.Code, w.Body.String())
 	}
 }

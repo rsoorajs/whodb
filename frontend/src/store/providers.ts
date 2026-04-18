@@ -15,7 +15,13 @@
  */
 
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
-import { AwsProvider, AzureProvider, GcpProvider, CloudProviderStatus, DiscoveredConnection } from '@graphql';
+import {
+  AwsProvider,
+  AzureProvider,
+  GcpProvider,
+  CloudProviderStatus,
+  GetDiscoveredConnectionsQuery,
+} from '@graphql';
 
 /**
  * Cloud Provider with local state tracking.
@@ -34,7 +40,7 @@ export type LocalCloudProvider =
 /**
  * Discovered connection with provider source information.
  */
-export type LocalDiscoveredConnection = DiscoveredConnection;
+export type LocalDiscoveredConnection = GetDiscoveredConnectionsQuery['DiscoveredConnections'][number];
 
 export interface IProvidersState {
   /** List of configured cloud providers (AWS, GCP, Azure, etc.) */

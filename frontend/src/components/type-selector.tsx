@@ -16,16 +16,15 @@
 
 import { Input, Label } from '@clidey/ux';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DatabaseType } from '@graphql';
 import { useTranslation } from '../hooks/use-translation';
 import { SearchSelect } from './ux';
 import {
-    findTypeDefinition,
+    findColumnTypeDefinition,
     formatTypeSpec,
-    getDatabaseTypeDefinitions,
+    getSourceColumnTypeDefinitions,
     parseTypeSpec,
-} from '../utils/database-data-types';
-import { TypeDefinition } from '../config/database-types';
+} from '../utils/source-column-types';
+import { DatabaseType, TypeDefinition } from '../config/source-types';
 
 export interface TypeSelectorProps {
     /** The database type to get type definitions from */
@@ -67,16 +66,14 @@ export function TypeSelector({
     const [precision, setPrecision] = useState<number | undefined>(parsed.precision);
     const [scale, setScale] = useState<number | undefined>(parsed.scale);
 
-    // Get type definitions for this database
     const typeDefinitions = useMemo(() => {
         if (!databaseType) return [];
-        return getDatabaseTypeDefinitions(databaseType);
+        return getSourceColumnTypeDefinitions(databaseType);
     }, [databaseType]);
 
-    // Get the current type definition
     const currentTypeDef = useMemo((): TypeDefinition | undefined => {
         if (!databaseType || !baseType) return undefined;
-        return findTypeDefinition(baseType, databaseType);
+        return findColumnTypeDefinition(baseType, databaseType);
     }, [databaseType, baseType]);
 
     // Create dropdown options from type definitions
@@ -103,7 +100,7 @@ export function TypeSelector({
         newPrecision?: number,
         newScale?: number,
     ) => {
-        const typeDef = databaseType ? findTypeDefinition(newBaseType, databaseType) : undefined;
+        const typeDef = databaseType ? findColumnTypeDefinition(newBaseType, databaseType) : undefined;
 
         let finalValue: string;
         if (typeDef?.hasPrecision) {
@@ -121,8 +118,7 @@ export function TypeSelector({
     const handleTypeChange = useCallback((newType: string) => {
         setBaseType(newType);
 
-        // Find the new type definition to get defaults
-        const typeDef = databaseType ? findTypeDefinition(newType, databaseType) : undefined;
+        const typeDef = databaseType ? findColumnTypeDefinition(newType, databaseType) : undefined;
 
         let newLength: number | undefined;
         let newPrecision: number | undefined;

@@ -32,29 +32,52 @@ import (
 // Handles column metadata extraction (type, length, precision) and per-row value formatting
 // including binary, geometry, time, and plugin-specific custom types.
 func (p *GormPlugin) ConvertRawToRows(rows *sql.Rows) (*engine.GetRowsResult, error) {
+	columns, typeMap, resultColumns, err := p.describeRawColumns(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &engine.GetRowsResult{
+		Columns: resultColumns,
+		Rows:    make([][]string, 0, 100),
+	}
+
+	for rows.Next() {
+		row, err := p.scanRawRow(rows, columns, typeMap)
+		if err != nil {
+			return nil, err
+		}
+
+		result.Rows = append(result.Rows, row)
+	}
+	if err := rows.Err(); err != nil {
+		log.WithError(err).Error("Failed while iterating result rows")
+		return nil, err
+	}
+
+	result.TotalCount = int64(len(result.Rows))
+	return result, nil
+}
+
+func (p *GormPlugin) describeRawColumns(rows *sql.Rows) ([]string, map[string]*sql.ColumnType, []engine.Column, error) {
 	columns, err := rows.Columns()
 	if err != nil {
 		log.WithError(err).Error("Failed to get column names from result set")
-		return nil, err
+		return nil, nil, nil, err
 	}
 
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
 		log.WithError(err).Error("Failed to get column types from result set")
-		return nil, err
+		return nil, nil, nil, err
 	}
 
-	// Create a map for faster column type lookup
 	typeMap := make(map[string]*sql.ColumnType, len(columnTypes))
 	for _, colType := range columnTypes {
 		typeMap[colType.Name()] = colType
 	}
 
-	result := &engine.GetRowsResult{
-		Columns: make([]engine.Column, 0, len(columns)),
-		Rows:    make([][]string, 0, 100),
-	}
-
+	resultColumns := make([]engine.Column, 0, len(columns))
 	for _, col := range columns {
 		if colType, exists := typeMap[col]; exists {
 			colTypeName := colType.DatabaseTypeName()
@@ -69,18 +92,15 @@ func (p *GormPlugin) ConvertRawToRows(rows *sql.Rows) (*engine.GetRowsResult, er
 			column := engine.Column{Name: col, Type: colTypeName}
 			baseTypeName := strings.ToUpper(colType.DatabaseTypeName())
 
-			// Only extract length for types where it's user-specifiable
 			if typesWithLength[baseTypeName] {
 				if length, ok := colType.Length(); ok && length > 0 {
 					l := int(length)
 					column.Length = &l
-					// Include length in type name for display
 					colTypeName = fmt.Sprintf("%s(%d)", colTypeName, length)
 					column.Type = colTypeName
 				}
 			}
 
-			// Only extract precision/scale for decimal-like types
 			if typesWithPrecision[baseTypeName] {
 				if precision, scale, ok := colType.DecimalSize(); ok && precision > 0 {
 					prec := int(precision)
@@ -96,92 +116,97 @@ func (p *GormPlugin) ConvertRawToRows(rows *sql.Rows) (*engine.GetRowsResult, er
 				}
 			}
 
-			result.Columns = append(result.Columns, column)
+			resultColumns = append(resultColumns, column)
 		}
 	}
 
-	for rows.Next() {
-		columnPointers := make([]any, len(columns))
-		row := make([]string, len(columns))
+	return columns, typeMap, resultColumns, nil
+}
 
-		for i, col := range columns {
-			colType := typeMap[col]
-			typeName := colType.DatabaseTypeName()
+func (p *GormPlugin) scanRawRow(rows *sql.Rows, columns []string, typeMap map[string]*sql.ColumnType) ([]string, error) {
+	columnPointers := make([]any, len(columns))
+	row := make([]string, len(columns))
 
-			if p.GormPluginFunctions.ShouldHandleColumnType(typeName) {
-				columnPointers[i] = p.GormPluginFunctions.GetColumnScanner(typeName)
-			} else {
-				switch typeName {
-				case "VARBINARY", "BINARY", "IMAGE", "BYTEA", "BLOB", "HIERARCHYID",
-					"GEOMETRY", "POINT", "LINESTRING", "POLYGON", "GEOGRAPHY",
-					"MULTIPOINT", "MULTILINESTRING", "MULTIPOLYGON":
-					columnPointers[i] = new(sql.RawBytes)
-				default:
-					columnPointers[i] = new(sql.NullString)
-				}
-			}
+	for i, col := range columns {
+		colType := typeMap[col]
+		typeName := ""
+		if colType != nil {
+			typeName = colType.DatabaseTypeName()
 		}
 
-		if err := rows.Scan(columnPointers...); err != nil {
-			log.WithError(err).Error("Failed to scan row data")
-			return nil, err
+		if p.GormPluginFunctions.ShouldHandleColumnType(typeName) {
+			columnPointers[i] = p.GormPluginFunctions.GetColumnScanner(typeName)
+			continue
 		}
 
-		for i, colPtr := range columnPointers {
-			colType := typeMap[columns[i]]
-			typeName := colType.DatabaseTypeName()
-
-			if p.GormPluginFunctions.ShouldHandleColumnType(typeName) {
-				value, err := p.GormPluginFunctions.FormatColumnValue(typeName, colPtr)
-				if err != nil {
-					row[i] = "ERROR: " + err.Error()
-				} else {
-					row[i] = value
-				}
-			} else {
-				switch typeName {
-				case "VARBINARY", "BINARY", "IMAGE", "BYTEA", "BLOB":
-					rawBytes := colPtr.(*sql.RawBytes)
-					if rawBytes == nil || len(*rawBytes) == 0 {
-						row[i] = ""
-					} else {
-						row[i] = "0x" + hex.EncodeToString(*rawBytes)
-					}
-				case "GEOMETRY", "POINT", "LINESTRING", "POLYGON", "GEOGRAPHY",
-					"MULTIPOINT", "MULTILINESTRING", "MULTIPOLYGON":
-					rawBytes := colPtr.(*sql.RawBytes)
-					if rawBytes == nil || len(*rawBytes) == 0 {
-						row[i] = ""
-					} else if formatted := p.GormPluginFunctions.FormatGeometryValue(*rawBytes, typeName); formatted != "" {
-						row[i] = formatted
-					} else {
-						row[i] = "0x" + hex.EncodeToString(*rawBytes)
-					}
-				case "TIME":
-					// TIME columns are returned as full datetime strings with zero date (e.g., "0001-01-01T12:00:00Z")
-					// Extract just the time portion for display
-					val := colPtr.(*sql.NullString)
-					if val.Valid {
-						row[i] = formatTimeOnly(val.String)
-					} else {
-						row[i] = ""
-					}
-				default:
-					val := colPtr.(*sql.NullString)
-					if val.Valid {
-						row[i] = val.String
-					} else {
-						row[i] = ""
-					}
-				}
-			}
+		switch typeName {
+		case "VARBINARY", "BINARY", "IMAGE", "BYTEA", "BLOB", "HIERARCHYID",
+			"GEOMETRY", "POINT", "LINESTRING", "POLYGON", "GEOGRAPHY",
+			"MULTIPOINT", "MULTILINESTRING", "MULTIPOLYGON":
+			columnPointers[i] = new(sql.RawBytes)
+		default:
+			columnPointers[i] = new(sql.NullString)
 		}
-
-		result.Rows = append(result.Rows, row)
 	}
 
-	result.TotalCount = int64(len(result.Rows))
-	return result, nil
+	if err := rows.Scan(columnPointers...); err != nil {
+		log.WithError(err).Error("Failed to scan row data")
+		return nil, err
+	}
+
+	for i, colPtr := range columnPointers {
+		colType := typeMap[columns[i]]
+		typeName := ""
+		if colType != nil {
+			typeName = colType.DatabaseTypeName()
+		}
+
+		if p.GormPluginFunctions.ShouldHandleColumnType(typeName) {
+			value, err := p.GormPluginFunctions.FormatColumnValue(typeName, colPtr)
+			if err != nil {
+				row[i] = "ERROR: " + err.Error()
+			} else {
+				row[i] = value
+			}
+			continue
+		}
+
+		switch typeName {
+		case "VARBINARY", "BINARY", "IMAGE", "BYTEA", "BLOB":
+			rawBytes := colPtr.(*sql.RawBytes)
+			if rawBytes == nil || len(*rawBytes) == 0 {
+				row[i] = ""
+			} else {
+				row[i] = "0x" + hex.EncodeToString(*rawBytes)
+			}
+		case "GEOMETRY", "POINT", "LINESTRING", "POLYGON", "GEOGRAPHY",
+			"MULTIPOINT", "MULTILINESTRING", "MULTIPOLYGON":
+			rawBytes := colPtr.(*sql.RawBytes)
+			if rawBytes == nil || len(*rawBytes) == 0 {
+				row[i] = ""
+			} else if formatted := p.GormPluginFunctions.FormatGeometryValue(*rawBytes, typeName); formatted != "" {
+				row[i] = formatted
+			} else {
+				row[i] = "0x" + hex.EncodeToString(*rawBytes)
+			}
+		case "TIME":
+			val := colPtr.(*sql.NullString)
+			if val.Valid {
+				row[i] = formatTimeOnly(val.String)
+			} else {
+				row[i] = ""
+			}
+		default:
+			val := colPtr.(*sql.NullString)
+			if val.Valid {
+				row[i] = val.String
+			} else {
+				row[i] = ""
+			}
+		}
+	}
+
+	return row, nil
 }
 
 // FindMissingDataType resolves unknown column types by querying system catalogs.

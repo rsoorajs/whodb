@@ -19,6 +19,7 @@ package output
 import (
 	"bytes"
 	"encoding/json"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -37,6 +38,7 @@ func TestParseFormat(t *testing.T) {
 		{name: "table", input: "table", want: FormatTable},
 		{name: "plain", input: "plain", want: FormatPlain},
 		{name: "json", input: "json", want: FormatJSON},
+		{name: "ndjson", input: "ndjson", want: FormatNDJSON},
 		{name: "csv", input: "csv", want: FormatCSV},
 		{name: "uppercase_JSON", input: "JSON", want: FormatJSON},
 		{name: "mixed_case_Table", input: "TaBlE", want: FormatTable},
@@ -225,6 +227,77 @@ func TestWriter_WriteJSON_ColumnMismatch(t *testing.T) {
 	}
 }
 
+func TestWriter_WriteNDJSON(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(WithOutput(&buf), WithFormat(FormatNDJSON))
+
+	result := &QueryResult{
+		Columns: []Column{{Name: "id"}, {Name: "name"}},
+		Rows:    [][]any{{1, "Alice"}, {2, "Bob"}},
+	}
+
+	if err := w.WriteQueryResult(result); err != nil {
+		t.Fatalf("WriteQueryResult error: %v", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 NDJSON lines, got %d", len(lines))
+	}
+
+	var first map[string]any
+	if err := json.Unmarshal([]byte(lines[0]), &first); err != nil {
+		t.Fatalf("invalid first NDJSON line: %v", err)
+	}
+	if first["name"] != "Alice" {
+		t.Errorf("first row name = %v, want Alice", first["name"])
+	}
+
+	var second map[string]any
+	if err := json.Unmarshal([]byte(lines[1]), &second); err != nil {
+		t.Fatalf("invalid second NDJSON line: %v", err)
+	}
+	if second["name"] != "Bob" {
+		t.Errorf("second row name = %v, want Bob", second["name"])
+	}
+}
+
+func TestWriter_BeginQueryStream_JSON(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(WithOutput(&buf), WithFormat(FormatJSON))
+
+	stream, err := w.BeginQueryStream([]Column{{Name: "id"}, {Name: "name"}})
+	if err != nil {
+		t.Fatalf("BeginQueryStream error: %v", err)
+	}
+	if err := stream.WriteRow([]string{"1", "Alice"}); err != nil {
+		t.Fatalf("WriteRow error: %v", err)
+	}
+	if err := stream.WriteRow([]string{"2", "Bob"}); err != nil {
+		t.Fatalf("WriteRow error: %v", err)
+	}
+	if err := stream.Close(); err != nil {
+		t.Fatalf("Close error: %v", err)
+	}
+
+	var output []map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &output); err != nil {
+		t.Fatalf("Invalid streamed JSON output: %v", err)
+	}
+	if len(output) != 2 || output[1]["name"] != "Bob" {
+		t.Fatalf("Unexpected streamed JSON output: %#v", output)
+	}
+}
+
+func TestWriter_BeginQueryStream_TableUnsupported(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(WithOutput(&buf), WithFormat(FormatTable))
+
+	if _, err := w.BeginQueryStream([]Column{{Name: "id"}}); err == nil {
+		t.Fatal("expected table streaming to be rejected")
+	}
+}
+
 // --- CSV Output Tests ---
 
 func TestWriter_WriteCSV(t *testing.T) {
@@ -389,6 +462,43 @@ func TestWriter_WriteTable_EmptyResult(t *testing.T) {
 	}
 }
 
+func TestWriter_WriteTable_AlignsColumnsWithANSIText(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(WithOutput(&buf), WithFormat(FormatTable))
+
+	result := &QueryResult{
+		Columns: []Column{
+			{Name: "\x1b[1mid\x1b[0m"},
+			{Name: "\x1b[1mpayment_method\x1b[0m"},
+		},
+		Rows: [][]any{
+			{1, "credit_card"},
+			{2, "paypal"},
+		},
+	}
+
+	if err := w.WriteQueryResult(result); err != nil {
+		t.Fatalf("WriteQueryResult error: %v", err)
+	}
+
+	ansiPattern := regexp.MustCompile(`\x1b\[[0-9;]*m`)
+	lines := strings.Split(strings.TrimSpace(ansiPattern.ReplaceAllString(buf.String(), "")), "\n")
+	if len(lines) != 4 {
+		t.Fatalf("Expected 4 table lines, got %d: %q", len(lines), lines)
+	}
+
+	headerIndex := strings.Index(lines[0], "payment_method")
+	firstRowIndex := strings.Index(lines[2], "credit_card")
+	secondRowIndex := strings.Index(lines[3], "paypal")
+
+	if headerIndex == -1 || firstRowIndex == -1 || secondRowIndex == -1 {
+		t.Fatalf("Expected aligned header/data cells, got lines: %#v", lines)
+	}
+	if headerIndex != firstRowIndex || headerIndex != secondRowIndex {
+		t.Fatalf("Expected second column to align, got header=%d first=%d second=%d in %#v", headerIndex, firstRowIndex, secondRowIndex, lines)
+	}
+}
+
 // --- Message Output Tests ---
 
 func TestWriter_Info(t *testing.T) {
@@ -470,6 +580,9 @@ func TestFormatConstants(t *testing.T) {
 	}
 	if FormatJSON != "json" {
 		t.Errorf("FormatJSON = %q, want 'json'", FormatJSON)
+	}
+	if FormatNDJSON != "ndjson" {
+		t.Errorf("FormatNDJSON = %q, want 'ndjson'", FormatNDJSON)
 	}
 	if FormatCSV != "csv" {
 		t.Errorf("FormatCSV = %q, want 'csv'", FormatCSV)

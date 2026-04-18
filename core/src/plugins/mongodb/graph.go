@@ -25,7 +25,7 @@ import (
 )
 
 func (p *MongoDBPlugin) GetGraph(config *engine.PluginConfig, database string) ([]engine.GraphUnit, error) {
-	ctx, cancel := opCtx()
+	ctx, cancel := opCtx(config)
 	defer cancel()
 	client, err := DB(config)
 	if err != nil {

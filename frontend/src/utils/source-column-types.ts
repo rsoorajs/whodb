@@ -14,24 +14,22 @@
  * limitations under the License.
  */
 
-import { DatabaseType } from '@graphql';
-import { TypeDefinition } from '../config/database-types';
-import { reduxStore } from '../store';
+import { DatabaseType, TypeDefinition } from '../config/source-types';
+import { getSourceSessionMetadataState } from './source-session-metadata-cache';
 
 /**
- * Get type definitions for a database from the backend-driven Redux store.
+ * Get column type definitions for a source from the backend-driven Apollo store.
  *
- * @param databaseType The database type (can be any registered type)
- * @returns Array of TypeDefinition objects for the database
+ * @param sourceType The source type (can be any registered type)
+ * @returns Array of TypeDefinition objects for the source
  */
-export function getDatabaseTypeDefinitions(databaseType: DatabaseType | string): TypeDefinition[] {
-    const metadataState = reduxStore.getState().databaseMetadata;
+export function getSourceColumnTypeDefinitions(sourceType: DatabaseType | string): TypeDefinition[] {
+    const metadataState = getSourceSessionMetadataState();
 
     if (
-        metadataState.databaseType === databaseType &&
+        metadataState.sourceType === sourceType &&
         metadataState.typeDefinitions.length > 0
     ) {
-        // Convert backend format to frontend TypeDefinition format
         return metadataState.typeDefinitions.map(td => ({
             id: td.id,
             label: td.label,
@@ -45,69 +43,62 @@ export function getDatabaseTypeDefinitions(databaseType: DatabaseType | string):
 
     // No fallback - backend is the source of truth.
     console.warn(
-        `[database-data-types] No type definitions found for ${databaseType}. ` +
-            `Ensure DatabaseMetadata query has completed.`
+        `[source-column-types] No type definitions found for ${sourceType}. ` +
+            `Ensure SourceSessionMetadata query has completed.`
     );
     return [];
 }
 
 /**
- * Get the alias map for a database from the backend-driven Redux store.
+ * Get the type-alias map for a source from the backend-driven Apollo store.
  *
- * @param databaseType The database type (can be any registered type)
+ * @param sourceType The source type (can be any registered type)
  * @returns Record mapping aliases to canonical type names
  */
-export function getDatabaseAliasMap(databaseType: DatabaseType | string): Record<string, string> {
-    const metadataState = reduxStore.getState().databaseMetadata;
+export function getSourceColumnTypeAliasMap(sourceType: DatabaseType | string): Record<string, string> {
+    const metadataState = getSourceSessionMetadataState();
 
     if (
-        metadataState.databaseType === databaseType &&
+        metadataState.sourceType === sourceType &&
         Object.keys(metadataState.aliasMap).length > 0
     ) {
         return metadataState.aliasMap;
     }
 
-    // Note: Empty alias map is valid for some databases, so only warn if databaseType mismatch
-    if (metadataState.databaseType !== databaseType) {
+    if (metadataState.sourceType !== sourceType) {
         console.warn(
-            `[database-data-types] No alias map found for ${databaseType}. ` +
-                `Ensure DatabaseMetadata query has completed.`
+            `[source-column-types] No alias map found for ${sourceType}. ` +
+                `Ensure SourceSessionMetadata query has completed.`
         );
     }
     return {};
 }
 
 /**
- * Normalize a type name to its canonical form for a specific database
+ * Normalize a type name to its canonical form for a specific source.
  * @param typeName The type name to normalize (may include length, e.g., "VARCHAR(255)")
- * @param databaseType The database type
+ * @param sourceType The source type
  * @returns The canonical type name (without length specifier)
  */
-export function normalizeTypeName(typeName: string, databaseType: DatabaseType | string): string {
-    // Strip length/precision specifier: "VARCHAR(255)" -> "VARCHAR"
+export function normalizeColumnTypeName(typeName: string, sourceType: DatabaseType | string): string {
     const baseType = typeName.replace(/\(.*\)$/, '').trim().toUpperCase();
+    const aliasMap = getSourceColumnTypeAliasMap(sourceType);
 
-    // Get alias map for this database
-    const aliasMap = getDatabaseAliasMap(databaseType);
-
-    // Return canonical form if alias exists, otherwise return the base type
     return aliasMap[baseType] ?? baseType;
 }
 
 /**
- * Find a type definition by its id or alias
+ * Find a column type definition by its id or alias.
  * @param typeId The type id or alias to find
- * @param databaseType The database type
+ * @param sourceType The source type
  * @returns The TypeDefinition or undefined if not found
  */
-export function findTypeDefinition(typeId: string, databaseType: DatabaseType | string): TypeDefinition | undefined {
-    const typeDefs = getDatabaseTypeDefinitions(databaseType);
-    const normalizedType = normalizeTypeName(typeId, databaseType);
+export function findColumnTypeDefinition(typeId: string, sourceType: DatabaseType | string): TypeDefinition | undefined {
+    const typeDefs = getSourceColumnTypeDefinitions(sourceType);
+    const normalizedType = normalizeColumnTypeName(typeId, sourceType);
 
-    // First try exact match
     let typeDef = typeDefs.find(t => t.id.toUpperCase() === normalizedType);
 
-    // If not found, try case-insensitive match
     if (!typeDef) {
         typeDef = typeDefs.find(t => t.id.toUpperCase() === typeId.toUpperCase());
     }

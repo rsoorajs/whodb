@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { skipToken, useMutation, useQuery } from "@apollo/client/react";
 import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import {
     Badge,
@@ -32,19 +33,21 @@ import {
 } from "@clidey/ux";
 import { SearchSelect } from "../ux";
 import {
+    AddAzureProviderDocument,
     AzureProviderInput,
     CloudProviderStatus,
-    useAddAzureProviderMutation,
-    useUpdateAzureProviderMutation,
-    useTestAzureCredentialsMutation,
-    useGetAzureSubscriptionsQuery,
-    useGetAzureRegionsQuery,
-    useGetAzureProvidersQuery,
+    GetAzureProvidersDocument,
+    GetAzureRegionsDocument,
+    GetAzureSubscriptionsDocument,
+    GetDiscoveredConnectionsDocument,
+    TestAzureCredentialsDocument,
+    UpdateAzureProviderDocument,
 } from "@graphql";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ProvidersActions } from "../../store/providers";
 import { useTranslation } from "@/hooks/use-translation";
 import { ChevronDownIcon, CloudIcon } from "../heroicons";
+import { upsertAzureProviderCache, upsertCloudProviderCache } from "../../utils/apollo-provider-cache";
 
 export interface AzureProviderModalProps {
     open: boolean;
@@ -67,20 +70,19 @@ export const AzureProviderModal: FC<AzureProviderModalProps> = ({
     const isEditMode = editingProviderId !== null;
 
     // Fetch current Azure providers to find editing provider
-    const { data: providersData } = useGetAzureProvidersQuery();
+    const { data: providersData } = useQuery(GetAzureProvidersDocument);
     const editingProvider = useMemo(() => {
         if (!editingProviderId || !providersData?.AzureProviders) return null;
         return providersData.AzureProviders.find(p => p.Id === editingProviderId) ?? null;
     }, [editingProviderId, providersData]);
+    const subscriptionsQueryOptions = isEditMode ? skipToken : {};
 
     // Query Azure subscriptions for picker
-    const { data: subscriptionsData, loading: subscriptionsLoading } = useGetAzureSubscriptionsQuery({
-        skip: isEditMode,
-    });
+    const { data: subscriptionsData, loading: subscriptionsLoading } = useQuery(GetAzureSubscriptionsDocument, subscriptionsQueryOptions);
     const subscriptions = subscriptionsData?.AzureSubscriptions ?? [];
 
     // Query Azure regions from backend
-    const { data: regionsData } = useGetAzureRegionsQuery();
+    const { data: regionsData } = useQuery(GetAzureRegionsDocument);
     const azureRegions = regionsData?.AzureRegions ?? [];
 
     // Form state
@@ -98,13 +100,25 @@ export const AzureProviderModal: FC<AzureProviderModalProps> = ({
     const [discoverCosmosDB, setDiscoverCosmosDB] = useState(true);
 
     // GraphQL mutations
-    const [addProvider, { loading: addLoading }] = useAddAzureProviderMutation({
-        refetchQueries: ['GetAzureProviders', 'GetDiscoveredConnections'],
+    const [addProvider, { loading: addLoading }] = useMutation(AddAzureProviderDocument, {
+        refetchQueries: [GetDiscoveredConnectionsDocument],
+        update(cache, { data }) {
+            if (data?.AddAzureProvider) {
+                upsertAzureProviderCache(cache, data.AddAzureProvider);
+                upsertCloudProviderCache(cache, data.AddAzureProvider);
+            }
+        },
     });
-    const [updateProvider, { loading: updateLoading }] = useUpdateAzureProviderMutation({
-        refetchQueries: ['GetAzureProviders', 'GetDiscoveredConnections'],
+    const [updateProvider, { loading: updateLoading }] = useMutation(UpdateAzureProviderDocument, {
+        refetchQueries: [GetDiscoveredConnectionsDocument],
+        update(cache, { data }) {
+            if (data?.UpdateAzureProvider) {
+                upsertAzureProviderCache(cache, data.UpdateAzureProvider);
+                upsertCloudProviderCache(cache, data.UpdateAzureProvider);
+            }
+        },
     });
-    const [testCredentials, { loading: testCredentialsLoading }] = useTestAzureCredentialsMutation();
+    const [testCredentials, { loading: testCredentialsLoading }] = useMutation(TestAzureCredentialsDocument);
 
     const loading = addLoading || updateLoading || testCredentialsLoading;
 

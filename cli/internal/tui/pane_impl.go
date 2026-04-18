@@ -35,10 +35,12 @@ var (
 	_ Pane = (*ChatView)(nil)
 	_ Pane = (*SchemaView)(nil)
 	_ Pane = (*ImportView)(nil)
+	_ Pane = (*RowWriteView)(nil)
 	_ Pane = (*BookmarksView)(nil)
 	_ Pane = (*JSONViewer)(nil)
 	_ Pane = (*CmdLogView)(nil)
 	_ Pane = (*ExplainView)(nil)
+	_ Pane = (*SchemaDiffView)(nil)
 	_ Pane = (*ERDView)(nil)
 	_ Pane = (*AuditView)(nil)
 	_ Pane = (*ProfilesView)(nil)
@@ -128,11 +130,18 @@ func (v *ResultsView) OnFocus()                        {}
 func (v *ResultsView) OnBlur()                         {}
 func (v *ResultsView) SetCompact(c bool)               { v.compact = c }
 func (v *ResultsView) HelpBindings() []key.Binding {
-	return []key.Binding{
+	bindings := []key.Binding{
 		Keys.Results.NextPage, Keys.Results.ColLeft,
 		Keys.Results.ViewCell, Keys.Results.Where, Keys.Results.Columns,
 		Keys.Results.Export, Keys.Results.PageSize, Keys.Global.Back,
 	}
+	if v.tableName != "" {
+		bindings = append(bindings, Keys.Results.AddRow, Keys.Results.DeleteRow)
+		if v.results != nil && !v.results.DisableUpdate {
+			bindings = append(bindings, Keys.Results.EditRow)
+		}
+	}
+	return bindings
 }
 
 // ---------------------------------------------------------------------------
@@ -232,6 +241,27 @@ func (v *MockDataView) SetCompact(bool)                 {}
 func (v *MockDataView) HelpBindings() []key.Binding     { return nil }
 
 // ---------------------------------------------------------------------------
+// RowWriteView
+// ---------------------------------------------------------------------------
+
+func (v *RowWriteView) UpdatePane(msg tea.Msg) tea.Cmd { _, cmd := v.Update(msg); return cmd }
+func (v *RowWriteView) SetDimensions(width, height int) {
+	v.width = width
+	v.height = height
+	v.applyDimensions()
+}
+func (v *RowWriteView) Focusable() bool { return true }
+func (v *RowWriteView) OnFocus()        { v.syncAddFocus() }
+func (v *RowWriteView) OnBlur() {
+	v.textarea.Blur()
+	for idx := range v.inputs {
+		v.inputs[idx].Blur()
+	}
+}
+func (v *RowWriteView) SetCompact(bool)             {}
+func (v *RowWriteView) HelpBindings() []key.Binding { return rowWriteHelpBindings(v.action) }
+
+// ---------------------------------------------------------------------------
 // JSONViewer
 // ---------------------------------------------------------------------------
 
@@ -278,6 +308,27 @@ func (v *ExplainView) OnFocus()                        {}
 func (v *ExplainView) OnBlur()                         {}
 func (v *ExplainView) SetCompact(bool)                 {}
 func (v *ExplainView) HelpBindings() []key.Binding     { return nil }
+
+// ---------------------------------------------------------------------------
+// SchemaDiffView
+// ---------------------------------------------------------------------------
+
+func (v *SchemaDiffView) UpdatePane(msg tea.Msg) tea.Cmd { _, cmd := v.Update(msg); return cmd }
+func (v *SchemaDiffView) SetDimensions(width, height int) {
+	v.width = width
+	v.height = height
+	if v.result != nil && !v.editing {
+		v.rebuildViewport()
+	}
+}
+func (v *SchemaDiffView) Focusable() bool { return true }
+func (v *SchemaDiffView) OnFocus()        { v.syncFocus() }
+func (v *SchemaDiffView) OnBlur() {
+	v.fromSchemaInput.Blur()
+	v.toSchemaInput.Blur()
+}
+func (v *SchemaDiffView) SetCompact(bool)             {}
+func (v *SchemaDiffView) HelpBindings() []key.Binding { return nil }
 
 // ---------------------------------------------------------------------------
 // AuditView

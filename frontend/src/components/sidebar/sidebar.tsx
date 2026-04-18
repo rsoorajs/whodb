@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import {skipToken, useQuery} from "@apollo/client/react";
 import {
     Button,
     cn,
@@ -47,11 +48,10 @@ import {
 } from "@clidey/ux";
 import {SearchSelect} from "../ux";
 import {
-    DatabaseType,
-    useGetDatabaseQuery,
-    useGetSchemaQuery,
-    useGetSslStatusQuery,
-    useGetUpdateInfoQuery,
+    GetSchemaDocument,
+    GetSslStatusDocument,
+    GetUpdateInfoDocument,
+    SourceFieldOptionsDocument,
 } from '@graphql';
 import {useTranslation} from '@/hooks/use-translation';
 import {VisuallyHidden} from "@radix-ui/react-visually-hidden";
@@ -67,8 +67,9 @@ import {DatabaseActions} from "../../store/database";
 import {useAppSelector} from "../../store/hooks";
 import {featureFlags} from "../../config/features";
 import {getComponent} from "../../config/component-registry";
+import { DatabaseType } from "../../config/source-types";
 import {isAwsHostname} from "../../utils/cloud-connection-prefill";
-import {useDatabaseTraits} from "../../hooks/useDatabaseTraits";
+import {useSourceContract} from "../../hooks/useSourceContract";
 import {
     ArrowLeftStartOnRectangleIcon,
     ChevronDownIcon,
@@ -84,6 +85,7 @@ import {
 import {Icons} from "../icons";
 import {DatabaseIconWithBadge, isAwsConnection} from "../aws";
 import {useProfileSwitch} from "@/hooks/use-profile-switch";
+import {buildSourceSchemaQuery} from "@/utils/source-refs";
 
 function getProfileLabel(profile: LocalLoginProfile) {
     if (profile.Saved) return profile.Id;
@@ -181,41 +183,53 @@ export const Sidebar: FC = () => {
     const profiles = useAppSelector(state => state.auth.profiles);
     const sslStatus = useAppSelector(state => state.auth.sslStatus);
     const {
-        isNoSQL,
+        item,
         storageUnitLabel,
+        supportsChat,
+        supportsGraph,
         supportsScratchpad,
         supportsSchema,
         supportsDatabaseSwitching,
         usesDatabaseInsteadOfSchema,
-    } = useDatabaseTraits(current?.Type);
-    const {data: availableDatabases, loading: availableDatabasesLoading, refetch: getDatabases} = useGetDatabaseQuery({
-        variables: {
-            type: current?.Type as DatabaseType,
-        },
-        skip: current == null || !supportsDatabaseSwitching,
-    });
-    const { data: availableSchemas, loading: availableSchemasLoading, refetch: getSchemas } = useGetSchemaQuery({
-        skip: current == null || !supportsSchema,
-    });
+    } = useSourceContract(current?.Type);
+    const databaseQueryOptions = current != null && supportsDatabaseSwitching
+        ? {
+            variables: {
+                sourceType: current.Type,
+            },
+        }
+        : skipToken;
+    const schemaQueryVariables = useMemo(() => buildSourceSchemaQuery(item, current), [current, item]);
+    const schemaQueryOptions = current != null && supportsSchema
+        ? {
+            variables: schemaQueryVariables,
+        }
+        : skipToken;
+    const sslStatusQueryOptions = current != null && sslStatus === undefined
+        ? {}
+        : skipToken;
+    const {data: availableDatabases, loading: availableDatabasesLoading, refetch: getDatabases} = useQuery(SourceFieldOptionsDocument, databaseQueryOptions);
+    const { data: availableSchemas, loading: availableSchemasLoading, refetch: getSchemas } = useQuery(GetSchemaDocument, schemaQueryOptions);
+    const availableSchemaNames = useMemo(() => {
+        return availableSchemas?.Schema?.map(schemaObject => schemaObject.Name) ?? [];
+    }, [availableSchemas?.Schema]);
 
     // Default schema selection: prefer Search Path from login config, fall back to first schema
     useEffect(() => {
-        if (current == null || schema !== "" || !availableSchemas?.Schema?.length) return;
+        if (current == null || schema !== "" || availableSchemaNames.length === 0) return;
         const searchPath = current.Advanced?.find(a => a.Key === "Search Path")?.Value;
-        const defaultSchema = (searchPath && availableSchemas.Schema.includes(searchPath))
+        const defaultSchema = (searchPath && availableSchemaNames.includes(searchPath))
             ? searchPath
-            : availableSchemas.Schema[0] ?? "";
+            : availableSchemaNames[0] ?? "";
         dispatch(DatabaseActions.setSchema(defaultSchema));
-    }, [current, schema, availableSchemas, dispatch]);
-    const { data: updateInfo } = useGetUpdateInfoQuery();
-    const { refetch: refetchSslStatus } = useGetSslStatusQuery({
-        skip: current == null || sslStatus !== undefined,
-        onCompleted(data) {
-            if (data.SSLStatus) {
-                dispatch(AuthActions.setSSLStatus(data.SSLStatus));
-            }
-        },
-    });
+    }, [availableSchemaNames, current, dispatch, schema]);
+    const { data: updateInfo } = useQuery(GetUpdateInfoDocument);
+    const { data: sslStatusData, refetch: refetchSslStatus } = useQuery(GetSslStatusDocument, sslStatusQueryOptions);
+    useEffect(() => {
+        if (sslStatusData?.SSLStatus) {
+            dispatch(AuthActions.setSSLStatus(sslStatusData.SSLStatus));
+        }
+    }, [dispatch, sslStatusData?.SSLStatus]);
     const navigate = useNavigate();
     const [showLoginCard, setShowLoginCard] = useState(false);
     const [showProfileSwitchDialog, setShowProfileSwitchDialog] = useState(false);
@@ -259,12 +273,12 @@ export const Sidebar: FC = () => {
 
     // Database select logic
     const databaseOptions = useMemo(() => {
-        if (!availableDatabases?.Database) return [];
-        return availableDatabases.Database.map(db => ({
+        if (!availableDatabases?.SourceFieldOptions) return [];
+        return availableDatabases.SourceFieldOptions.map(db => ({
             value: db,
             label: db,
         }));
-    }, [availableDatabases?.Database]);
+    }, [availableDatabases?.SourceFieldOptions]);
     
     const handleDatabaseChange = useCallback((value: string) => {
         if (value === "") {
@@ -279,11 +293,11 @@ export const Sidebar: FC = () => {
 
     // Schema select logic
     const schemaOptions = useMemo(() => {
-        return availableSchemas?.Schema?.map(s => ({
-            value: s,
-            label: s,
+        return availableSchemaNames.map(schemaName => ({
+            value: schemaName,
+            label: schemaName,
         })) ?? [];
-    }, [availableSchemas?.Schema]);
+    }, [availableSchemaNames]);
 
     const handleSchemaChange = useCallback((value: string) => {
         if (value === "") {
@@ -304,17 +318,19 @@ export const Sidebar: FC = () => {
                 icon: <TableCellsIcon className="w-4 h-4" />,
                 path: InternalRoutes.Dashboard.StorageUnit.path,
             },
-            {
-                title: t('graph'),
-                icon: <RectangleGroupIcon className="w-4 h-4" />,
-                path: InternalRoutes.Graph.path,
-            },
         ];
-        if (!isNoSQL) {
+        if (supportsChat) {
             routes.unshift({
                 title: t('chat'),
                 icon: <SparklesIcon className="w-4 h-4" />,
                 path: InternalRoutes.Chat.path,
+            });
+        }
+        if (supportsGraph) {
+            routes.push({
+                title: t('graph'),
+                icon: <RectangleGroupIcon className="w-4 h-4" />,
+                path: InternalRoutes.Graph.path,
             });
         }
         if (supportsScratchpad) {
@@ -325,7 +341,7 @@ export const Sidebar: FC = () => {
             });
         }
         return routes;
-    }, [current, isNoSQL, storageUnitLabel, supportsScratchpad, t]);
+    }, [current, storageUnitLabel, supportsChat, supportsGraph, supportsScratchpad, t]);
 
     // Logout single profile — show dialog first, remove after switch
     const handleLogoutProfile = useCallback(() => {

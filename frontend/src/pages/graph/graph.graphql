@@ -1,8 +1,13 @@
-query GetGraph($schema: String!) {
-  Graph(schema: $schema) {
+query GetGraph($ref: SourceObjectRefInput) {
+  Graph: SourceGraph(ref: $ref) {
     Unit {
+      Ref {
+        Kind
+        Path
+      }
+      Kind
       Name
-      Attributes {
+      Attributes: Metadata {
         Key
         Value
       }

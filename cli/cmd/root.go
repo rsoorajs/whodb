@@ -25,6 +25,7 @@ import (
 	"github.com/clidey/whodb/cli/internal/config"
 	"github.com/clidey/whodb/cli/internal/tui"
 	"github.com/clidey/whodb/cli/pkg/analytics"
+	"github.com/clidey/whodb/cli/pkg/identity"
 	"github.com/clidey/whodb/cli/pkg/styles"
 	"github.com/clidey/whodb/cli/pkg/updatecheck"
 	"github.com/clidey/whodb/cli/pkg/version"
@@ -45,16 +46,20 @@ Features:
   - Multi-database support (PostgreSQL, MySQL, SQLite, MongoDB, Redis, ClickHouse, etc.)
   - SQL editor with context-aware autocomplete, formatting (Ctrl+F), multi-tab buffers
   - External editor support (Ctrl+O opens $EDITOR)
-  - ER diagram visualization (Ctrl+K)
-  - EXPLAIN query plan viewer (Ctrl+X)
+  - ER diagram visualization (Ctrl+K) plus scriptable graph output (erd)
+  - EXPLAIN query plan viewer (Ctrl+X) plus CLI explain output (explain)
   - Data import/export (CSV, Excel) — Ctrl+G for import wizard
   - FK-aware mock data generation (mock-data) with dependency analysis
+  - Schema diff between saved connections in the TUI (Ctrl+V) and CLI (diff)
+  - Backend-generated query suggestions (suggestions + editor empty state)
   - AI chat with streaming responses (OpenAI, Anthropic, Ollama, LM Studio)
   - SSH tunnel support for remote databases
+  - SSL mode + certificate file support in commands and the TUI
   - Docker container auto-detection
-  - Query bookmarks (Ctrl+B), history (Ctrl+H), command log (Ctrl+D)
+  - Query bookmarks in the TUI (Ctrl+B) and CLI (bookmarks), history (Ctrl+H), command log (Ctrl+D)
   - Nested WHERE builder with AND/OR grouping
-  - Connection profiles (Ctrl+P) — bundle connection + theme + settings
+  - Connection profiles in the TUI (Ctrl+P) and CLI (profiles) — bundle connection + theme + settings
+  - Workspace restore — resumes your last reconnectable TUI session on startup
   - Data quality audit with configurable thresholds (Ctrl+U)
   - Read-only mode (Ctrl+Y)
   - JSON cell viewer, fish-style history suggestions
@@ -68,8 +73,12 @@ Press ? in any view for keyboard shortcuts.`,
 		// Start TUI directly
 		m := tui.NewMainModel()
 		p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
-		if _, err := p.Run(); err != nil {
+		finalModel, err := p.Run()
+		if err != nil {
 			return fmt.Errorf("error running interactive mode: %w", err)
+		}
+		if err := persistWorkspace(finalModel); err != nil {
+			return err
 		}
 		return nil
 	},
@@ -78,13 +87,14 @@ Press ? in any view for keyboard shortcuts.`,
 			return
 		}
 		if result := updatecheck.Check(version.Version); result != nil {
-			fmt.Fprintf(os.Stderr, "\nA new version of whodb-cli is available: %s → https://github.com/clidey/whodb/releases/latest\n", result.LatestVersion)
+			fmt.Fprintf(os.Stderr, "\nA new version of %s is available: %s → %s\n", identity.Current().CommandName, result.LatestVersion, identity.Current().UpdateCheckPageURL)
 		}
 	},
 }
 
 func Execute() {
 	defer analytics.Shutdown()
+	configureRuntime()
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
@@ -122,10 +132,25 @@ func runWithProfile(name string) error {
 		cfg.Query.TimeoutSeconds = profile.TimeoutSeconds
 	}
 
-	m := tui.NewMainModelWithProfile(conn, cfg)
+	m := tui.NewMainModelWithProfile(conn, cfg, name)
 	p := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion())
-	if _, err := p.Run(); err != nil {
+	finalModel, err := p.Run()
+	if err != nil {
 		return fmt.Errorf("error running interactive mode: %w", err)
+	}
+	if err := persistWorkspace(finalModel); err != nil {
+		return err
+	}
+	return nil
+}
+
+func persistWorkspace(model tea.Model) error {
+	finalModel, ok := model.(*tui.MainModel)
+	if !ok || finalModel == nil {
+		return nil
+	}
+	if err := finalModel.PersistWorkspace(); err != nil {
+		return fmt.Errorf("error saving workspace: %w", err)
 	}
 	return nil
 }
@@ -153,7 +178,7 @@ func init() {
 
 func initAnalytics() {
 	// Skip analytics if disabled via flag or env
-	if viper.GetBool("no-analytics") || os.Getenv("WHODB_CLI_ANALYTICS_DISABLED") == "true" {
+	if viper.GetBool("no-analytics") || os.Getenv(identity.Current().AnalyticsDisabledEnv) == "true" {
 		return
 	}
 
@@ -178,13 +203,12 @@ func initConfig() {
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
 	} else {
-		home, err := os.UserHomeDir()
+		configDir, err := identity.HomePath()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting home directory: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Error getting config directory: %v\n", err)
 			os.Exit(1)
 		}
 
-		configDir := fmt.Sprintf("%s/.whodb-cli", home)
 		if err := os.MkdirAll(configDir, 0700); err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating config directory: %v\n", err)
 			os.Exit(1)
@@ -197,7 +221,7 @@ func initConfig() {
 		viper.SetConfigName("config")
 	}
 
-	viper.SetEnvPrefix("WHODB_CLI")
+	viper.SetEnvPrefix(identity.Current().ViperEnvPrefix)
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {

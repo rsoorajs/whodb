@@ -28,18 +28,19 @@ import {
     SheetTitle,
     toast
 } from "@clidey/ux";
+import type { SourceObjectRefInput } from "@graphql";
 import {FC, useCallback, useEffect, useMemo, useState} from "react";
 import {useExportToCSV} from "./hooks";
 import {ShareIcon} from "./heroicons";
 import {VisuallyHidden} from "@radix-ui/react-visually-hidden";
 import {useTranslation} from "@/hooks/use-translation";
-import {useDatabaseTraits} from "@/hooks/useDatabaseTraits";
+import {useSourceContract} from "@/hooks/useSourceContract";
 
 interface IExportProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    schema: string;
     storageUnit: string;
+    objectRef?: SourceObjectRefInput;
     hasSelectedRows: boolean;
     selectedRowsData?: Record<string, any>[];
     checkedRowsCount: number;
@@ -52,8 +53,8 @@ interface IExportProps {
 export const Export: FC<IExportProps> = ({
                                              open,
                                              onOpenChange,
-                                             schema,
                                              storageUnit,
+                                             objectRef,
                                              hasSelectedRows,
                                              selectedRowsData,
                                              checkedRowsCount,
@@ -64,7 +65,7 @@ export const Export: FC<IExportProps> = ({
                                          }) => {
     const { t } = useTranslation('components/export');
     const [exportDelimiter, setExportDelimiter] = useState(',');
-    const { isNoSQL } = useDatabaseTraits(databaseType);
+    const { isNoSQL } = useSourceContract(databaseType);
     const defaultFormat = useMemo(() => isNoSQL ? 'ndjson' : 'csv', [isNoSQL]);
     const [exportFormat, setExportFormat] = useState<'csv' | 'excel' | 'ndjson'>(defaultFormat);
 
@@ -99,7 +100,7 @@ export const Export: FC<IExportProps> = ({
     }, [effectiveHasSelectedRows, selectedRowsData, rawQuery]);
 
     const backendExport = useExportToCSV(
-        schema || '',
+        objectRef,
         storageUnit || '',
         effectiveHasSelectedRows || !!rawQuery,
         exportDelimiter,

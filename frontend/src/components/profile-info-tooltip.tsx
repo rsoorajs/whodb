@@ -2,7 +2,7 @@ import classNames from "classnames";
 import { FC, useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { LocalLoginProfile } from "../store/auth";
-import { useDatabaseTypeDropdownItem } from "../hooks/useDatabaseCatalog";
+import { useSourceTypeItem } from "../hooks/useSourceCatalog";
 import { InformationCircleIcon } from "./heroicons";
 import { useTranslation } from "@/hooks/use-translation";
 
@@ -79,7 +79,7 @@ export const ProfileInfoTooltip: FC<ProfileInfoTooltipProps> = ({ profile, class
   const [isVisible, setIsVisible] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement | null>(null);
-  const { item: databaseTypeItem } = useDatabaseTypeDropdownItem(profile.Type);
+  const { item: databaseTypeItem } = useSourceTypeItem(profile.Type);
 
   const port = useMemo(() => {
     return getPortFromAdvanced(profile, databaseTypeItem?.extra?.Port);

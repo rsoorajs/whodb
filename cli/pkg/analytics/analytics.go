@@ -16,7 +16,7 @@
 
 // Package analytics provides PostHog analytics for the WhoDB CLI.
 // Analytics are enabled by default and can be disabled via:
-// - WHODB_CLI_ANALYTICS_DISABLED=true environment variable
+// - the edition-specific analytics-disable environment variable
 // - --no-analytics flag (where supported)
 //
 // Privacy: No query content, database credentials, or personal data is collected.
@@ -29,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/clidey/whodb/cli/pkg/identity"
 	"github.com/clidey/whodb/core/src/analytics"
 )
 
@@ -57,7 +58,7 @@ func Initialize(version string) error {
 	cliVersion = version
 
 	// Check if disabled via environment variable
-	if os.Getenv("WHODB_CLI_ANALYTICS_DISABLED") == "true" {
+	if os.Getenv(identity.Current().AnalyticsDisabledEnv) == "true" {
 		return nil
 	}
 
@@ -95,6 +96,7 @@ func baseProps() map[string]any {
 	return map[string]any{
 		"source":      "cli",
 		"cli_version": cliVersion,
+		"edition":     identity.Current().Edition,
 	}
 }
 

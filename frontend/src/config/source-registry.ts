@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-import type { DatabaseTypeOverride } from './database-types';
+import type { SourceTypeOverride } from './source-types';
 
 /**
- * Database type registry for UI-only overrides supplied by extension modules.
+ * Source type registry for UI-only overrides supplied by extension modules.
  *
  * The backend catalog remains the source of truth for connection behavior.
  */
-let registeredDatabaseTypeOverrides: DatabaseTypeOverride[] = [];
+let registeredSourceTypeOverrides: SourceTypeOverride[] = [];
 
-/** Register database-type UI overrides (called by extension modules at boot). */
-export const registerDatabaseTypeOverrides = (overrides: DatabaseTypeOverride[]) => {
-    registeredDatabaseTypeOverrides = overrides;
+/** Register source-type UI overrides (called by extension modules at boot). */
+export const registerSourceTypeOverrides = (overrides: SourceTypeOverride[]) => {
+    registeredSourceTypeOverrides = overrides;
 };
 
-/** Get the registered database-type UI overrides. */
-export const getRegisteredDatabaseTypeOverrides = (): DatabaseTypeOverride[] => {
-    return registeredDatabaseTypeOverrides;
+/** Get the registered source-type UI overrides. */
+export const getRegisteredSourceTypeOverrides = (): SourceTypeOverride[] => {
+    return registeredSourceTypeOverrides;
 };

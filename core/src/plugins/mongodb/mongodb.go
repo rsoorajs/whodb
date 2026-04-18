@@ -58,7 +58,7 @@ func (p *MongoDBPlugin) GetDatabases(config *engine.PluginConfig) ([]string, err
 		log.WithError(err).WithField("hostname", config.Credentials.Hostname).Error("Failed to connect to MongoDB for database listing")
 		return nil, err
 	}
-	ctx, cancel := opCtx()
+	ctx, cancel := opCtx(config)
 	defer cancel()
 	defer disconnectClient(client)
 
@@ -77,7 +77,7 @@ func (p *MongoDBPlugin) GetAllSchemas(config *engine.PluginConfig) ([]string, er
 		log.WithError(err).WithField("hostname", config.Credentials.Hostname).Error("Failed to connect to MongoDB for schema listing")
 		return nil, err
 	}
-	ctx, cancel := opCtx()
+	ctx, cancel := opCtx(config)
 	defer cancel()
 	defer disconnectClient(client)
 
@@ -98,7 +98,7 @@ func (p *MongoDBPlugin) GetStorageUnits(config *engine.PluginConfig, database st
 		}).Error("Failed to connect to MongoDB for storage unit listing")
 		return nil, err
 	}
-	ctx, cancel := opCtx()
+	ctx, cancel := opCtx(config)
 	defer cancel()
 	defer disconnectClient(client)
 
@@ -180,7 +180,7 @@ func (p *MongoDBPlugin) StorageUnitExists(config *engine.PluginConfig, database 
 	if err != nil {
 		return false, err
 	}
-	ctx, cancel := opCtx()
+	ctx, cancel := opCtx(config)
 	defer cancel()
 	defer disconnectClient(client)
 
@@ -216,7 +216,7 @@ func (p *MongoDBPlugin) GetColumnConstraints(config *engine.PluginConfig, schema
 		}).Error("Failed to connect to MongoDB for column constraints")
 		return make(map[string]map[string]any), nil
 	}
-	ctx, cancel := opCtx()
+	ctx, cancel := opCtx(config)
 	defer cancel()
 	defer disconnectClient(client)
 
@@ -377,7 +377,7 @@ func (p *MongoDBPlugin) ClearTableData(config *engine.PluginConfig, schema strin
 		}).Error("Failed to connect to MongoDB to clear collection")
 		return false, err
 	}
-	ctx, cancel := opCtx()
+	ctx, cancel := opCtx(config)
 	defer cancel()
 	defer disconnectClient(client)
 

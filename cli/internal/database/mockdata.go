@@ -50,7 +50,7 @@ func (m *Manager) AnalyzeMockDataDependencies(
 	if !coremockdata.IsMockDataGenerationAllowed(table) {
 		return nil, fmt.Errorf("mock data generation is not allowed for this table")
 	}
-	if err := m.ensureMockDataTargetWritable(schema, table); err != nil {
+	if err := m.ensureWritableStorageUnit(schema, table); err != nil {
 		return nil, err
 	}
 
@@ -99,7 +99,7 @@ func (m *Manager) GenerateMockData(
 	if !coremockdata.IsMockDataGenerationAllowed(table) {
 		return nil, fmt.Errorf("mock data generation is not allowed for this table")
 	}
-	if err := m.ensureMockDataTargetWritable(schema, table); err != nil {
+	if err := m.ensureWritableStorageUnit(schema, table); err != nil {
 		return nil, err
 	}
 
@@ -134,7 +134,7 @@ func (m *Manager) ensureMockDataSupported() error {
 	return nil
 }
 
-func (m *Manager) ensureMockDataTargetWritable(schema, table string) error {
+func (m *Manager) ensureWritableStorageUnit(schema, table string) error {
 	storageUnits, err := m.GetStorageUnits(schema)
 	if err != nil {
 		return err

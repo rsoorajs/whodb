@@ -1,6 +1,6 @@
 # WhoDB CLI
 
-The CLI is an interactive terminal interface for WhoDB with split-pane TUI support. Located in `cli/` (separate Go module).
+The CLI is an interactive terminal interface for WhoDB with split-pane TUI support. It lives in `cli/` and is a separate Go module.
 
 ## Quick Reference
 
@@ -14,154 +14,180 @@ cd cli && go build -o whodb-cli .
 # Connect to database
 ./whodb-cli connect --type postgres --host localhost --user postgres --database mydb
 ./whodb-cli connect --type sqlite3 --database ./app.db
-./whodb-cli connect --docker  # auto-detect running Docker DB containers
+./whodb-cli connect --docker
 
 # Execute query
 ./whodb-cli query "SELECT * FROM users" --connection my-postgres
+./whodb-cli query --stream --format ndjson "SELECT * FROM audit_log"
 
-# Import data
-./whodb-cli import --connection mydb --file data.csv --table users --create-table
+# Schema diff
+./whodb-cli diff --from staging --to prod
 
-# Export data
-./whodb-cli export --connection mydb --table users --output users.csv
+# Mock data
+./whodb-cli mock-data --connection mydb --table orders --rows 50 --analyze
 
 # MCP server
 ./whodb-cli mcp serve
 ```
 
-## Architecture
+## Current Architecture
 
 ```
 cli/
-  main.go              # Entry point — imports ALL database plugins
-  cmd/                 # CLI commands (Cobra)
-    root.go            # Root command, starts TUI
-    connect.go         # Database connection (supports --docker flag)
-    query.go           # Query execution
-    import.go          # CSV/Excel import
-    export.go          # CSV/Excel export
-    mcp.go             # MCP server command
-    completion.go      # Shell completion
+  main.go                 # CE entry point
+  app/
+    app.go                # Shared CLI runtime entry (bootstraps identity + startup)
+  cmd/                    # Cobra command tree + TUI launcher
+    root.go               # Root command, startup, config/env wiring
+    runtime.go            # Applies runtime identity to command text
+    connect.go            # Database connection
+    query.go              # Query execution
+    diff.go               # Schema diff
+    explain.go            # EXPLAIN output
+    erd.go                # Graph output
+    import.go             # Shared import pipeline entry
+    export.go             # Export with streaming support
+    mock_data.go          # FK-aware mock data generation
+    suggestions.go        # Backend-generated query suggestions
+    mcp.go                # MCP server command
+    completion.go         # Shell completion
   internal/
-    tui/               # Terminal UI (Bubble Tea)
-      model.go         # Main model, view routing, layout management
-      layout/          # Split-pane layout engine (container tree)
-        container.go   # Binary tree containers, geometry, rendering
-        presets.go     # Named layouts (Single, Explore, Query, Full)
-      pane.go          # Pane interface (all views implement this)
-      pane_impl.go     # Pane interface implementations for all views
-      *_view.go        # Individual views (browser, editor, results, etc.)
-      autocomplete.go  # Context-aware SQL autocomplete with ranking
-      sqlformat.go     # SQL formatter (Ctrl+F)
-      erd_view.go      # ER diagram view
-      erd_layout.go    # ER diagram box-drawing layout
-      explain_view.go  # EXPLAIN query plan viewer
-      import_view.go   # Import wizard
-      bookmarks_view.go # Saved queries
-      json_viewer.go   # JSON cell pretty-printer
-      cmdlog_view.go   # Command log (transparency)
-      profiles_view.go # Connection profiles
-      where_view.go    # Nested WHERE builder (AND/OR groups)
-    config/            # Configuration (JSON, keyring)
-    database/          # DB manager (wraps core plugins)
-      manager.go       # Connection, query execution, caching, query logging
-      import.go        # CSV/Excel reading, type inference, batch import
-      chat_stream.go   # AI streaming via BAML (build-tagged !arm && !riscv64)
-      chat_stream_unsupported.go # Fallback for unsupported platforms
-    docker/            # Docker container detection
-      detect.go        # `docker ps` parsing, image-to-DB-type matching
-    ssh/               # SSH tunnel support
-      tunnel.go        # SSH tunnel with known_hosts verification
-    history/           # Query history
-    baml/              # AI/BAML initialization
+    bootstrap/
+      bootstrap.go        # CLI runtime setup + CE plugin registration
+    tui/                  # Bubble Tea UI
+      model.go            # Main model, view routing, workspace restore
+      *_view.go           # Individual panes and modal views
+      row_write_view.go   # Add/edit/delete row form
+      diff_view.go        # TUI schema diff view
+      mock_data_view.go   # Interactive mock-data flow
+    database/
+      manager.go          # Direct plugin access, metadata/query helpers, streaming bridge
+      crud.go             # Add/update/delete row helpers
+      import.go           # Shared import wrappers
+      mockdata.go         # Shared mock data wrappers and guards
+    config/               # Unified config section + workspace persistence
+    connectionopts/       # Shared connection option mapping (SSL, etc.)
+    baml/                 # BAML setup
   pkg/
-    mcp/               # MCP server implementation
-    styles/            # UI styling (Lipgloss) + theme system
-      styles.go        # Color variables, render helpers
-      theme.go         # 8 built-in themes, SetTheme/GetTheme
-    output/            # Output formatting (table/json/csv/plain)
+    identity/
+      identity.go         # CLI runtime identity (command name, storage names, etc.)
+    output/               # Table/json/csv/plain/ndjson output + streaming writers
+    mcp/                  # MCP server implementation
+    styles/               # Themes and render helpers
+    version/              # Version formatting
+    updatecheck/          # Release check
 ```
+
+## Runtime Split
+
+The CLI now has a dedicated shared runtime layer:
+
+- `cli/app/app.go` is the shared process runner
+- `cli/internal/bootstrap/bootstrap.go` owns CE startup/bootstrap
+- `cli/pkg/identity/identity.go` owns runtime identity such as:
+  - command name
+  - display name
+  - local config/cache directory naming
+  - keyring service name
+  - update-check URLs
+
+Keep CE defaults in `cli/pkg/identity`. Do not add non-CE product-specific values there. Shared code should consume generic identity fields instead of branching on edition names.
 
 ## Key Design Decisions
 
-1. **Direct Plugin Access** — Uses WhoDB's plugin system directly (not GraphQL) for lower overhead
-2. **Bubble Tea (Elm Architecture)** — Predictable state, keyboard-first design
-3. **Pane Interface** — All views implement `Pane` for polymorphic layout dispatch
-4. **Split-Pane Layout** — Binary tree container system. Layouts: Single, Explore (Browser|Results), Query (Editor/Results), Full (Browser|Editor/Results)
-5. **Modal Views** — Export, Where, Columns, History, Bookmarks, etc. overlay as full-screen and restore the previous layout on close
-6. **Async Message Routing** — Completion messages (PageLoadedMsg, QueryExecutedMsg, etc.) route by TYPE to the correct view, not by the currently focused pane
-7. **Theme System** — Global mutable state via `styles.SetTheme()`. 8 built-in themes. All views use package-level color variables that update on theme change.
-8. **Compact Mode** — Views suppress help text when rendered inside multi-pane layouts. A global help bar shows context-sensitive shortcuts instead.
+1. **Direct Plugin Access** — The CLI uses core plugins directly, not GraphQL, for command/TUI execution
+2. **Shared Runtime** — `main.go` should stay thin and call the shared runner in `cli/app`
+3. **Identity-Driven Text and Paths** — Command text, completion install paths, BAML library storage, keyring naming, and update messaging should come from `pkg/identity`
+4. **Bubble Tea + Pane Model** — All panes implement the same interface and render into shared layouts
+5. **Backend-Driven Database Catalog** — Database picker/completions should come from `core/src/dbcatalog`, not a CLI-local hardcoded list
+6. **Shared Feature Surfaces** — Import, mock data, ERD graph, suggestions, and diff should reuse backend/shared logic rather than reimplementing locally
+7. **Structured Automation Output** — Machine-readable commands should keep stable JSON/NDJSON contracts and avoid spinner noise
+8. **Workspace Restore** — Persist only lightweight restorable UI state, not heavy query payloads
+
+## Current Capabilities
+
+- Split-pane TUI layouts with workspace restore
+- Query execution with plain/json/csv/ndjson output
+- Additive streaming mode for query/export
+- Backend-generated suggestions
+- Shared backend import pipeline
+- FK-aware mock data generation
+- Add/edit/delete row flows in the TUI
+- Schema diff command and TUI diff view
+- ERD based on backend graph data
+- SSL configuration and SSL status visibility
+- Expanded MCP read tool surface
 
 ## Configuration
 
-Config stored at `~/.whodb/config.json`:
+CLI state is stored in the unified `config.json` under the `cli` section through `core/src/common/config`.
 
-```json
-{
-  "cli": {
-    "connections": [...],
-    "history": { "max_entries": 1000, "persist": true },
-    "display": { "theme": "default", "page_size": 50 },
-    "query": { "timeout_seconds": 30 },
-    "saved_queries": [...],
-    "read_only": false
-  }
-}
-```
+The CLI also keeps edition-local files under the identity-specific home dir. Shared code should use `cli/pkg/identity.HomePath(...)` instead of hardcoding `~/.whodb-cli`.
 
-Passwords stored in OS keyring (macOS Keychain, Linux Secret Service). Falls back to config file with 0600 permissions.
+Passwords are stored in the OS keyring when available. The keyring service name is also identity-driven.
 
-## Plugin Registration
+## Rules for Future CLI Changes
 
-**Critical**: `cli/main.go` must explicitly import all database plugin sub-packages:
-```go
-_ "github.com/clidey/whodb/core/src/plugins/postgres"
-_ "github.com/clidey/whodb/core/src/plugins/mysql"
-// ... etc
-```
-The parent package `_ "github.com/clidey/whodb/core/src/plugins"` is utility code only — it does NOT register plugins. Each plugin self-registers via `init()`.
+### 1. Keep entrypoints thin
 
-## Known Patterns
+`main.go` should only:
+- set up identity/bootstrap
+- call the shared runtime
 
-- **lipgloss.Padding bug** — Don't use `lipgloss.Padding(1,2).Render()` when content combines ANSI-styled text with viewport output. Use manual `"  "` prefix per line instead. (See `connection_view.go` renderForm)
-- **SQLite empty schema** — SQLite has no schemas. `PageLoadedMsg` and action guards check `tableName != ""` (not `schema != "" && tableName != ""`).
-- **Disconnect reset** — When disconnecting, reset `connectionView.connecting = false` and call `refreshList()` to avoid stale "Connecting..." state.
-- **Layout suspend/restore** — Modal views call `m.suspendLayout()` before `PushView()`. `PopView()` automatically calls `m.restoreLayout()`.
-- **Tab passthrough** — Views that need Tab (ERD for table cycling, Connection for form nav) are exempted from global Tab handling in `model.go`.
+Do not move command/TUI logic back into the binary entrypoint.
 
-## Supported Databases
+### 2. Do not hardcode command identity
 
-Postgres, MySQL, MariaDB, Sqlite3, DuckDB, MongoDB, Redis, ClickHouse, ElasticSearch, Memcached
+Avoid new hardcoded uses of:
+- `whodb-cli`
+- `WhoDB CLI`
+- `.whodb-cli`
+- `WhoDB-CLI`
+- `WHODB_CLI`
+
+Use the shared identity helpers instead.
+
+### 3. Prefer backend/shared sources over CLI-local copies
+
+Use shared backend logic for:
+- database catalog
+- import behavior
+- mock data planning/generation
+- graph/ERD data
+- query suggestions
+
+### 4. Do not add edition checks to shared CLI features unless there is no better extension point
+
+If a future edition needs different behavior, prefer:
+- bootstrap/import differences
+- identity config
+- extension hooks
+
+Avoid baking product-specific branching into normal command/TUI paths.
 
 ## Testing
 
 ```bash
 cd cli
 
-# All tests
-go test ./... -short
+# All CLI tests
+go test ./...
 
-# TUI tests only
-go test ./internal/tui/... -short
+# TUI tests
+go test ./internal/tui/...
 
-# Layout engine tests
-go test ./internal/tui/layout/...
+# Command tests
+go test ./cmd
 
-# Docker detection tests (mock, no Docker needed)
-go test ./internal/docker/...
+# Shared output/runtime tests
+go test ./pkg/output ./pkg/version ./pkg/identity
 
-# SSH tunnel tests (no SSH server needed)
-go test ./internal/ssh/...
-
-# Database import tests
-go test ./internal/database/... -run "TestRead|TestDetect|TestInfer|TestPreview"
+# Full dev script
+bash ../dev/run-cli-tests.sh
 ```
 
-Tests that need a database use `setupConnectedModel()` with a temp SQLite DB and `WHODB_CLI=true`.
+## Related Files
 
-## Detailed Documentation
-
-- `cli/ROADMAP.md` — Feature roadmap with completed/remaining phases and shortcut reference
-- `cli/README.md` — User-facing usage guide
-- `cli/ARCHITECTURE.md` — Technical architecture details
+- `cli/README.md` — user-facing usage guide
+- `cli/ARCHITECTURE.md` — broader architecture notes
+- `dev/run-cli-tests.sh` — CLI verification script

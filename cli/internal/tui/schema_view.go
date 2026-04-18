@@ -242,7 +242,7 @@ func (v *SchemaView) View() string {
 	b.WriteString("\n\n")
 
 	if v.filtering {
-		b.WriteString(RenderBindingHelpWidth(v.width,
+		b.WriteString(renderBindingHelpWidthNoHelp(v.width,
 			Keys.Filter.CancelFilter,
 			Keys.Filter.ApplyFilter,
 		))

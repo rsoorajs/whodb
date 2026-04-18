@@ -31,11 +31,12 @@ import (
 	"github.com/clidey/whodb/core/src/auth"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
+	"github.com/clidey/whodb/core/src/source"
 	"github.com/clidey/whodb/core/src/types"
 )
 
 func TestGraphQLAddRowMutation(t *testing.T) {
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	mock.StorageUnitExistsFunc = func(*engine.PluginConfig, string, string) (bool, error) { return true, nil }
 	mock.AddRowFunc = func(*engine.PluginConfig, string, string, []engine.Record) (bool, error) { return true, nil }
 	setEngineMock(t, mock)
@@ -43,19 +44,20 @@ func TestGraphQLAddRowMutation(t *testing.T) {
 	srv := handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: &Resolver{}}))
 
 	query := `
-	mutation AddRow($schema: String!, $table: String!) {
-		AddRow(schema: $schema, storageUnit: $table, values: [{Key:"id", Value:"1"}]) {
+	mutation AddSourceRow($ref: SourceObjectRefInput!) {
+		AddSourceRow(ref: $ref, values: [{Key:"id", Value:"1"}]) {
 			Status
 		}
 	}`
 	body := map[string]any{
 		"query":     query,
-		"variables": map[string]any{"schema": "public", "table": "users"},
+		"variables": map[string]any{"ref": map[string]any{"Kind": "Table", "Path": []string{"app", "public", "users"}}},
 	}
 	payload, _ := json.Marshal(body)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewReader(payload))
-	ctx := context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"})
+	ctx := context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres", Database: "app"})
+	ctx = context.WithValue(ctx, auth.AuthKey_Source, &source.Credentials{SourceType: "Postgres", Values: map[string]string{"Database": "app"}})
 	req = req.WithContext(ctx)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -67,30 +69,30 @@ func TestGraphQLAddRowMutation(t *testing.T) {
 
 	var resp struct {
 		Data struct {
-			AddRow model.StatusResponse `json:"AddRow"`
+			AddSourceRow model.StatusResponse `json:"AddSourceRow"`
 		} `json:"data"`
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("failed to parse response: %v", err)
 	}
-	if !resp.Data.AddRow.Status {
-		t.Fatalf("expected AddRow status true, got %+v", resp.Data.AddRow)
+	if !resp.Data.AddSourceRow.Status {
+		t.Fatalf("expected AddSourceRow status true, got %+v", resp.Data.AddSourceRow)
 	}
 }
 
-func TestGraphQLDatabaseMetadataQueryReturnsNilWhenNotProvided(t *testing.T) {
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+func TestGraphQLSourceSessionMetadataQueryReturnsDefaultsWhenNotProvided(t *testing.T) {
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	mock.GetDatabaseMetadataFunc = func() *engine.DatabaseMetadata { return nil }
 	setEngineMock(t, mock)
 
 	srv := handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: &Resolver{}}))
 
-	query := `query { DatabaseMetadata { databaseType } }`
+	query := `query { SourceSessionMetadata { SourceType } }`
 	body := map[string]any{"query": query}
 	payload, _ := json.Marshal(body)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewReader(payload))
-	ctx := context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"})
+	ctx := context.WithValue(req.Context(), auth.AuthKey_Source, &source.Credentials{SourceType: "Postgres"})
 	req = req.WithContext(ctx)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -102,19 +104,22 @@ func TestGraphQLDatabaseMetadataQueryReturnsNilWhenNotProvided(t *testing.T) {
 
 	var resp struct {
 		Data struct {
-			DatabaseMetadata *model.DatabaseMetadata `json:"DatabaseMetadata"`
+			SourceSessionMetadata *model.SourceSessionMetadata `json:"SourceSessionMetadata"`
 		} `json:"data"`
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("failed to parse response: %v", err)
 	}
-	if resp.Data.DatabaseMetadata != nil {
-		t.Fatalf("expected nil metadata when plugin returns nil, got %+v", resp.Data.DatabaseMetadata)
+	if resp.Data.SourceSessionMetadata == nil {
+		t.Fatalf("expected default metadata when plugin returns nil")
+	}
+	if resp.Data.SourceSessionMetadata.SourceType != "Postgres" {
+		t.Fatalf("expected source type metadata, got %+v", resp.Data.SourceSessionMetadata)
 	}
 }
 
 func TestGraphQLRowQueryWithSortAndWhere(t *testing.T) {
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	mock.StorageUnitExistsFunc = func(*engine.PluginConfig, string, string) (bool, error) { return true, nil }
 	mock.GetRowsFunc = func(_ *engine.PluginConfig, req *engine.GetRowsRequest) (*engine.GetRowsResult, error) {
 		where, sort := req.Where, req.Sort
@@ -134,19 +139,20 @@ func TestGraphQLRowQueryWithSortAndWhere(t *testing.T) {
 	srv := handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: &Resolver{}}))
 
 	query := `
-	query Row($schema:String!, $table:String!){
-		Row(schema:$schema, storageUnit:$table, where:{Type:Atomic, Atomic:{Key:"id", Operator:"=", Value:"1", ColumnType:"int"}}, sort:[{Column:"id", Direction:ASC}], pageSize:10, pageOffset:0){
+	query SourceRows($ref: SourceObjectRefInput!){
+		SourceRows(ref:$ref, where:{Type:Atomic, Atomic:{Key:"id", Operator:"=", Value:"1", ColumnType:"int"}}, sort:[{Column:"id", Direction:ASC}], pageSize:10, pageOffset:0){
 			Rows
 		}
 	}`
 	body := map[string]any{
 		"query":     query,
-		"variables": map[string]any{"schema": "public", "table": "users"},
+		"variables": map[string]any{"ref": map[string]any{"Kind": "Table", "Path": []string{"app", "public", "users"}}},
 	}
 	payload, _ := json.Marshal(body)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewReader(payload))
-	ctx := context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"})
+	ctx := context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres", Database: "app"})
+	ctx = context.WithValue(ctx, auth.AuthKey_Source, &source.Credentials{SourceType: "Postgres", Values: map[string]string{"Database": "app"}})
 	req = req.WithContext(ctx)
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -158,18 +164,18 @@ func TestGraphQLRowQueryWithSortAndWhere(t *testing.T) {
 
 	var resp struct {
 		Data struct {
-			Row *model.RowsResult `json:"Row"`
+			SourceRows *model.RowsResult `json:"SourceRows"`
 		} `json:"data"`
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("failed to parse response: %v", err)
 	}
-	if resp.Data.Row == nil || len(resp.Data.Row.Rows) != 1 {
-		t.Fatalf("expected one row, got %#v body=%s", resp.Data.Row, w.Body.String())
+	if resp.Data.SourceRows == nil || len(resp.Data.SourceRows.Rows) != 1 {
+		t.Fatalf("expected one row, got %#v body=%s", resp.Data.SourceRows, w.Body.String())
 	}
 }
 
-func TestGraphQLProfilesQueryUsesEngineProfiles(t *testing.T) {
+func TestGraphQLSourceProfilesQueryUsesEngineProfiles(t *testing.T) {
 	origEngine := src.MainEngine
 	src.MainEngine = &engine.Engine{}
 	src.MainEngine.AddLoginProfile(types.DatabaseCredentials{
@@ -178,15 +184,15 @@ func TestGraphQLProfilesQueryUsesEngineProfiles(t *testing.T) {
 		Username: "alice",
 		Database: "app",
 		Type:     "Test",
+		Source:   "environment",
 	})
 	t.Cleanup(func() { src.MainEngine = origEngine })
 
 	srv := handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: &Resolver{}}))
-	query := `query { Profiles { Id Alias Type Database IsEnvironmentDefined } }`
+	query := `query { SourceProfiles { Id DisplayName SourceType Values { Key Value } IsEnvironmentDefined } }`
 	body, _ := json.Marshal(map[string]any{"query": query})
 
 	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewReader(body))
-	req = req.WithContext(context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"}))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	srv.ServeHTTP(w, req)
@@ -197,20 +203,40 @@ func TestGraphQLProfilesQueryUsesEngineProfiles(t *testing.T) {
 
 	var resp struct {
 		Data struct {
-			Profiles []struct {
-				ID                   string  `json:"Id"`
-				Alias                *string `json:"Alias"`
-				Type                 string  `json:"Type"`
-				Database             *string `json:"Database"`
-				IsEnvironmentDefined bool    `json:"IsEnvironmentDefined"`
-			} `json:"Profiles"`
+			SourceProfiles []struct {
+				ID          string `json:"Id"`
+				DisplayName string `json:"DisplayName"`
+				SourceType  string `json:"SourceType"`
+				Values      []struct {
+					Key   string `json:"Key"`
+					Value string `json:"Value"`
+				} `json:"Values"`
+				IsEnvironmentDefined bool `json:"IsEnvironmentDefined"`
+			} `json:"SourceProfiles"`
 		} `json:"data"`
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("failed to parse response: %v", err)
 	}
-	if len(resp.Data.Profiles) != 1 || resp.Data.Profiles[0].ID == "" || resp.Data.Profiles[0].Database == nil {
-		t.Fatalf("expected profile to be returned, got %#v", resp.Data.Profiles)
+
+	var found bool
+	for _, profile := range resp.Data.SourceProfiles {
+		if profile.DisplayName == "alias" {
+			found = true
+			database := ""
+			for _, record := range profile.Values {
+				if record.Key == "Database" {
+					database = record.Value
+					break
+				}
+			}
+			if profile.ID == "" || database != "app" || profile.SourceType != "Test" || !profile.IsEnvironmentDefined {
+				t.Fatalf("expected merged profile fields to be preserved, got %#v", profile)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected engine-defined profile to be returned, got %#v", resp.Data.SourceProfiles)
 	}
 }
 

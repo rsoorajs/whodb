@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/clidey/whodb/cli/internal/database"
+	"github.com/clidey/whodb/cli/internal/schemadiff"
 	"github.com/clidey/whodb/core/src/engine"
 )
 
@@ -145,6 +146,12 @@ type explainResultMsg struct {
 	query string
 	plan  string
 	err   error
+}
+
+// schemaDiffResultMsg is sent when a schema diff comparison completes.
+type schemaDiffResultMsg struct {
+	result *schemadiff.Result
+	err    error
 }
 
 // tableWithColumns pairs a storage unit with its column metadata
