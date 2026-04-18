@@ -133,10 +133,10 @@ export const getRoutes = (): IInternalRoute[] => {
         }
         currentRoutes.push(...Object.values((currentRoute)));
     }
-    const extra = getRegisteredRoutes().map(({ name, path, factory }) => ({
+    const extra = getRegisteredRoutes().map(({ name, path, lazyComponent }) => ({
         name,
         path,
-        component: <LazyRoute component={lazy(factory)} />,
+        component: <LazyRoute component={lazyComponent} />,
     }));
     return [...allRoutes, ...extra];
 }

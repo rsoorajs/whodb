@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-import { ComponentType } from "react";
+import { ComponentType, lazy, LazyExoticComponent } from "react";
 
 type RouteFactory = () => Promise<{ default: ComponentType<any> }>;
 
 export type RegisteredRoute = {
     name: string;
     path: string;
-    factory: RouteFactory;
+    /** Stable lazy component created once at registration time. */
+    lazyComponent: LazyExoticComponent<ComponentType<any>>;
 };
 
 const registrations: RegisteredRoute[] = [];
@@ -30,9 +31,12 @@ const registrations: RegisteredRoute[] = [];
  * Registers an additional route to be included in the app router.
  * Call during the extension init phase (e.g. EE register.ts) before the app boots.
  * routes.tsx reads these via getRegisteredRoutes() when building the route list.
+ *
+ * The lazy() wrapper is created here (once) rather than in getRoutes() so that
+ * React sees a stable component reference across re-renders.
  */
 export function registerRoute(name: string, path: string, factory: RouteFactory): void {
-    registrations.push({ name, path, factory });
+    registrations.push({ name, path, lazyComponent: lazy(factory) });
 }
 
 export function getRegisteredRoutes(): RegisteredRoute[] {

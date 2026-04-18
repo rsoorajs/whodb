@@ -2105,6 +2105,9 @@ func (r *queryResolver) SSLStatus(ctx context.Context) (*model.SSLStatus, error)
 // DatabaseQuerySuggestions is the resolver for the DatabaseQuerySuggestions field.
 func (r *queryResolver) DatabaseQuerySuggestions(ctx context.Context, schema string) ([]*model.DatabaseQuerySuggestion, error) {
 	plugin, config := GetPluginForContext(ctx)
+	if plugin == nil {
+		return nil, fmt.Errorf("no active database connection")
+	}
 
 	log.WithFields(log.Fields{
 		"operation": "DatabaseQuerySuggestions",

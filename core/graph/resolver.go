@@ -38,6 +38,9 @@ type Resolver struct{}
 // GetPluginForContext returns the appropriate database plugin and config for the current session.
 func GetPluginForContext(ctx context.Context) (*engine.Plugin, *engine.PluginConfig) {
 	creds := auth.GetCredentials(ctx)
+	if creds == nil {
+		return nil, nil
+	}
 	log.Debugf("[GetPluginForContext] credentials: type=%s, hostname=%s, advanced count=%d", creds.Type, creds.Hostname, len(creds.Advanced))
 	for _, rec := range creds.Advanced {
 		log.Debugf("[GetPluginForContext] advanced: key=%q value=%q", rec.Key, rec.Value)
