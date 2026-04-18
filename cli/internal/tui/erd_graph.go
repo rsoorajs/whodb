@@ -23,6 +23,14 @@ type erdForeignKeyTarget struct {
 	column string
 }
 
+func buildERDTablesFromUnits(graphUnits []engine.GraphUnit) []tableWithColumns {
+	tables := make([]tableWithColumns, len(graphUnits))
+	for i, graphUnit := range graphUnits {
+		tables[i] = tableWithColumns{StorageUnit: graphUnit.Unit}
+	}
+	return tables
+}
+
 func buildERDTablesFromGraph(graphUnits []engine.GraphUnit, columnLoader func(storageUnit string) ([]engine.Column, error)) []tableWithColumns {
 	fkTargets := buildERDForeignKeyTargets(graphUnits)
 	tables := make([]tableWithColumns, 0, len(graphUnits))

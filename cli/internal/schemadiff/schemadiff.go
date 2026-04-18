@@ -246,6 +246,21 @@ func captureSnapshot(conn *database.Connection, schemaHint string) (*snapshot, e
 	}
 	relationshipsByUnit := relationshipsFromGraph(graphUnits)
 
+	storageUnitNames := make([]string, 0, len(storageUnits))
+	for _, storageUnit := range storageUnits {
+		storageUnitNames = append(storageUnitNames, storageUnit.Name)
+	}
+
+	columnsByUnit, err := mgr.GetColumnsForStorageUnits(schemaName, storageUnitNames)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load columns: %w", err)
+	}
+
+	constraintsByUnit, err := mgr.GetColumnConstraintsForStorageUnits(schemaName, storageUnitNames)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load column constraints: %w", err)
+	}
+
 	result := &snapshot{
 		Connection:   conn.Name,
 		Type:         conn.Type,
@@ -254,22 +269,14 @@ func captureSnapshot(conn *database.Connection, schemaHint string) (*snapshot, e
 	}
 
 	for _, storageUnit := range storageUnits {
-		columns, err := mgr.GetColumns(schemaName, storageUnit.Name)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load columns for %s: %w", storageUnit.Name, err)
-		}
+		columns := columnsByUnit[storageUnit.Name]
 		sort.Slice(columns, func(i, j int) bool {
 			return columns[i].Name < columns[j].Name
 		})
 
-		constraints, err := mgr.GetColumnConstraints(schemaName, storageUnit.Name)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load constraints for %s: %w", storageUnit.Name, err)
-		}
-
 		columnStates := make([]ColumnState, 0, len(columns))
 		for _, column := range columns {
-			columnStates = append(columnStates, snapshotColumn(column, constraints[column.Name]))
+			columnStates = append(columnStates, snapshotColumn(column, constraintsByUnit[storageUnit.Name][column.Name]))
 		}
 
 		relationships := slices.Clone(relationshipsByUnit[storageUnit.Name])

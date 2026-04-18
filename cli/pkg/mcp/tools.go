@@ -364,8 +364,11 @@ func listPendingConfirmations() []*PendingConfirmation {
 
 // countAvailableConnections returns the number of available database connections.
 func countAvailableConnections() int {
-	conns, _ := ListAvailableConnections()
-	return len(conns)
+	resolver, err := newConnectionResolver(false)
+	if err != nil {
+		return 0
+	}
+	return resolver.Count()
 }
 
 // Query execution helpers
@@ -760,28 +763,28 @@ func HandleSchemas(ctx context.Context, req *mcp.CallToolRequest, input SchemasI
 	requestID := generateRequestID("schemas")
 	startTime := time.Now()
 
-	// Validate input
-	connCount := countAvailableConnections()
-	if err := ValidateSchemasInput(&input, connCount); err != nil {
-		TrackToolCall(ctx, "schemas", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "validation"})
-		return nil, SchemasOutput{Error: err.Error(), RequestID: requestID}, nil
-	}
-
-	conn, err := ResolveConnectionOrDefault(input.Connection)
+	resolver, err := newConnectionResolver(true)
 	if err != nil {
 		TrackToolCall(ctx, "schemas", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection_resolve"})
 		return nil, SchemasOutput{Error: err.Error(), RequestID: requestID}, nil
 	}
 
-	mgr, err := dbmgr.NewManager()
+	// Validate input
+	if err := ValidateSchemasInput(&input, resolver.Count()); err != nil {
+		TrackToolCall(ctx, "schemas", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "validation"})
+		return nil, SchemasOutput{Error: err.Error(), RequestID: requestID}, nil
+	}
+
+	conn, err := resolver.ResolveOrDefault(input.Connection)
+	if err != nil {
+		TrackToolCall(ctx, "schemas", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection_resolve"})
+		return nil, SchemasOutput{Error: err.Error(), RequestID: requestID}, nil
+	}
+
+	mgr, err := connectManager(conn)
 	if err != nil {
 		TrackToolCall(ctx, "schemas", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "manager_init"})
 		return nil, SchemasOutput{Error: fmt.Sprintf("cannot initialize database manager: %v", err), RequestID: requestID}, nil
-	}
-
-	if err := mgr.Connect(conn); err != nil {
-		TrackToolCall(ctx, "schemas", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection", "db_type": conn.Type})
-		return nil, SchemasOutput{Error: fmt.Sprintf("cannot connect to database: %v", err), RequestID: requestID}, nil
 	}
 	defer mgr.Disconnect()
 
@@ -819,28 +822,28 @@ func HandleTables(ctx context.Context, req *mcp.CallToolRequest, input TablesInp
 	requestID := generateRequestID("tables")
 	startTime := time.Now()
 
-	// Validate input
-	connCount := countAvailableConnections()
-	if err := ValidateTablesInput(&input, connCount); err != nil {
-		TrackToolCall(ctx, "tables", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "validation"})
-		return nil, TablesOutput{Error: err.Error(), RequestID: requestID}, nil
-	}
-
-	conn, err := ResolveConnectionOrDefault(input.Connection)
+	resolver, err := newConnectionResolver(true)
 	if err != nil {
 		TrackToolCall(ctx, "tables", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection_resolve"})
 		return nil, TablesOutput{Error: err.Error(), RequestID: requestID}, nil
 	}
 
-	mgr, err := dbmgr.NewManager()
+	// Validate input
+	if err := ValidateTablesInput(&input, resolver.Count()); err != nil {
+		TrackToolCall(ctx, "tables", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "validation"})
+		return nil, TablesOutput{Error: err.Error(), RequestID: requestID}, nil
+	}
+
+	conn, err := resolver.ResolveOrDefault(input.Connection)
+	if err != nil {
+		TrackToolCall(ctx, "tables", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection_resolve"})
+		return nil, TablesOutput{Error: err.Error(), RequestID: requestID}, nil
+	}
+
+	mgr, err := connectManager(conn)
 	if err != nil {
 		TrackToolCall(ctx, "tables", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "manager_init"})
 		return nil, TablesOutput{Error: fmt.Sprintf("cannot initialize database manager: %v", err), RequestID: requestID}, nil
-	}
-
-	if err := mgr.Connect(conn); err != nil {
-		TrackToolCall(ctx, "tables", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection", "db_type": conn.Type})
-		return nil, TablesOutput{Error: fmt.Sprintf("cannot connect to database: %v", err), RequestID: requestID}, nil
 	}
 	defer mgr.Disconnect()
 
@@ -869,10 +872,15 @@ func HandleTables(ctx context.Context, req *mcp.CallToolRequest, input TablesInp
 	tableInfos := convertStorageUnitsToTableInfos(tables)
 
 	if input.IncludeColumns {
-		for i, t := range tableInfos {
-			cols, err := mgr.GetColumns(schema, t.Name)
-			if err == nil {
-				tableInfos[i].Columns = convertEngineColumnsToColumnInfos(cols)
+		tableNames := make([]string, 0, len(tableInfos))
+		for _, tableInfo := range tableInfos {
+			tableNames = append(tableNames, tableInfo.Name)
+		}
+
+		columnsByTable, err := mgr.GetColumnsForStorageUnits(schema, tableNames)
+		if err == nil {
+			for i, t := range tableInfos {
+				tableInfos[i].Columns = convertEngineColumnsToColumnInfos(columnsByTable[t.Name])
 			}
 		}
 	}
@@ -890,28 +898,28 @@ func HandleColumns(ctx context.Context, req *mcp.CallToolRequest, input ColumnsI
 	requestID := generateRequestID("columns")
 	startTime := time.Now()
 
-	// Validate input
-	connCount := countAvailableConnections()
-	if err := ValidateColumnsInput(&input, connCount); err != nil {
-		TrackToolCall(ctx, "columns", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "validation"})
-		return nil, ColumnsOutput{Error: err.Error(), RequestID: requestID}, nil
-	}
-
-	conn, err := ResolveConnectionOrDefault(input.Connection)
+	resolver, err := newConnectionResolver(true)
 	if err != nil {
 		TrackToolCall(ctx, "columns", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection_resolve"})
 		return nil, ColumnsOutput{Error: err.Error(), RequestID: requestID}, nil
 	}
 
-	mgr, err := dbmgr.NewManager()
+	// Validate input
+	if err := ValidateColumnsInput(&input, resolver.Count()); err != nil {
+		TrackToolCall(ctx, "columns", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "validation"})
+		return nil, ColumnsOutput{Error: err.Error(), RequestID: requestID}, nil
+	}
+
+	conn, err := resolver.ResolveOrDefault(input.Connection)
+	if err != nil {
+		TrackToolCall(ctx, "columns", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection_resolve"})
+		return nil, ColumnsOutput{Error: err.Error(), RequestID: requestID}, nil
+	}
+
+	mgr, err := connectManager(conn)
 	if err != nil {
 		TrackToolCall(ctx, "columns", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "manager_init"})
 		return nil, ColumnsOutput{Error: fmt.Sprintf("cannot initialize database manager: %v", err), RequestID: requestID}, nil
-	}
-
-	if err := mgr.Connect(conn); err != nil {
-		TrackToolCall(ctx, "columns", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection", "db_type": conn.Type})
-		return nil, ColumnsOutput{Error: fmt.Sprintf("cannot connect to database: %v", err), RequestID: requestID}, nil
 	}
 	defer mgr.Disconnect()
 
@@ -949,13 +957,13 @@ func HandleConnections(ctx context.Context, req *mcp.CallToolRequest, input Conn
 	startTime := time.Now()
 	var connections []ConnectionInfo
 
-	mgr, err := dbmgr.NewManager()
+	resolver, err := newConnectionResolver(false)
 	if err != nil {
-		TrackToolCall(ctx, "connections", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "manager_init"})
-		return nil, ConnectionsOutput{Error: fmt.Sprintf("cannot initialize database manager: %v", err), RequestID: requestID}, nil
+		TrackToolCall(ctx, "connections", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection_resolve"})
+		return nil, ConnectionsOutput{Error: err.Error(), RequestID: requestID}, nil
 	}
 
-	for _, info := range mgr.ListConnectionsWithSource() {
+	for _, info := range resolver.ListWithSource() {
 		conn := info.Connection
 		connections = append(connections, ConnectionInfo{
 			Name:     conn.Name,

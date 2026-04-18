@@ -124,19 +124,20 @@ Output formats:
 
 		analytics.TrackSchemasListed(ctx, conn.Type, len(schemas), time.Since(startTime).Milliseconds())
 
-		// Convert schemas to QueryResult format for consistent output
+		// Convert schemas to StringQueryResult for consistent output without
+		// materializing [][]any.
 		columns := []output.Column{{Name: "schema", Type: "string"}}
-		rows := make([][]any, len(schemas))
+		rows := make([][]string, len(schemas))
 		for i, schema := range schemas {
-			rows[i] = []any{schema}
+			rows[i] = []string{schema}
 		}
 
-		result := &output.QueryResult{
+		result := &output.StringQueryResult{
 			Columns: columns,
 			Rows:    rows,
 		}
 
-		return out.WriteQueryResult(result)
+		return out.WriteStringQueryResult(result)
 	},
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -241,7 +241,7 @@ func TestMainModel_PersistAndRestoreWorkspace(t *testing.T) {
 		t.Fatalf("PersistWorkspace failed: %v", err)
 	}
 
-	restored := newMainModel(true)
+	restored := newMainModel(nil, true)
 	if restored.err != nil {
 		t.Fatalf("Restored model failed: %v", restored.err)
 	}

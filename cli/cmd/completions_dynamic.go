@@ -20,18 +20,18 @@ import (
 	"slices"
 
 	"github.com/clidey/whodb/cli/internal/config"
-	dbmgr "github.com/clidey/whodb/cli/internal/database"
+	connresolver "github.com/clidey/whodb/cli/internal/connections"
 	"github.com/clidey/whodb/core/src/dbcatalog"
 	"github.com/spf13/cobra"
 )
 
 // completeConnectionNames returns saved and env-based connection names.
 func completeConnectionNames(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	mgr, err := dbmgr.NewManager()
+	resolver, err := connresolver.NewResolver(false)
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
-	conns := mgr.ListAvailableConnections()
+	conns := resolver.List()
 	names := make([]string, len(conns))
 	for i, c := range conns {
 		names[i] = c.Name
@@ -72,7 +72,7 @@ func completeShellNames(cmd *cobra.Command, args []string, toComplete string) ([
 
 // completeProfileNames returns saved profile names.
 func completeProfileNames(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	cfg, err := config.LoadConfig()
+	cfg, err := config.LoadConfigWithoutSecrets()
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}

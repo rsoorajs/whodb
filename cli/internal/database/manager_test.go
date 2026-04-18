@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package database
 import (
 	"context"
 	"encoding/json"
+	"sync"
 	"testing"
 	"time"
 
@@ -709,6 +710,90 @@ func TestGetStorageUnitsWithContext_PropagatesPluginContext(t *testing.T) {
 	}
 	if got := plugin.storageUnitsContext.Value(contextCaptureKey("storage_units")); got != "storage_units" {
 		t.Fatalf("expected propagated context value %q, got %v", "storage_units", got)
+	}
+}
+
+type metadataBatchPlugin struct {
+	engine.BasePlugin
+	mu                   sync.Mutex
+	columnsByStorageUnit map[string][]engine.Column
+	constraintsByUnit    map[string]map[string]map[string]any
+	columnCalls          []string
+	constraintCalls      []string
+}
+
+func (p *metadataBatchPlugin) GetColumnsForTable(config *engine.PluginConfig, schema string, storageUnit string) ([]engine.Column, error) {
+	p.mu.Lock()
+	p.columnCalls = append(p.columnCalls, storageUnit)
+	p.mu.Unlock()
+	return p.columnsByStorageUnit[storageUnit], nil
+}
+
+func (p *metadataBatchPlugin) GetColumnConstraints(config *engine.PluginConfig, schema string, storageUnit string) (map[string]map[string]any, error) {
+	p.mu.Lock()
+	p.constraintCalls = append(p.constraintCalls, storageUnit)
+	p.mu.Unlock()
+	return p.constraintsByUnit[storageUnit], nil
+}
+
+func TestGetColumnsForStorageUnits(t *testing.T) {
+	plugin := &metadataBatchPlugin{
+		columnsByStorageUnit: map[string][]engine.Column{
+			"users":  {{Name: "id", Type: "integer"}},
+			"orders": {{Name: "order_id", Type: "integer"}},
+		},
+	}
+	mgr := newContextCaptureManager(plugin)
+
+	columnsByUnit, err := mgr.GetColumnsForStorageUnits("public", []string{"users", "orders"})
+	if err != nil {
+		t.Fatalf("GetColumnsForStorageUnits failed: %v", err)
+	}
+
+	if len(columnsByUnit["users"]) != 1 || columnsByUnit["users"][0].Name != "id" {
+		t.Fatalf("unexpected users columns: %#v", columnsByUnit["users"])
+	}
+	if len(columnsByUnit["orders"]) != 1 || columnsByUnit["orders"][0].Name != "order_id" {
+		t.Fatalf("unexpected orders columns: %#v", columnsByUnit["orders"])
+	}
+
+	if len(plugin.columnCalls) != 2 {
+		t.Fatalf("expected 2 column calls, got %d", len(plugin.columnCalls))
+	}
+	if _, ok := mgr.GetCache().GetColumns("public", "users"); !ok {
+		t.Fatal("expected users columns to be cached")
+	}
+	if _, ok := mgr.GetCache().GetColumns("public", "orders"); !ok {
+		t.Fatal("expected orders columns to be cached")
+	}
+}
+
+func TestGetColumnConstraintsForStorageUnits(t *testing.T) {
+	plugin := &metadataBatchPlugin{
+		constraintsByUnit: map[string]map[string]map[string]any{
+			"users": {
+				"id": {"unique": true},
+			},
+			"orders": {
+				"order_id": {"default": "nextval"},
+			},
+		},
+	}
+	mgr := newContextCaptureManager(plugin)
+
+	constraintsByUnit, err := mgr.GetColumnConstraintsForStorageUnits("public", []string{"users", "orders"})
+	if err != nil {
+		t.Fatalf("GetColumnConstraintsForStorageUnits failed: %v", err)
+	}
+
+	if got := constraintsByUnit["users"]["id"]["unique"]; got != true {
+		t.Fatalf("unexpected users constraint value: %#v", constraintsByUnit["users"])
+	}
+	if got := constraintsByUnit["orders"]["order_id"]["default"]; got != "nextval" {
+		t.Fatalf("unexpected orders constraint value: %#v", constraintsByUnit["orders"])
+	}
+	if len(plugin.constraintCalls) != 2 {
+		t.Fatalf("expected 2 constraint calls, got %d", len(plugin.constraintCalls))
 	}
 }
 

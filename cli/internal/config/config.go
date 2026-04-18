@@ -239,6 +239,17 @@ func isKeyringAvailable() bool {
 }
 
 func LoadConfig() (*Config, error) {
+	return loadConfig(true, true)
+}
+
+// LoadConfigWithoutSecrets loads CLI configuration without resolving keyring
+// secrets or printing keyring warnings. It is intended for metadata-only paths
+// such as shell completion and connection discovery.
+func LoadConfigWithoutSecrets() (*Config, error) {
+	return loadConfig(false, false)
+}
+
+func loadConfig(includeSecrets, showWarnings bool) (*Config, error) {
 	if _, err := GetConfigDir(); err != nil {
 		return nil, err
 	}
@@ -254,8 +265,8 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("error reading config: %w", err)
 	}
 
-	// Load passwords
-	if cfg.useKeyring {
+	// Load passwords only when the caller needs secrets.
+	if includeSecrets && cfg.useKeyring {
 		for i := range cfg.Connections {
 			if cfg.Connections[i].Name != "" {
 				password, err := keyring.Get(identity.Current().KeyringService, "connection:"+cfg.Connections[i].Name)
@@ -266,7 +277,9 @@ func LoadConfig() (*Config, error) {
 		}
 	}
 
-	cfg.showKeyringWarning()
+	if showWarnings {
+		cfg.showKeyringWarning()
+	}
 	return cfg, nil
 }
 

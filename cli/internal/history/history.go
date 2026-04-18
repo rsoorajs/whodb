@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package history
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -39,18 +40,25 @@ type Manager struct {
 	entries    []Entry
 	maxEntries int
 	persist    bool
+	appendOnly bool
 }
 
-func NewManager() (*Manager, error) {
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		return nil, fmt.Errorf("error loading config: %w", err)
+// NewManagerWithConfig creates a history manager using the provided CLI
+// configuration. When cfg is nil, it loads configuration from disk.
+func NewManagerWithConfig(cfg *config.Config) (*Manager, error) {
+	if cfg == nil {
+		var err error
+		cfg, err = config.LoadConfig()
+		if err != nil {
+			return nil, fmt.Errorf("error loading config: %w", err)
+		}
 	}
 
 	m := &Manager{
 		entries:    []Entry{},
 		maxEntries: cfg.History.MaxEntries,
 		persist:    cfg.History.Persist,
+		appendOnly: true,
 	}
 
 	if m.persist {
@@ -62,6 +70,10 @@ func NewManager() (*Manager, error) {
 	return m, nil
 }
 
+func NewManager() (*Manager, error) {
+	return NewManagerWithConfig(nil)
+}
+
 func (m *Manager) Add(query string, success bool, database string) error {
 	entry := Entry{
 		ID:        fmt.Sprintf("%d", time.Now().UnixNano()),
@@ -71,21 +83,35 @@ func (m *Manager) Add(query string, success bool, database string) error {
 		Database:  database,
 	}
 
-	m.entries = append([]Entry{entry}, m.entries...)
+	m.entries = append(m.entries, entry)
 
+	trimmed := false
 	if len(m.entries) > m.maxEntries {
-		m.entries = m.entries[:m.maxEntries]
+		m.entries = m.entries[len(m.entries)-m.maxEntries:]
+		trimmed = true
 	}
 
-	if m.persist {
-		return m.save()
+	if !m.persist {
+		return nil
 	}
 
-	return nil
+	if trimmed || !m.appendOnly {
+		return m.rewrite()
+	}
+
+	return m.appendEntry(entry)
 }
 
 func (m *Manager) GetAll() []Entry {
-	return m.entries
+	if len(m.entries) == 0 {
+		return nil
+	}
+
+	entries := make([]Entry, len(m.entries))
+	for i := range m.entries {
+		entries[i] = m.entries[len(m.entries)-1-i]
+	}
+	return entries
 }
 
 // SearchByPrefix returns the most recent successful entry whose query starts
@@ -95,7 +121,8 @@ func (m *Manager) SearchByPrefix(prefix string) *Entry {
 		return nil
 	}
 	lowerPrefix := strings.ToLower(strings.TrimSpace(prefix))
-	for _, entry := range m.entries {
+	for i := len(m.entries) - 1; i >= 0; i-- {
+		entry := m.entries[i]
 		if entry.Success && strings.HasPrefix(strings.ToLower(strings.TrimSpace(entry.Query)), lowerPrefix) {
 			// Don't suggest if it's the exact same text
 			if strings.TrimSpace(strings.ToLower(entry.Query)) != lowerPrefix {
@@ -118,7 +145,14 @@ func (m *Manager) Get(id string) (*Entry, error) {
 func (m *Manager) Clear() error {
 	m.entries = []Entry{}
 	if m.persist {
-		return m.save()
+		path, err := m.getHistoryPath()
+		if err != nil {
+			return err
+		}
+		m.appendOnly = true
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("error removing history file: %w", err)
+		}
 	}
 	return nil
 }
@@ -131,23 +165,63 @@ func (m *Manager) getHistoryPath() (string, error) {
 	return filepath.Join(configDir, "history.json"), nil
 }
 
-func (m *Manager) save() error {
+func (m *Manager) rewrite() error {
 	path, err := m.getHistoryPath()
 	if err != nil {
 		return err
 	}
 
-	data, err := json.MarshalIndent(m.entries, "", "  ")
+	if len(m.entries) == 0 {
+		m.appendOnly = true
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("error removing history file: %w", err)
+		}
+		return nil
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return fmt.Errorf("error creating history directory: %w", err)
+	}
+
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
-		return fmt.Errorf("error marshaling history: %w", err)
+		return fmt.Errorf("error opening history file: %w", err)
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	for _, entry := range m.entries {
+		if err := encoder.Encode(entry); err != nil {
+			return fmt.Errorf("error writing history entry: %w", err)
+		}
 	}
 
-	if err := os.WriteFile(path, data, 0600); err != nil {
-		return fmt.Errorf("error writing history file: %w", err)
-	}
-	// Enforce strict permissions in case file existed with broader perms
-	_ = os.Chmod(path, 0600)
+	m.appendOnly = true
 
+	return nil
+}
+
+func (m *Manager) appendEntry(entry Entry) error {
+	path, err := m.getHistoryPath()
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return fmt.Errorf("error creating history directory: %w", err)
+	}
+
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	if err != nil {
+		return fmt.Errorf("error opening history file: %w", err)
+	}
+	defer file.Close()
+
+	if err := json.NewEncoder(file).Encode(entry); err != nil {
+		return fmt.Errorf("error appending history entry: %w", err)
+	}
+
+	m.appendOnly = true
 	return nil
 }
 
@@ -172,9 +246,35 @@ func (m *Manager) load() error {
 		return fmt.Errorf("error reading history file: %w", err)
 	}
 
-	if err := json.Unmarshal(data, &m.entries); err != nil {
-		return fmt.Errorf("error unmarshaling history: %w", err)
+	if len(strings.TrimSpace(string(data))) == 0 {
+		m.entries = []Entry{}
+		m.appendOnly = true
+		return nil
 	}
 
+	var entries []Entry
+	if err := json.Unmarshal(data, &entries); err == nil {
+		m.entries = entries
+		m.appendOnly = false
+		return nil
+	}
+
+	scanner := bufio.NewScanner(strings.NewReader(string(data)))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		var entry Entry
+		if err := json.Unmarshal([]byte(line), &entry); err != nil {
+			return fmt.Errorf("error unmarshaling history: %w", err)
+		}
+		m.entries = append(m.entries, entry)
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("error reading history entries: %w", err)
+	}
+
+	m.appendOnly = true
 	return nil
 }

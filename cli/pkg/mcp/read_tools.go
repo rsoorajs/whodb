@@ -199,17 +199,22 @@ func HandleExplain(ctx context.Context, req *mcp.CallToolRequest, input ExplainI
 	requestID := generateRequestID("explain")
 	startTime := time.Now()
 
-	connCount := countAvailableConnections()
+	resolver, err := newConnectionResolver(true)
+	if err != nil {
+		TrackToolCall(ctx, "explain", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection"})
+		return nil, ExplainOutput{Error: err.Error(), RequestID: requestID}, nil
+	}
+
 	if strings.TrimSpace(input.Query) == "" {
 		TrackToolCall(ctx, "explain", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "validation"})
 		return nil, ExplainOutput{Error: "query is required", RequestID: requestID}, nil
 	}
-	if connCount > 1 && strings.TrimSpace(input.Connection) == "" {
+	if resolver.Count() > 1 && strings.TrimSpace(input.Connection) == "" {
 		TrackToolCall(ctx, "explain", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "validation"})
 		return nil, ExplainOutput{Error: "connection is required when multiple connections are available", RequestID: requestID}, nil
 	}
 
-	mgr, conn, err := newConnectedManager(input.Connection)
+	mgr, conn, err := newConnectedManagerFromResolver(resolver, input.Connection)
 	if err != nil {
 		TrackToolCall(ctx, "explain", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection"})
 		return nil, ExplainOutput{Error: err.Error(), RequestID: requestID}, nil
@@ -246,12 +251,18 @@ func HandleSchemaDiff(ctx context.Context, req *mcp.CallToolRequest, input Schem
 		return nil, SchemaDiffOutput{Error: "diff requires different connections or schema overrides", RequestID: requestID}, nil
 	}
 
-	fromConn, err := ResolveConnectionOrDefault(input.FromConnection)
+	resolver, err := newConnectionResolver(true)
 	if err != nil {
 		TrackToolCall(ctx, "diff", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection_resolve"})
 		return nil, SchemaDiffOutput{Error: err.Error(), RequestID: requestID}, nil
 	}
-	toConn, err := ResolveConnectionOrDefault(input.ToConnection)
+
+	fromConn, err := resolver.ResolveOrDefault(input.FromConnection)
+	if err != nil {
+		TrackToolCall(ctx, "diff", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection_resolve"})
+		return nil, SchemaDiffOutput{Error: err.Error(), RequestID: requestID}, nil
+	}
+	toConn, err := resolver.ResolveOrDefault(input.ToConnection)
 	if err != nil {
 		TrackToolCall(ctx, "diff", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection_resolve"})
 		return nil, SchemaDiffOutput{Error: err.Error(), RequestID: requestID}, nil
@@ -276,13 +287,18 @@ func HandleERD(ctx context.Context, req *mcp.CallToolRequest, input ERDInput) (*
 	requestID := generateRequestID("erd")
 	startTime := time.Now()
 
-	connCount := countAvailableConnections()
-	if connCount > 1 && strings.TrimSpace(input.Connection) == "" {
+	resolver, err := newConnectionResolver(true)
+	if err != nil {
+		TrackToolCall(ctx, "erd", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection"})
+		return nil, ERDOutput{Error: err.Error(), RequestID: requestID}, nil
+	}
+
+	if resolver.Count() > 1 && strings.TrimSpace(input.Connection) == "" {
 		TrackToolCall(ctx, "erd", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "validation"})
 		return nil, ERDOutput{Error: "connection is required when multiple connections are available", RequestID: requestID}, nil
 	}
 
-	mgr, conn, err := newConnectedManager(input.Connection)
+	mgr, conn, err := newConnectedManagerFromResolver(resolver, input.Connection)
 	if err != nil {
 		TrackToolCall(ctx, "erd", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection"})
 		return nil, ERDOutput{Error: err.Error(), RequestID: requestID}, nil
@@ -322,13 +338,18 @@ func HandleAudit(ctx context.Context, req *mcp.CallToolRequest, input AuditInput
 	requestID := generateRequestID("audit")
 	startTime := time.Now()
 
-	connCount := countAvailableConnections()
-	if connCount > 1 && strings.TrimSpace(input.Connection) == "" {
+	resolver, err := newConnectionResolver(true)
+	if err != nil {
+		TrackToolCall(ctx, "audit", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection"})
+		return nil, AuditOutput{Error: err.Error(), RequestID: requestID}, nil
+	}
+
+	if resolver.Count() > 1 && strings.TrimSpace(input.Connection) == "" {
 		TrackToolCall(ctx, "audit", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "validation"})
 		return nil, AuditOutput{Error: "connection is required when multiple connections are available", RequestID: requestID}, nil
 	}
 
-	mgr, conn, err := newConnectedManager(input.Connection)
+	mgr, conn, err := newConnectedManagerFromResolver(resolver, input.Connection)
 	if err != nil {
 		TrackToolCall(ctx, "audit", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection"})
 		return nil, AuditOutput{Error: err.Error(), RequestID: requestID}, nil
@@ -383,13 +404,18 @@ func HandleSuggestions(ctx context.Context, req *mcp.CallToolRequest, input Sugg
 	requestID := generateRequestID("suggestions")
 	startTime := time.Now()
 
-	connCount := countAvailableConnections()
-	if connCount > 1 && strings.TrimSpace(input.Connection) == "" {
+	resolver, err := newConnectionResolver(true)
+	if err != nil {
+		TrackToolCall(ctx, "suggestions", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection"})
+		return nil, SuggestionsOutput{Error: err.Error(), RequestID: requestID}, nil
+	}
+
+	if resolver.Count() > 1 && strings.TrimSpace(input.Connection) == "" {
 		TrackToolCall(ctx, "suggestions", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "validation"})
 		return nil, SuggestionsOutput{Error: "connection is required when multiple connections are available", RequestID: requestID}, nil
 	}
 
-	mgr, conn, err := newConnectedManager(input.Connection)
+	mgr, conn, err := newConnectedManagerFromResolver(resolver, input.Connection)
 	if err != nil {
 		TrackToolCall(ctx, "suggestions", requestID, false, time.Since(startTime).Milliseconds(), map[string]any{"error_type": "connection"})
 		return nil, SuggestionsOutput{Error: err.Error(), RequestID: requestID}, nil
@@ -416,21 +442,39 @@ func HandleSuggestions(ctx context.Context, req *mcp.CallToolRequest, input Sugg
 }
 
 func newConnectedManager(connection string) (*dbmgr.Manager, *dbmgr.Connection, error) {
-	conn, err := ResolveConnectionOrDefault(connection)
+	resolver, err := newConnectionResolver(true)
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot initialize connection resolver: %w", err)
+	}
+
+	return newConnectedManagerFromResolver(resolver, connection)
+}
+
+func newConnectedManagerFromResolver(resolver *connectionResolver, connection string) (*dbmgr.Manager, *dbmgr.Connection, error) {
+	conn, err := resolver.ResolveOrDefault(connection)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	mgr, err := dbmgr.NewManager()
+	mgr, err := connectManager(conn)
 	if err != nil {
-		return nil, nil, fmt.Errorf("cannot initialize database manager: %w", err)
-	}
-
-	if err := mgr.Connect(conn); err != nil {
-		return nil, nil, fmt.Errorf("cannot connect to database: %w", err)
+		return nil, nil, err
 	}
 
 	return mgr, conn, nil
+}
+
+func connectManager(conn *dbmgr.Connection) (*dbmgr.Manager, error) {
+	mgr, err := dbmgr.NewManager()
+	if err != nil {
+		return nil, fmt.Errorf("cannot initialize database manager: %w", err)
+	}
+
+	if err := mgr.Connect(conn); err != nil {
+		return nil, fmt.Errorf("cannot connect to database: %w", err)
+	}
+
+	return mgr, nil
 }
 
 func mustConvertRows(result *engine.GetRowsResult) [][]any {
@@ -453,13 +497,19 @@ func buildAuditSummary(results []*dbmgr.TableAudit) AuditSummary {
 func buildERDOutput(mgr *dbmgr.Manager, schema string, graphUnits []engine.GraphUnit) (*ERDOutput, error) {
 	relationships, relationshipTargets := buildERDRelationships(graphUnits)
 
+	storageUnitNames := make([]string, 0, len(graphUnits))
+	for _, graphUnit := range graphUnits {
+		storageUnitNames = append(storageUnitNames, graphUnit.Unit.Name)
+	}
+
+	columnsByStorageUnit, err := mgr.GetColumnsForStorageUnits(schema, storageUnitNames)
+	if err != nil {
+		return nil, err
+	}
+
 	storageUnits := make([]ERDStorageUnit, 0, len(graphUnits))
 	for _, graphUnit := range graphUnits {
-		columns, err := mgr.GetColumns(schema, graphUnit.Unit.Name)
-		if err != nil {
-			return nil, fmt.Errorf("load columns for %s: %w", graphUnit.Unit.Name, err)
-		}
-
+		columns := columnsByStorageUnit[graphUnit.Unit.Name]
 		columnOutputs := make([]ERDColumn, 0, len(columns))
 		for _, column := range columns {
 			columnOutput := ERDColumn{
