@@ -1,6 +1,8 @@
 query GetColumnsBatch($refs: [SourceObjectRefInput!]!) {
     ColumnsBatch: SourceColumnsBatch(refs: $refs) {
         StorageUnit: Ref {
+            Kind
+            Locator
             Path
         }
         Columns {

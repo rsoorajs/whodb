@@ -44,17 +44,21 @@ import {
     StackListItem,
     toast,
 } from "@clidey/ux";
-import {useLazyQuery, useMutation} from "@apollo/client/react";
+import {skipToken, useLazyQuery, useMutation, useQuery} from "@apollo/client/react";
 import {
     AddRowDocument,
     ColumnsDocument,
+    DataShape,
+    GetSourceContentDocument,
     GetStorageUnitRowsDocument,
+    GetStorageUnitsQuery,
     RecordInput,
     RawExecuteDocument,
     RowsResult,
     SortCondition,
     SortDirection,
-    StorageUnit,
+    SourceAction,
+    type SourceObjectRefInput,
     UpdateStorageUnitDocument,
     WhereCondition,
     WhereConditionType
@@ -90,8 +94,16 @@ import {whereConditionToSql} from "../../utils/where-condition-to-sql";
 import {isDestructiveQuery} from "../../utils/query-utils";
 import {useContainerWidth} from "../../hooks/use-container-width";
 import {getComponent} from "../../config/component-registry";
-import { DatabaseType } from "../../config/source-types";
-import {buildSourceObjectRef} from "../../utils/source-refs";
+import { DatabaseType, findSourceObjectType } from "../../config/source-types";
+import {buildSourceObjectRef, buildSourceParentObjectRef} from "../../utils/source-refs";
+
+type SourceBrowserObject = GetStorageUnitsQuery['StorageUnit'][number];
+
+type ExploreSourceState = {
+    unit?: SourceBrowserObject;
+    parentRef?: SourceObjectRefInput;
+    trail?: SourceBrowserObject[];
+};
 
 // Extension query utilities — set via registerQueryUtils()
 let generateInitialQuery: ((databaseType: string | undefined, schema: string | undefined, tableName: string | undefined) => string) | undefined;
@@ -114,6 +126,7 @@ type EESearchBarProps = {
 };
 
 export const ExploreStorageUnit: FC = () => {
+    const location = useLocation();
     const defaultPageSize = useAppSelector(state => state.settings.defaultPageSize);
     const maxPageSize = useAppSelector(state => state.settings.maxPageSize);
     const pageSizeOptions = useMemo(() => ({ maxPageSize }), [maxPageSize]);
@@ -139,13 +152,28 @@ export const ExploreStorageUnit: FC = () => {
         usesDatabaseInsteadOfSchema,
     } = useSourceContract(current?.Type);
     const whereConditionMode = useAppSelector(state => state.settings.whereConditionMode);
-    const unit: StorageUnit = useLocation().state?.unit;
+    const locationState = location.state as ExploreSourceState | undefined;
+    const unit = locationState?.unit;
+    const browserTrail = locationState?.trail ?? [];
     const navigate = useNavigate();
 
     // TODO: ClickHouse/MongoDB use database name as schema parameter since they lack traditional schemas
     if (usesDatabaseInsteadOfSchema && current?.Database) {
         schema = current.Database;
     }
+
+    const currentObjectType = useMemo(() => findSourceObjectType(item, unit?.Kind), [item, unit?.Kind]);
+    const isTabularObject = currentObjectType?.DataShape === DataShape.Tabular || currentObjectType?.DataShape === DataShape.Document;
+    const isContentObject = currentObjectType?.DataShape === DataShape.Content || unit?.Actions?.includes(SourceAction.ViewContent) === true;
+    const currentParentRef = useMemo(() => {
+        if (locationState?.parentRef) {
+            return locationState.parentRef;
+        }
+        if (!unit) {
+            return undefined;
+        }
+        return buildSourceParentObjectRef(item, unit.Ref);
+    }, [item, locationState?.parentRef, unit]);
 
     const dispatch = useAppDispatch();
     const conditionKey = useMemo(() => {
@@ -241,15 +269,27 @@ export const ExploreStorageUnit: FC = () => {
     const unitName = useMemo(() => {
         return unit?.Name;
     }, [unit]);
-    const currentUnitRef = useMemo(() => {
-        if (unit?.Ref) {
-            return unit.Ref;
+    const currentUnitRef = unit?.Ref;
+    const sourceContentQueryOptions = currentUnitRef && isContentObject
+        ? {
+            variables: { ref: currentUnitRef },
+            fetchPolicy: "cache-first" as const,
         }
-        if (!unitName) {
+        : skipToken;
+    const { data: sourceContentData, loading: sourceContentLoading } = useQuery(GetSourceContentDocument, sourceContentQueryOptions);
+    const sourceContent = sourceContentData?.Content;
+    const sourceContentLanguage = useMemo(() => {
+        if (!sourceContent?.Text) {
             return undefined;
         }
-        return buildSourceObjectRef(item, current, schema, unitName);
-    }, [current, item, schema, unit, unitName]);
+        if (sourceContent.MIMEType.includes("json")) {
+            return "json" as const;
+        }
+        if (sourceContent.MIMEType.includes("markdown")) {
+            return "markdown" as const;
+        }
+        return undefined;
+    }, [sourceContent?.MIMEType, sourceContent?.Text]);
 
     const initialScratchpadQuery = useMemo(() => {
         if (generateInitialQuery && current?.Type) {
@@ -324,6 +364,9 @@ export const ExploreStorageUnit: FC = () => {
     }, [rows?.Columns, rows?.Rows, isNoSQL, columns, columnTypes]);
 
     const handleSubmitRequest = useCallback((pageOffset: number | null = null) => {
+        if (!isTabularObject) {
+            return;
+        }
         const tableNameToUse = unitName || currentTableName;
         if (tableNameToUse) {
             setCurrentTableName(tableNameToUse);
@@ -359,7 +402,7 @@ export const ExploreStorageUnit: FC = () => {
                 setRows(result.data.Row);
             }
         });
-    }, [current, currentPage, currentTableName, currentUnitRef, getStorageUnitRows, item, pageSize, schema, searchCondition, sortConditions, unitName]);
+    }, [current, currentPage, currentTableName, currentUnitRef, getStorageUnitRows, isTabularObject, item, pageSize, schema, searchCondition, sortConditions, unitName]);
 
     const handleQuery = useCallback(() => {
         handleSubmitRequest();
@@ -474,28 +517,33 @@ export const ExploreStorageUnit: FC = () => {
         whereConditionRef.current = restoredWhere;
         setSortConditions(restoredSort);
 
-        // Fetch fresh data for the new table
-        handleSubmitRequest();
+        // Fetch fresh data for tabular objects only.
+        if (isTabularObject) {
+            handleSubmitRequest();
+        }
         setCode(initialScratchpadQuery);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [unit]);
+    }, [isTabularObject, unit]);
 
     useEffect(() => {
-        if (sortConditions.length > 0) {
+        if (isTabularObject && sortConditions.length > 0) {
             handleSubmitRequest();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [sortConditions]);
+    }, [isTabularObject, sortConditions]);
 
     useEffect(() => {
         if (pageSizeInitialRef.current) {
             pageSizeInitialRef.current = false;
             return;
         }
+        if (!isTabularObject) {
+            return;
+        }
         setCurrentPage(1);
         handleSubmitRequest(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pageSize]);
+    }, [isTabularObject, pageSize]);
 
     const routes = useMemo(() => {
         return [
@@ -819,7 +867,58 @@ export const ExploreStorageUnit: FC = () => {
         </InternalPage>
     }
 
-    return <InternalPage routes={routes} className="relative" sidebar={<SchemaViewer />}>
+    if (isContentObject) {
+        return (
+            <InternalPage
+                routes={routes}
+                className="relative"
+                sidebar={<SchemaViewer parentRef={currentParentRef} selectedName={unit.Name} trail={browserTrail} />}
+            >
+                <div className="flex flex-col grow gap-lg h-[calc(100%-100px)]">
+                    <div className="flex items-center justify-between">
+                        <div className="flex gap-sm items-center">
+                            <h1 className="text-xl font-bold mr-4">{unitName}</h1>
+                        </div>
+                        {sourceContent?.MIMEType && (
+                            <div className="text-sm text-muted-foreground">{sourceContent.MIMEType}</div>
+                        )}
+                    </div>
+                    <StackList>
+                        {unit.Attributes.map(attribute => (
+                            <div key={attribute.Key} data-field-key={attribute.Key} data-field-value={attribute.Value?.toLowerCase()}>
+                                <StackListItem item={attribute.Key}>
+                                    {attribute.Value?.toLowerCase()}
+                                </StackListItem>
+                            </div>
+                        ))}
+                    </StackList>
+                    {sourceContentLoading ? (
+                        <div className="flex justify-center items-center grow">
+                            <Loading />
+                        </div>
+                    ) : sourceContent?.Text ? (
+                        sourceContentLanguage ? (
+                            <div className="grow min-h-[400px] border rounded-md overflow-hidden">
+                                <CodeEditor
+                                    language={sourceContentLanguage}
+                                    value={sourceContent.Text}
+                                    disabled={true}
+                                />
+                            </div>
+                        ) : (
+                            <div className="grow min-h-[400px] overflow-auto rounded-md border bg-background/40 p-4">
+                                <pre className="whitespace-pre-wrap break-words text-sm">{sourceContent.Text}</pre>
+                            </div>
+                        )
+                    ) : (
+                        <div className="grow rounded-md border bg-background/40" />
+                    )}
+                </div>
+            </InternalPage>
+        );
+    }
+
+    return <InternalPage routes={routes} className="relative" sidebar={<SchemaViewer parentRef={currentParentRef} selectedName={unit.Name} trail={browserTrail} />}>
         <div className="flex flex-col grow gap-lg h-[calc(100%-100px)]">
             <div className="flex items-center justify-between">
                 <div className="flex gap-sm items-center">

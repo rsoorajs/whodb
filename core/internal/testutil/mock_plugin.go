@@ -20,8 +20,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/query"
 )
 
 // PluginMock implements engine.PluginFunctions with configurable function hooks.
@@ -42,7 +42,7 @@ type PluginMock struct {
 	BulkAddRowsFunc          func(*engine.PluginConfig, string, string, [][]engine.Record) (bool, error)
 	DeleteRowFunc            func(*engine.PluginConfig, string, string, map[string]string) (bool, error)
 	GetRowsFunc              func(*engine.PluginConfig, *engine.GetRowsRequest) (*engine.GetRowsResult, error)
-	GetRowCountFunc          func(*engine.PluginConfig, string, string, *model.WhereCondition) (int64, error)
+	GetRowCountFunc          func(*engine.PluginConfig, string, string, *query.WhereCondition) (int64, error)
 	GetGraphFunc             func(*engine.PluginConfig, string) ([]engine.GraphUnit, error)
 	RawExecuteFunc           func(*engine.PluginConfig, string, ...any) (*engine.GetRowsResult, error)
 	ChatFunc                 func(*engine.PluginConfig, string, string, string) ([]*engine.ChatMessage, error)
@@ -161,7 +161,7 @@ func (m *PluginMock) GetRows(config *engine.PluginConfig, req *engine.GetRowsReq
 	return nil, nil
 }
 
-func (m *PluginMock) GetRowCount(config *engine.PluginConfig, schema string, storageUnit string, where *model.WhereCondition) (int64, error) {
+func (m *PluginMock) GetRowCount(config *engine.PluginConfig, schema string, storageUnit string, where *query.WhereCondition) (int64, error) {
 	if m.GetRowCountFunc != nil {
 		return m.GetRowCountFunc(config, schema, storageUnit, where)
 	}

@@ -63,10 +63,11 @@ func Initialize(version string) error {
 	}
 
 	if err := analytics.Initialize(analytics.Config{
-		APIKey:      posthogAPIKey,
-		Host:        posthogHost,
-		Environment: "cli",
-		AppVersion:  version,
+		APIKey:             posthogAPIKey,
+		Host:               posthogHost,
+		Environment:        "cli",
+		AppVersion:         version,
+		SuppressClientLogs: true,
 	}); err != nil {
 		return err
 	}

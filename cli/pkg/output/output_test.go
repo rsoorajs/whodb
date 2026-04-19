@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -227,6 +227,58 @@ func TestWriter_WriteJSON_ColumnMismatch(t *testing.T) {
 	}
 }
 
+func TestWriter_WriteStringJSON(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(WithOutput(&buf), WithFormat(FormatJSON))
+
+	result := &StringQueryResult{
+		Columns: []Column{{Name: "id"}, {Name: "name"}},
+		Rows:    [][]string{{"1", "Alice"}, {"2", "Bob"}},
+	}
+
+	if err := w.WriteStringQueryResult(result); err != nil {
+		t.Fatalf("WriteStringQueryResult error: %v", err)
+	}
+
+	var output []map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &output); err != nil {
+		t.Fatalf("Invalid JSON output: %v", err)
+	}
+
+	if len(output) != 2 {
+		t.Fatalf("Expected 2 rows, got %d", len(output))
+	}
+	if output[1]["name"] != "Bob" {
+		t.Fatalf("Second row name = %v, want Bob", output[1]["name"])
+	}
+}
+
+func TestWriter_WriteStringJSON_BoolColumn(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(WithOutput(&buf), WithFormat(FormatJSON))
+
+	result := &StringQueryResult{
+		Columns: []Column{{Name: "flag", Type: "bool"}},
+		Rows:    [][]string{{"true"}},
+	}
+
+	if err := w.WriteStringQueryResult(result); err != nil {
+		t.Fatalf("WriteStringQueryResult error: %v", err)
+	}
+
+	var output []map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &output); err != nil {
+		t.Fatalf("Invalid JSON output: %v", err)
+	}
+
+	if len(output) != 1 {
+		t.Fatalf("Expected 1 row, got %d", len(output))
+	}
+	if got, ok := output[0]["flag"].(bool); !ok || !got {
+		t.Fatalf("Expected bool true, got %#v", output[0]["flag"])
+	}
+}
+
 func TestWriter_WriteNDJSON(t *testing.T) {
 	var buf bytes.Buffer
 	w := New(WithOutput(&buf), WithFormat(FormatNDJSON))
@@ -404,6 +456,28 @@ func TestWriter_WritePlain(t *testing.T) {
 
 	if !strings.Contains(lines[0], "id") || !strings.Contains(lines[0], "name") {
 		t.Errorf("Header should contain column names, got: %s", lines[0])
+	}
+}
+
+func TestWriter_WriteStringPlain(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(WithOutput(&buf), WithFormat(FormatPlain))
+
+	result := &StringQueryResult{
+		Columns: []Column{{Name: "id"}, {Name: "name"}},
+		Rows:    [][]string{{"1", "Alice"}, {"2", "Bob"}},
+	}
+
+	if err := w.WriteStringQueryResult(result); err != nil {
+		t.Fatalf("WriteStringQueryResult error: %v", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	if len(lines) != 3 {
+		t.Fatalf("Expected 3 lines, got %d", len(lines))
+	}
+	if lines[1] != "1\tAlice" {
+		t.Fatalf("Unexpected first row: %q", lines[1])
 	}
 }
 

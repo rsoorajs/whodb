@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,8 @@ type EditorView struct {
 	selectedSuggestion  int
 	cursorPos           int
 	lastText            string
+	ghostPrefix         string
+	ghostSuggestion     string
 	width               int
 	height              int
 	lastWidth           int
@@ -100,6 +102,7 @@ func (v *EditorView) Update(msg tea.Msg) (*EditorView, tea.Cmd) {
 				dbName = conn.Database
 			}
 			v.parent.histMgr.Add(msg.Query, false, dbName)
+			v.resetGhostText()
 			return v, nil
 		}
 		conn := v.parent.dbManager.GetCurrentConnection()
@@ -108,6 +111,7 @@ func (v *EditorView) Update(msg tea.Msg) (*EditorView, tea.Cmd) {
 			dbName = conn.Database
 		}
 		v.parent.histMgr.Add(msg.Query, true, dbName)
+		v.resetGhostText()
 		v.parent.resultsView.SetResults(msg.Result, msg.Query)
 		v.parent.PushView(ViewResults)
 		v.err = nil
@@ -150,6 +154,7 @@ func (v *EditorView) Update(msg tea.Msg) (*EditorView, tea.Cmd) {
 			v.textarea.SetValue(strings.TrimRight(msg.content, "\n"))
 			v.showSuggestions = false
 			v.err = nil
+			v.resetGhostText()
 		}
 		v.refreshLayout()
 		return v, nil
@@ -229,6 +234,7 @@ func (v *EditorView) Update(msg tea.Msg) (*EditorView, tea.Cmd) {
 			v.selectedSuggestion = 0
 			v.cursorPos = 0
 			v.lastText = ""
+			v.resetGhostText()
 			v.refreshLayout()
 			return v, nil
 		}
@@ -303,6 +309,7 @@ func (v *EditorView) Update(msg tea.Msg) (*EditorView, tea.Cmd) {
 				formatted := formatSQL(text)
 				v.textarea.SetValue(formatted)
 				v.showSuggestions = false
+				v.resetGhostText()
 				v.refreshLayout()
 			}
 			return v, nil
@@ -342,7 +349,9 @@ func (v *EditorView) Update(msg tea.Msg) (*EditorView, tea.Cmd) {
 	}
 
 	// Only schedule debounce for actual key events, not spinner ticks etc.
-	_, isKeyMsg := msg.(tea.KeyMsg)
+	keyMsg, isKeyMsg := msg.(tea.KeyMsg)
+	prevText := v.textarea.Value()
+	prevCursorPos := v.cursorPos
 
 	// Pass to textarea
 	v.textarea, cmd = v.textarea.Update(msg)
@@ -350,9 +359,16 @@ func (v *EditorView) Update(msg tea.Msg) (*EditorView, tea.Cmd) {
 	// Calculate cursor position based on current line and column
 	v.updateCursorPosition()
 
-	// Schedule debounced autocomplete only when user types
+	// Schedule debounced autocomplete only when the editor content or cursor changed.
 	if isKeyMsg && v.textarea.Focused() {
 		text := v.textarea.Value()
+		if text == prevText && v.cursorPos == prevCursorPos {
+			return v, cmd
+		}
+		if key.Matches(keyMsg, Keys.Global.NextView, Keys.Global.Back, Keys.Global.Quit) {
+			return v, cmd
+		}
+
 		// Increment sequence ID to invalidate any pending debounce
 		v.autocompleteSeqID++
 		seqID := v.autocompleteSeqID
@@ -615,12 +631,19 @@ func (v *EditorView) getGhostText() string {
 	if v.showSuggestions {
 		return ""
 	}
-	match := v.parent.histMgr.SearchByPrefix(text)
-	if match == nil {
+	if text != v.ghostPrefix {
+		v.ghostPrefix = text
+		v.ghostSuggestion = ""
+		match := v.parent.histMgr.SearchByPrefix(text)
+		if match != nil {
+			v.ghostSuggestion = match.Query
+		}
+	}
+	if v.ghostSuggestion == "" || !strings.HasPrefix(v.ghostSuggestion, text) {
 		return ""
 	}
 	// Return only the suffix beyond what's already typed
-	return match.Query[len(text):]
+	return v.ghostSuggestion[len(text):]
 }
 
 // acceptGhostText fills in the ghost text from history.
@@ -629,11 +652,9 @@ func (v *EditorView) acceptGhostText() bool {
 	if ghost == "" {
 		return false
 	}
-	match := v.parent.histMgr.SearchByPrefix(v.textarea.Value())
-	if match == nil {
-		return false
-	}
-	v.textarea.SetValue(match.Query)
+	v.textarea.SetValue(v.ghostSuggestion)
+	v.ghostPrefix = v.ghostSuggestion
+	v.ghostSuggestion = ""
 	v.showSuggestions = false
 	return true
 }
@@ -654,6 +675,7 @@ func (v *EditorView) switchToTab(idx int) {
 	v.activeTab = idx
 	v.textarea.SetValue(v.buffers[idx].text)
 	v.showSuggestions = false
+	v.resetGhostText()
 }
 
 // addTab creates a new empty buffer and switches to it.
@@ -664,6 +686,7 @@ func (v *EditorView) addTab() {
 	v.activeTab = len(v.buffers) - 1
 	v.textarea.SetValue("")
 	v.showSuggestions = false
+	v.resetGhostText()
 }
 
 // closeTab removes the active tab. If it's the last tab, creates a new empty one.
@@ -673,6 +696,7 @@ func (v *EditorView) closeTab() {
 		v.buffers[0].text = ""
 		v.textarea.SetValue("")
 		v.showSuggestions = false
+		v.resetGhostText()
 		return
 	}
 	v.buffers = append(v.buffers[:v.activeTab], v.buffers[v.activeTab+1:]...)
@@ -681,12 +705,18 @@ func (v *EditorView) closeTab() {
 	}
 	v.textarea.SetValue(v.buffers[v.activeTab].text)
 	v.showSuggestions = false
+	v.resetGhostText()
 }
 
 func (v *EditorView) refreshLayout() {
 	if v.lastWidth > 0 && v.lastHeight > 0 {
 		v.applyWindowSize(v.lastWidth, v.lastHeight)
 	}
+}
+
+func (v *EditorView) resetGhostText() {
+	v.ghostPrefix = ""
+	v.ghostSuggestion = ""
 }
 
 // externalEditorResultMsg is sent when the external editor process completes.

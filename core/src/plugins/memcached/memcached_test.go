@@ -1,3 +1,19 @@
+/*
+ * Copyright 2026 Clidey, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package memcached
 
 import (
@@ -5,8 +21,8 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/query"
 )
 
 func TestConvertWhereCondition(t *testing.T) {
@@ -18,9 +34,9 @@ func TestConvertWhereCondition(t *testing.T) {
 		t.Fatalf("expected nil condition result, got %#v", condition)
 	}
 
-	condition, err = convertWhereCondition(&model.WhereCondition{
-		Type: model.WhereConditionTypeAtomic,
-		Atomic: &model.AtomicWhereCondition{
+	condition, err = convertWhereCondition(&query.WhereCondition{
+		Type: query.WhereConditionTypeAtomic,
+		Atomic: &query.AtomicWhereCondition{
 			Key:      "Value",
 			Operator: "contains",
 			Value:    "foo",
@@ -36,7 +52,7 @@ func TestConvertWhereCondition(t *testing.T) {
 		t.Fatalf("unexpected converted condition: got %#v want %#v", condition, want)
 	}
 
-	if _, err := convertWhereCondition(&model.WhereCondition{Type: model.WhereConditionTypeAnd}); err == nil {
+	if _, err := convertWhereCondition(&query.WhereCondition{Type: query.WhereConditionTypeAnd}); err == nil {
 		t.Fatal("expected compound Memcached conditions to be rejected")
 	}
 }
@@ -73,9 +89,9 @@ func TestFilterMemcachedRows(t *testing.T) {
 		{"goodbye", "2"},
 	}
 
-	filtered := filterMemcachedRows(rows, &model.WhereCondition{
-		Type: model.WhereConditionTypeAtomic,
-		Atomic: &model.AtomicWhereCondition{
+	filtered := filterMemcachedRows(rows, &query.WhereCondition{
+		Type: query.WhereConditionTypeAtomic,
+		Atomic: &query.AtomicWhereCondition{
 			Key:      "Value",
 			Operator: "contains",
 			Value:    "world",
@@ -85,9 +101,9 @@ func TestFilterMemcachedRows(t *testing.T) {
 		t.Fatalf("expected one matching row, got %#v", filtered)
 	}
 
-	filtered = filterMemcachedRows(rows, &model.WhereCondition{
-		Type: model.WhereConditionTypeAtomic,
-		Atomic: &model.AtomicWhereCondition{
+	filtered = filterMemcachedRows(rows, &query.WhereCondition{
+		Type: query.WhereConditionTypeAtomic,
+		Atomic: &query.AtomicWhereCondition{
 			Key:      "Flags",
 			Operator: "IN",
 			Value:    "2, 3",
@@ -98,7 +114,7 @@ func TestFilterMemcachedRows(t *testing.T) {
 	}
 
 	// Unsupported compound filters are ignored and the original rows are returned.
-	filtered = filterMemcachedRows(rows, &model.WhereCondition{Type: model.WhereConditionTypeAnd})
+	filtered = filterMemcachedRows(rows, &query.WhereCondition{Type: query.WhereConditionTypeAnd})
 	if !reflect.DeepEqual(filtered, rows) {
 		t.Fatalf("expected invalid filter to leave rows unchanged, got %#v", filtered)
 	}

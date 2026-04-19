@@ -19,6 +19,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	dbmgr "github.com/clidey/whodb/cli/internal/database"
@@ -147,7 +148,7 @@ Output formats:
 
 		analytics.TrackColumnsListed(ctx, conn.Type, len(columns), time.Since(startTime).Milliseconds())
 
-		// Convert to QueryResult format
+		// Convert to StringQueryResult to avoid materializing [][]any.
 		outputColumns := []output.Column{
 			{Name: "name", Type: "string"},
 			{Name: "type", Type: "string"},
@@ -157,7 +158,7 @@ Output formats:
 			{Name: "referenced_column", Type: "string"},
 		}
 
-		rows := make([][]any, len(columns))
+		rows := make([][]string, len(columns))
 		for i, col := range columns {
 			refTable := ""
 			refColumn := ""
@@ -167,22 +168,22 @@ Output formats:
 			if col.ReferencedColumn != nil {
 				refColumn = *col.ReferencedColumn
 			}
-			rows[i] = []any{
+			rows[i] = []string{
 				col.Name,
 				col.Type,
-				col.IsPrimary,
-				col.IsForeignKey,
+				strconv.FormatBool(col.IsPrimary),
+				strconv.FormatBool(col.IsForeignKey),
 				refTable,
 				refColumn,
 			}
 		}
 
-		result := &output.QueryResult{
+		result := &output.StringQueryResult{
 			Columns: outputColumns,
 			Rows:    rows,
 		}
 
-		return out.WriteQueryResult(result)
+		return out.WriteStringQueryResult(result)
 	},
 }
 

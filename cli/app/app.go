@@ -20,7 +20,6 @@ package app
 
 import (
 	"github.com/clidey/whodb/cli/cmd"
-	"github.com/clidey/whodb/cli/internal/baml"
 	"github.com/clidey/whodb/cli/pkg/crash"
 	"github.com/clidey/whodb/cli/pkg/identity"
 )
@@ -38,8 +37,6 @@ func Run(config Config) {
 	if config.Bootstrap != nil {
 		config.Bootstrap()
 	}
-
-	baml.Ensure()
 
 	defer crash.Handler()
 	cmd.Execute()

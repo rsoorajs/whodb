@@ -22,13 +22,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/clidey/whodb/cli/internal/baml"
 	"github.com/clidey/whodb/cli/internal/bootstrap"
 	"github.com/clidey/whodb/cli/internal/config"
+	connresolver "github.com/clidey/whodb/cli/internal/connections"
 	tunnelpkg "github.com/clidey/whodb/cli/internal/ssh"
 	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src"
@@ -36,9 +37,10 @@ import (
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/envconfig"
 	"github.com/clidey/whodb/core/src/llm"
+	queryast "github.com/clidey/whodb/core/src/query"
 	"github.com/clidey/whodb/core/src/querysuggestions"
-	"github.com/clidey/whodb/core/src/types"
 	"github.com/xuri/excelize/v2"
+	"golang.org/x/sync/errgroup"
 )
 
 // MaxQueryLogEntries is the maximum number of entries kept in the query log.
@@ -57,16 +59,13 @@ type QueryLogEntry struct {
 type Connection = config.Connection
 
 // ConnectionSourceSaved indicates a connection stored in the CLI config.
-const ConnectionSourceSaved = "saved"
+const ConnectionSourceSaved = connresolver.ConnectionSourceSaved
 
 // ConnectionSourceEnv indicates a connection loaded from environment variables.
-const ConnectionSourceEnv = "env"
+const ConnectionSourceEnv = connresolver.ConnectionSourceEnv
 
 // ConnectionSourceInfo describes a connection and where it was loaded from.
-type ConnectionSourceInfo struct {
-	Connection Connection
-	Source     string
-}
+type ConnectionSourceInfo = connresolver.ConnectionSourceInfo
 
 // QuerySuggestion is a backend-generated onboarding suggestion for a connected
 // database.
@@ -231,6 +230,7 @@ type Manager struct {
 	config            *config.Config
 	cache             *MetadataCache
 	queryLog          []QueryLogEntry
+	queryLogMu        sync.Mutex
 	tunnel            *tunnelpkg.Tunnel
 }
 
@@ -269,12 +269,17 @@ func (m *Manager) buildCredentials(conn *Connection) *engine.Credentials {
 	return credentials
 }
 
-func NewManager() (*Manager, error) {
+// NewManagerWithConfig creates a database manager using the provided CLI
+// configuration. When cfg is nil, it loads configuration from disk.
+func NewManagerWithConfig(cfg *config.Config) (*Manager, error) {
 	bootstrap.Ensure()
 
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		return nil, fmt.Errorf("error loading config: %w", err)
+	if cfg == nil {
+		var err error
+		cfg, err = config.LoadConfig()
+		if err != nil {
+			return nil, fmt.Errorf("error loading config: %w", err)
+		}
 	}
 
 	eng := src.InitializeEngine()
@@ -286,6 +291,10 @@ func NewManager() (*Manager, error) {
 	}, nil
 }
 
+func NewManager() (*Manager, error) {
+	return NewManagerWithConfig(nil)
+}
+
 // ListConnections returns saved connections from the CLI config.
 func (m *Manager) ListConnections() []Connection {
 	return m.config.Connections
@@ -294,35 +303,7 @@ func (m *Manager) ListConnections() []Connection {
 // ListConnectionsWithSource returns saved and environment connections with their source.
 // Saved connections take precedence when names collide.
 func (m *Manager) ListConnectionsWithSource() []ConnectionSourceInfo {
-	saved := m.loadSavedConnections()
-	envConnections := m.getEnvConnections()
-
-	infos := make([]ConnectionSourceInfo, 0, len(saved)+len(envConnections))
-	usedNames := make(map[string]bool, len(saved)+len(envConnections))
-
-	for _, conn := range saved {
-		infos = append(infos, ConnectionSourceInfo{
-			Connection: conn,
-			Source:     ConnectionSourceSaved,
-		})
-		usedNames[conn.Name] = true
-	}
-
-	for _, conn := range envConnections {
-		if conn.Name == "" {
-			continue
-		}
-		if usedNames[conn.Name] {
-			continue
-		}
-		infos = append(infos, ConnectionSourceInfo{
-			Connection: conn,
-			Source:     ConnectionSourceEnv,
-		})
-		usedNames[conn.Name] = true
-	}
-
-	return infos
+	return connresolver.NewResolverWithConfig(m.config).ListWithSource()
 }
 
 // ListAvailableConnections returns saved and environment connections.
@@ -342,18 +323,7 @@ func (m *Manager) GetConnection(name string) (*Connection, error) {
 
 // ResolveConnection finds a connection by name from saved or environment connections.
 func (m *Manager) ResolveConnection(name string) (*Connection, string, error) {
-	if name == "" {
-		return nil, "", fmt.Errorf("connection name is required")
-	}
-
-	for _, info := range m.ListConnectionsWithSource() {
-		if info.Connection.Name == name {
-			conn := info.Connection
-			return &conn, info.Source, nil
-		}
-	}
-
-	return nil, "", fmt.Errorf("connection %q not found", name)
+	return connresolver.NewResolverWithConfig(m.config).Resolve(name)
 }
 
 func (m *Manager) Connect(conn *Connection) error {
@@ -472,6 +442,8 @@ func (m *Manager) logQuery(query string, start time.Time, result *engine.GetRows
 	if result != nil {
 		entry.RowCount = len(result.Rows)
 	}
+	m.queryLogMu.Lock()
+	defer m.queryLogMu.Unlock()
 	m.queryLog = append(m.queryLog, entry)
 	if len(m.queryLog) > MaxQueryLogEntries {
 		m.queryLog = m.queryLog[len(m.queryLog)-MaxQueryLogEntries:]
@@ -489,6 +461,8 @@ func (m *Manager) logStreamedQuery(query string, start time.Time, rowCount int, 
 	if err != nil {
 		entry.Error = err.Error()
 	}
+	m.queryLogMu.Lock()
+	defer m.queryLogMu.Unlock()
 	m.queryLog = append(m.queryLog, entry)
 	if len(m.queryLog) > MaxQueryLogEntries {
 		m.queryLog = m.queryLog[len(m.queryLog)-MaxQueryLogEntries:]
@@ -507,6 +481,8 @@ func (m *Manager) logOperation(operation string, start time.Time, count int, err
 	if err != nil {
 		entry.Error = err.Error()
 	}
+	m.queryLogMu.Lock()
+	defer m.queryLogMu.Unlock()
 	m.queryLog = append(m.queryLog, entry)
 	if len(m.queryLog) > MaxQueryLogEntries {
 		m.queryLog = m.queryLog[len(m.queryLog)-MaxQueryLogEntries:]
@@ -515,6 +491,8 @@ func (m *Manager) logOperation(operation string, start time.Time, count int, err
 
 // GetQueryLog returns a copy of the query log entries.
 func (m *Manager) GetQueryLog() []QueryLogEntry {
+	m.queryLogMu.Lock()
+	defer m.queryLogMu.Unlock()
 	out := make([]QueryLogEntry, len(m.queryLog))
 	copy(out, m.queryLog)
 	return out
@@ -617,77 +595,14 @@ func formatSSLStatusSummary(status *engine.SSLStatus) string {
 }
 
 func (m *Manager) loadSavedConnections() []Connection {
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		return m.config.Connections
+	if m.config == nil {
+		return nil
 	}
-	m.config = cfg
-	return cfg.Connections
+	return m.config.Connections
 }
 
 func (m *Manager) getEnvConnections() []Connection {
-	if m.engine == nil {
-		return nil
-	}
-
-	typeCounts := make(map[string]int)
-	var connections []Connection
-
-	for _, dbType := range dbcatalog.IDs() {
-		profiles := envconfig.GetDefaultDatabaseCredentials(dbType)
-		for _, profile := range profiles {
-			typeCounts[dbType]++
-			conn := envProfileToConnection(profile, dbType, typeCounts[dbType])
-			connections = append(connections, conn)
-		}
-	}
-
-	return connections
-}
-
-func envProfileToConnection(profile types.DatabaseCredentials, dbType string, index int) Connection {
-	name := envProfileName(profile, dbType, index)
-
-	var advanced map[string]string
-	if profile.Port != "" || len(profile.Advanced) > 0 {
-		advanced = make(map[string]string, len(profile.Advanced)+1)
-		for key, value := range profile.Advanced {
-			advanced[key] = value
-		}
-		if profile.Port != "" {
-			advanced["Port"] = profile.Port
-		}
-	}
-
-	port := 0
-	if profile.Port != "" {
-		if parsedPort, err := strconv.Atoi(profile.Port); err == nil {
-			port = parsedPort
-		}
-	}
-
-	return Connection{
-		Name:      name,
-		Type:      dbType,
-		Host:      profile.Hostname,
-		Port:      port,
-		Username:  profile.Username,
-		Password:  profile.Password,
-		Database:  profile.Database,
-		Advanced:  advanced,
-		IsProfile: true,
-	}
-}
-
-func envProfileName(profile types.DatabaseCredentials, dbType string, index int) string {
-	if profile.CustomId != "" {
-		return profile.CustomId
-	}
-	if profile.Alias != "" {
-		return profile.Alias
-	}
-	normalizedType := strings.ToLower(dbType)
-	return fmt.Sprintf("%s-%d", normalizedType, index)
+	return connresolver.EnvConnections()
 }
 
 func (m *Manager) GetSchemas() ([]string, error) {
@@ -821,7 +736,7 @@ func (m *Manager) GetRows(schema, storageUnit string, where *model.WhereConditio
 	query := fmt.Sprintf("GetRows(%s.%s, page=%d, offset=%d)", schema, storageUnit, pageSize, pageOffset)
 	start := time.Now()
 	result, err := plugin.GetRows(pluginConfig, &engine.GetRowsRequest{
-		Schema: schema, StorageUnit: storageUnit, Where: where,
+		Schema: schema, StorageUnit: storageUnit, Where: queryWhereConditionFromModel(where),
 		PageSize: pageSize, PageOffset: pageOffset,
 	})
 	m.logQuery(query, start, result, err)
@@ -849,6 +764,47 @@ func runWithContext[T any](ctx context.Context, fn func() (T, error)) (T, error)
 		return zero, ctx.Err()
 	case res := <-ch:
 		return res.data, res.err
+	}
+}
+
+func queryWhereConditionFromModel(condition *model.WhereCondition) *queryast.WhereCondition {
+	if condition == nil {
+		return nil
+	}
+
+	return &queryast.WhereCondition{
+		Type:   queryast.WhereConditionType(condition.Type),
+		Atomic: queryAtomicWhereConditionFromModel(condition.Atomic),
+		And:    queryOperationWhereConditionFromModel(condition.And),
+		Or:     queryOperationWhereConditionFromModel(condition.Or),
+	}
+}
+
+func queryAtomicWhereConditionFromModel(condition *model.AtomicWhereCondition) *queryast.AtomicWhereCondition {
+	if condition == nil {
+		return nil
+	}
+
+	return &queryast.AtomicWhereCondition{
+		ColumnType: condition.ColumnType,
+		Key:        condition.Key,
+		Operator:   condition.Operator,
+		Value:      condition.Value,
+	}
+}
+
+func queryOperationWhereConditionFromModel(condition *model.OperationWhereCondition) *queryast.OperationWhereCondition {
+	if condition == nil {
+		return nil
+	}
+
+	children := make([]*queryast.WhereCondition, 0, len(condition.Children))
+	for _, child := range condition.Children {
+		children = append(children, queryWhereConditionFromModel(child))
+	}
+
+	return &queryast.OperationWhereCondition{
+		Children: children,
 	}
 }
 
@@ -1033,7 +989,7 @@ func (m *Manager) GetRowsWithContext(ctx context.Context, schema, storageUnit st
 	start := time.Now()
 	result, err := runWithContext(ctx, func() (*engine.GetRowsResult, error) {
 		return plugin.GetRows(pluginConfig, &engine.GetRowsRequest{
-			Schema: schema, StorageUnit: storageUnit, Where: where,
+			Schema: schema, StorageUnit: storageUnit, Where: queryWhereConditionFromModel(where),
 			PageSize: pageSize, PageOffset: pageOffset,
 		})
 	})
@@ -1045,6 +1001,10 @@ func (m *Manager) GetRowsWithContext(ctx context.Context, schema, storageUnit st
 func (m *Manager) GetSchemasWithContext(ctx context.Context) ([]string, error) {
 	if m.currentConnection == nil {
 		return nil, fmt.Errorf("not connected to any database")
+	}
+
+	if cached, ok := m.cache.GetSchemas(); ok {
+		return cached, nil
 	}
 
 	dbType := engine.DatabaseType(m.currentConnection.Type)
@@ -1061,6 +1021,9 @@ func (m *Manager) GetSchemasWithContext(ctx context.Context) ([]string, error) {
 		return plugin.GetAllSchemas(pluginConfig)
 	})
 	m.logOperation("GetSchemas()", start, len(result), err)
+	if err == nil {
+		m.cache.SetSchemas(result)
+	}
 	return result, err
 }
 
@@ -1068,6 +1031,10 @@ func (m *Manager) GetSchemasWithContext(ctx context.Context) ([]string, error) {
 func (m *Manager) GetStorageUnitsWithContext(ctx context.Context, schema string) ([]engine.StorageUnit, error) {
 	if m.currentConnection == nil {
 		return nil, fmt.Errorf("not connected to any database")
+	}
+
+	if cached, ok := m.cache.GetTables(schema); ok {
+		return cached, nil
 	}
 
 	dbType := engine.DatabaseType(m.currentConnection.Type)
@@ -1084,12 +1051,57 @@ func (m *Manager) GetStorageUnitsWithContext(ctx context.Context, schema string)
 		return plugin.GetStorageUnits(pluginConfig, schema)
 	})
 	m.logOperation(fmt.Sprintf("GetStorageUnits(%s)", schema), start, len(result), err)
+	if err == nil {
+		m.cache.SetTables(schema, result)
+	}
 	return result, err
 }
 
 // GetConfig returns the manager's configuration
 func (m *Manager) GetConfig() *config.Config {
 	return m.config
+}
+
+// GetColumnsWithContext fetches columns with context support for cancellation,
+// timeout, and metadata caching.
+func (m *Manager) GetColumnsWithContext(ctx context.Context, schema, storageUnit string) ([]engine.Column, error) {
+	if m.currentConnection == nil {
+		return nil, fmt.Errorf("not connected to any database")
+	}
+
+	if cached, ok := m.cache.GetColumns(schema, storageUnit); ok {
+		return cached, nil
+	}
+
+	dbType := engine.DatabaseType(m.currentConnection.Type)
+	plugin := m.engine.Choose(dbType)
+	if plugin == nil {
+		return nil, fmt.Errorf("plugin not found")
+	}
+
+	credentials := m.buildCredentials(m.currentConnection)
+	pluginConfig := newPluginConfigWithContext(credentials, ctx)
+
+	start := time.Now()
+	result, err := runWithContext(ctx, func() ([]engine.Column, error) {
+		return plugin.GetColumnsForTable(pluginConfig, schema, storageUnit)
+	})
+	m.logOperation(fmt.Sprintf("GetColumns(%s.%s)", schema, storageUnit), start, len(result), err)
+	if err == nil {
+		m.cache.SetColumns(schema, storageUnit, result)
+	}
+	return result, err
+}
+
+// GetColumnsForStorageUnits loads columns for multiple storage units while
+// reusing the metadata cache and limiting concurrent requests.
+func (m *Manager) GetColumnsForStorageUnits(schema string, storageUnitNames []string) (map[string][]engine.Column, error) {
+	return loadStorageUnitMetadata(
+		storageUnitNames,
+		func(name string) ([]engine.Column, error) {
+			return m.GetColumns(schema, name)
+		},
+	)
 }
 
 func (m *Manager) GetColumns(schema, storageUnit string) ([]engine.Column, error) {
@@ -1148,6 +1160,51 @@ func (m *Manager) GetColumnConstraints(schema, storageUnit string) (map[string]m
 	}
 
 	return constraints, nil
+}
+
+// GetColumnConstraintsForStorageUnits loads column constraints for multiple
+// storage units while limiting concurrent metadata requests.
+func (m *Manager) GetColumnConstraintsForStorageUnits(schema string, storageUnitNames []string) (map[string]map[string]map[string]any, error) {
+	return loadStorageUnitMetadata(
+		storageUnitNames,
+		func(name string) (map[string]map[string]any, error) {
+			return m.GetColumnConstraints(schema, name)
+		},
+	)
+}
+
+func loadStorageUnitMetadata[T any](storageUnitNames []string, load func(string) (T, error)) (map[string]T, error) {
+	const maxConcurrentMetadataLoads = 6
+
+	results := make(map[string]T, len(storageUnitNames))
+	if len(storageUnitNames) == 0 {
+		return results, nil
+	}
+
+	var mu sync.Mutex
+	group := new(errgroup.Group)
+	group.SetLimit(maxConcurrentMetadataLoads)
+
+	for _, storageUnitName := range storageUnitNames {
+		storageUnitName := storageUnitName
+		group.Go(func() error {
+			value, err := load(storageUnitName)
+			if err != nil {
+				return fmt.Errorf("%s: %w", storageUnitName, err)
+			}
+
+			mu.Lock()
+			results[storageUnitName] = value
+			mu.Unlock()
+			return nil
+		})
+	}
+
+	if err := group.Wait(); err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }
 
 func (m *Manager) ExportToCSV(schema, storageUnit, filename, delimiter string) error {
@@ -1557,6 +1614,8 @@ func (m *Manager) SendAIChat(providerID, modelType, token, schema, model, previo
 	if m.currentConnection == nil {
 		return nil, fmt.Errorf("not connected to any database")
 	}
+
+	baml.Ensure()
 
 	dbType := engine.DatabaseType(m.currentConnection.Type)
 	plugin := m.engine.Choose(dbType)

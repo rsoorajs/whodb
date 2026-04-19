@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,37 +171,27 @@ type ConnectionView struct {
 	height       int
 	// Background ping status for each connection
 	pingResults map[string]connectionPingResult
+	dockerItems []connectionItem
+	pingQueue   []config.Connection
 }
 
 // NewConnectionView creates a connection view initialized with saved connections
 // from the parent's config. If no connections exist, it starts in form mode.
 func NewConnectionView(parent *MainModel) *ConnectionView {
-	var items []list.Item
-	for _, info := range parent.dbManager.ListConnectionsWithSource() {
-		items = append(items, connectionItem{conn: info.Connection, source: info.Source})
-	}
-
-	// Append running Docker database containers as connection options
-	for _, c := range docker.DetectContainers() {
-		items = append(items, connectionItem{
-			conn: config.Connection{
-				Name: c.Name,
-				Type: c.Type,
-				Host: "localhost",
-				Port: c.Port,
-			},
-			source: ConnectionSourceDocker,
-		})
-	}
+	items := baseConnectionItems(parent.dbManager.ListConnectionsWithSource())
 
 	pingResults := make(map[string]connectionPingResult)
-	l := list.New(items, connectionDelegate{pingResults: pingResults}, 0, 0)
+	listItems := make([]list.Item, len(items))
+	for i, item := range items {
+		listItems[i] = item
+	}
+	l := list.New(listItems, connectionDelegate{pingResults: pingResults}, 0, 0)
 	l.Title = ""
 	l.SetShowTitle(false)
 	l.SetShowStatusBar(true)
 	l.SetShowHelp(false)
 	l.SetFilteringEnabled(true)
-	l.SetStatusBarItemName("saved connection", "saved connections")
+	l.SetStatusBarItemName("connection", "connections")
 
 	// Initialize form inputs
 	newInput := func(placeholder string, charLimit int) textinput.Model {
@@ -281,41 +271,39 @@ func (v *ConnectionView) Update(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 
 // Init returns a command to start background ping checks for all connections.
 func (v *ConnectionView) Init() tea.Cmd {
-	if v.mode != "list" || len(v.list.Items()) == 0 {
-		return nil
+	cmds := []tea.Cmd{v.loadDockerConnections()}
+	if v.mode == "list" && len(v.list.Items()) > 0 {
+		cmds = append(cmds, v.pingAllConnections())
 	}
-	return v.pingAllConnections()
+	return tea.Batch(cmds...)
 }
 
 // pingAllConnections fires background pings for every connection in the list.
 func (v *ConnectionView) pingAllConnections() tea.Cmd {
-	var cmds []tea.Cmd
+	v.pingQueue = nil
 	for _, item := range v.list.Items() {
 		ci, ok := item.(connectionItem)
 		if !ok {
 			continue
 		}
-		if ci.conn.SSHHost != "" {
+		if ci.conn.SSHHost != "" || ci.source == ConnectionSourceDocker {
 			continue
 		}
-		conn := ci.conn
-		mgr := v.parent.dbManager
-		cmds = append(cmds, func() tea.Msg {
-			online := mgr.Ping(&conn)
-			return connectionPingMsg{name: conn.Name, online: online}
-		})
+		v.pingQueue = append(v.pingQueue, ci.conn)
 	}
-	if len(cmds) == 0 {
-		return nil
-	}
-	return tea.Batch(cmds...)
+	return v.pingNextConnection()
 }
 
 func (v *ConnectionView) updateList(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 	switch msg := msg.(type) {
+	case dockerConnectionsLoadedMsg:
+		v.dockerItems = msg.items
+		v.setListItems(v.selectedConnectionName())
+		return v, nil
+
 	case connectionPingMsg:
 		v.pingResults[msg.name] = connectionPingResult{checked: true, online: msg.online}
-		return v, nil
+		return v, v.pingNextConnection()
 
 	case connectionResultMsg:
 		v.connecting = false
@@ -407,7 +395,7 @@ func (v *ConnectionView) updateList(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 				v.parent.config.RemoveConnection(item.conn.Name)
 				v.parent.config.Save()
 				v.refreshList()
-				return v, v.pingAllConnections()
+				return v, tea.Batch(v.pingAllConnections(), v.loadDockerConnections())
 			}
 
 		case key.Matches(msg, Keys.ConnectionList.QuitEsc):
@@ -442,6 +430,15 @@ func (v *ConnectionView) updateForm(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 	// Absorb ping results that arrive while in form mode
 	if pm, ok := msg.(connectionPingMsg); ok {
 		v.pingResults[pm.name] = connectionPingResult{checked: true, online: pm.online}
+		return v, v.pingNextConnection()
+	}
+	if dm, ok := msg.(dockerConnectionsLoadedMsg); ok {
+		v.dockerItems = dm.items
+		if v.mode == "form" && len(v.list.Items()) == 0 && len(dm.items) > 0 && !v.formHasUserInput() {
+			v.mode = "list"
+			v.setListItems("")
+			return v, v.pingAllConnections()
+		}
 		return v, nil
 	}
 
@@ -515,7 +512,7 @@ func (v *ConnectionView) updateForm(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 				v.mode = "list"
 				v.connError = nil
 				v.refreshList()
-				return v, v.pingAllConnections()
+				return v, tea.Batch(v.pingAllConnections(), v.loadDockerConnections())
 			}
 			return v, tea.Quit
 
@@ -989,11 +986,84 @@ func (v *ConnectionView) sslModeSectionHeight() int {
 }
 
 func (v *ConnectionView) refreshList() {
-	var items []list.Item
-	for _, info := range v.parent.dbManager.ListConnectionsWithSource() {
+	selectedName := v.selectedConnectionName()
+	v.dockerItems = nil
+	v.setListItems(selectedName)
+	// Reset ping results so they get refreshed
+	for k := range v.pingResults {
+		delete(v.pingResults, k)
+	}
+}
+
+func (v *ConnectionView) pingNextConnection() tea.Cmd {
+	if len(v.pingQueue) == 0 {
+		return nil
+	}
+
+	conn := v.pingQueue[0]
+	v.pingQueue = v.pingQueue[1:]
+	mgr := v.parent.dbManager
+	return func() tea.Msg {
+		online := mgr.Ping(&conn)
+		return connectionPingMsg{name: conn.Name, online: online}
+	}
+}
+
+func (v *ConnectionView) loadDockerConnections() tea.Cmd {
+	return func() tea.Msg {
+		return dockerConnectionsLoadedMsg{
+			items: detectedConnectionItems(docker.DetectContainers()),
+		}
+	}
+}
+
+func (v *ConnectionView) selectedConnectionName() string {
+	item, ok := v.list.SelectedItem().(connectionItem)
+	if !ok {
+		return ""
+	}
+	return item.conn.Name
+}
+
+func (v *ConnectionView) setListItems(selectedName string) {
+	items := baseConnectionItems(v.parent.dbManager.ListConnectionsWithSource())
+	items = append(items, v.dockerItems...)
+
+	listItems := make([]list.Item, len(items))
+	selectedIndex := 0
+	for i, item := range items {
+		listItems[i] = item
+		if selectedName != "" && item.conn.Name == selectedName {
+			selectedIndex = i
+		}
+	}
+
+	v.list.SetItems(listItems)
+	if len(listItems) > 0 {
+		v.list.Select(selectedIndex)
+	}
+}
+
+func (v *ConnectionView) formHasUserInput() bool {
+	for _, input := range v.inputs {
+		if input.Value() != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func baseConnectionItems(infos []dbmgr.ConnectionSourceInfo) []connectionItem {
+	items := make([]connectionItem, 0, len(infos))
+	for _, info := range infos {
 		items = append(items, connectionItem{conn: info.Connection, source: info.Source})
 	}
-	for _, c := range docker.DetectContainers() {
+	return items
+}
+
+func detectedConnectionItems(containers []docker.DetectedContainer) []connectionItem {
+	items := make([]connectionItem, 0, len(containers))
+	for _, c := range containers {
 		items = append(items, connectionItem{
 			conn: config.Connection{
 				Name: c.Name,
@@ -1004,11 +1074,7 @@ func (v *ConnectionView) refreshList() {
 			source: ConnectionSourceDocker,
 		})
 	}
-	v.list.SetItems(items)
-	// Reset ping results so they get refreshed
-	for k := range v.pingResults {
-		delete(v.pingResults, k)
-	}
+	return items
 }
 
 // getFocusOrder returns the ordered list of focusable indices:

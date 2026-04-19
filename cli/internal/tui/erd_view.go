@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -34,6 +35,16 @@ type erdDataLoadedMsg struct {
 	err               error
 	schema            string
 	relationshipCount int
+	fkTargets         map[string]map[string]erdForeignKeyTarget
+	tableNames        []string
+}
+
+// erdTableColumnsLoadedMsg is sent as individual table columns are loaded in
+// the background for the ERD view.
+type erdTableColumnsLoadedMsg struct {
+	tableName string
+	columns   []engine.Column
+	err       error
 }
 
 // ERDView renders an entity-relationship diagram using Unicode box-drawing characters.
@@ -51,6 +62,8 @@ type ERDView struct {
 	ready             bool
 	schema            string
 	relationshipCount int
+	fkTargets         map[string]map[string]erdForeignKeyTarget
+	columnLoadQueue   []string
 }
 
 // NewERDView creates a new ERDView attached to the given parent model.
@@ -74,9 +87,16 @@ func (v *ERDView) Update(msg tea.Msg) (*ERDView, tea.Cmd) {
 		v.tables = msg.tables
 		v.schema = msg.schema
 		v.relationshipCount = msg.relationshipCount
+		v.fkTargets = msg.fkTargets
+		v.columnLoadQueue = append([]string(nil), msg.tableNames...)
 		v.focusedIndex = 0
 		v.rebuildViewport()
-		return v, nil
+		return v, v.loadNextTableColumns()
+
+	case erdTableColumnsLoadedMsg:
+		v.applyTableColumns(msg.tableName, msg.columns, msg.err)
+		v.rebuildViewport()
+		return v, v.loadNextTableColumns()
 
 	case tea.WindowSizeMsg:
 		v.width = msg.Width
@@ -166,6 +186,9 @@ func (v *ERDView) View() string {
 		modeLabel = "compact"
 	}
 	summary := fmt.Sprintf("%d tables, %d relationships (%s) — focused: %s", len(v.tables), v.relationshipCount, modeLabel, focusedName)
+	if len(v.columnLoadQueue) > 0 || v.hasPendingColumnLoad() {
+		summary += " — loading columns"
+	}
 	b.WriteString(styles.RenderMuted(summary))
 	b.WriteString("\n\n")
 
@@ -227,15 +250,17 @@ func (v *ERDView) loadERDData() tea.Cmd {
 		if err != nil {
 			return erdDataLoadedMsg{err: fmt.Errorf("failed to get graph data: %w", err)}
 		}
-
-		tables := buildERDTablesFromGraph(graphUnits, func(storageUnit string) ([]engine.Column, error) {
-			return v.parent.dbManager.GetColumns(schema, storageUnit)
-		})
+		tableNames := make([]string, 0, len(graphUnits))
+		for _, graphUnit := range graphUnits {
+			tableNames = append(tableNames, graphUnit.Unit.Name)
+		}
 
 		return erdDataLoadedMsg{
-			tables:            tables,
+			tables:            buildERDTablesFromUnits(graphUnits),
 			schema:            schema,
 			relationshipCount: countGraphRelationships(graphUnits),
+			fkTargets:         buildERDForeignKeyTargets(graphUnits),
+			tableNames:        tableNames,
 		}
 	}
 }
@@ -257,4 +282,72 @@ func (v *ERDView) rebuildViewport() {
 	v.viewport = viewport.New(contentWidth, contentHeight)
 	v.viewport.SetContent(canvas)
 	v.ready = true
+}
+
+func (v *ERDView) loadNextTableColumns() tea.Cmd {
+	for len(v.columnLoadQueue) > 0 {
+		tableName := v.columnLoadQueue[0]
+		v.columnLoadQueue = v.columnLoadQueue[1:]
+		if !v.tableNeedsColumns(tableName) {
+			continue
+		}
+
+		v.markTableColumnsLoading(tableName)
+		schema := v.schema
+		timeout := v.parent.config.GetQueryTimeout()
+		return func() tea.Msg {
+			ctx, cancel := context.WithTimeout(context.Background(), timeout)
+			defer cancel()
+
+			columns, err := v.parent.dbManager.GetColumnsWithContext(ctx, schema, tableName)
+			return erdTableColumnsLoadedMsg{
+				tableName: tableName,
+				columns:   columns,
+				err:       err,
+			}
+		}
+	}
+
+	return nil
+}
+
+func (v *ERDView) tableNeedsColumns(tableName string) bool {
+	for _, table := range v.tables {
+		if table.StorageUnit.Name == tableName {
+			return !table.ColumnsLoaded && !table.ColumnsLoading && len(table.Columns) == 0
+		}
+	}
+	return false
+}
+
+func (v *ERDView) markTableColumnsLoading(tableName string) {
+	for i := range v.tables {
+		if v.tables[i].StorageUnit.Name == tableName {
+			v.tables[i].ColumnsLoading = true
+			break
+		}
+	}
+}
+
+func (v *ERDView) applyTableColumns(tableName string, columns []engine.Column, err error) {
+	for i := range v.tables {
+		if v.tables[i].StorageUnit.Name != tableName {
+			continue
+		}
+		v.tables[i].ColumnsLoading = false
+		if err == nil {
+			v.tables[i].Columns = applyERDForeignKeyTargets(tableName, columns, v.fkTargets)
+			v.tables[i].ColumnsLoaded = true
+		}
+		break
+	}
+}
+
+func (v *ERDView) hasPendingColumnLoad() bool {
+	for _, table := range v.tables {
+		if table.ColumnsLoading {
+			return true
+		}
+	}
+	return false
 }

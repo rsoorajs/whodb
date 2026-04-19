@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,10 @@
 package history
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
@@ -300,5 +302,73 @@ func TestGet_NotFound(t *testing.T) {
 	_, err = mgr.Get("nonexistent")
 	if err == nil {
 		t.Error("Expected error for nonexistent entry")
+	}
+}
+
+func TestSearchByPrefixReturnsMostRecentSuccessfulEntry(t *testing.T) {
+	setupTestEnv(t)
+
+	mgr, err := NewManager()
+	if err != nil {
+		t.Fatalf("NewManager failed: %v", err)
+	}
+
+	if err := mgr.Add("SELECT * FROM users", true, "testdb"); err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+	if err := mgr.Add("SELECT * FROM users WHERE active = false", false, "testdb"); err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+	if err := mgr.Add("SELECT * FROM users WHERE active = true", true, "testdb"); err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+
+	match := mgr.SearchByPrefix("SELECT * FROM users")
+	if match == nil {
+		t.Fatal("Expected prefix match")
+	}
+	if match.Query != "SELECT * FROM users WHERE active = true" {
+		t.Fatalf("Expected most recent successful match, got %q", match.Query)
+	}
+}
+
+func TestPersistenceUsesAppendOnlyJSONLines(t *testing.T) {
+	setupTestEnv(t)
+
+	mgr, err := NewManager()
+	if err != nil {
+		t.Fatalf("NewManager failed: %v", err)
+	}
+
+	if err := mgr.Add("SELECT 1", true, "testdb"); err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+	if err := mgr.Add("SELECT 2", true, "testdb"); err != nil {
+		t.Fatalf("Add failed: %v", err)
+	}
+
+	configDir, err := config.GetConfigDir()
+	if err != nil {
+		t.Fatalf("GetConfigDir failed: %v", err)
+	}
+	historyPath := filepath.Join(configDir, "history.json")
+	data, err := os.ReadFile(historyPath)
+	if err != nil {
+		t.Fatalf("ReadFile failed: %v", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("Expected 2 JSON lines, got %d", len(lines))
+	}
+	if strings.HasPrefix(strings.TrimSpace(string(data)), "[") {
+		t.Fatalf("Expected append-only JSON lines, got array payload: %s", string(data))
+	}
+
+	for _, line := range lines {
+		var entry Entry
+		if err := json.Unmarshal([]byte(line), &entry); err != nil {
+			t.Fatalf("Invalid JSON line %q: %v", line, err)
+		}
 	}
 }

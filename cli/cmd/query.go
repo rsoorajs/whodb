@@ -204,27 +204,19 @@ Streaming:
 			columns[i] = output.Column{Name: col.Name, Type: col.Type}
 		}
 
-		rows := make([][]any, len(result.Rows))
-		for i, row := range result.Rows {
-			rows[i] = make([]any, len(row))
-			for j, cell := range row {
-				rows[i][j] = cell
-			}
-		}
-
 		// Track successful query execution
 		analytics.TrackQueryExecute(ctx, conn.Type, string(mcp.DetectStatementType(sql)), true,
-			time.Since(queryStart).Milliseconds(), len(rows), map[string]any{
+			time.Since(queryStart).Milliseconds(), len(result.Rows), map[string]any{
 				"format":    string(format),
 				"streaming": false,
 			})
 
-		queryResult := &output.QueryResult{
+		queryResult := &output.StringQueryResult{
 			Columns: columns,
-			Rows:    rows,
+			Rows:    result.Rows,
 		}
 
-		return out.WriteQueryResult(queryResult)
+		return out.WriteStringQueryResult(queryResult)
 	},
 }
 

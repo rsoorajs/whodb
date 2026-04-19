@@ -89,9 +89,20 @@ import {buildSourceSchemaQuery} from "@/utils/source-refs";
 
 function getProfileLabel(profile: LocalLoginProfile) {
     if (profile.Saved) return profile.Id;
-    if (profile.Type === DatabaseType.Redis) return profile.Hostname;
-    if (profile.Type === DatabaseType.Sqlite3 || profile.Type === DatabaseType.DuckDb) return profile.Database;
-    return `${profile.Hostname} [${profile.Username}]`;
+    if (profile.Type === DatabaseType.Redis && profile.Hostname) return profile.Hostname;
+    if ((profile.Type === DatabaseType.Sqlite3 || profile.Type === DatabaseType.DuckDb) && profile.Database) {
+        return profile.Database;
+    }
+    if (profile.Hostname && profile.Username) {
+        return `${profile.Hostname} [${profile.Username}]`;
+    }
+    if (profile.Database) {
+        return profile.Database;
+    }
+    if (profile.Hostname) {
+        return profile.Hostname;
+    }
+    return profile.Type;
 }
 
 function getProfileIcon(profile: LocalLoginProfile) {
@@ -184,6 +195,7 @@ export const Sidebar: FC = () => {
     const sslStatus = useAppSelector(state => state.auth.sslStatus);
     const {
         item,
+        isNoSQL,
         storageUnitLabel,
         supportsChat,
         supportsGraph,

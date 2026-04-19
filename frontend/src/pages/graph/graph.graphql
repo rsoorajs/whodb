@@ -3,6 +3,7 @@ query GetGraph($ref: SourceObjectRefInput) {
     Unit {
       Ref {
         Kind
+        Locator
         Path
       }
       Kind

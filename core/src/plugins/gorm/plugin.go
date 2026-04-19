@@ -23,11 +23,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/plugins"
+	queryast "github.com/clidey/whodb/core/src/query"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -235,7 +235,7 @@ func (p *GormPlugin) GetRows(config *engine.PluginConfig, req *engine.GetRowsReq
 	})
 }
 
-func (p *GormPlugin) GetRowCount(config *engine.PluginConfig, schema string, storageUnit string, where *model.WhereCondition) (int64, error) {
+func (p *GormPlugin) GetRowCount(config *engine.PluginConfig, schema string, storageUnit string, where *queryast.WhereCondition) (int64, error) {
 	return plugins.WithConnection(config, p.DB, func(db *gorm.DB) (int64, error) {
 		var columnTypes map[string]ColumnTypeInfo
 		if where != nil {
@@ -307,7 +307,7 @@ func (p *GormPlugin) GetColumnsForTable(config *engine.PluginConfig, schema stri
 }
 
 // SQLite-specific row retrieval is implemented in the sqlite3 plugin override.
-func (p *GormPlugin) getGenericRows(db *gorm.DB, schema, storageUnit string, where *model.WhereCondition, sort []*model.SortCondition, pageSize, pageOffset int) (*engine.GetRowsResult, error) {
+func (p *GormPlugin) getGenericRows(db *gorm.DB, schema, storageUnit string, where *queryast.WhereCondition, sort []*queryast.SortCondition, pageSize, pageOffset int) (*engine.GetRowsResult, error) {
 	var columnTypes map[string]ColumnTypeInfo
 	if where != nil {
 		var err error
@@ -352,7 +352,7 @@ func (p *GormPlugin) getGenericRows(db *gorm.DB, schema, storageUnit string, whe
 				Column:    s.Column,
 				Direction: plugins.Down,
 			}
-			if s.Direction == model.SortDirectionAsc {
+			if s.Direction == queryast.SortDirectionAsc {
 				sortList[i].Direction = plugins.Up
 			}
 		}
@@ -401,17 +401,17 @@ func (p *GormPlugin) getGenericRows(db *gorm.DB, schema, storageUnit string, whe
 	return result, nil
 }
 
-func (p *GormPlugin) ApplyWhereConditions(query *gorm.DB, condition *model.WhereCondition, columnTypes map[string]ColumnTypeInfo) (*gorm.DB, error) {
+func (p *GormPlugin) ApplyWhereConditions(query *gorm.DB, condition *queryast.WhereCondition, columnTypes map[string]ColumnTypeInfo) (*gorm.DB, error) {
 	if condition == nil {
 		return query, nil
 	}
 
 	switch condition.Type {
-	case model.WhereConditionTypeAtomic:
+	case queryast.WhereConditionTypeAtomic:
 		return p.applyAtomicCondition(query, condition.Atomic, columnTypes)
-	case model.WhereConditionTypeAnd:
+	case queryast.WhereConditionTypeAnd:
 		return p.applyAndConditions(query, condition.And, columnTypes)
-	case model.WhereConditionTypeOr:
+	case queryast.WhereConditionTypeOr:
 		return p.applyOrConditions(query, condition.Or, columnTypes)
 	}
 
@@ -419,7 +419,7 @@ func (p *GormPlugin) ApplyWhereConditions(query *gorm.DB, condition *model.Where
 }
 
 // applyAtomicCondition handles a single atomic WHERE condition (e.g., column = value).
-func (p *GormPlugin) applyAtomicCondition(query *gorm.DB, atomic *model.AtomicWhereCondition, columnTypes map[string]ColumnTypeInfo) (*gorm.DB, error) {
+func (p *GormPlugin) applyAtomicCondition(query *gorm.DB, atomic *queryast.AtomicWhereCondition, columnTypes map[string]ColumnTypeInfo) (*gorm.DB, error) {
 	if atomic == nil {
 		return query, nil
 	}
@@ -509,7 +509,7 @@ func (p *GormPlugin) applySingleValueCondition(query *gorm.DB, col, operator, ra
 }
 
 // applyAndConditions applies all children as AND-combined WHERE clauses.
-func (p *GormPlugin) applyAndConditions(query *gorm.DB, and *model.OperationWhereCondition, columnTypes map[string]ColumnTypeInfo) (*gorm.DB, error) {
+func (p *GormPlugin) applyAndConditions(query *gorm.DB, and *queryast.OperationWhereCondition, columnTypes map[string]ColumnTypeInfo) (*gorm.DB, error) {
 	if and == nil {
 		return query, nil
 	}
@@ -525,7 +525,7 @@ func (p *GormPlugin) applyAndConditions(query *gorm.DB, and *model.OperationWher
 }
 
 // applyOrConditions applies all children as OR-combined WHERE clauses.
-func (p *GormPlugin) applyOrConditions(query *gorm.DB, or *model.OperationWhereCondition, columnTypes map[string]ColumnTypeInfo) (*gorm.DB, error) {
+func (p *GormPlugin) applyOrConditions(query *gorm.DB, or *queryast.OperationWhereCondition, columnTypes map[string]ColumnTypeInfo) (*gorm.DB, error) {
 	if or == nil {
 		return query, nil
 	}

@@ -167,7 +167,7 @@ export const useDesktopMenu = () => {
       'menu:disconnect': safeHandler(async () => {
         const confirm = await showConfirm('Disconnect', 'Are you sure you want to disconnect from the current database?');
         if (confirm) {
-          navigate('/');
+          navigate(InternalRoutes.Logout.path);
         }
       }),
       'menu:new-scratchpad-page': safeHandler(() => {

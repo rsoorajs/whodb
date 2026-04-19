@@ -26,7 +26,6 @@ import (
 	"github.com/clidey/whodb/core/src/common/ssl"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/source"
-	"github.com/clidey/whodb/core/src/source/adapters"
 	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
@@ -50,8 +49,7 @@ func getSourceSessionForContext(ctx context.Context) (source.TypeSpec, source.So
 		return source.TypeSpec{}, nil, err
 	}
 
-	connector := &adapters.DatabaseConnector{}
-	session, err := connector.Open(ctx, spec, credentials)
+	session, err := source.Open(ctx, spec, credentials)
 	if err != nil {
 		return source.TypeSpec{}, nil, err
 	}
@@ -83,14 +81,14 @@ func recordInputsToMap(values []*model.RecordInput) map[string]string {
 	return mapped
 }
 
-func recordInputsToEngineRecords(values []*model.RecordInput) []engine.Record {
-	records := make([]engine.Record, 0, len(values))
+func recordInputsToSourceRecords(values []*model.RecordInput) []source.Record {
+	records := make([]source.Record, 0, len(values))
 	for _, value := range values {
 		extra := map[string]string{}
 		for _, item := range value.Extra {
 			extra[item.Key] = item.Value
 		}
-		records = append(records, engine.Record{
+		records = append(records, source.Record{
 			Key:   value.Key,
 			Value: value.Value,
 			Extra: extra,
@@ -116,7 +114,7 @@ func recordsToModel(values map[string]string) []*model.Record {
 	return records
 }
 
-func recordSliceToModel(values []engine.Record) []*model.Record {
+func recordSliceToModel(values []source.Record) []*model.Record {
 	records := make([]*model.Record, 0, len(values))
 	for _, value := range values {
 		records = append(records, &model.Record{
@@ -131,16 +129,24 @@ func sourceRefFromInput(ref *model.SourceObjectRefInput) *source.ObjectRef {
 	if ref == nil {
 		return nil
 	}
-	return &source.ObjectRef{
+
+	resolved := source.ObjectRef{
 		Kind: source.ObjectKind(ref.Kind),
 		Path: slices.Clone(ref.Path),
 	}
+	if ref.Locator != nil {
+		resolved.Locator = *ref.Locator
+	}
+	normalized := source.NormalizeObjectRef(resolved)
+	return &normalized
 }
 
 func sourceRefToModel(ref source.ObjectRef) *model.SourceObjectRef {
+	normalized := source.NormalizeObjectRef(ref)
 	return &model.SourceObjectRef{
-		Kind: model.SourceObjectKind(ref.Kind),
-		Path: slices.Clone(ref.Path),
+		Kind:    model.SourceObjectKind(normalized.Kind),
+		Locator: normalized.Locator,
+		Path:    slices.Clone(normalized.Path),
 	}
 }
 
@@ -159,46 +165,6 @@ func sourceObjectToModel(object source.Object) *model.SourceObject {
 		Actions:     actions,
 		Metadata:    recordSliceToModel(object.Metadata),
 	}
-}
-
-func sourceEngineCredentialsForRef(spec source.TypeSpec, credentials *source.Credentials, ref *source.ObjectRef) *engine.Credentials {
-	engineCredentials := adapters.EngineCredentials(spec, credentials)
-	if ref == nil {
-		return engineCredentials
-	}
-
-	if databaseName := sourceValueForKind(spec.Contract, ref.Path, source.ObjectKindDatabase); databaseName != "" {
-		engineCredentials.Database = databaseName
-	}
-
-	return engineCredentials
-}
-
-func sourceNamespaceForRef(spec source.TypeSpec, ref *source.ObjectRef) string {
-	if ref == nil {
-		return ""
-	}
-
-	defaultIndex := slices.Index(spec.Contract.BrowsePath, spec.Contract.DefaultObjectKind)
-	if defaultIndex <= 0 || defaultIndex-1 >= len(ref.Path) {
-		return ""
-	}
-	return ref.Path[defaultIndex-1]
-}
-
-func sourceValueForKind(contract source.Contract, path []string, kind source.ObjectKind) string {
-	index := slices.Index(contract.BrowsePath, kind)
-	if index < 0 || index >= len(path) {
-		return ""
-	}
-	return path[index]
-}
-
-func sourceObjectName(ref *source.ObjectRef) string {
-	if ref == nil || len(ref.Path) == 0 {
-		return ""
-	}
-	return ref.Path[len(ref.Path)-1]
 }
 
 func sourceFileBaseName(ref *source.ObjectRef, fallback string) string {
@@ -237,9 +203,9 @@ func sourceTypeToModel(spec source.TypeSpec) *model.SourceType {
 
 	sslModes := make([]*model.SourceSSLMode, 0, len(spec.SSLModes))
 	for _, sslMode := range spec.SSLModes {
-		aliases := ssl.GetSSLModeAliases(engine.DatabaseType(spec.Connector), sslMode.Value)
+		aliases := ssl.GetSSLModeAliases(engine.DatabaseType(spec.Connector), ssl.SSLMode(sslMode.Value))
 		sslModes = append(sslModes, &model.SourceSSLMode{
-			Value:   string(sslMode.Value),
+			Value:   sslMode.Value,
 			Aliases: aliases,
 		})
 	}
@@ -260,6 +226,11 @@ func sourceContractToModel(contract source.Contract) *model.SourceContract {
 	surfaces := make([]model.SourceSurface, 0, len(contract.Surfaces))
 	for _, surface := range contract.Surfaces {
 		surfaces = append(surfaces, model.SourceSurface(surface))
+	}
+
+	rootActions := make([]model.SourceAction, 0, len(contract.RootActions))
+	for _, action := range contract.RootActions {
+		rootActions = append(rootActions, model.SourceAction(action))
 	}
 
 	browsePath := make([]model.SourceObjectKind, 0, len(contract.BrowsePath))
@@ -296,6 +267,7 @@ func sourceContractToModel(contract source.Contract) *model.SourceContract {
 	return &model.SourceContract{
 		Model:             model.SourceModel(contract.Model),
 		Surfaces:          surfaces,
+		RootActions:       rootActions,
 		BrowsePath:        browsePath,
 		DefaultObjectKind: model.SourceObjectKind(contract.DefaultObjectKind),
 		GraphScopeKind:    graphScopeKind,
@@ -332,7 +304,23 @@ func sourceSessionMetadataToModel(metadata *source.SessionMetadata) *model.Sourc
 	}
 }
 
-func rowsResultToModel(rowsResult *engine.GetRowsResult) *model.RowsResult {
+func sourceContentToModel(content *source.ContentResult) *model.SourceContent {
+	if content == nil {
+		return nil
+	}
+
+	return &model.SourceContent{
+		Text:       content.Text,
+		MIMEType:   content.MIMEType,
+		IsBinary:   content.IsBinary,
+		SizeBytes:  fmt.Sprintf("%d", content.SizeBytes),
+		Truncated:  content.Truncated,
+		FileName:   content.FileName,
+		ModifiedAt: content.ModifiedAt,
+	}
+}
+
+func rowsResultToModel(rowsResult *source.RowsResult) *model.RowsResult {
 	if rowsResult == nil {
 		return nil
 	}
@@ -355,7 +343,7 @@ func sourceObjectColumnsToModel(results []source.ObjectColumns) []*model.SourceO
 	return columns
 }
 
-func graphUnitsToModel(graphUnits []engine.GraphUnit, parent *source.ObjectRef, defaultKind source.ObjectKind) []*model.GraphUnit {
+func graphUnitsToModel(graphUnits []source.GraphUnit, parent *source.ObjectRef, defaultKind source.ObjectKind) []*model.GraphUnit {
 	mapped := make([]*model.GraphUnit, 0, len(graphUnits))
 	for _, graphUnit := range graphUnits {
 		relations := make([]*model.GraphUnitRelationship, 0, len(graphUnit.Relations))
@@ -369,10 +357,7 @@ func graphUnitsToModel(graphUnits []engine.GraphUnit, parent *source.ObjectRef, 
 		}
 
 		object := source.Object{
-			Ref: source.ObjectRef{
-				Kind: defaultKind,
-				Path: appendGraphPath(parent, graphUnit.Unit.Name),
-			},
+			Ref:      source.NewObjectRef(defaultKind, appendGraphPath(parent, graphUnit.Unit.Name)),
 			Kind:     defaultKind,
 			Name:     graphUnit.Unit.Name,
 			Path:     appendGraphPath(parent, graphUnit.Unit.Name),
@@ -450,4 +435,31 @@ func mergeCredentialValues(base map[string]string, overrides map[string]string) 
 		merged[key] = value
 	}
 	return merged
+}
+
+func cloneStringRows(rows [][]string) [][]string {
+	cloned := make([][]string, 0, len(rows))
+	for _, row := range rows {
+		cloned = append(cloned, slices.Clone(row))
+	}
+	return cloned
+}
+
+func sourceImportColumnMappings(mappings []*model.ImportColumnMapping) []source.ImportColumnMapping {
+	if len(mappings) == 0 {
+		return nil
+	}
+
+	converted := make([]source.ImportColumnMapping, 0, len(mappings))
+	for _, mapping := range mappings {
+		if mapping == nil {
+			continue
+		}
+		converted = append(converted, source.ImportColumnMapping{
+			SourceColumn: mapping.SourceColumn,
+			TargetColumn: mapping.TargetColumn,
+			Skip:         mapping.Skip,
+		})
+	}
+	return converted
 }

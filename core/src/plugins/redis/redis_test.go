@@ -1,17 +1,33 @@
+/*
+ * Copyright 2026 Clidey, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package redis
 
 import (
 	"testing"
 
-	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src/common/ssl"
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/query"
 )
 
-func redisAtomicWhere(key, operator, value string) *model.WhereCondition {
-	return &model.WhereCondition{
-		Type: model.WhereConditionTypeAtomic,
-		Atomic: &model.AtomicWhereCondition{
+func redisAtomicWhere(key, operator, value string) *query.WhereCondition {
+	return &query.WhereCondition{
+		Type: query.WhereConditionTypeAtomic,
+		Atomic: &query.AtomicWhereCondition{
 			Key:      key,
 			Operator: operator,
 			Value:    value,
@@ -28,7 +44,7 @@ func TestConvertWhereConditionToRedisFilter(t *testing.T) {
 		t.Fatalf("unexpected redis filter: %#v", filter)
 	}
 
-	if _, err := convertWhereConditionToRedisFilter(&model.WhereCondition{Type: model.WhereConditionTypeOr}); err == nil {
+	if _, err := convertWhereConditionToRedisFilter(&query.WhereCondition{Type: query.WhereConditionTypeOr}); err == nil {
 		t.Fatal("expected compound where conditions to be rejected")
 	}
 }
@@ -78,7 +94,7 @@ func TestRedisFilterHelpers(t *testing.T) {
 	}
 
 	// Unsupported compound filters are intentionally ignored instead of hiding data.
-	ignoredWhere := &model.WhereCondition{Type: model.WhereConditionTypeAnd}
+	ignoredWhere := &query.WhereCondition{Type: query.WhereConditionTypeAnd}
 	if !filterRedisHash("field", "value", ignoredWhere) {
 		t.Fatal("expected invalid filter expressions to be ignored")
 	}

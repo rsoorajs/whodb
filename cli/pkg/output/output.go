@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -43,6 +44,13 @@ const (
 type QueryResult struct {
 	Columns []Column `json:"columns"`
 	Rows    [][]any  `json:"rows"`
+}
+
+// StringQueryResult represents query results that are already materialized as
+// strings and can be emitted without converting through [][]any.
+type StringQueryResult struct {
+	Columns []Column   `json:"columns"`
+	Rows    [][]string `json:"rows"`
 }
 
 // QueryStream writes a query result incrementally after the columns are known.
@@ -151,6 +159,26 @@ func (w *Writer) WriteQueryResult(result *QueryResult) error {
 	}
 }
 
+// WriteStringQueryResult writes a result set whose cells are already strings.
+func (w *Writer) WriteStringQueryResult(result *StringQueryResult) error {
+	format := w.resolveFormat()
+
+	switch format {
+	case FormatJSON:
+		return w.writeStringJSON(result)
+	case FormatNDJSON:
+		return w.writeStringNDJSON(result)
+	case FormatCSV:
+		return w.writeStringCSV(result)
+	case FormatPlain:
+		return w.writeStringPlain(result)
+	case FormatTable:
+		return w.writeStringTable(result)
+	default:
+		return fmt.Errorf("unknown output format: %s", format)
+	}
+}
+
 // BeginQueryStream starts a streaming query result writer for the configured
 // output format.
 func (w *Writer) BeginQueryStream(columns []Column) (QueryStream, error) {
@@ -173,30 +201,36 @@ func (w *Writer) BeginQueryStream(columns []Column) (QueryStream, error) {
 }
 
 func (w *Writer) writeJSON(result *QueryResult) error {
-	output := make([]map[string]any, 0, len(result.Rows))
+	return w.writeJSONRows(len(result.Rows), func(i int) map[string]any {
+		return result.recordForRow(result.Rows[i])
+	})
+}
 
-	for _, row := range result.Rows {
-		output = append(output, result.recordForRow(row))
-	}
-
-	encoder := json.NewEncoder(w.out)
-	encoder.SetIndent("", "  ")
-	return encoder.Encode(output)
+func (w *Writer) writeStringJSON(result *StringQueryResult) error {
+	return w.writeJSONRows(len(result.Rows), func(i int) map[string]any {
+		return recordForStringRow(result.Columns, result.Rows[i])
+	})
 }
 
 func (w *Writer) writeNDJSON(result *QueryResult) error {
-	encoder := json.NewEncoder(w.out)
-	for _, row := range result.Rows {
-		if err := encoder.Encode(result.recordForRow(row)); err != nil {
-			return err
-		}
-	}
-	return nil
+	return w.writeNDJSONRows(len(result.Rows), func(i int) map[string]any {
+		return result.recordForRow(result.Rows[i])
+	})
+}
+
+func (w *Writer) writeStringNDJSON(result *StringQueryResult) error {
+	return w.writeNDJSONRows(len(result.Rows), func(i int) map[string]any {
+		return recordForStringRow(result.Columns, result.Rows[i])
+	})
 }
 
 func (r *QueryResult) recordForRow(row []any) map[string]any {
-	record := make(map[string]any, len(r.Columns))
-	for i, col := range r.Columns {
+	return recordForAnyRow(r.Columns, row)
+}
+
+func recordForAnyRow(columns []Column, row []any) map[string]any {
+	record := make(map[string]any, len(columns))
+	for i, col := range columns {
 		if i < len(row) {
 			record[col.Name] = row[i]
 		}
@@ -208,30 +242,93 @@ func recordForStringRow(columns []Column, row []string) map[string]any {
 	record := make(map[string]any, len(columns))
 	for i, col := range columns {
 		if i < len(row) {
-			record[col.Name] = row[i]
+			record[col.Name] = typedValueForStringColumn(col, row[i])
 		}
 	}
 	return record
 }
 
+func typedValueForStringColumn(column Column, value string) any {
+	switch strings.ToLower(strings.TrimSpace(column.Type)) {
+	case "bool", "boolean":
+		if parsed, err := strconv.ParseBool(strings.TrimSpace(value)); err == nil {
+			return parsed
+		}
+	}
+	return value
+}
+
 func (w *Writer) writeCSV(result *QueryResult) error {
+	return w.writeCSVRows(result.Columns, len(result.Rows), func(i int) []string {
+		return stringValuesForAnyRow(result.Rows[i])
+	})
+}
+
+func (w *Writer) writeStringCSV(result *StringQueryResult) error {
+	return w.writeCSVRows(result.Columns, len(result.Rows), func(i int) []string {
+		return result.Rows[i]
+	})
+}
+
+func (w *Writer) writePlain(result *QueryResult) error {
+	return w.writePlainRows(result.Columns, len(result.Rows), func(i int) []string {
+		return stringValuesForAnyRow(result.Rows[i])
+	})
+}
+
+func (w *Writer) writeStringPlain(result *StringQueryResult) error {
+	return w.writePlainRows(result.Columns, len(result.Rows), func(i int) []string {
+		return result.Rows[i]
+	})
+}
+
+func (w *Writer) writeTable(result *QueryResult) error {
+	return w.writeTableRows(result.Columns, len(result.Rows), func(i int) []string {
+		return stringValuesForAnyRow(result.Rows[i])
+	})
+}
+
+func (w *Writer) writeStringTable(result *StringQueryResult) error {
+	return w.writeTableRows(result.Columns, len(result.Rows), func(i int) []string {
+		return result.Rows[i]
+	})
+}
+
+func (w *Writer) writeJSONRows(rowCount int, recordForIndex func(int) map[string]any) error {
+	output := make([]map[string]any, 0, rowCount)
+	for i := 0; i < rowCount; i++ {
+		output = append(output, recordForIndex(i))
+	}
+
+	encoder := json.NewEncoder(w.out)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(output)
+}
+
+func (w *Writer) writeNDJSONRows(rowCount int, recordForIndex func(int) map[string]any) error {
+	encoder := json.NewEncoder(w.out)
+	for i := 0; i < rowCount; i++ {
+		if err := encoder.Encode(recordForIndex(i)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (w *Writer) writeCSVRows(columns []Column, rowCount int, rowValues func(int) []string) error {
 	csvWriter := csv.NewWriter(w.out)
 	defer csvWriter.Flush()
 
-	headers := make([]string, len(result.Columns))
-	for i, col := range result.Columns {
+	headers := make([]string, len(columns))
+	for i, col := range columns {
 		headers[i] = col.Name
 	}
 	if err := csvWriter.Write(headers); err != nil {
 		return fmt.Errorf("writing CSV headers: %w", err)
 	}
 
-	for _, row := range result.Rows {
-		record := make([]string, len(row))
-		for i, cell := range row {
-			record[i] = fmt.Sprintf("%v", cell)
-		}
-		if err := csvWriter.Write(record); err != nil {
+	for i := 0; i < rowCount; i++ {
+		if err := csvWriter.Write(rowValues(i)); err != nil {
 			return fmt.Errorf("writing CSV row: %w", err)
 		}
 	}
@@ -239,43 +336,44 @@ func (w *Writer) writeCSV(result *QueryResult) error {
 	return csvWriter.Error()
 }
 
-func (w *Writer) writePlain(result *QueryResult) error {
-	headers := make([]string, len(result.Columns))
-	for i, col := range result.Columns {
+func (w *Writer) writePlainRows(columns []Column, rowCount int, rowValues func(int) []string) error {
+	headers := make([]string, len(columns))
+	for i, col := range columns {
 		headers[i] = col.Name
 	}
-	fmt.Fprintln(w.out, strings.Join(headers, "\t"))
+	if _, err := fmt.Fprintln(w.out, strings.Join(headers, "\t")); err != nil {
+		return err
+	}
 
-	for _, row := range result.Rows {
-		values := make([]string, len(row))
-		for i, cell := range row {
-			values[i] = fmt.Sprintf("%v", cell)
+	for i := 0; i < rowCount; i++ {
+		if _, err := fmt.Fprintln(w.out, strings.Join(rowValues(i), "\t")); err != nil {
+			return err
 		}
-		fmt.Fprintln(w.out, strings.Join(values, "\t"))
 	}
 
 	return nil
 }
 
-func (w *Writer) writeTable(result *QueryResult) error {
-	if len(result.Columns) == 0 {
+func (w *Writer) writeTableRows(columns []Column, rowCount int, rowValues func(int) []string) error {
+	if len(columns) == 0 {
 		return nil
 	}
 
-	widths := make([]int, len(result.Columns))
-	rows := make([][]string, len(result.Rows))
-	headers := make([]string, len(result.Columns))
+	widths := make([]int, len(columns))
+	rows := make([][]string, rowCount)
+	headers := make([]string, len(columns))
 
-	for i, col := range result.Columns {
+	for i, col := range columns {
 		headers[i] = col.Name
 		widths[i] = max(3, lipgloss.Width(col.Name))
 	}
 
-	for i, row := range result.Rows {
-		renderedRow := make([]string, len(result.Columns))
-		for j := range result.Columns {
+	for i := 0; i < rowCount; i++ {
+		row := rowValues(i)
+		renderedRow := make([]string, len(columns))
+		for j := range columns {
 			if j < len(row) {
-				renderedRow[j] = fmt.Sprintf("%v", row[j])
+				renderedRow[j] = row[j]
 			}
 			widths[j] = max(widths[j], lipgloss.Width(renderedRow[j]))
 		}
@@ -286,7 +384,7 @@ func (w *Writer) writeTable(result *QueryResult) error {
 		return err
 	}
 
-	separators := make([]string, len(result.Columns))
+	separators := make([]string, len(columns))
 	for i, width := range widths {
 		separators[i] = strings.Repeat("─", width)
 	}
@@ -301,6 +399,14 @@ func (w *Writer) writeTable(result *QueryResult) error {
 	}
 
 	return nil
+}
+
+func stringValuesForAnyRow(row []any) []string {
+	record := make([]string, len(row))
+	for i, cell := range row {
+		record[i] = fmt.Sprintf("%v", cell)
+	}
+	return record
 }
 
 func (w *Writer) renderTableRow(cells []string, widths []int, header bool) string {

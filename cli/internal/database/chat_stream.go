@@ -1,7 +1,7 @@
 //go:build !arm && !riscv64
 
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/clidey/whodb/cli/internal/baml"
 	"github.com/clidey/whodb/core/baml_client"
 	"github.com/clidey/whodb/core/baml_client/types"
 	"github.com/clidey/whodb/core/src/bamlconfig"
@@ -37,6 +38,8 @@ func (m *Manager) SendAIChatStream(ctx context.Context, providerID, modelType, t
 	if m.currentConnection == nil {
 		return nil, fmt.Errorf("not connected to any database")
 	}
+
+	baml.Ensure()
 
 	dbType := engine.DatabaseType(m.currentConnection.Type)
 	plugin := m.engine.Choose(dbType)

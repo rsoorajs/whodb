@@ -20,9 +20,6 @@ package source
 
 import (
 	"strings"
-
-	"github.com/clidey/whodb/core/src/common/ssl"
-	"github.com/clidey/whodb/core/src/engine"
 )
 
 // Category identifies the broad family a source belongs to.
@@ -227,6 +224,7 @@ type ConnectionField struct {
 type Contract struct {
 	Model             Model
 	Surfaces          []Surface
+	RootActions       []Action
 	BrowsePath        []ObjectKind
 	DefaultObjectKind ObjectKind
 	GraphScopeKind    *ObjectKind
@@ -267,12 +265,13 @@ type ObjectType struct {
 type TypeSpec struct {
 	ID               string
 	Label            string
+	DriverID         string
 	Connector        string
 	Category         Category
 	ConnectionFields []ConnectionField
 	Contract         Contract
 	IsAWSManaged     bool
-	SSLModes         []ssl.SSLModeInfo
+	SSLModes         []SSLModeInfo
 }
 
 // ConnectionFieldByKey looks up a connection field by key.
@@ -309,8 +308,9 @@ func (c *Credentials) CloneValues() map[string]string {
 
 // ObjectRef identifies an object within a source.
 type ObjectRef struct {
-	Kind ObjectKind
-	Path []string
+	Kind    ObjectKind
+	Locator string
+	Path    []string
 }
 
 // Object represents one browseable object in a source.
@@ -321,20 +321,20 @@ type Object struct {
 	Path        []string
 	HasChildren bool
 	Actions     []Action
-	Metadata    []engine.Record
+	Metadata    []Record
 }
 
 // ObjectColumns pairs an object reference with its resolved columns.
 type ObjectColumns struct {
 	Ref     ObjectRef
-	Columns []engine.Column
+	Columns []Column
 }
 
 // SessionMetadata contains query-builder/editor metadata for an active session.
 type SessionMetadata struct {
 	SourceType      string
 	QueryLanguages  []string
-	TypeDefinitions []engine.TypeDefinition
+	TypeDefinitions []TypeDefinition
 	Operators       []string
 	AliasMap        map[string]string
 }

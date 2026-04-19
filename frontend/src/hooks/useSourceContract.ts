@@ -59,8 +59,8 @@ export function useSourceContract(sourceType: string | undefined): SourceContrac
             connector,
             loading,
             isNoSQL: isNoSQLSourceType(sourceType, connector),
-            storageUnitLabel: getSourceObjectLabelForType(sourceType, connector),
-            singularStorageUnitLabel: getSourceObjectLabelForType(sourceType, connector, true),
+            storageUnitLabel: item?.storageUnitLabel ?? getSourceObjectLabelForType(sourceType, connector),
+            singularStorageUnitLabel: item?.singularStorageUnitLabel ?? getSourceObjectLabelForType(sourceType, connector, true),
             ...featureFlags,
         };
     }, [sourceType, item, loading]);

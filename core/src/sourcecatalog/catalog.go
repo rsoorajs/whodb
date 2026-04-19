@@ -24,8 +24,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/clidey/whodb/core/src/dbcatalog"
-	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/source"
 )
 
@@ -34,6 +32,7 @@ import (
 type FamilySpec struct {
 	Category       source.Category
 	Model          source.Model
+	RootActions    []source.Action
 	BrowsePath     []source.ObjectKind
 	DefaultObject  source.ObjectKind
 	GraphScopeKind *source.ObjectKind
@@ -52,13 +51,27 @@ var (
 	objectKindColl     = source.ObjectKindCollection
 )
 
+const (
+	connectorPostgres      = "Postgres"
+	connectorCockroachDB   = "CockroachDB"
+	connectorMySQL         = "MySQL"
+	connectorMariaDB       = "MariaDB"
+	connectorClickHouse    = "ClickHouse"
+	connectorSqlite3       = "Sqlite3"
+	connectorDuckDB        = "DuckDB"
+	connectorMongoDB       = "MongoDB"
+	connectorRedis         = "Redis"
+	connectorMemcached     = "Memcached"
+	connectorElasticSearch = "ElasticSearch"
+)
+
 var (
 	customFamilySpecsMu sync.RWMutex
 	customFamilySpecs   = map[string]FamilySpec{}
 )
 
 var familySpecs = map[string]FamilySpec{
-	string(engine.DatabaseType_Postgres): {
+	connectorPostgres: {
 		Category:       source.CategoryDatabase,
 		Model:          source.ModelRelational,
 		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindSchema, objectKindTable},
@@ -72,7 +85,7 @@ var familySpecs = map[string]FamilySpec{
 			tabularReadOnlyObjectType(objectKindView, "View", "Views"),
 		},
 	},
-	string(engine.DatabaseType_CockroachDB): {
+	connectorCockroachDB: {
 		Category:       source.CategoryDatabase,
 		Model:          source.ModelRelational,
 		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindSchema, objectKindTable},
@@ -86,7 +99,7 @@ var familySpecs = map[string]FamilySpec{
 			tabularReadOnlyObjectType(objectKindView, "View", "Views"),
 		},
 	},
-	string(engine.DatabaseType_MySQL): {
+	connectorMySQL: {
 		Category:       source.CategoryDatabase,
 		Model:          source.ModelRelational,
 		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindTable},
@@ -99,7 +112,7 @@ var familySpecs = map[string]FamilySpec{
 			tabularReadOnlyObjectType(objectKindView, "View", "Views"),
 		},
 	},
-	string(engine.DatabaseType_MariaDB): {
+	connectorMariaDB: {
 		Category:       source.CategoryDatabase,
 		Model:          source.ModelRelational,
 		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindTable},
@@ -112,7 +125,7 @@ var familySpecs = map[string]FamilySpec{
 			tabularReadOnlyObjectType(objectKindView, "View", "Views"),
 		},
 	},
-	string(engine.DatabaseType_ClickHouse): {
+	connectorClickHouse: {
 		Category:       source.CategoryDatabase,
 		Model:          source.ModelRelational,
 		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindTable},
@@ -124,25 +137,27 @@ var familySpecs = map[string]FamilySpec{
 			tabularObjectType(objectKindTable, "Table", "Tables"),
 		},
 	},
-	string(engine.DatabaseType_Sqlite3): {
+	connectorSqlite3: {
 		Category:      source.CategoryDatabase,
 		Model:         source.ModelRelational,
+		RootActions:   []source.Action{source.ActionBrowse, source.ActionCreateChild},
 		BrowsePath:    []source.ObjectKind{objectKindTable},
 		DefaultObject: objectKindTable,
 		ObjectTypes: []source.ObjectType{
 			tabularObjectType(objectKindTable, "Table", "Tables"),
 		},
 	},
-	string(engine.DatabaseType_DuckDB): {
+	connectorDuckDB: {
 		Category:      source.CategoryDatabase,
 		Model:         source.ModelRelational,
+		RootActions:   []source.Action{source.ActionBrowse, source.ActionCreateChild},
 		BrowsePath:    []source.ObjectKind{objectKindTable},
 		DefaultObject: objectKindTable,
 		ObjectTypes: []source.ObjectType{
 			tabularObjectType(objectKindTable, "Table", "Tables"),
 		},
 	},
-	string(engine.DatabaseType_MongoDB): {
+	connectorMongoDB: {
 		Category:       source.CategoryDatabase,
 		Model:          source.ModelDocument,
 		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindColl},
@@ -155,7 +170,7 @@ var familySpecs = map[string]FamilySpec{
 			metadataObjectType(objectKindIndex, "Index", "Indexes", false),
 		},
 	},
-	string(engine.DatabaseType_Redis): {
+	connectorRedis: {
 		Category:      source.CategoryCache,
 		Model:         source.ModelKeyValue,
 		BrowsePath:    []source.ObjectKind{objectKindDatabase, objectKindKey},
@@ -165,7 +180,7 @@ var familySpecs = map[string]FamilySpec{
 			keyValueObjectType(objectKindKey, "Key", "Keys"),
 		},
 	},
-	string(engine.DatabaseType_Memcached): {
+	connectorMemcached: {
 		Category:      source.CategoryCache,
 		Model:         source.ModelKeyValue,
 		BrowsePath:    []source.ObjectKind{objectKindItem},
@@ -174,7 +189,7 @@ var familySpecs = map[string]FamilySpec{
 			keyValueReadOnlyObjectType(objectKindItem, "Item", "Items"),
 		},
 	},
-	string(engine.DatabaseType_ElasticSearch): {
+	connectorElasticSearch: {
 		Category:       source.CategorySearch,
 		Model:          source.ModelSearch,
 		BrowsePath:     []source.ObjectKind{objectKindIndex},
@@ -202,16 +217,7 @@ var extraFieldOrder = []string{
 
 // All returns the full source catalog in UI order.
 func All() []source.TypeSpec {
-	entries := dbcatalog.All()
-	specs := make([]source.TypeSpec, 0, len(entries))
-	for _, entry := range entries {
-		spec, ok := mapEntry(entry)
-		if !ok {
-			continue
-		}
-		specs = append(specs, spec)
-	}
-	return specs
+	return source.RegisteredTypes()
 }
 
 // IDs returns source type identifiers in UI order.
@@ -226,12 +232,40 @@ func IDs() []string {
 
 // Find looks up a source type by id using a case-insensitive match.
 func Find(id string) (source.TypeSpec, bool) {
-	for _, spec := range All() {
-		if strings.EqualFold(spec.ID, id) {
-			return cloneSpec(spec), true
-		}
-	}
-	return source.TypeSpec{}, false
+	return source.FindType(id)
+}
+
+// FieldVisibility declares which standard connection fields are shown for one
+// source-backed database type.
+type FieldVisibility struct {
+	Hostname   bool
+	Username   bool
+	Password   bool
+	Database   bool
+	SearchPath bool
+}
+
+// FieldRequirements declares which standard connection fields are required for
+// one source-backed database type.
+type FieldRequirements struct {
+	Hostname bool
+	Username bool
+	Password bool
+	Database bool
+}
+
+// DatabaseEntry contains the database-specific metadata needed to expose a
+// database family member through the source catalog.
+type DatabaseEntry struct {
+	ID                 string
+	Label              string
+	Connector          string
+	Extra              map[string]string
+	Fields             FieldVisibility
+	RequiredFields     FieldRequirements
+	SupportsScratchpad bool
+	IsAWSManaged       bool
+	SSLModes           []source.SSLModeInfo
 }
 
 // RegisterFamilySpec registers a source-family mapping for a connector/plugin
@@ -243,8 +277,10 @@ func RegisterFamilySpec(connector string, spec FamilySpec) {
 	customFamilySpecs[connector] = cloneFamilySpec(spec)
 }
 
-func mapEntry(entry dbcatalog.ConnectableDatabase) (source.TypeSpec, bool) {
-	family, ok := familySpecFor(string(entry.PluginType))
+// BuildTypeSpec converts one database-backed source registration into a public
+// source type specification.
+func BuildTypeSpec(entry DatabaseEntry) (source.TypeSpec, bool) {
+	family, ok := familySpecFor(entry.Connector)
 	if !ok {
 		return source.TypeSpec{}, false
 	}
@@ -252,6 +288,7 @@ func mapEntry(entry dbcatalog.ConnectableDatabase) (source.TypeSpec, bool) {
 	contract := source.Contract{
 		Model:             family.Model,
 		Surfaces:          buildSurfaces(entry, family),
+		RootActions:       buildRootActions(family),
 		BrowsePath:        slices.Clone(family.BrowsePath),
 		DefaultObjectKind: family.DefaultObject,
 		GraphScopeKind:    family.GraphScopeKind,
@@ -259,15 +296,23 @@ func mapEntry(entry dbcatalog.ConnectableDatabase) (source.TypeSpec, bool) {
 	}
 
 	return source.TypeSpec{
-		ID:               string(entry.ID),
+		ID:               entry.ID,
 		Label:            entry.Label,
-		Connector:        string(entry.PluginType),
+		DriverID:         "database",
+		Connector:        entry.Connector,
 		Category:         family.Category,
 		ConnectionFields: buildConnectionFields(entry),
 		Contract:         contract,
 		IsAWSManaged:     entry.IsAWSManaged,
-		SSLModes:         slices.Clone(entry.SSLModes),
+		SSLModes:         cloneSourceSSLModes(entry.SSLModes),
 	}, true
+}
+
+func buildRootActions(family FamilySpec) []source.Action {
+	if len(family.RootActions) > 0 {
+		return slices.Clone(family.RootActions)
+	}
+	return []source.Action{source.ActionBrowse}
 }
 
 func familySpecFor(connector string) (FamilySpec, bool) {
@@ -285,7 +330,7 @@ func familySpecFor(connector string) (FamilySpec, bool) {
 	return cloneFamilySpec(spec), true
 }
 
-func buildSurfaces(entry dbcatalog.ConnectableDatabase, family FamilySpec) []source.Surface {
+func buildSurfaces(entry DatabaseEntry, family FamilySpec) []source.Surface {
 	surfaces := []source.Surface{source.SurfaceBrowser}
 	if entry.SupportsScratchpad {
 		surfaces = append(surfaces, source.SurfaceQuery, source.SurfaceChat)
@@ -296,7 +341,7 @@ func buildSurfaces(entry dbcatalog.ConnectableDatabase, family FamilySpec) []sou
 	return surfaces
 }
 
-func buildConnectionFields(entry dbcatalog.ConnectableDatabase) []source.ConnectionField {
+func buildConnectionFields(entry DatabaseEntry) []source.ConnectionField {
 	fields := make([]source.ConnectionField, 0, len(entry.Extra)+5)
 
 	if entry.Fields.Hostname {
@@ -523,24 +568,12 @@ func keyValueReadOnlyObjectType(kind source.ObjectKind, singular string, plural 
 	}
 }
 
-func cloneSpec(spec source.TypeSpec) source.TypeSpec {
-	return source.TypeSpec{
-		ID:               spec.ID,
-		Label:            spec.Label,
-		Connector:        spec.Connector,
-		Category:         spec.Category,
-		ConnectionFields: slices.Clone(spec.ConnectionFields),
-		Contract: source.Contract{
-			Model:             spec.Contract.Model,
-			Surfaces:          slices.Clone(spec.Contract.Surfaces),
-			BrowsePath:        slices.Clone(spec.Contract.BrowsePath),
-			DefaultObjectKind: spec.Contract.DefaultObjectKind,
-			GraphScopeKind:    spec.Contract.GraphScopeKind,
-			ObjectTypes:       cloneObjectTypes(spec.Contract.ObjectTypes),
-		},
-		IsAWSManaged: spec.IsAWSManaged,
-		SSLModes:     slices.Clone(spec.SSLModes),
+func cloneSourceSSLModes(modes []source.SSLModeInfo) []source.SSLModeInfo {
+	cloned := make([]source.SSLModeInfo, 0, len(modes))
+	for _, mode := range modes {
+		cloned = append(cloned, mode)
 	}
+	return cloned
 }
 
 func cloneObjectTypes(objectTypes []source.ObjectType) []source.ObjectType {
@@ -562,6 +595,7 @@ func cloneFamilySpec(spec FamilySpec) FamilySpec {
 	return FamilySpec{
 		Category:       spec.Category,
 		Model:          spec.Model,
+		RootActions:    slices.Clone(spec.RootActions),
 		BrowsePath:     slices.Clone(spec.BrowsePath),
 		DefaultObject:  spec.DefaultObject,
 		GraphScopeKind: spec.GraphScopeKind,

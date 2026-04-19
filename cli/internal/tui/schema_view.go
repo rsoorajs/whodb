@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -25,6 +26,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/clidey/whodb/cli/pkg/styles"
+	"github.com/clidey/whodb/core/src/engine"
 	"github.com/sahilm/fuzzy"
 )
 
@@ -78,6 +80,13 @@ func (v *SchemaView) Update(msg tea.Msg) (*SchemaView, tea.Cmd) {
 		v.currentSchema = msg.schema
 		v.applyFilter()
 		v.selectedIndex = 0
+		v.scrollOffset = 0
+		return v, nil
+
+	case schemaTableColumnsLoadedMsg:
+		v.applyTableColumns(msg.tableName, msg.columns, msg.err)
+		v.applyFilter()
+		v.ensureSelectedVisible()
 		return v, nil
 
 	case tea.WindowSizeMsg:
@@ -99,7 +108,7 @@ func (v *SchemaView) Update(msg tea.Msg) (*SchemaView, tea.Cmd) {
 			for _, table := range v.filteredTables {
 				totalItems++
 				if v.expandedTables[table.StorageUnit.Name] {
-					totalItems += len(table.Columns)
+					totalItems += v.expandedColumnLineCount(table)
 				}
 			}
 
@@ -172,9 +181,17 @@ func (v *SchemaView) Update(msg tea.Msg) (*SchemaView, tea.Cmd) {
 				table := v.filteredTables[v.selectedIndex]
 				if v.expandedTables[table.StorageUnit.Name] {
 					delete(v.expandedTables, table.StorageUnit.Name)
-				} else {
-					v.expandedTables[table.StorageUnit.Name] = true
+					v.ensureSelectedVisible()
+					return v, nil
 				}
+				v.expandedTables[table.StorageUnit.Name] = true
+				if v.tableNeedsColumns(table.StorageUnit.Name) {
+					v.markTableColumnsLoading(table.StorageUnit.Name)
+					v.applyFilter()
+					v.ensureSelectedVisible()
+					return v, v.loadTableColumns(table.StorageUnit.Name)
+				}
+				v.ensureSelectedVisible()
 			}
 			return v, nil
 
@@ -300,11 +317,18 @@ func (v *SchemaView) renderTables() string {
 
 		// Add column items if expanded
 		if isExpanded {
-			for _, col := range table.Columns {
+			if table.ColumnsLoading {
 				allItems = append(allItems, viewItem{
 					isTable:    false,
-					columnText: fmt.Sprintf("    %s: %s", col.Name, col.Type),
+					columnText: "    Loading columns...",
 				})
+			} else {
+				for _, col := range table.Columns {
+					allItems = append(allItems, viewItem{
+						isTable:    false,
+						columnText: fmt.Sprintf("    %s: %s", col.Name, col.Type),
+					})
+				}
 			}
 		}
 	}
@@ -425,16 +449,9 @@ func (v *SchemaView) loadSchema() tea.Cmd {
 			}
 		}
 
-		tables := []tableWithColumns{}
-		for _, unit := range units {
-			columns, err := v.parent.dbManager.GetColumns(schema, unit.Name)
-			if err != nil {
-				continue
-			}
-			tables = append(tables, tableWithColumns{
-				StorageUnit: unit,
-				Columns:     columns,
-			})
+		tables := make([]tableWithColumns, len(units))
+		for i, unit := range units {
+			tables[i] = tableWithColumns{StorageUnit: unit}
 		}
 
 		return schemaLoadedMsg{
@@ -482,7 +499,7 @@ func (v *SchemaView) ensureSelectedVisible() {
 		}
 		selectedItemIndex++
 		if v.expandedTables[table.StorageUnit.Name] {
-			selectedItemIndex += len(table.Columns)
+			selectedItemIndex += v.expandedColumnLineCount(table)
 		}
 	}
 
@@ -503,4 +520,63 @@ func (v *SchemaView) ensureSelectedVisible() {
 	} else if selectedItemIndex >= v.scrollOffset+maxVisibleLines {
 		v.scrollOffset = selectedItemIndex - maxVisibleLines + 1
 	}
+}
+
+func (v *SchemaView) loadTableColumns(tableName string) tea.Cmd {
+	schema := v.currentSchema
+	timeout := v.parent.config.GetQueryTimeout()
+
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+
+		columns, err := v.parent.dbManager.GetColumnsWithContext(ctx, schema, tableName)
+		return schemaTableColumnsLoadedMsg{
+			tableName: tableName,
+			columns:   columns,
+			err:       err,
+		}
+	}
+}
+
+func (v *SchemaView) tableNeedsColumns(tableName string) bool {
+	for _, table := range v.tables {
+		if table.StorageUnit.Name == tableName {
+			return !table.ColumnsLoaded && !table.ColumnsLoading && len(table.Columns) == 0
+		}
+	}
+	return false
+}
+
+func (v *SchemaView) markTableColumnsLoading(tableName string) {
+	for i := range v.tables {
+		if v.tables[i].StorageUnit.Name == tableName {
+			v.tables[i].ColumnsLoading = true
+			break
+		}
+	}
+}
+
+func (v *SchemaView) applyTableColumns(tableName string, columns []engine.Column, err error) {
+	for i := range v.tables {
+		if v.tables[i].StorageUnit.Name != tableName {
+			continue
+		}
+		v.tables[i].ColumnsLoading = false
+		if err == nil {
+			v.tables[i].Columns = columns
+			v.tables[i].ColumnsLoaded = true
+		}
+		break
+	}
+}
+
+func (v *SchemaView) expandedColumnLineCount(table tableWithColumns) int {
+	if !v.expandedTables[table.StorageUnit.Name] {
+		return 0
+	}
+	if table.ColumnsLoading {
+		return 1
+	}
+	return len(table.Columns)
 }

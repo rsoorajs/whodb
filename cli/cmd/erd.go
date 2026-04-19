@@ -177,13 +177,19 @@ func resolveERDFormat(value string) (output.Format, error) {
 func buildERDCommandOutput(mgr *dbmgr.Manager, schema string, graphUnits []engine.GraphUnit) (*erdCommandOutput, error) {
 	relationships, relationshipTargets := buildERDRelationships(graphUnits)
 
+	storageUnitNames := make([]string, 0, len(graphUnits))
+	for _, graphUnit := range graphUnits {
+		storageUnitNames = append(storageUnitNames, graphUnit.Unit.Name)
+	}
+
+	columnsByStorageUnit, err := mgr.GetColumnsForStorageUnits(schema, storageUnitNames)
+	if err != nil {
+		return nil, err
+	}
+
 	storageUnits := make([]erdStorageUnitOutput, 0, len(graphUnits))
 	for _, graphUnit := range graphUnits {
-		columns, err := mgr.GetColumns(schema, graphUnit.Unit.Name)
-		if err != nil {
-			return nil, fmt.Errorf("load columns for %s: %w", graphUnit.Unit.Name, err)
-		}
-
+		columns := columnsByStorageUnit[graphUnit.Unit.Name]
 		columnOutputs := make([]erdColumnOutput, 0, len(columns))
 		for _, column := range columns {
 			columnOutput := erdColumnOutput{

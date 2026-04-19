@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/clidey/whodb/cli/internal/config"
@@ -83,7 +84,7 @@ Press ? in any view for keyboard shortcuts.`,
 		return nil
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		if viper.GetBool("no-update-check") || version.Version == "dev" {
+		if shouldSkipStartupSideEffects() || viper.GetBool("no-update-check") || version.Version == "dev" {
 			return
 		}
 		if result := updatecheck.Check(version.Version); result != nil {
@@ -178,7 +179,7 @@ func init() {
 
 func initAnalytics() {
 	// Skip analytics if disabled via flag or env
-	if viper.GetBool("no-analytics") || os.Getenv(identity.Current().AnalyticsDisabledEnv) == "true" {
+	if shouldSkipStartupSideEffects() || viper.GetBool("no-analytics") || os.Getenv(identity.Current().AnalyticsDisabledEnv) == "true" {
 		return
 	}
 
@@ -186,11 +187,57 @@ func initAnalytics() {
 	_ = analytics.Initialize(version.Version)
 
 	// Track CLI startup with the command being run
-	if len(os.Args) > 1 {
-		analytics.TrackCLIStartup(context.Background(), os.Args[1])
-	} else {
-		analytics.TrackCLIStartup(context.Background(), "tui")
+	analytics.TrackCLIStartup(context.Background(), startupCommandName())
+}
+
+func shouldSkipStartupSideEffects() bool {
+	return isTrivialInvocation(os.Args[1:])
+}
+
+func startupCommandName() string {
+	command := firstNonFlagArg(os.Args[1:])
+	if command == "" {
+		return "tui"
 	}
+	return command
+}
+
+func isTrivialInvocation(args []string) bool {
+	for _, arg := range args {
+		if arg == "-h" || arg == "--help" {
+			return true
+		}
+	}
+
+	switch firstNonFlagArg(args) {
+	case "help", "version", "completion", "__complete", "__completeNoDesc":
+		return true
+	default:
+		return false
+	}
+}
+
+func firstNonFlagArg(args []string) string {
+	for i, arg := range args {
+		if arg == "--" {
+			if i+1 < len(args) {
+				return args[i+1]
+			}
+			return ""
+		}
+		if arg == "--profile" {
+			i++
+			continue
+		}
+		if strings.HasPrefix(arg, "--profile=") {
+			continue
+		}
+		if strings.HasPrefix(arg, "-") {
+			continue
+		}
+		return arg
+	}
+	return ""
 }
 
 func initColorMode() {

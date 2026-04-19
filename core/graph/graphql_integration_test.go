@@ -31,6 +31,7 @@ import (
 	"github.com/clidey/whodb/core/src/auth"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
+	"github.com/clidey/whodb/core/src/query"
 	"github.com/clidey/whodb/core/src/source"
 	"github.com/clidey/whodb/core/src/types"
 )
@@ -126,7 +127,7 @@ func TestGraphQLRowQueryWithSortAndWhere(t *testing.T) {
 		if where == nil || where.Atomic == nil || where.Atomic.Key != "id" || where.Atomic.Operator != "=" || where.Atomic.Value != "1" {
 			t.Fatalf("unexpected where clause passed to plugin: %#v", where)
 		}
-		if len(sort) != 1 || sort[0].Column != "id" || sort[0].Direction != model.SortDirectionAsc {
+		if len(sort) != 1 || sort[0].Column != "id" || sort[0].Direction != query.SortDirectionAsc {
 			t.Fatalf("unexpected sort: %#v", sort)
 		}
 		return &engine.GetRowsResult{

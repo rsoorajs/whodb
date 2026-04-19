@@ -19,6 +19,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	dbmgr "github.com/clidey/whodb/cli/internal/database"
@@ -155,8 +156,9 @@ Output formats:
 		for key := range attrKeys {
 			attrNames = append(attrNames, key)
 		}
+		sort.Strings(attrNames)
 
-		// Convert to QueryResult format
+		// Convert to StringQueryResult to avoid materializing [][]any.
 		columns := []output.Column{
 			{Name: "name", Type: "string"},
 		}
@@ -164,26 +166,27 @@ Output formats:
 			columns = append(columns, output.Column{Name: name, Type: "string"})
 		}
 
-		rows := make([][]any, len(tables))
+		rows := make([][]string, len(tables))
 		for i, t := range tables {
-			row := []any{t.Name}
+			row := make([]string, 1+len(attrNames))
+			row[0] = t.Name
 			// Add attributes in consistent order
 			attrMap := make(map[string]string)
 			for _, attr := range t.Attributes {
 				attrMap[attr.Key] = attr.Value
 			}
-			for _, name := range attrNames {
-				row = append(row, attrMap[name])
+			for j, name := range attrNames {
+				row[j+1] = attrMap[name]
 			}
 			rows[i] = row
 		}
 
-		result := &output.QueryResult{
+		result := &output.StringQueryResult{
 			Columns: columns,
 			Rows:    rows,
 		}
 
-		return out.WriteQueryResult(result)
+		return out.WriteStringQueryResult(result)
 	},
 }
 

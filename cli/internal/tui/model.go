@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,21 +110,24 @@ type MainModel struct {
 }
 
 func NewMainModel() *MainModel {
-	return newMainModel(true)
+	return newMainModel(nil, true)
 }
 
-func newMainModel(restoreWorkspace bool) *MainModel {
-	dbMgr, err := database.NewManager()
+func newMainModel(cfg *config.Config, restoreWorkspace bool) *MainModel {
+	var err error
+	if cfg == nil {
+		cfg, err = config.LoadConfig()
+		if err != nil {
+			return &MainModel{err: err}
+		}
+	}
+
+	dbMgr, err := database.NewManagerWithConfig(cfg)
 	if err != nil {
 		return &MainModel{err: err}
 	}
 
-	histMgr, err := history.NewManager()
-	if err != nil {
-		return &MainModel{err: err}
-	}
-
-	cfg, err := config.LoadConfig()
+	histMgr, err := history.NewManagerWithConfig(cfg)
 	if err != nil {
 		return &MainModel{err: err}
 	}
@@ -195,7 +198,7 @@ func newMainModel(restoreWorkspace bool) *MainModel {
 }
 
 func NewMainModelWithConnection(conn *config.Connection) *MainModel {
-	m := newMainModel(false)
+	m := newMainModel(nil, false)
 	if m.err != nil {
 		return m
 	}
@@ -214,13 +217,10 @@ func NewMainModelWithConnection(conn *config.Connection) *MainModel {
 // connection and applies the provided config (which already has profile
 // settings like theme, page size, and timeout applied).
 func NewMainModelWithProfile(conn *config.Connection, cfg *config.Config, profileName string) *MainModel {
-	m := newMainModel(false)
+	m := newMainModel(cfg, false)
 	if m.err != nil {
 		return m
 	}
-
-	// Replace the default config with the profile-adjusted one
-	m.config = cfg
 
 	if err := m.dbManager.Connect(conn); err != nil {
 		m.err = err
@@ -271,7 +271,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.mode = ViewBrowser
 				case ViewConnection:
 					m.connectionView.refreshList()
-					return m, m.connectionView.pingAllConnections()
+					return m, tea.Batch(m.connectionView.pingAllConnections(), m.connectionView.loadDockerConnections())
 				}
 				return m, nil
 			}
@@ -524,7 +524,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateHistoryView(msg)
 	case exportResultMsg:
 		return m.updateExportView(msg)
-	case schemaLoadedMsg:
+	case schemaLoadedMsg, schemaTableColumnsLoadedMsg:
 		return m.updateSchemaView(msg)
 	case connectionResultMsg:
 		return m.updateConnectionView(msg)
@@ -538,7 +538,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateExplainView(msg)
 	case schemaDiffResultMsg:
 		return m.updateDiffView(msg)
-	case erdDataLoadedMsg:
+	case erdDataLoadedMsg, erdTableColumnsLoadedMsg:
 		return m.updateERDView(msg)
 	case auditResultMsg:
 		return m.updateAuditView(msg)

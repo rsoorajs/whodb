@@ -19,8 +19,7 @@ package source
 import (
 	"context"
 
-	"github.com/clidey/whodb/core/graph/model"
-	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/query"
 )
 
 // SourceSession is the common session interface exposed by a source connector.
@@ -46,9 +45,9 @@ type SourceBrowser interface {
 // TabularReader reads row/column data from a source object.
 type TabularReader interface {
 	// ReadRows returns tabular rows for the provided object reference.
-	ReadRows(ctx context.Context, ref ObjectRef, where *model.WhereCondition, sort []*model.SortCondition, pageSize int, pageOffset int) (*engine.GetRowsResult, error)
+	ReadRows(ctx context.Context, ref ObjectRef, where *query.WhereCondition, sort []*query.SortCondition, pageSize int, pageOffset int) (*RowsResult, error)
 	// Columns returns columns for one object.
-	Columns(ctx context.Context, ref ObjectRef) ([]engine.Column, error)
+	Columns(ctx context.Context, ref ObjectRef) ([]Column, error)
 	// ColumnsBatch returns columns for multiple objects.
 	ColumnsBatch(ctx context.Context, refs []ObjectRef) ([]ObjectColumns, error)
 }
@@ -56,36 +55,58 @@ type TabularReader interface {
 // ContentReader reads blob/text content from a source object.
 type ContentReader interface {
 	// ReadContent returns a content payload for the provided object reference.
-	ReadContent(ctx context.Context, ref ObjectRef) (string, error)
+	ReadContent(ctx context.Context, ref ObjectRef) (*ContentResult, error)
+}
+
+// AvailabilityChecker verifies that a source session can reach the underlying
+// system with the current credentials.
+type AvailabilityChecker interface {
+	// IsAvailable reports whether the active source session is usable.
+	IsAvailable(ctx context.Context) bool
 }
 
 // QueryRunner executes source-native queries.
 type QueryRunner interface {
 	// RunQuery executes a query against the active source session.
-	RunQuery(ctx context.Context, query string, params ...any) (*engine.GetRowsResult, error)
+	RunQuery(ctx context.Context, query string, params ...any) (*RowsResult, error)
+}
+
+// ScriptRunner executes source-native scripts that may require special runtime
+// options such as multi-statement support.
+type ScriptRunner interface {
+	// RunScript executes one script with the requested execution options.
+	RunScript(ctx context.Context, script string, multiStatement bool, params ...any) (*RowsResult, error)
 }
 
 // GraphReader reads graph data for a source scope.
 type GraphReader interface {
 	// ReadGraph returns graph units for the provided scope reference, or the
 	// default source graph when ref is nil.
-	ReadGraph(ctx context.Context, ref *ObjectRef) ([]engine.GraphUnit, error)
+	ReadGraph(ctx context.Context, ref *ObjectRef) ([]GraphUnit, error)
 }
 
 // SourceAssistant runs AI chat against a source scope.
 type SourceAssistant interface {
 	// Reply runs the source assistant against the provided scope.
-	Reply(ctx context.Context, ref *ObjectRef, previousConversation string, query string) ([]*engine.ChatMessage, error)
+	Reply(ctx context.Context, ref *ObjectRef, previousConversation string, query string) ([]*ChatMessage, error)
+}
+
+// ModelAwareSourceAssistant runs AI chat with an explicitly selected external
+// model configuration.
+type ModelAwareSourceAssistant interface {
+	// ReplyWithModel runs the source assistant against the provided scope using
+	// the supplied model configuration.
+	ReplyWithModel(ctx context.Context, ref *ObjectRef, previousConversation string, query string, model *ExternalModel) ([]*ChatMessage, error)
 }
 
 // ObjectManager mutates source objects and row data.
 type ObjectManager interface {
 	// CreateObject creates a new object beneath the provided parent.
-	CreateObject(ctx context.Context, parent *ObjectRef, name string, fields []engine.Record) (bool, error)
+	CreateObject(ctx context.Context, parent *ObjectRef, name string, fields []Record) (bool, error)
 	// UpdateObject updates an existing object.
 	UpdateObject(ctx context.Context, ref ObjectRef, values map[string]string, updatedColumns []string) (bool, error)
 	// AddRow inserts a row/document into an object.
-	AddRow(ctx context.Context, ref ObjectRef, values []engine.Record) (bool, error)
+	AddRow(ctx context.Context, ref ObjectRef, values []Record) (bool, error)
 	// DeleteRow deletes a row/document from an object.
 	DeleteRow(ctx context.Context, ref ObjectRef, values map[string]string) (bool, error)
 }
@@ -94,4 +115,46 @@ type ObjectManager interface {
 type ConnectionFieldOptionsReader interface {
 	// ConnectionFieldOptions returns selectable values for a connection field.
 	ConnectionFieldOptions(ctx context.Context, fieldKey string, values map[string]string) ([]string, error)
+}
+
+// TabularExporter streams rows for one object into a caller-provided writer.
+type TabularExporter interface {
+	// ExportRows writes rows for the provided object reference.
+	ExportRows(ctx context.Context, ref ObjectRef, writer func([]string) error, selectedRows []map[string]any) error
+}
+
+// NDJSONExporter streams rows for one object as newline-delimited JSON.
+type NDJSONExporter interface {
+	// ExportRowsNDJSON writes NDJSON rows for the provided object reference.
+	ExportRowsNDJSON(ctx context.Context, ref ObjectRef, writer func(string) error, selectedRows []map[string]any) error
+}
+
+// SecurityReader exposes connection security metadata for the active source
+// session.
+type SecurityReader interface {
+	// SSLStatus returns the current SSL/TLS status, or nil when it does not
+	// apply to the active source.
+	SSLStatus(ctx context.Context) (*SSLStatus, error)
+}
+
+// DataImporter applies parsed tabular data to a destination source object.
+type DataImporter interface {
+	// ImportData imports parsed rows into the provided object reference.
+	ImportData(ctx context.Context, ref ObjectRef, request ImportRequest) error
+}
+
+// MockDataManager handles mock-data planning and generation for supported
+// source objects.
+type MockDataManager interface {
+	// GenerateMockData creates synthetic rows/documents for the provided object.
+	GenerateMockData(ctx context.Context, ref ObjectRef, rowCount int, fkDensityRatio int, overwriteExisting bool) (*MockDataGenerationResult, error)
+	// AnalyzeMockDataDependencies returns the dependency order required to
+	// generate mock data for the provided object.
+	AnalyzeMockDataDependencies(ctx context.Context, ref ObjectRef, rowCount int, fkDensityRatio int) (*MockDataDependencyAnalysis, error)
+}
+
+// QuerySuggester returns source-scoped suggestions for the query UI.
+type QuerySuggester interface {
+	// QuerySuggestions returns suggested prompts for the current source scope.
+	QuerySuggestions(ctx context.Context, ref *ObjectRef) ([]QuerySuggestion, error)
 }
