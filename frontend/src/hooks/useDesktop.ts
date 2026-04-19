@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {useCallback, useEffect} from 'react';
+import {useCallback, useEffect, useRef} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import * as desktopService from '../services/desktop';
 import {isDesktopApp} from '../utils/external-links';
@@ -97,6 +97,16 @@ export const useDesktopMenu = () => {
   const { showConfirm } = useDesktopDialog();
   const currentAuth = useAppSelector(state => state.auth.current);
 
+  // The menu handlers below are registered with desktopService exactly once
+  // (the useEffect depends only on isDesktop) and therefore close over stale
+  // values of auth state and the current route on every app transition. Mirror
+  // those values into refs that each render updates, so handlers always see
+  // the live values when the user actually triggers a menu action.
+  const currentAuthRef = useRef(currentAuth);
+  const locationRef = useRef(location);
+  currentAuthRef.current = currentAuth;
+  locationRef.current = location;
+
   useEffect(() => {
     if (!isDesktop) return;
 
@@ -134,7 +144,7 @@ export const useDesktopMenu = () => {
 
     const handlers = {
       'menu:toggle-sidebar-new-connection': safeHandler(() => {
-        if (currentAuth) {
+        if (currentAuthRef.current) {
           // User is logged in - emit event to open sidebar with add profile form
           window.dispatchEvent(new CustomEvent('menu:open-add-profile'));
         } else {
@@ -172,7 +182,7 @@ export const useDesktopMenu = () => {
       }),
       'menu:new-scratchpad-page': safeHandler(() => {
         // Only allow creating new page if already on Scratchpad page
-        if (location.pathname === InternalRoutes.RawExecute.path) {
+        if (locationRef.current.pathname === InternalRoutes.RawExecute.path) {
           // Emit event that the Scratchpad page will listen to
           window.dispatchEvent(new CustomEvent('menu:new-scratchpad-page'));
         }
