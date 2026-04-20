@@ -44,6 +44,11 @@ var (
 	supportedOperators = sourcecatalogspecs.ClickHouseSupportedOperators
 )
 
+// NormalizeType converts a ClickHouse type alias to its canonical form.
+func NormalizeType(typeName string) string {
+	return common.NormalizeTypeWithMap(typeName, sourcecatalogspecs.ClickHouseAliasMap)
+}
+
 type ClickHousePlugin struct {
 	gorm_plugin.GormPlugin
 }

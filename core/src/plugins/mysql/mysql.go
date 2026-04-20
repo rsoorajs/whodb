@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/plugins"
@@ -33,6 +34,11 @@ import (
 var (
 	supportedOperators = sourcecatalogspecs.MySQLSupportedOperators
 )
+
+// NormalizeType converts a MySQL type alias to its canonical form.
+func NormalizeType(typeName string) string {
+	return common.NormalizeTypeWithMap(typeName, sourcecatalogspecs.MySQLAliasMap)
+}
 
 type MySQLPlugin struct {
 	gorm_plugin.GormPlugin

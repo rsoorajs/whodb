@@ -25,6 +25,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/log"
@@ -43,6 +44,11 @@ func (p *Sqlite3Plugin) CreateSQLBuilder(db *gorm.DB) gorm_plugin.SQLBuilderInte
 var (
 	supportedOperators = sourcecatalogspecs.SQLiteSupportedOperators
 )
+
+// NormalizeType converts a SQLite type alias to its canonical form.
+func NormalizeType(typeName string) string {
+	return common.NormalizeTypeWithMap(typeName, sourcecatalogspecs.SQLiteAliasMap)
+}
 
 type Sqlite3Plugin struct {
 	gorm_plugin.GormPlugin

@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/plugins"
@@ -32,6 +33,11 @@ import (
 var (
 	supportedOperators = sourcecatalogspecs.PostgreSQLSupportedOperators
 )
+
+// NormalizeType converts a PostgreSQL type alias to its canonical form.
+func NormalizeType(typeName string) string {
+	return common.NormalizeTypeWithMap(typeName, sourcecatalogspecs.PostgresAliasMap)
+}
 
 type PostgresPlugin struct {
 	gorm_plugin.GormPlugin

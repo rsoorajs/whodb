@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/log"
@@ -35,6 +36,11 @@ import (
 )
 
 var supportedOperators = sourcecatalogspecs.DuckDBSupportedOperators
+
+// NormalizeType converts a DuckDB type alias to its canonical form.
+func NormalizeType(typeName string) string {
+	return common.NormalizeTypeWithMap(typeName, sourcecatalogspecs.DuckDBAliasMap)
+}
 
 // DuckDBPlugin implements the WhoDB plugin for DuckDB.
 type DuckDBPlugin struct {
