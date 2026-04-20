@@ -14,45 +14,46 @@
  * limitations under the License.
  */
 
-// Package database registers the built-in database-backed source types into the
-// source registry.
-package database
+package sourcecatalog
 
 import (
 	"maps"
+	"testing"
 
 	"github.com/clidey/whodb/core/src/common/ssl"
 	"github.com/clidey/whodb/core/src/dbcatalog"
 	"github.com/clidey/whodb/core/src/source"
-	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
-func init() {
-	Register()
-}
+func TestBuildTypeSpecCoversSharedDatabaseCatalog(t *testing.T) {
+	t.Parallel()
 
-// Register adds every database catalog entry that can be projected into the
-// shared source-first catalog. It is safe to call multiple times.
-func Register() {
 	for _, entry := range dbcatalog.All() {
-		spec, ok := sourcecatalog.BuildTypeSpec(sourcecatalog.DatabaseEntry{
-			ID:             string(entry.ID),
-			Label:          entry.Label,
-			Connector:      string(entry.PluginType),
-			Extra:          maps.Clone(entry.Extra),
-			Fields:         sourcecatalog.FieldVisibility(entry.Fields),
-			RequiredFields: sourcecatalog.FieldRequirements(entry.RequiredFields),
-			IsAWSManaged:   entry.IsAWSManaged,
-			SSLModes:       cloneSSLModes(entry.SSLModes),
+		entry := entry
+		t.Run(string(entry.ID), func(t *testing.T) {
+			t.Parallel()
+
+			spec, ok := BuildTypeSpec(DatabaseEntry{
+				ID:             string(entry.ID),
+				Label:          entry.Label,
+				Connector:      string(entry.PluginType),
+				Extra:          maps.Clone(entry.Extra),
+				Fields:         FieldVisibility(entry.Fields),
+				RequiredFields: FieldRequirements(entry.RequiredFields),
+				IsAWSManaged:   entry.IsAWSManaged,
+				SSLModes:       sourceSSLModes(entry.SSLModes),
+			})
+			if !ok {
+				t.Fatalf("expected %q to map into the source catalog", entry.ID)
+			}
+			if spec.ID != string(entry.ID) {
+				t.Fatalf("expected source id %q, got %q", entry.ID, spec.ID)
+			}
 		})
-		if !ok {
-			continue
-		}
-		source.RegisterType(spec)
 	}
 }
 
-func cloneSSLModes(modes []ssl.SSLModeInfo) []source.SSLModeInfo {
+func sourceSSLModes(modes []ssl.SSLModeInfo) []source.SSLModeInfo {
 	cloned := make([]source.SSLModeInfo, 0, len(modes))
 	for _, mode := range modes {
 		cloned = append(cloned, source.SSLModeInfo{

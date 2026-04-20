@@ -33,12 +33,12 @@ import (
 	tunnelpkg "github.com/clidey/whodb/cli/internal/ssh"
 	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src"
-	"github.com/clidey/whodb/core/src/dbcatalog"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/envconfig"
 	"github.com/clidey/whodb/core/src/llm"
 	queryast "github.com/clidey/whodb/core/src/query"
 	"github.com/clidey/whodb/core/src/querysuggestions"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 	"github.com/xuri/excelize/v2"
 	"golang.org/x/sync/errgroup"
 )
@@ -515,7 +515,7 @@ func (m *Manager) ResolveSnapshotSchema(conn *Connection, explicitSchema string)
 	if conn == nil {
 		return "", fmt.Errorf("not connected to any database")
 	}
-	if entry, ok := dbcatalog.Find(conn.Type); ok && entry.UsesDatabaseInsteadOfSchema && strings.TrimSpace(conn.Database) != "" {
+	if sourcecatalog.UsesDatabaseInsteadOfSchema(conn.Type) && strings.TrimSpace(conn.Database) != "" {
 		return conn.Database, nil
 	}
 	if strings.TrimSpace(conn.Schema) != "" {

@@ -24,9 +24,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/clidey/whodb/core/src/query"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
+	"github.com/clidey/whodb/core/src/query"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -598,9 +598,6 @@ func (p *RedisPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
 		TypeDefinitions: []engine.TypeDefinition{},
 		Operators:       ops,
 		AliasMap:        map[string]string{},
-		Capabilities: engine.Capabilities{
-			SupportsDatabaseSwitch: true,
-		},
 	}
 }
 

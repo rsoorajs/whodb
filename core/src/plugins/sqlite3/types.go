@@ -77,11 +77,5 @@ func (p *Sqlite3Plugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
 		TypeDefinitions: TypeDefinitions,
 		Operators:       operators,
 		AliasMap:        AliasMap,
-		Capabilities: engine.Capabilities{
-			SupportsScratchpad: true,
-			SupportsChat:       true,
-			SupportsGraph:      true,
-			SupportsModifiers:  true,
-		},
 	}
 }

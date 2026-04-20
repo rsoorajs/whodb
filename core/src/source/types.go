@@ -241,6 +241,16 @@ func (c Contract) SupportsSurface(surface Surface) bool {
 	return false
 }
 
+// SupportsAction reports whether any declared object kind supports the action.
+func (c Contract) SupportsAction(action Action) bool {
+	for _, objectType := range c.ObjectTypes {
+		if objectType.SupportsAction(action) {
+			return true
+		}
+	}
+	return false
+}
+
 // ObjectTypeForKind looks up the declared object-type contract by kind.
 func (c Contract) ObjectTypeForKind(kind ObjectKind) (ObjectType, bool) {
 	for _, objectType := range c.ObjectTypes {
@@ -259,6 +269,16 @@ type ObjectType struct {
 	Views         []View
 	SingularLabel string
 	PluralLabel   string
+}
+
+// SupportsAction reports whether the object type exposes the action.
+func (o ObjectType) SupportsAction(action Action) bool {
+	for _, candidate := range o.Actions {
+		if candidate == action {
+			return true
+		}
+	}
+	return false
 }
 
 // TypeSpec describes a connectable source type.

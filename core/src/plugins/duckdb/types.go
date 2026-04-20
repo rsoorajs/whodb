@@ -24,14 +24,14 @@ import (
 // AliasMap maps DuckDB type aliases to their canonical names.
 var AliasMap = map[string]string{
 	// Integer aliases
-	"INT":     "INTEGER",
-	"INT1":    "TINYINT",
-	"INT2":    "SMALLINT",
-	"INT4":    "INTEGER",
-	"INT8":    "BIGINT",
-	"SIGNED":  "BIGINT",
-	"LONG":    "BIGINT",
-	"SHORT":   "SMALLINT",
+	"INT":    "INTEGER",
+	"INT1":   "TINYINT",
+	"INT2":   "SMALLINT",
+	"INT4":   "INTEGER",
+	"INT8":   "BIGINT",
+	"SIGNED": "BIGINT",
+	"LONG":   "BIGINT",
+	"SHORT":  "SMALLINT",
 	// Float aliases
 	"FLOAT4":  "FLOAT",
 	"FLOAT8":  "DOUBLE",
@@ -41,13 +41,13 @@ var AliasMap = map[string]string{
 	"BOOL":    "BOOLEAN",
 	"LOGICAL": "BOOLEAN",
 	// String aliases
-	"STRING":  "VARCHAR",
-	"TEXT":    "VARCHAR",
-	"CHAR":    "VARCHAR",
-	"BPCHAR":  "VARCHAR",
+	"STRING": "VARCHAR",
+	"TEXT":   "VARCHAR",
+	"CHAR":   "VARCHAR",
+	"BPCHAR": "VARCHAR",
 	// Binary aliases
-	"BYTEA":    "BLOB",
-	"BINARY":   "BLOB",
+	"BYTEA":     "BLOB",
+	"BINARY":    "BLOB",
 	"VARBINARY": "BLOB",
 	// Datetime aliases
 	"DATETIME":    "TIMESTAMP",
@@ -115,12 +115,5 @@ func (p *DuckDBPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
 		TypeDefinitions: TypeDefinitions,
 		Operators:       operators,
 		AliasMap:        AliasMap,
-		Capabilities: engine.Capabilities{
-			SupportsScratchpad: true,
-			SupportsChat:       true,
-			SupportsGraph:      true,
-			SupportsSchema:     true,
-			SupportsModifiers:  true,
-		},
 	}
 }

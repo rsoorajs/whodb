@@ -157,14 +157,6 @@ func (p *CockroachDBPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
 		TypeDefinitions: cockroachDBTypeDefinitions,
 		Operators:       operators,
 		AliasMap:        AliasMap,
-		Capabilities: engine.Capabilities{
-			SupportsScratchpad:     true,
-			SupportsChat:           true,
-			SupportsGraph:          true,
-			SupportsSchema:         true,
-			SupportsDatabaseSwitch: true,
-			SupportsModifiers:      true,
-		},
 	}
 }
 

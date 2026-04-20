@@ -382,10 +382,10 @@ export const StorageUnitTable: FC<TableProps> = ({
     const [mockDataOverwriteExisting, setMockDataOverwriteExisting] = useState("append");
     const [mockDataFkDensityRatio, setMockDataFkDensityRatio] = useState("20");
     const [showMockDataConfirmation, setShowMockDataConfirmation] = useState(false);
-    const { isNoSQL, supportsMockData } = useSourceContract(databaseType);
+    const { isNoSQL, supportsImportData, supportsMockData } = useSourceContract(databaseType);
     const isMockDataSupported = supportsMockData && isMockDataGenerationAllowed;
     const isClickHouse = databaseType === "ClickHouse";
-    const isImportSupported = !isNoSQL;
+    const isImportSupported = supportsImportData;
     const { data: maxRowData } = useQuery(MockDataMaxRowCountDocument);
     const maxRowCount = maxRowData?.MockDataMaxRowCount || 200;
     

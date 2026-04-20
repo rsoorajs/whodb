@@ -89,12 +89,5 @@ func (p *ClickHousePlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
 		TypeDefinitions: TypeDefinitions,
 		Operators:       operators,
 		AliasMap:        AliasMap,
-		Capabilities: engine.Capabilities{
-			SupportsScratchpad:     true,
-			SupportsChat:           true,
-			SupportsGraph:          true,
-			SupportsDatabaseSwitch: true,
-			SupportsModifiers:      true,
-		},
 	}
 }

@@ -117,9 +117,6 @@ func TestRedisMetadataFormattingAndSSLStatus(t *testing.T) {
 	if len(metadata.Operators) == 0 {
 		t.Fatal("expected redis operators to be exposed")
 	}
-	if !metadata.Capabilities.SupportsDatabaseSwitch {
-		t.Fatal("expected redis to support database switching metadata")
-	}
 
 	status, err := plugin.GetSSLStatus(&engine.PluginConfig{
 		Credentials: &engine.Credentials{

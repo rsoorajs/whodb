@@ -26,8 +26,8 @@ import (
 	"strings"
 
 	"github.com/clidey/whodb/cli/internal/database"
-	"github.com/clidey/whodb/core/src/dbcatalog"
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 type snapshot struct {
@@ -299,7 +299,7 @@ func resolveSchemaName(mgr *database.Manager, conn *database.Connection, explici
 	if strings.TrimSpace(explicitSchema) != "" {
 		return explicitSchema, nil
 	}
-	if entry, ok := dbcatalog.Find(conn.Type); ok && entry.UsesDatabaseInsteadOfSchema && strings.TrimSpace(conn.Database) != "" {
+	if sourcecatalog.UsesDatabaseInsteadOfSchema(conn.Type) && strings.TrimSpace(conn.Database) != "" {
 		return conn.Database, nil
 	}
 	if strings.TrimSpace(conn.Schema) != "" {

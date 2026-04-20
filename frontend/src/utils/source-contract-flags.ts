@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { SourceAction } from '@graphql';
 import type { SourceTypeItem } from '../config/source-types';
 
 /**
@@ -28,6 +29,7 @@ export interface SourceContractFlags {
     usesSchemaForGraph: boolean;
     usesDatabaseInsteadOfSchema: boolean;
     supportsMockData: boolean;
+    supportsImportData: boolean;
     supportsModifiers: boolean;
 }
 
@@ -49,6 +51,7 @@ export function resolveSourceContractFlags(
         usesSchemaForGraph: item?.usesSchemaForGraph ?? true,
         usesDatabaseInsteadOfSchema: item?.usesDatabaseInsteadOfSchema ?? false,
         supportsMockData: item?.supportsMockData ?? false,
+        supportsImportData: item?.contract?.ObjectTypes.some(objectType => objectType.Actions.includes(SourceAction.ImportData)) ?? false,
         supportsModifiers: item?.supportsModifiers ?? false,
     };
 }

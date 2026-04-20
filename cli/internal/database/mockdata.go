@@ -21,9 +21,10 @@ import (
 	"strings"
 
 	"github.com/clidey/whodb/core/src"
-	"github.com/clidey/whodb/core/src/dbcatalog"
 	"github.com/clidey/whodb/core/src/engine"
 	coremockdata "github.com/clidey/whodb/core/src/mockdata"
+	"github.com/clidey/whodb/core/src/source"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 // AnalyzeMockDataDependencies analyzes table dependencies for mock data generation.
@@ -126,9 +127,9 @@ func (m *Manager) ensureMockDataSupported() error {
 		return fmt.Errorf("not connected to any database")
 	}
 
-	entry, ok := dbcatalog.Find(m.currentConnection.Type)
-	if ok && !entry.SupportsMockData {
-		return fmt.Errorf("mock data generation is not supported for %s", entry.Label)
+	spec, ok := sourcecatalog.Find(m.currentConnection.Type)
+	if ok && !spec.Contract.SupportsAction(source.ActionGenerateMockData) {
+		return fmt.Errorf("mock data generation is not supported for %s", spec.Label)
 	}
 
 	return nil

@@ -105,18 +105,6 @@ type ExploreSourceState = {
     trail?: SourceBrowserObject[];
 };
 
-// Extension query utilities — set via registerQueryUtils()
-let generateInitialQuery: ((databaseType: string | undefined, schema: string | undefined, tableName: string | undefined) => string) | undefined;
-
-/** Register extension query utilities. */
-export function registerQueryUtils(fns: {
-    generateInitialQuery?: (databaseType: string | undefined, schema: string | undefined, tableName: string | undefined) => string;
-}) {
-    if (fns.generateInitialQuery) {
-        generateInitialQuery = fns.generateInitialQuery;
-    }
-}
-
 type EESearchBarProps = {
     columns: string[];
     columnTypes: (string | undefined)[];
@@ -292,42 +280,26 @@ export const ExploreStorageUnit: FC = () => {
     }, [sourceContent?.MIMEType, sourceContent?.Text]);
 
     const initialScratchpadQuery = useMemo(() => {
-        if (generateInitialQuery && current?.Type) {
-            return generateInitialQuery(current?.Type, schema, unitName);
-        }
         const qualified = schema ? `${schema}.${unitName}` : unitName;
         return `SELECT * FROM ${qualified} LIMIT 5`;
-    }, [schema, unitName, current?.Type, generateInitialQuery]);
+    }, [schema, unitName]);
 
     const scratchpadQueryWithConditions = useMemo(() => {
-        if (generateInitialQuery && current?.Type) {
-            const baseQuery = generateInitialQuery(current?.Type, schema, unitName);
-            const whereClause = whereConditionToSql(whereCondition);
-
-            if (!whereClause) {
-                return baseQuery;
-            }
-
-            // Insert WHERE clause before LIMIT if present
-            const limitMatch = baseQuery.match(/\s+LIMIT\s+\d+/i);
-            if (limitMatch) {
-                const beforeLimit = baseQuery.substring(0, limitMatch.index);
-                const limitPart = baseQuery.substring(limitMatch.index!);
-                return `${beforeLimit} WHERE ${whereClause}${limitPart}`;
-            }
-
-            return `${baseQuery} WHERE ${whereClause}`;
-        }
-
-        const qualified = schema ? `${schema}.${unitName}` : unitName;
         const whereClause = whereConditionToSql(whereCondition);
 
         if (!whereClause) {
-            return `SELECT * FROM ${qualified} LIMIT 5`;
+            return initialScratchpadQuery;
         }
 
-        return `SELECT * FROM ${qualified} WHERE ${whereClause} LIMIT 5`;
-    }, [schema, unitName, current?.Type, generateInitialQuery, whereCondition]);
+        const limitMatch = initialScratchpadQuery.match(/\s+LIMIT\s+\d+/i);
+        if (limitMatch) {
+            const beforeLimit = initialScratchpadQuery.substring(0, limitMatch.index);
+            const limitPart = initialScratchpadQuery.substring(limitMatch.index!);
+            return `${beforeLimit} WHERE ${whereClause}${limitPart}`;
+        }
+
+        return `${initialScratchpadQuery} WHERE ${whereClause}`;
+    }, [initialScratchpadQuery, whereCondition]);
 
     const [code, setCode] = useState(initialScratchpadQuery);
 

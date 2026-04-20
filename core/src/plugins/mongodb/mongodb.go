@@ -422,9 +422,6 @@ func (p *MongoDBPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
 		},
 		Operators: operators,
 		AliasMap:  map[string]string{},
-		Capabilities: engine.Capabilities{
-			SupportsDatabaseSwitch: true,
-		},
 	}
 }
 

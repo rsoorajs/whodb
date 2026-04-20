@@ -15,12 +15,9 @@
  */
 
 import { useMemo } from "react";
+import { SourceModel } from "@graphql";
 import { SourceTypeItem } from "../config/source-types";
 import { resolveSourceContractFlags, type SourceContractFlags } from "../utils/source-contract-flags";
-import {
-    getSourceObjectLabelForType,
-    isNoSQLSourceType,
-} from "../utils/functions";
 import { useSourceTypeItem } from "./useSourceCatalog";
 
 /**
@@ -53,14 +50,18 @@ export function useSourceContract(sourceType: string | undefined): SourceContrac
     return useMemo(() => {
         const connector = item?.connector ?? sourceType;
         const featureFlags = resolveSourceContractFlags(item);
+        const contract = item?.contract;
+        const defaultObjectKind = contract?.DefaultObjectKind;
+        const defaultObjectType = contract?.ObjectTypes.find(objectType => objectType.Kind === defaultObjectKind);
+        const model = contract?.Model;
 
         return {
             item,
             connector,
             loading,
-            isNoSQL: isNoSQLSourceType(sourceType, connector),
-            storageUnitLabel: item?.storageUnitLabel ?? getSourceObjectLabelForType(sourceType, connector),
-            singularStorageUnitLabel: item?.singularStorageUnitLabel ?? getSourceObjectLabelForType(sourceType, connector, true),
+            isNoSQL: model != null && model !== SourceModel.Relational,
+            storageUnitLabel: item?.storageUnitLabel ?? defaultObjectType?.PluralLabel ?? "Storage Units",
+            singularStorageUnitLabel: item?.singularStorageUnitLabel ?? defaultObjectType?.SingularLabel ?? "Storage Unit",
             ...featureFlags,
         };
     }, [sourceType, item, loading]);
