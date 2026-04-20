@@ -192,11 +192,31 @@ func (s *DatabaseSession) ReadRows(ctx context.Context, ref source.ObjectRef, wh
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
+	log.WithFields(map[string]any{
+		"sourceType": s.spec.ID,
+		"connector":  s.spec.Connector,
+		"kind":       ref.Kind,
+		"path":       slices.Clone(ref.Path),
+		"namespace":  namespace,
+		"objectName": name,
+		"pageSize":   pageSize,
+		"pageOffset": pageOffset,
+		"hasWhere":   where != nil,
+		"sortCount":  len(sort),
+	}).Debug("Source row read requested")
 	if err := s.validateObject(config, namespace, name); err != nil {
+		log.WithError(err).WithFields(map[string]any{
+			"sourceType": s.spec.ID,
+			"connector":  s.spec.Connector,
+			"kind":       ref.Kind,
+			"path":       slices.Clone(ref.Path),
+			"namespace":  namespace,
+			"objectName": name,
+		}).Debug("Source row read failed validation")
 		return nil, err
 	}
 
-	return s.plugin.GetRows(config, &engine.GetRowsRequest{
+	rows, err := s.plugin.GetRows(config, &engine.GetRowsRequest{
 		Schema:      namespace,
 		StorageUnit: name,
 		Where:       where,
@@ -204,6 +224,30 @@ func (s *DatabaseSession) ReadRows(ctx context.Context, ref source.ObjectRef, wh
 		PageSize:    pageSize,
 		PageOffset:  pageOffset,
 	})
+	if err != nil {
+		log.WithError(err).WithFields(map[string]any{
+			"sourceType": s.spec.ID,
+			"connector":  s.spec.Connector,
+			"kind":       ref.Kind,
+			"path":       slices.Clone(ref.Path),
+			"namespace":  namespace,
+			"objectName": name,
+		}).Debug("Source row read failed in plugin")
+		return nil, err
+	}
+
+	log.WithFields(map[string]any{
+		"sourceType":  s.spec.ID,
+		"connector":   s.spec.Connector,
+		"kind":        ref.Kind,
+		"path":        slices.Clone(ref.Path),
+		"namespace":   namespace,
+		"objectName":  name,
+		"rowCount":    len(rows.Rows),
+		"columnCount": len(rows.Columns),
+		"totalCount":  rows.TotalCount,
+	}).Debug("Source row read completed")
+	return rows, nil
 }
 
 // Columns returns columns for one source object.
@@ -693,13 +737,37 @@ func (s *DatabaseSession) kindForUnit(defaultKind source.ObjectKind, unit engine
 }
 
 func (s *DatabaseSession) validateObject(config *engine.PluginConfig, namespace string, name string) error {
+	log.WithFields(map[string]any{
+		"sourceType": s.spec.ID,
+		"connector":  s.spec.Connector,
+		"namespace":  namespace,
+		"objectName": name,
+	}).Debug("Validating source object")
 	exists, err := s.plugin.StorageUnitExists(config, namespace, name)
 	if err != nil {
+		log.WithError(err).WithFields(map[string]any{
+			"sourceType": s.spec.ID,
+			"connector":  s.spec.Connector,
+			"namespace":  namespace,
+			"objectName": name,
+		}).Debug("Source object validation errored")
 		return fmt.Errorf("failed to validate source object: %w", err)
 	}
 	if !exists {
+		log.WithFields(map[string]any{
+			"sourceType": s.spec.ID,
+			"connector":  s.spec.Connector,
+			"namespace":  namespace,
+			"objectName": name,
+		}).Debug("Source object validation reported missing object")
 		return fmt.Errorf("source object %q not found", name)
 	}
+	log.WithFields(map[string]any{
+		"sourceType": s.spec.ID,
+		"connector":  s.spec.Connector,
+		"namespace":  namespace,
+		"objectName": name,
+	}).Debug("Source object validation succeeded")
 	return nil
 }
 
