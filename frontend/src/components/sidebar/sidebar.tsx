@@ -319,7 +319,12 @@ export const Sidebar: FC = () => {
         if (value === "") {
             return;
         }
-        if (pathname !== InternalRoutes.Graph.path && pathname !== InternalRoutes.Dashboard.StorageUnit.path) {
+        if (pathname === InternalRoutes.Dashboard.StorageUnit.path) {
+            navigate(InternalRoutes.Dashboard.StorageUnit.path, {
+                replace: true,
+                state: {},
+            });
+        } else if (pathname !== InternalRoutes.Graph.path) {
             navigate(InternalRoutes.Dashboard.StorageUnit.path);
         }
         dispatch(DatabaseActions.setSchema(value));

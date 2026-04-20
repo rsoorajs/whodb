@@ -98,7 +98,9 @@ export const useProfileSwitch = (options?: UseProfileSwitchOptions) => {
             await clearGraphqlStore();
             dispatch(DatabaseActions.setSchema(""));
             dispatch(AuthActions.switch({ id: profile.Id }));
-            navigate(InternalRoutes.Dashboard.StorageUnit.path);
+            navigate(InternalRoutes.Dashboard.StorageUnit.path, {
+                state: {},
+            });
             options?.onSuccess?.();
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
