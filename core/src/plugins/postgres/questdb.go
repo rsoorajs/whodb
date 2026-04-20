@@ -189,6 +189,13 @@ func (p *QuestDBPlugin) GetForeignKeyRelationships(_ *engine.PluginConfig, _, _ 
 	return map[string]*engine.ForeignKeyRelationship{}, nil
 }
 
+// MarkGeneratedColumns is a no-op for QuestDB.
+// The inherited PostgreSQL probe queries information_schema.columns.is_generated,
+// which QuestDB does not expose.
+func (p *QuestDBPlugin) MarkGeneratedColumns(config *engine.PluginConfig, schema string, storageUnit string, columns []engine.Column) error {
+	return nil
+}
+
 // GetSSLStatus derives QuestDB SSL status from connection configuration.
 // QuestDB speaks the PostgreSQL wire protocol but does not expose pg_stat_ssl,
 // so the generic PostgreSQL runtime query fails.

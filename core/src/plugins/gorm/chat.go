@@ -28,41 +28,47 @@ import (
 	"gorm.io/gorm"
 )
 
+func (p *GormPlugin) buildChatTableContext(config *engine.PluginConfig, db *gorm.DB, schema string) (string, error) {
+	// Get table names from table info query
+	rows, err := db.Raw(p.GetTableInfoQuery(), schema).Rows()
+	if err != nil {
+		log.WithError(err).Error(fmt.Sprintf("Failed to get tables for chat operation in schema: %s", schema))
+		return "", err
+	}
+	defer rows.Close()
+
+	tableDetails := strings.Builder{}
+
+	for rows.Next() {
+		tableName, _ := p.GetTableNameAndAttributes(rows)
+		if tableName == "" {
+			continue
+		}
+
+		tableDetails.WriteString(fmt.Sprintf("table: %v\n", tableName))
+
+		// Use the plugin column lookup so database-specific overrides
+		// (QuestDB, ClickHouse, SQLite, etc.) are reused for chat context too.
+		orderedColumns, err := p.PluginFunctions.GetColumnsForTable(config, schema, tableName)
+		if err != nil {
+			log.WithError(err).Warnf("Failed to get column types for table %s in chat", p.FormTableName(schema, tableName))
+			continue
+		}
+
+		for _, col := range orderedColumns {
+			tableDetails.WriteString(fmt.Sprintf("- %v (%v)\n", col.Name, col.Type))
+		}
+	}
+
+	return tableDetails.String(), nil
+}
+
 func (p *GormPlugin) Chat(config *engine.PluginConfig, schema string, previousConversation string, query string) ([]*engine.ChatMessage, error) {
 	return plugins.WithConnection(config, p.DB, func(db *gorm.DB) ([]*engine.ChatMessage, error) {
-		// Get table names from table info query
-		rows, err := db.Raw(p.GetTableInfoQuery(), schema).Rows()
+		tableContext, err := p.buildChatTableContext(config, db, schema)
 		if err != nil {
-			log.WithError(err).Error(fmt.Sprintf("Failed to get tables for chat operation in schema: %s", schema))
 			return nil, err
 		}
-		defer rows.Close()
-
-		helper := NewMigratorHelper(db, p.GormPluginFunctions)
-		tableDetails := strings.Builder{}
-
-		for rows.Next() {
-			tableName, _ := p.GetTableNameAndAttributes(rows)
-			if tableName == "" {
-				continue
-			}
-
-			tableDetails.WriteString(fmt.Sprintf("table: %v\n", tableName))
-
-			// Use GORM migrator to get column types with length info (preserves column order)
-			fullTableName := p.FormTableName(schema, tableName)
-			orderedColumns, err := helper.GetOrderedColumns(fullTableName)
-			if err != nil {
-				log.WithError(err).Warnf("Failed to get column types for table %s in chat", fullTableName)
-				continue
-			}
-
-			for _, col := range orderedColumns {
-				tableDetails.WriteString(fmt.Sprintf("- %v (%v)\n", col.Name, col.Type))
-			}
-		}
-
-		tableContext := tableDetails.String()
 
 		// Use BAML for structured SQL query generation
 		callCtx := ctx.Background()

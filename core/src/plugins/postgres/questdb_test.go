@@ -103,6 +103,21 @@ func TestQuestDBReturnsNoForeignKeyRelationships(t *testing.T) {
 	}
 }
 
+func TestQuestDBMarkGeneratedColumnsIsNoOp(t *testing.T) {
+	plugin := NewQuestDBPlugin().PluginFunctions.(*QuestDBPlugin)
+	columns := []engine.Column{
+		{Name: "id", Type: "INT"},
+		{Name: "created_at", Type: "TIMESTAMP"},
+	}
+
+	if err := plugin.MarkGeneratedColumns(nil, "", "orders", columns); err != nil {
+		t.Fatalf("MarkGeneratedColumns returned error: %v", err)
+	}
+	if columns[0].IsComputed || columns[1].IsComputed {
+		t.Fatalf("expected QuestDB generated-column marking to be a no-op, got %#v", columns)
+	}
+}
+
 func TestQuestDBRegistersPostgresStyleSSLModes(t *testing.T) {
 	modes := ssl.GetSSLModes(engine.DatabaseType_QuestDB)
 	if len(modes) != 4 {
