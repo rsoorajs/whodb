@@ -8,11 +8,13 @@ import (
 )
 
 func TestNormalizeType(t *testing.T) {
-	if got := NormalizeType("int"); got != "INTEGER" {
+	plugin := NewPostgresPlugin().PluginFunctions.(*PostgresPlugin)
+
+	if got := plugin.NormalizeType("int"); got != "INTEGER" {
 		t.Fatalf("expected INTEGER, got %q", got)
 	}
 
-	if got := NormalizeType("varchar(25)"); got != "CHARACTER VARYING(25)" {
+	if got := plugin.NormalizeType("varchar(25)"); got != "CHARACTER VARYING(25)" {
 		t.Fatalf("expected CHARACTER VARYING(25), got %q", got)
 	}
 }

@@ -35,11 +35,6 @@ var (
 	supportedOperators = sourcecatalogspecs.MySQLSupportedOperators
 )
 
-// NormalizeType converts a MySQL type alias to its canonical form.
-func NormalizeType(typeName string) string {
-	return common.NormalizeTypeWithMap(typeName, sourcecatalogspecs.MySQLAliasMap)
-}
-
 type MySQLPlugin struct {
 	gorm_plugin.GormPlugin
 }
@@ -169,7 +164,7 @@ func (p *MySQLPlugin) GetForeignKeyRelationships(config *engine.PluginConfig, sc
 
 // NormalizeType converts MySQL type aliases to their canonical form.
 func (p *MySQLPlugin) NormalizeType(typeName string) string {
-	return NormalizeType(typeName)
+	return common.NormalizeTypeWithMap(typeName, sourcecatalogspecs.MySQLAliasMap)
 }
 
 // MarkGeneratedColumns detects MySQL generated columns (VIRTUAL or STORED)

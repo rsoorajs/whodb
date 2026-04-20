@@ -45,11 +45,6 @@ var (
 	supportedOperators = sourcecatalogspecs.SQLiteSupportedOperators
 )
 
-// NormalizeType converts a SQLite type alias to its canonical form.
-func NormalizeType(typeName string) string {
-	return common.NormalizeTypeWithMap(typeName, sourcecatalogspecs.SQLiteAliasMap)
-}
-
 type Sqlite3Plugin struct {
 	gorm_plugin.GormPlugin
 	strictTableCache map[string]bool
@@ -191,7 +186,7 @@ func (p *Sqlite3Plugin) getColumnsViaPragma(db *gorm.DB, storageUnit string) ([]
 			continue
 		}
 
-		normalizedType := NormalizeType(strings.ToUpper(dataType))
+		normalizedType := p.NormalizeType(strings.ToUpper(dataType))
 		col := engine.Column{
 			Name:       name,
 			Type:       normalizedType,
@@ -844,19 +839,7 @@ func (p *Sqlite3Plugin) streamSQLiteRows(rows *sql.Rows, writer engine.QueryStre
 				typeName = colType.DatabaseTypeName()
 			}
 
-			if p.GormPluginFunctions.ShouldHandleColumnType(typeName) {
-				columnPointers[i] = p.GormPluginFunctions.GetColumnScanner(typeName)
-				continue
-			}
-
-			switch typeName {
-			case "VARBINARY", "BINARY", "IMAGE", "BYTEA", "BLOB", "HIERARCHYID",
-				"GEOMETRY", "POINT", "LINESTRING", "POLYGON", "GEOGRAPHY",
-				"MULTIPOINT", "MULTILINESTRING", "MULTIPOLYGON":
-				columnPointers[i] = new(sql.RawBytes)
-			default:
-				columnPointers[i] = new(sql.NullString)
-			}
+			columnPointers[i] = gorm_plugin.CreateRawColumnScanner(p.GormPluginFunctions, typeName)
 		}
 
 		if err := rows.Scan(columnPointers...); err != nil {
@@ -870,49 +853,12 @@ func (p *Sqlite3Plugin) streamSQLiteRows(rows *sql.Rows, writer engine.QueryStre
 				typeName = colType.DatabaseTypeName()
 			}
 
-			if p.GormPluginFunctions.ShouldHandleColumnType(typeName) {
-				value, err := p.GormPluginFunctions.FormatColumnValue(typeName, colPtr)
-				if err != nil {
-					row[i] = "ERROR: " + err.Error()
-				} else {
-					row[i] = value
-				}
+			value, err := gorm_plugin.FormatScannedRawColumnValue(p.GormPluginFunctions, typeName, colPtr)
+			if err != nil {
+				row[i] = "ERROR: " + err.Error()
 				continue
 			}
-
-			switch typeName {
-			case "VARBINARY", "BINARY", "IMAGE", "BYTEA", "BLOB":
-				rawBytes := colPtr.(*sql.RawBytes)
-				if rawBytes == nil || len(*rawBytes) == 0 {
-					row[i] = ""
-				} else {
-					row[i] = "0x" + hex.EncodeToString(*rawBytes)
-				}
-			case "GEOMETRY", "POINT", "LINESTRING", "POLYGON", "GEOGRAPHY",
-				"MULTIPOINT", "MULTILINESTRING", "MULTIPOLYGON":
-				rawBytes := colPtr.(*sql.RawBytes)
-				if rawBytes == nil || len(*rawBytes) == 0 {
-					row[i] = ""
-				} else if formatted := p.GormPluginFunctions.FormatGeometryValue(*rawBytes, typeName); formatted != "" {
-					row[i] = formatted
-				} else {
-					row[i] = "0x" + hex.EncodeToString(*rawBytes)
-				}
-			case "TIME":
-				val := colPtr.(*sql.NullString)
-				if val.Valid {
-					row[i] = val.String
-				} else {
-					row[i] = ""
-				}
-			default:
-				val := colPtr.(*sql.NullString)
-				if val.Valid {
-					row[i] = val.String
-				} else {
-					row[i] = ""
-				}
-			}
+			row[i] = value
 		}
 
 		if err := writer.WriteRow(row); err != nil {
@@ -1043,7 +989,7 @@ func (p *Sqlite3Plugin) GetForeignKeyRelationships(config *engine.PluginConfig, 
 
 // NormalizeType converts SQLite type aliases to their canonical form.
 func (p *Sqlite3Plugin) NormalizeType(typeName string) string {
-	return NormalizeType(typeName)
+	return common.NormalizeTypeWithMap(typeName, sourcecatalogspecs.SQLiteAliasMap)
 }
 
 // GetMaxBulkInsertParameters returns 999 for SQLite.

@@ -34,11 +34,6 @@ var (
 	supportedOperators = sourcecatalogspecs.PostgreSQLSupportedOperators
 )
 
-// NormalizeType converts a PostgreSQL type alias to its canonical form.
-func NormalizeType(typeName string) string {
-	return common.NormalizeTypeWithMap(typeName, sourcecatalogspecs.PostgresAliasMap)
-}
-
 type PostgresPlugin struct {
 	gorm_plugin.GormPlugin
 }
@@ -147,7 +142,7 @@ func (p *PostgresPlugin) GetForeignKeyRelationships(config *engine.PluginConfig,
 
 // NormalizeType converts PostgreSQL type aliases to their canonical form.
 func (p *PostgresPlugin) NormalizeType(typeName string) string {
-	return NormalizeType(typeName)
+	return common.NormalizeTypeWithMap(typeName, sourcecatalogspecs.PostgresAliasMap)
 }
 
 // MarkGeneratedColumns detects PostgreSQL generated columns (GENERATED ALWAYS AS)

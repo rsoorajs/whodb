@@ -8,11 +8,13 @@ import (
 )
 
 func TestNormalizeType(t *testing.T) {
-	if got := NormalizeType("int"); got != "INTEGER" {
+	plugin := NewSqlite3Plugin().PluginFunctions.(*Sqlite3Plugin)
+
+	if got := plugin.NormalizeType("int"); got != "INTEGER" {
 		t.Fatalf("expected INTEGER, got %q", got)
 	}
 
-	if got := NormalizeType("varchar(100)"); got != "TEXT(100)" {
+	if got := plugin.NormalizeType("varchar(100)"); got != "TEXT(100)" {
 		t.Fatalf("expected TEXT(100), got %q", got)
 	}
 }

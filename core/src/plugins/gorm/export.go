@@ -49,7 +49,7 @@ func (p *GormPlugin) ExportData(config *engine.PluginConfig, schema string, stor
 			rowData := make([]string, len(columns))
 			for j, col := range columns {
 				if val, ok := row[col]; ok {
-					rowData[j] = p.FormatValue(val)
+					rowData[j] = p.GormPluginFunctions.FormatValue(val)
 				} else {
 					rowData[j] = ""
 				}
@@ -118,7 +118,7 @@ func (p *GormPlugin) ExportData(config *engine.PluginConfig, schema string, stor
 				row := make([]string, len(columns))
 				for i, col := range columns {
 					if val, exists := record[col]; exists {
-						row[i] = p.FormatValue(val)
+						row[i] = p.GormPluginFunctions.FormatValue(val)
 					} else {
 						row[i] = ""
 					}
@@ -145,8 +145,7 @@ func (p *GormPlugin) ExportData(config *engine.PluginConfig, schema string, stor
 	return err
 }
 
-// FormatValue converts any values to strings appropriately for CSV
-func (p *GormPlugin) FormatValue(val any) string {
+func formatExportValue(plugin GormPluginFunctions, val any) string {
 	if val == nil {
 		return ""
 	}
@@ -157,38 +156,33 @@ func (p *GormPlugin) FormatValue(val any) string {
 	case string:
 		return common.EscapeFormula(v)
 	case time.Time:
-		// Format time in ISO 8601 format that can be parsed back
-		if v.Hour() == 0 && v.Minute() == 0 && v.Second() == 0 && v.Nanosecond() == 0 {
-			// Date only
-			return common.EscapeFormula(v.Format("2006-01-02"))
-		}
-		// Full datetime
-		return common.EscapeFormula(v.Format("2006-01-02T15:04:05"))
+		return common.EscapeFormula(plugin.FormatTimeForExport(v))
 	case *time.Time:
 		if v == nil {
 			return ""
 		}
-		// Format time in ISO 8601 format that can be parsed back
-		if v.Hour() == 0 && v.Minute() == 0 && v.Second() == 0 && v.Nanosecond() == 0 {
-			// Date only
-			return common.EscapeFormula(v.Format("2006-01-02"))
-		}
-		// Full datetime
-		return common.EscapeFormula(v.Format("2006-01-02T15:04:05"))
+		return common.EscapeFormula(plugin.FormatTimeForExport(*v))
 	case sql.NullTime:
 		if !v.Valid {
 			return ""
 		}
-		// Format time in ISO 8601 format that can be parsed back
-		if v.Time.Hour() == 0 && v.Time.Minute() == 0 && v.Time.Second() == 0 && v.Time.Nanosecond() == 0 {
-			// Date only
-			return common.EscapeFormula(v.Time.Format("2006-01-02"))
-		}
-		// Full datetime
-		return common.EscapeFormula(v.Time.Format("2006-01-02T15:04:05"))
+		return common.EscapeFormula(plugin.FormatTimeForExport(v.Time))
 	default:
 		return common.EscapeFormula(fmt.Sprintf("%v", v))
 	}
+}
+
+// FormatValue converts any values to strings appropriately for CSV.
+func (p *GormPlugin) FormatValue(val any) string {
+	return formatExportValue(p.GormPluginFunctions, val)
+}
+
+// FormatTimeForExport returns the default string representation for exported timestamps.
+func (p *GormPlugin) FormatTimeForExport(value time.Time) string {
+	if value.Hour() == 0 && value.Minute() == 0 && value.Second() == 0 && value.Nanosecond() == 0 {
+		return value.Format("2006-01-02")
+	}
+	return value.Format("2006-01-02T15:04:05")
 }
 
 // GetPlaceholder returns the placeholder for prepared statements

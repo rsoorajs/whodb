@@ -8,11 +8,13 @@ import (
 )
 
 func TestNormalizeType(t *testing.T) {
-	if got := NormalizeType("integer"); got != "INT" {
+	plugin := NewMySQLPlugin().PluginFunctions.(*MySQLPlugin)
+
+	if got := plugin.NormalizeType("integer"); got != "INT" {
 		t.Fatalf("expected INT, got %q", got)
 	}
 
-	if got := NormalizeType("character varying(50)"); got != "VARCHAR(50)" {
+	if got := plugin.NormalizeType("character varying(50)"); got != "VARCHAR(50)" {
 		t.Fatalf("expected VARCHAR(50), got %q", got)
 	}
 }

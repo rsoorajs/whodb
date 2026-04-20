@@ -22,6 +22,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/engine"
@@ -66,6 +67,8 @@ type GormPluginFunctions interface {
 	ConvertStringValue(value, columnType string, isNullable bool) (any, error)
 	ConvertRawToRows(raw *sql.Rows) (*engine.GetRowsResult, error)
 	ConvertRecordValuesToMap(values []engine.Record) (map[string]any, error)
+	FormatValue(val any) string
+	FormatTimeForExport(value time.Time) string
 
 	// CreateSQLBuilder creates a SQL builder instance - can be overridden by specific plugins
 	CreateSQLBuilder(db *gorm.DB) SQLBuilderInterface
@@ -90,16 +93,9 @@ type GormPluginFunctions interface {
 	// GetRowsOrderBy returns the ORDER BY clause for pagination queries
 	GetRowsOrderBy(db *gorm.DB, schema string, storageUnit string) string
 
-	// ShouldHandleColumnType returns true if the plugin wants to handle a specific column type
-	ShouldHandleColumnType(columnType string) bool
-
-	// GetColumnScanner returns a scanner for a specific column type
-	// This is called when ShouldHandleColumnType returns true
-	GetColumnScanner(columnType string) any
-
-	// FormatColumnValue formats a scanned value for a specific column type
-	// This is called when ShouldHandleColumnType returns true
-	FormatColumnValue(columnType string, scanner any) (string, error)
+	// GetColumnCodec returns a codec for plugin-specific scanned column handling.
+	// Return nil to use the shared default scanner/formatter path.
+	GetColumnCodec(columnType string) ColumnCodec
 
 	// GetCustomColumnTypeName returns a custom column type name for display
 	// Return empty string to use the default type name

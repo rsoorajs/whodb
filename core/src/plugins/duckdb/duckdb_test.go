@@ -13,7 +13,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func TestDuckDBFormatColumnValue(t *testing.T) {
+func TestDuckDBColumnCodec(t *testing.T) {
 	plugin := &DuckDBPlugin{}
 
 	testCases := []struct {
@@ -73,8 +73,12 @@ func TestDuckDBFormatColumnValue(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		codec := plugin.GetColumnCodec(tc.columnType)
+		if codec == nil {
+			t.Fatalf("%s: expected DuckDB codec", tc.name)
+		}
 		scanner := any(tc.value)
-		got, err := plugin.FormatColumnValue(tc.columnType, &scanner)
+		got, err := codec.Format(&scanner)
 		if err != nil {
 			t.Fatalf("%s: unexpected error: %v", tc.name, err)
 		}
@@ -83,7 +87,7 @@ func TestDuckDBFormatColumnValue(t *testing.T) {
 		}
 	}
 
-	if got, err := plugin.FormatColumnValue("TEXT", new(any)); err != nil || got != "" {
+	if got, err := plugin.GetColumnCodec("TEXT").Format(new(any)); err != nil || got != "" {
 		t.Fatalf("expected nil scanner to format as empty string, got %q err=%v", got, err)
 	}
 }

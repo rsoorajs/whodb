@@ -17,8 +17,10 @@
 package gorm_plugin
 
 import (
+	"path/filepath"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/clidey/whodb/core/src/engine"
 	"gorm.io/driver/sqlite"
@@ -30,12 +32,13 @@ type exportTestPlugin struct {
 	db                     *gorm.DB
 	columnsRead            atomic.Int32
 	columnsUsedTransaction atomic.Bool
+	formatCalls            atomic.Int32
 }
 
 func newExportTestPlugin(t *testing.T) *exportTestPlugin {
 	t.Helper()
 
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "export.db")), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("failed to open sqlite test database: %v", err)
 	}
@@ -68,6 +71,14 @@ func (p *exportTestPlugin) GetColumnsForTable(config *engine.PluginConfig, schem
 	}, nil
 }
 
+func (p *exportTestPlugin) FormatValue(val any) string {
+	p.formatCalls.Add(1)
+	if ts, ok := val.(time.Time); ok {
+		return "OVERRIDE:" + ts.Format(time.RFC3339Nano)
+	}
+	return p.GormPlugin.FormatValue(val)
+}
+
 func TestExportDataUsesPluginColumnLookup(t *testing.T) {
 	plugin := newExportTestPlugin(t)
 	config := engine.NewPluginConfig(&engine.Credentials{Type: string(engine.DatabaseType_Postgres)})
@@ -95,5 +106,26 @@ func TestExportDataUsesPluginColumnLookup(t *testing.T) {
 	}
 	if written[1][1] != "alice" {
 		t.Fatalf("unexpected exported row: %#v", written[1])
+	}
+}
+
+func TestExportDataUsesPluginFormatValueOverride(t *testing.T) {
+	plugin := newExportTestPlugin(t)
+	createdAt := time.Date(2026, 4, 20, 10, 11, 12, 123456789, time.UTC)
+
+	var written [][]string
+	err := plugin.ExportData(nil, "", "", func(row []string) error {
+		written = append(written, append([]string(nil), row...))
+		return nil
+	}, []map[string]any{{"created_at": createdAt}})
+	if err != nil {
+		t.Fatalf("ExportData returned error: %v", err)
+	}
+
+	if plugin.formatCalls.Load() == 0 {
+		t.Fatal("expected export to call the plugin FormatValue override")
+	}
+	if len(written) != 2 || written[1][0] != "OVERRIDE:"+createdAt.Format(time.RFC3339Nano) {
+		t.Fatalf("unexpected formatted export rows: %#v", written)
 	}
 }
