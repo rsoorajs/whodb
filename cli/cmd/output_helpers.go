@@ -65,6 +65,16 @@ func writeCommandJSON(cmd *cobra.Command, value any) error {
 	return encoder.Encode(value)
 }
 
+func writeCommandNDJSON[T any](cmd *cobra.Command, values []T) error {
+	encoder := json.NewEncoder(cmd.OutOrStdout())
+	for _, value := range values {
+		if err := encoder.Encode(value); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func writeEmptyJSONArray(cmd *cobra.Command) error {
 	return writeCommandJSON(cmd, []any{})
 }

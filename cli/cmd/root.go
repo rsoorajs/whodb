@@ -52,6 +52,7 @@ Features:
   - Data import/export (CSV, Excel) — Ctrl+G for import wizard
   - FK-aware mock data generation (mock-data) with dependency analysis
   - Schema diff between saved connections in the TUI (Ctrl+V) and CLI (diff)
+  - Cloud provider discovery commands (cloud) when provider support is enabled
   - Backend-generated query suggestions (suggestions + editor empty state)
   - AI chat with streaming responses (OpenAI, Anthropic, Ollama, LM Studio)
   - SSH tunnel support for remote databases
