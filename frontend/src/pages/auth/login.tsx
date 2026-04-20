@@ -1127,11 +1127,20 @@ export const LoginForm: FC<LoginFormProps> = ({
                 {cloudProvidersEnabled && (
                     <>
                         <Separator className="my-8" />
-                        <AwsConnectionPicker onSelectConnection={handleCloudConnectionPrefill} />
+                        <AwsConnectionPicker
+                            onSelectConnection={handleCloudConnectionPrefill}
+                            sourceTypes={databaseTypeItems}
+                        />
                         <Separator className="my-8" />
-                        <AzureConnectionPicker onSelectConnection={handleCloudConnectionPrefill} />
+                        <AzureConnectionPicker
+                            onSelectConnection={handleCloudConnectionPrefill}
+                            sourceTypes={databaseTypeItems}
+                        />
                         <Separator className="my-8" />
-                        <GcpConnectionPicker onSelectConnection={handleCloudConnectionPrefill} />
+                        <GcpConnectionPicker
+                            onSelectConnection={handleCloudConnectionPrefill}
+                            sourceTypes={databaseTypeItems}
+                        />
                     </>
                 )}
             </div>

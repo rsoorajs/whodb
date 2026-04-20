@@ -27,6 +27,7 @@ import (
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/query"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -585,23 +586,11 @@ func (p *RedisPlugin) FormatValue(val any) string {
 	return fmt.Sprintf("%v", val)
 }
 
-// GetDatabaseMetadata returns Redis metadata for frontend configuration.
-// Redis is a key-value store without traditional type definitions or operators.
-func (p *RedisPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
-	ops := make([]string, 0, len(redisOperators))
-	for op := range redisOperators {
-		ops = append(ops, op)
-	}
-	sort.Strings(ops)
-	return &engine.DatabaseMetadata{
-		DatabaseType:    engine.DatabaseType_Redis,
-		TypeDefinitions: []engine.TypeDefinition{},
-		Operators:       ops,
-		AliasMap:        map[string]string{},
-	}
-}
-
 func init() {
+	sourcecatalog.RegisterSessionMetadata(
+		string(engine.DatabaseType_Redis),
+		sourcecatalog.SessionMetadataFromOperators(nil, sortedRedisOperators(), nil),
+	)
 	engine.RegisterPlugin(NewRedisPlugin())
 }
 
@@ -610,4 +599,13 @@ func NewRedisPlugin() *engine.Plugin {
 		Type:            engine.DatabaseType_Redis,
 		PluginFunctions: &RedisPlugin{},
 	}
+}
+
+func sortedRedisOperators() []string {
+	ops := make([]string, 0, len(redisOperators))
+	for op := range redisOperators {
+		ops = append(ops, op)
+	}
+	sort.Strings(ops)
+	return ops
 }

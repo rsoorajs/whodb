@@ -353,9 +353,9 @@ func (g *Generator) Generate(
 	g.existingPKs = make(map[string][]map[string]any)
 	g.usedPKValues = make(map[string]map[string]bool)
 
-	// Set database type for type-specific generation
-	if metadata := plugin.GetDatabaseMetadata(); metadata != nil {
-		g.databaseType = string(metadata.DatabaseType)
+	// Set source type for type-specific generation.
+	if config != nil && config.Credentials != nil {
+		g.databaseType = config.Credentials.Type
 	}
 
 	result := &GenerationResult{

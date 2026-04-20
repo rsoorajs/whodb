@@ -20,8 +20,8 @@ package database
 
 import (
 	"maps"
+	"slices"
 
-	"github.com/clidey/whodb/core/src/common/ssl"
 	"github.com/clidey/whodb/core/src/dbcatalog"
 	"github.com/clidey/whodb/core/src/source"
 	"github.com/clidey/whodb/core/src/sourcecatalog"
@@ -43,23 +43,11 @@ func Register() {
 			Fields:         sourcecatalog.FieldVisibility(entry.Fields),
 			RequiredFields: sourcecatalog.FieldRequirements(entry.RequiredFields),
 			IsAWSManaged:   entry.IsAWSManaged,
-			SSLModes:       cloneSSLModes(entry.SSLModes),
+			SSLModes:       slices.Clone(entry.SSLModes),
 		})
 		if !ok {
 			continue
 		}
 		source.RegisterType(spec)
 	}
-}
-
-func cloneSSLModes(modes []ssl.SSLModeInfo) []source.SSLModeInfo {
-	cloned := make([]source.SSLModeInfo, 0, len(modes))
-	for _, mode := range modes {
-		cloned = append(cloned, source.SSLModeInfo{
-			Value:       string(mode.Value),
-			Label:       mode.Label,
-			Description: mode.Description,
-		})
-	}
-	return cloned
 }

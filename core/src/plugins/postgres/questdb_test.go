@@ -22,6 +22,7 @@ import (
 
 	"github.com/clidey/whodb/core/src/common/ssl"
 	"github.com/clidey/whodb/core/src/engine"
+	_ "github.com/clidey/whodb/core/src/sources/database"
 )
 
 func TestNewQuestDBPlugin(t *testing.T) {

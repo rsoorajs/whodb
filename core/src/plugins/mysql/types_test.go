@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 func TestNormalizeType(t *testing.T) {
@@ -16,16 +17,10 @@ func TestNormalizeType(t *testing.T) {
 	}
 }
 
-func TestGetDatabaseMetadataUsesPluginType(t *testing.T) {
-	p := &MySQLPlugin{}
-	p.Type = engine.DatabaseType_MySQL
-
-	meta := p.GetDatabaseMetadata()
-	if meta == nil {
+func TestSourceSessionMetadataUsesSourceType(t *testing.T) {
+	meta, ok := sourcecatalog.ResolveSessionMetadata(string(engine.DatabaseType_MySQL))
+	if !ok || meta == nil {
 		t.Fatalf("expected metadata, got nil")
-	}
-	if meta.DatabaseType != engine.DatabaseType_MySQL {
-		t.Fatalf("expected DatabaseType %q, got %q", engine.DatabaseType_MySQL, meta.DatabaseType)
 	}
 	if meta.AliasMap["INTEGER"] != "INT" {
 		t.Fatalf("expected INTEGER alias to be INT, got %q", meta.AliasMap["INTEGER"])

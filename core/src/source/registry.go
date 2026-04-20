@@ -111,7 +111,8 @@ func cloneTypeSpec(spec TypeSpec) TypeSpec {
 		GraphScopeKind:    spec.Contract.GraphScopeKind,
 		ObjectTypes:       cloneObjectTypes(spec.Contract.ObjectTypes),
 	}
-	cloned.SSLModes = slices.Clone(spec.SSLModes)
+	cloned.DiscoveryPrefill = cloneDiscoveryPrefill(spec.DiscoveryPrefill)
+	cloned.SSLModes = cloneSSLModes(spec.SSLModes)
 	return cloned
 }
 
@@ -125,6 +126,36 @@ func cloneObjectTypes(objectTypes []ObjectType) []ObjectType {
 			Views:         slices.Clone(objectType.Views),
 			SingularLabel: objectType.SingularLabel,
 			PluralLabel:   objectType.PluralLabel,
+		})
+	}
+	return cloned
+}
+
+func cloneDiscoveryPrefill(prefill DiscoveryPrefill) DiscoveryPrefill {
+	cloned := DiscoveryPrefill{
+		AdvancedDefaults: make([]DiscoveryAdvancedDefault, 0, len(prefill.AdvancedDefaults)),
+	}
+	for _, item := range prefill.AdvancedDefaults {
+		cloned.AdvancedDefaults = append(cloned.AdvancedDefaults, DiscoveryAdvancedDefault{
+			Key:           item.Key,
+			Value:         item.Value,
+			MetadataKey:   item.MetadataKey,
+			DefaultValue:  item.DefaultValue,
+			ProviderTypes: slices.Clone(item.ProviderTypes),
+			Conditions:    slices.Clone(item.Conditions),
+		})
+	}
+	return cloned
+}
+
+func cloneSSLModes(modes []SSLModeInfo) []SSLModeInfo {
+	cloned := make([]SSLModeInfo, 0, len(modes))
+	for _, mode := range modes {
+		cloned = append(cloned, SSLModeInfo{
+			Value:       mode.Value,
+			Label:       mode.Label,
+			Description: mode.Description,
+			Aliases:     slices.Clone(mode.Aliases),
 		})
 	}
 	return cloned

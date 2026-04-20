@@ -27,6 +27,7 @@ import (
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/query"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 // MemcachedPlugin implements PluginFunctions for Memcached.
@@ -195,22 +196,11 @@ func (p *MemcachedPlugin) FormatValue(val any) string {
 	return fmt.Sprintf("%v", val)
 }
 
-// GetDatabaseMetadata returns Memcached metadata for frontend configuration.
-func (p *MemcachedPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
-	ops := make([]string, 0, len(memcachedOperators))
-	for op := range memcachedOperators {
-		ops = append(ops, op)
-	}
-	sort.Strings(ops)
-	return &engine.DatabaseMetadata{
-		DatabaseType:    engine.DatabaseType_Memcached,
-		TypeDefinitions: []engine.TypeDefinition{},
-		Operators:       ops,
-		AliasMap:        map[string]string{},
-	}
-}
-
 func init() {
+	sourcecatalog.RegisterSessionMetadata(
+		string(engine.DatabaseType_Memcached),
+		sourcecatalog.SessionMetadataFromOperators(nil, sortedMemcachedOperators(), nil),
+	)
 	engine.RegisterPlugin(NewMemcachedPlugin())
 }
 
@@ -228,6 +218,15 @@ func memcachedColumns() []engine.Column {
 		{Name: "Value", Type: "string"},
 		{Name: "Flags", Type: "uint32"},
 	}
+}
+
+func sortedMemcachedOperators() []string {
+	ops := make([]string, 0, len(memcachedOperators))
+	for op := range memcachedOperators {
+		ops = append(ops, op)
+	}
+	sort.Strings(ops)
+	return ops
 }
 
 // filterMemcachedRows applies a where condition to memcached rows.

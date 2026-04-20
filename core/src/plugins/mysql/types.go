@@ -19,6 +19,7 @@ package mysql
 import (
 	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 // AliasMap maps MySQL type aliases to their canonical names.
@@ -73,16 +74,11 @@ func NormalizeType(typeName string) string {
 	return common.NormalizeTypeWithMap(typeName, AliasMap)
 }
 
-// GetDatabaseMetadata returns MySQL/MariaDB metadata for frontend configuration.
-func (p *MySQLPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
-	operators := make([]string, 0, len(supportedOperators))
-	for op := range supportedOperators {
-		operators = append(operators, op)
-	}
-	return &engine.DatabaseMetadata{
-		DatabaseType:    p.Type, // Uses the plugin's actual type (MySQL or MariaDB)
-		TypeDefinitions: TypeDefinitions,
-		Operators:       operators,
-		AliasMap:        AliasMap,
-	}
+func init() {
+	sourcecatalog.RegisterSessionMetadataAliases(
+		sourcecatalog.SessionMetadataFromOperatorMap(TypeDefinitions, supportedOperators, AliasMap),
+		string(engine.DatabaseType_MySQL),
+		string(engine.DatabaseType_MariaDB),
+		string(engine.DatabaseType_TiDB),
+	)
 }

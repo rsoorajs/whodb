@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import type { SourceTypeItem } from "@/config/source-types";
 import { LocalDiscoveredConnection } from "@/store/providers";
 
 /** Matches AWS managed database hostnames (RDS, ElastiCache, DocumentDB, Redshift, Neptune, Timestream) */
@@ -72,98 +73,92 @@ export interface ConnectionPrefillData {
     advanced: Record<string, string>;
 }
 
-/**
- * Prefill rule function signature.
- * Receives connection and metadata getter, returns advanced settings to apply.
- */
-export type PrefillRule = (
-    conn: LocalDiscoveredConnection,
-    meta: (key: string) => string | undefined
-) => Record<string, string>;
-
 /** Get metadata value from a discovered connection */
 const getMetadataValue = (conn: LocalDiscoveredConnection, key: string): string | undefined => {
     if (!conn?.Metadata) return undefined;
     return conn.Metadata.find(m => m.Key === key)?.Value;
 };
 
-/**
- * CE prefill rules for base database types.
- * Each rule defines how to configure advanced settings for cloud-managed instances.
- */
-const basePrefillRules: Record<string, PrefillRule> = {
-    // SQL databases - managed cloud services require SSL
-    Postgres: () => ({ "SSL Mode": "require" }),
-    MySQL: () => ({ "SSL Mode": "require" }),
-    MariaDB: () => ({ "SSL Mode": "require" }),
+function providerMatches(allowedProviders: string[], providerType: string | undefined): boolean {
+    if (allowedProviders.length === 0) {
+        return true;
+    }
+    if (!providerType) {
+        return false;
+    }
 
-    // ElastiCache (Redis-compatible)
-    ElastiCache: (_, meta): Record<string, string> => {
-        if (meta("transitEncryption") === "true") {
-            return { "TLS": "true" };
-        }
-        return {};
-    },
-
-    // Valkey (ElastiCache Valkey engine, same as Redis)
-    Valkey: (_, meta): Record<string, string> => {
-        if (meta("transitEncryption") === "true") {
-            return { "TLS": "true" };
-        }
-        return {};
-    },
-
-    // DocumentDB (MongoDB-compatible)
-    DocumentDB: () => ({
-        "URL Params": "?tls=true&tlsInsecure=true&replicaSet=rs0&retryWrites=false&readPreference=secondaryPreferred"
-    }),
-
-    // Azure Cache for Redis (always TLS on SSL port)
-    Redis: () => ({ "TLS": "true" }),
-
-    // Azure Cosmos DB for MongoDB (requires TLS)
-    MongoDB: () => ({
-        "URL Params": "?tls=true&tlsInsecure=true&retryWrites=false"
-    }),
-};
-
-// Combined rules - Extension rules are merged at runtime via registerPrefillRules()
-let prefillRules: Record<string, PrefillRule> = { ...basePrefillRules };
-
-/** Register additional prefill rules. */
-export function registerPrefillRules(eeRules: Record<string, PrefillRule>) {
-    prefillRules = { ...basePrefillRules, ...eeRules };
+    const normalizedProvider = providerType.toLowerCase();
+    return allowedProviders.some(candidate => candidate.toLowerCase() === normalizedProvider);
 }
 
-/**
- * Build prefill data from any cloud provider's discovered connection.
- * Applies database-specific rules to configure SSL/TLS and other advanced settings.
- */
-export function buildConnectionPrefill(conn: LocalDiscoveredConnection): ConnectionPrefillData {
-    const meta = (key: string) => getMetadataValue(conn, key);
-    const endpoint = meta("endpoint") || "";
-    const port = meta("port");
+function conditionsMatch(
+    conn: LocalDiscoveredConnection,
+    conditions: NonNullable<SourceTypeItem["discoveryPrefill"]>["AdvancedDefaults"][number]["Conditions"]
+): boolean {
+    return conditions.every(condition => getMetadataValue(conn, condition.Key) === condition.Value);
+}
 
+function resolveAdvancedDefaultValue(
+    conn: LocalDiscoveredConnection,
+    advancedDefault: NonNullable<SourceTypeItem["discoveryPrefill"]>["AdvancedDefaults"][number]
+): string {
+    if (advancedDefault.MetadataKey) {
+        const metadataValue = getMetadataValue(conn, advancedDefault.MetadataKey);
+        if (metadataValue) {
+            return metadataValue;
+        }
+    }
+
+    if (advancedDefault.Value) {
+        return advancedDefault.Value;
+    }
+
+    return advancedDefault.DefaultValue;
+}
+
+function buildAdvancedPrefill(
+    conn: LocalDiscoveredConnection,
+    sourceType: SourceTypeItem | undefined
+): Record<string, string> {
     const advanced: Record<string, string> = {};
+    const port = getMetadataValue(conn, "port");
     if (port) {
         advanced["Port"] = port;
     }
 
-    // Apply database-specific rules
-    const rule = prefillRules[conn.DatabaseType];
-    if (rule) {
-        Object.assign(advanced, rule(conn, meta));
+    for (const advancedDefault of sourceType?.discoveryPrefill?.AdvancedDefaults ?? []) {
+        if (!providerMatches(advancedDefault.ProviderTypes, conn.ProviderType)) {
+            continue;
+        }
+        if (!conditionsMatch(conn, advancedDefault.Conditions)) {
+            continue;
+        }
+
+        const value = resolveAdvancedDefaultValue(conn, advancedDefault);
+        if (!value) {
+            continue;
+        }
+        advanced[advancedDefault.Key] = value;
     }
 
-    // RDS Proxy with requireTLS forces SSL
-    if (meta("endpointType") === "proxy" && meta("requireTLS") === "true") {
-        advanced["SSL Mode"] = "require";
-    }
+    return advanced;
+}
+
+/**
+ * Build prefill data from any cloud provider's discovered connection.
+ * Applies backend-owned discovery-prefill metadata from the source catalog.
+ */
+export function buildConnectionPrefill(
+    conn: LocalDiscoveredConnection,
+    sourceType?: SourceTypeItem
+): ConnectionPrefillData {
+    const endpoint = getMetadataValue(conn, "endpoint") || "";
+    const port = getMetadataValue(conn, "port");
 
     return {
         databaseType: conn.DatabaseType,
         hostname: endpoint,
         port,
-        advanced,
+        advanced: buildAdvancedPrefill(conn, sourceType),
     };
 }

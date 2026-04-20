@@ -44,6 +44,19 @@ query SourceTypes {
         PluralLabel
       }
     }
+    discoveryPrefill: DiscoveryPrefill {
+      AdvancedDefaults {
+        Key
+        Value
+        MetadataKey
+        DefaultValue
+        ProviderTypes
+        Conditions {
+          Key
+          Value
+        }
+      }
+    }
     isAwsManaged: IsAWSManaged
     sslModes: SSLModes {
       value

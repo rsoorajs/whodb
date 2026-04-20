@@ -19,6 +19,7 @@ package duckdb
 import (
 	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 // AliasMap maps DuckDB type aliases to their canonical names.
@@ -104,16 +105,9 @@ func NormalizeType(typeName string) string {
 	return common.NormalizeTypeWithMap(typeName, AliasMap)
 }
 
-// GetDatabaseMetadata returns DuckDB metadata for frontend configuration.
-func (p *DuckDBPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
-	operators := make([]string, 0, len(supportedOperators))
-	for op := range supportedOperators {
-		operators = append(operators, op)
-	}
-	return &engine.DatabaseMetadata{
-		DatabaseType:    engine.DatabaseType_DuckDB,
-		TypeDefinitions: TypeDefinitions,
-		Operators:       operators,
-		AliasMap:        AliasMap,
-	}
+func init() {
+	sourcecatalog.RegisterSessionMetadata(
+		string(engine.DatabaseType_DuckDB),
+		sourcecatalog.SessionMetadataFromOperatorMap(TypeDefinitions, supportedOperators, AliasMap),
+	)
 }

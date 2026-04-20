@@ -31,6 +31,7 @@ import (
 	"github.com/clidey/whodb/core/src/query"
 	"github.com/clidey/whodb/core/src/querysuggestions"
 	"github.com/clidey/whodb/core/src/source"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 func init() {
@@ -71,20 +72,11 @@ type DatabaseSession struct {
 	credentials *source.Credentials
 }
 
-// Metadata returns source session metadata derived from plugin metadata.
+// Metadata returns source session metadata derived from the source registry.
 func (s *DatabaseSession) Metadata(_ context.Context) (*source.SessionMetadata, error) {
-	metadata := s.plugin.GetDatabaseMetadata()
+	metadata, _ := sourcecatalog.ResolveSessionMetadata(s.spec.ID, s.spec.Connector)
 	if metadata == nil {
-		return &source.SessionMetadata{
-			SourceType:     s.spec.ID,
-			QueryLanguages: queryLanguagesForSpec(s.spec),
-			AliasMap:       map[string]string{},
-		}, nil
-	}
-
-	aliasMap := map[string]string{}
-	for key, value := range metadata.AliasMap {
-		aliasMap[key] = value
+		metadata = &source.TypeSessionMetadata{}
 	}
 
 	return &source.SessionMetadata{
@@ -92,7 +84,7 @@ func (s *DatabaseSession) Metadata(_ context.Context) (*source.SessionMetadata, 
 		QueryLanguages:  queryLanguagesForSpec(s.spec),
 		TypeDefinitions: slices.Clone(metadata.TypeDefinitions),
 		Operators:       slices.Clone(metadata.Operators),
-		AliasMap:        aliasMap,
+		AliasMap:        cloneAliasMap(metadata.AliasMap),
 	}, nil
 }
 
@@ -807,6 +799,18 @@ func queryLanguagesForSpec(spec source.TypeSpec) []string {
 		return []string{"sql"}
 	}
 	return []string{}
+}
+
+func cloneAliasMap(aliasMap map[string]string) map[string]string {
+	if len(aliasMap) == 0 {
+		return map[string]string{}
+	}
+
+	cloned := make(map[string]string, len(aliasMap))
+	for key, value := range aliasMap {
+		cloned[key] = value
+	}
+	return cloned
 }
 
 func sourceSurfaceDescription(surface source.Surface) string {

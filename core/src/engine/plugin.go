@@ -100,9 +100,6 @@ type PluginFunctions interface {
 	// Transaction support
 	WithTransaction(config *PluginConfig, operation func(tx any) error) error
 
-	// Database metadata for frontend type/operator configuration
-	GetDatabaseMetadata() *DatabaseMetadata
-
 	// GetSSLStatus returns the verified SSL/TLS status of the current connection.
 	// Returns nil if SSL status cannot be determined (e.g., SQLite) or is not applicable.
 	GetSSLStatus(config *PluginConfig) (*SSLStatus, error)

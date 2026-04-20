@@ -45,6 +45,7 @@ import {
     QuestionMarkCircleIcon,
 } from "../heroicons";
 import { ReactElement } from "react";
+import type { SourceTypeItem } from "@/config/source-types";
 import { buildConnectionPrefill, ConnectionPrefillData } from "@/utils/cloud-connection-prefill";
 import { getAppName } from "@/config/features";
 
@@ -58,6 +59,8 @@ export function isGcpConnection(profileId: string | undefined): boolean {
 interface GcpConnectionPickerProps {
     /** Called when user clicks a discovered connection - prefills the main login form */
     onSelectConnection?: (data: GcpConnectionPrefillData) => void;
+    /** Available source types used to apply backend-owned discovery-prefill metadata. */
+    sourceTypes: SourceTypeItem[];
 }
 
 /**
@@ -67,6 +70,7 @@ interface GcpConnectionPickerProps {
  */
 export const GcpConnectionPicker: FC<GcpConnectionPickerProps> = ({
     onSelectConnection,
+    sourceTypes,
 }) => {
     const { t } = useTranslation('components/gcp-connection-picker');
     const appName = getAppName();
@@ -141,9 +145,10 @@ export const GcpConnectionPicker: FC<GcpConnectionPickerProps> = ({
     const handleSelectConnection = useCallback((conn: LocalDiscoveredConnection) => {
         if (!onSelectConnection) return;
 
-        onSelectConnection(buildConnectionPrefill(conn));
+        const sourceType = sourceTypes.find(item => item.id.toLowerCase() === conn.DatabaseType.toLowerCase());
+        onSelectConnection(buildConnectionPrefill(conn, sourceType));
         toast.success(t('connectionSelected'));
-    }, [onSelectConnection, t]);
+    }, [onSelectConnection, sourceTypes, t]);
 
     const handleModalOpenChange = useCallback((open: boolean) => {
         if (!open) {

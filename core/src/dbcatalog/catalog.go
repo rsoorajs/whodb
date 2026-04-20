@@ -22,8 +22,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/clidey/whodb/core/src/common/ssl"
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/source"
 )
 
 // FieldVisibility declares which standard connection form fields are shown for
@@ -55,7 +55,7 @@ type ConnectableDatabase struct {
 	Fields         FieldVisibility
 	RequiredFields FieldRequirements
 	IsAWSManaged   bool
-	SSLModes       []ssl.SSLModeInfo
+	SSLModes       []source.SSLModeInfo
 }
 
 var catalog = []ConnectableDatabase{
@@ -443,17 +443,9 @@ func cloneEntry(entry ConnectableDatabase) ConnectableDatabase {
 		}
 	}
 	if entry.SSLModes != nil {
-		cloned.SSLModes = append([]ssl.SSLModeInfo(nil), entry.SSLModes...)
+		cloned.SSLModes = append([]source.SSLModeInfo(nil), entry.SSLModes...)
 	}
 	return cloned
-}
-
-func sslModesFor(dbType engine.DatabaseType) []ssl.SSLModeInfo {
-	modes := ssl.GetSSLModes(dbType)
-	if len(modes) == 0 {
-		return nil
-	}
-	return append([]ssl.SSLModeInfo(nil), modes...)
 }
 
 func parsePort(raw string) (int, bool) {

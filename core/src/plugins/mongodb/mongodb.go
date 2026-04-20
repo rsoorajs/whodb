@@ -23,6 +23,7 @@ import (
 
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
@@ -400,16 +401,10 @@ func (p *MongoDBPlugin) ClearTableData(config *engine.PluginConfig, schema strin
 	return true, nil
 }
 
-// GetDatabaseMetadata returns MongoDB metadata for frontend configuration.
-// MongoDB is a document database without traditional type definitions.
-func (p *MongoDBPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
-	operators := make([]string, 0, len(supportedOperators))
-	for op := range supportedOperators {
-		operators = append(operators, op)
-	}
-	return &engine.DatabaseMetadata{
-		DatabaseType: engine.DatabaseType_MongoDB,
-		TypeDefinitions: []engine.TypeDefinition{
+func init() {
+	sourcecatalog.RegisterSessionMetadata(
+		string(engine.DatabaseType_MongoDB),
+		sourcecatalog.SessionMetadataFromOperatorMap([]engine.TypeDefinition{
 			{ID: "string", Label: "string", Category: engine.TypeCategoryText},
 			{ID: "int", Label: "int", Category: engine.TypeCategoryNumeric},
 			{ID: "double", Label: "double", Category: engine.TypeCategoryNumeric},
@@ -419,13 +414,8 @@ func (p *MongoDBPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
 			{ID: "array", Label: "array", Category: engine.TypeCategoryOther},
 			{ID: "object", Label: "object", Category: engine.TypeCategoryOther},
 			{ID: "mixed", Label: "mixed", Category: engine.TypeCategoryOther},
-		},
-		Operators: operators,
-		AliasMap:  map[string]string{},
-	}
-}
-
-func init() {
+		}, supportedOperators, nil),
+	)
 	engine.RegisterPlugin(NewMongoDBPlugin())
 }
 

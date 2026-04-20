@@ -19,6 +19,7 @@ package sqlite3
 import (
 	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 // AliasMap maps SQLite type aliases to their canonical storage class or affinity.
@@ -66,16 +67,9 @@ func NormalizeType(typeName string) string {
 	return common.NormalizeTypeWithMap(typeName, AliasMap)
 }
 
-// GetDatabaseMetadata returns SQLite metadata for frontend configuration.
-func (p *Sqlite3Plugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
-	operators := make([]string, 0, len(supportedOperators))
-	for op := range supportedOperators {
-		operators = append(operators, op)
-	}
-	return &engine.DatabaseMetadata{
-		DatabaseType:    engine.DatabaseType_Sqlite3,
-		TypeDefinitions: TypeDefinitions,
-		Operators:       operators,
-		AliasMap:        AliasMap,
-	}
+func init() {
+	sourcecatalog.RegisterSessionMetadata(
+		string(engine.DatabaseType_Sqlite3),
+		sourcecatalog.SessionMetadataFromOperatorMap(TypeDefinitions, supportedOperators, AliasMap),
+	)
 }

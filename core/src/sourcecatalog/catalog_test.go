@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package sourcecatalog
+package sourcecatalog_test
 
 import (
 	"maps"
 	"slices"
 	"testing"
 
-	"github.com/clidey/whodb/core/src/common/ssl"
 	"github.com/clidey/whodb/core/src/dbcatalog"
 	"github.com/clidey/whodb/core/src/source"
+	coresourcecatalog "github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 func TestBuildTypeSpecCoversSharedDatabaseCatalog(t *testing.T) {
@@ -34,13 +34,13 @@ func TestBuildTypeSpecCoversSharedDatabaseCatalog(t *testing.T) {
 		t.Run(string(entry.ID), func(t *testing.T) {
 			t.Parallel()
 
-			spec, ok := BuildTypeSpec(DatabaseEntry{
+			spec, ok := coresourcecatalog.BuildTypeSpec(coresourcecatalog.DatabaseEntry{
 				ID:             string(entry.ID),
 				Label:          entry.Label,
 				Connector:      string(entry.PluginType),
 				Extra:          maps.Clone(entry.Extra),
-				Fields:         FieldVisibility(entry.Fields),
-				RequiredFields: FieldRequirements(entry.RequiredFields),
+				Fields:         coresourcecatalog.FieldVisibility(entry.Fields),
+				RequiredFields: coresourcecatalog.FieldRequirements(entry.RequiredFields),
 				IsAWSManaged:   entry.IsAWSManaged,
 				SSLModes:       sourceSSLModes(entry.SSLModes),
 			})
@@ -106,13 +106,13 @@ func TestBuildTypeSpecExposesMutableDataActions(t *testing.T) {
 				t.Fatalf("expected database catalog entry for %q", tt.id)
 			}
 
-			spec, ok := BuildTypeSpec(DatabaseEntry{
+			spec, ok := coresourcecatalog.BuildTypeSpec(coresourcecatalog.DatabaseEntry{
 				ID:             string(entry.ID),
 				Label:          entry.Label,
 				Connector:      string(entry.PluginType),
 				Extra:          maps.Clone(entry.Extra),
-				Fields:         FieldVisibility(entry.Fields),
-				RequiredFields: FieldRequirements(entry.RequiredFields),
+				Fields:         coresourcecatalog.FieldVisibility(entry.Fields),
+				RequiredFields: coresourcecatalog.FieldRequirements(entry.RequiredFields),
 				IsAWSManaged:   entry.IsAWSManaged,
 				SSLModes:       sourceSSLModes(entry.SSLModes),
 			})
@@ -142,13 +142,13 @@ func TestBuildTypeSpecKeepsQuestDBAppendOnlyAndSchemaLess(t *testing.T) {
 		t.Fatal("expected database catalog entry for QuestDB")
 	}
 
-	spec, ok := BuildTypeSpec(DatabaseEntry{
+	spec, ok := coresourcecatalog.BuildTypeSpec(coresourcecatalog.DatabaseEntry{
 		ID:             string(entry.ID),
 		Label:          entry.Label,
 		Connector:      string(entry.PluginType),
 		Extra:          maps.Clone(entry.Extra),
-		Fields:         FieldVisibility(entry.Fields),
-		RequiredFields: FieldRequirements(entry.RequiredFields),
+		Fields:         coresourcecatalog.FieldVisibility(entry.Fields),
+		RequiredFields: coresourcecatalog.FieldRequirements(entry.RequiredFields),
 		IsAWSManaged:   entry.IsAWSManaged,
 		SSLModes:       sourceSSLModes(entry.SSLModes),
 	})
@@ -278,13 +278,13 @@ func TestBuildTypeSpecExposesSourceTraits(t *testing.T) {
 				t.Fatalf("expected database catalog entry for %q", tt.id)
 			}
 
-			spec, ok := BuildTypeSpec(DatabaseEntry{
+			spec, ok := coresourcecatalog.BuildTypeSpec(coresourcecatalog.DatabaseEntry{
 				ID:             string(entry.ID),
 				Label:          entry.Label,
 				Connector:      string(entry.PluginType),
 				Extra:          maps.Clone(entry.Extra),
-				Fields:         FieldVisibility(entry.Fields),
-				RequiredFields: FieldRequirements(entry.RequiredFields),
+				Fields:         coresourcecatalog.FieldVisibility(entry.Fields),
+				RequiredFields: coresourcecatalog.FieldRequirements(entry.RequiredFields),
 				IsAWSManaged:   entry.IsAWSManaged,
 				SSLModes:       sourceSSLModes(entry.SSLModes),
 			})
@@ -297,13 +297,14 @@ func TestBuildTypeSpecExposesSourceTraits(t *testing.T) {
 	}
 }
 
-func sourceSSLModes(modes []ssl.SSLModeInfo) []source.SSLModeInfo {
+func sourceSSLModes(modes []source.SSLModeInfo) []source.SSLModeInfo {
 	cloned := make([]source.SSLModeInfo, 0, len(modes))
 	for _, mode := range modes {
 		cloned = append(cloned, source.SSLModeInfo{
-			Value:       string(mode.Value),
+			Value:       mode.Value,
 			Label:       mode.Label,
 			Description: mode.Description,
+			Aliases:     append([]string(nil), mode.Aliases...),
 		})
 	}
 	return cloned

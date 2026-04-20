@@ -135,6 +135,76 @@ func SSLModes(input string) []source.SSLModeInfo {
 	return slices.Clone(spec.SSLModes)
 }
 
+// DiscoveryAdvanced returns the source-owned cloud-discovery advanced-field
+// defaults for one source type, filtered by provider type and discovered
+// metadata.
+func DiscoveryAdvanced(input string, providerType string, metadata map[string]string) map[string]string {
+	spec, ok := Find(input)
+	if !ok {
+		return nil
+	}
+
+	advanced := make(map[string]string)
+	for _, item := range spec.DiscoveryPrefill.AdvancedDefaults {
+		if !providerMatches(item.ProviderTypes, providerType) {
+			continue
+		}
+		if !conditionsMatch(item.Conditions, metadata) {
+			continue
+		}
+
+		value := resolveDiscoveryValue(item, metadata)
+		if strings.TrimSpace(value) == "" {
+			continue
+		}
+		advanced[item.Key] = value
+	}
+
+	if len(advanced) == 0 {
+		return nil
+	}
+
+	return advanced
+}
+
+func providerMatches(allowedProviders []string, providerType string) bool {
+	if len(allowedProviders) == 0 {
+		return true
+	}
+	if strings.TrimSpace(providerType) == "" {
+		return false
+	}
+
+	for _, candidate := range allowedProviders {
+		if strings.EqualFold(candidate, providerType) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func conditionsMatch(conditions []source.DiscoveryMetadataCondition, metadata map[string]string) bool {
+	for _, condition := range conditions {
+		if strings.TrimSpace(metadata[condition.Key]) != condition.Value {
+			return false
+		}
+	}
+	return true
+}
+
+func resolveDiscoveryValue(item source.DiscoveryAdvancedDefault, metadata map[string]string) string {
+	if item.MetadataKey != "" {
+		if value := strings.TrimSpace(metadata[item.MetadataKey]); value != "" {
+			return value
+		}
+	}
+	if strings.TrimSpace(item.Value) != "" {
+		return item.Value
+	}
+	return item.DefaultValue
+}
+
 func normalizeKey(value string) string {
 	replacer := strings.NewReplacer(" ", "", "-", "", "_", "")
 	return replacer.Replace(strings.ToLower(strings.TrimSpace(value)))

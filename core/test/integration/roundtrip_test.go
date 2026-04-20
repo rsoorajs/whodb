@@ -55,18 +55,18 @@ func TestConnectorAvailability(t *testing.T) {
 
 func TestSQLTypeRoundTrips(t *testing.T) {
 	for _, target := range targets {
-		if target.plugin.GetDatabaseMetadata() == nil {
+		meta := sessionMetadataForTarget(target)
+		if meta == nil {
 			continue
 		}
 		if target.plugin.Type == engine.DatabaseType_MongoDB || target.plugin.Type == engine.DatabaseType_ElasticSearch {
 			continue
 		}
 		t.Run(target.name, func(t *testing.T) {
-			meta := target.plugin.GetDatabaseMetadata()
 			pkType := primaryKeyType(target)
 			pkValue := primaryKeyValue(target)
 			for idx, td := range meta.TypeDefinitions {
-				sample, ok, expected := sampleValue(td)
+				sample, ok, expected := sampleValue(engineTypeDefinition(td))
 				if !ok {
 					continue
 				}

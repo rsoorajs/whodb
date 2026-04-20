@@ -54,7 +54,6 @@ type PluginMock struct {
 	ClearTableDataFunc       func(*engine.PluginConfig, string, string) (bool, error)
 	GetForeignKeysFunc       func(*engine.PluginConfig, string, string) (map[string]*engine.ForeignKeyRelationship, error)
 	WithTransactionFunc      func(*engine.PluginConfig, func(tx any) error) error
-	GetDatabaseMetadataFunc  func() *engine.DatabaseMetadata
 	GetSSLStatusFunc         func(*engine.PluginConfig) (*engine.SSLStatus, error)
 }
 
@@ -246,13 +245,6 @@ func (m *PluginMock) WithTransaction(config *engine.PluginConfig, operation func
 	}
 	if operation != nil {
 		return operation(nil)
-	}
-	return nil
-}
-
-func (m *PluginMock) GetDatabaseMetadata() *engine.DatabaseMetadata {
-	if m.GetDatabaseMetadataFunc != nil {
-		return m.GetDatabaseMetadataFunc()
 	}
 	return nil
 }

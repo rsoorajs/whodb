@@ -447,6 +447,7 @@ type SourceType {
   Traits: SourceTraits!
   ConnectionFields: [SourceConnectionField!]!
   Contract: SourceContract!
+  DiscoveryPrefill: SourceDiscoveryPrefill!
   IsAWSManaged: Boolean!
   SSLModes: [SourceSSLMode!]!
 }
@@ -454,6 +455,24 @@ type SourceType {
 type SourceSSLMode {
   value: String!
   aliases: [String!]!
+}
+
+type SourceDiscoveryMetadataCondition {
+  Key: String!
+  Value: String!
+}
+
+type SourceDiscoveryAdvancedDefault {
+  Key: String!
+  Value: String!
+  MetadataKey: String!
+  DefaultValue: String!
+  ProviderTypes: [String!]!
+  Conditions: [SourceDiscoveryMetadataCondition!]!
+}
+
+type SourceDiscoveryPrefill {
+  AdvancedDefaults: [SourceDiscoveryAdvancedDefault!]!
 }
 
 type SourceObjectRef {

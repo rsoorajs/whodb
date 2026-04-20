@@ -23,6 +23,7 @@ import (
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/plugins"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 	"gorm.io/gorm"
 )
 
@@ -146,20 +147,6 @@ var cockroachDBTypeDefinitions = []engine.TypeDefinition{
 	{ID: "ARRAY", Label: "array", Category: engine.TypeCategoryOther},
 }
 
-// GetDatabaseMetadata returns CockroachDB metadata with only supported types.
-func (p *CockroachDBPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
-	operators := make([]string, 0, len(supportedOperators))
-	for op := range supportedOperators {
-		operators = append(operators, op)
-	}
-	return &engine.DatabaseMetadata{
-		DatabaseType:    engine.DatabaseType(p.Type),
-		TypeDefinitions: cockroachDBTypeDefinitions,
-		Operators:       operators,
-		AliasMap:        AliasMap,
-	}
-}
-
 // NewCockroachDBPlugin creates a CockroachDB plugin with PostgreSQL compatibility
 // and CockroachDB-specific overrides for unsupported catalog functions.
 func NewCockroachDBPlugin() *engine.Plugin {
@@ -171,5 +158,9 @@ func NewCockroachDBPlugin() *engine.Plugin {
 }
 
 func init() {
+	sourcecatalog.RegisterSessionMetadata(
+		string(engine.DatabaseType_CockroachDB),
+		sourcecatalog.SessionMetadataFromOperatorMap(cockroachDBTypeDefinitions, supportedOperators, AliasMap),
+	)
 	engine.RegisterPlugin(NewCockroachDBPlugin())
 }

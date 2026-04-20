@@ -425,6 +425,24 @@ type SourceContract struct {
 	ObjectTypes       []*SourceObjectType `json:"ObjectTypes"`
 }
 
+type SourceDiscoveryAdvancedDefault struct {
+	Key           string                              `json:"Key"`
+	Value         string                              `json:"Value"`
+	MetadataKey   string                              `json:"MetadataKey"`
+	DefaultValue  string                              `json:"DefaultValue"`
+	ProviderTypes []string                            `json:"ProviderTypes"`
+	Conditions    []*SourceDiscoveryMetadataCondition `json:"Conditions"`
+}
+
+type SourceDiscoveryMetadataCondition struct {
+	Key   string `json:"Key"`
+	Value string `json:"Value"`
+}
+
+type SourceDiscoveryPrefill struct {
+	AdvancedDefaults []*SourceDiscoveryAdvancedDefault `json:"AdvancedDefaults"`
+}
+
 type SourceLoginInput struct {
 	ID          *string        `json:"Id,omitempty"`
 	SourceType  string         `json:"SourceType"`
@@ -524,6 +542,7 @@ type SourceType struct {
 	Traits           *SourceTraits            `json:"Traits"`
 	ConnectionFields []*SourceConnectionField `json:"ConnectionFields"`
 	Contract         *SourceContract          `json:"Contract"`
+	DiscoveryPrefill *SourceDiscoveryPrefill  `json:"DiscoveryPrefill"`
 	IsAWSManaged     bool                     `json:"IsAWSManaged"`
 	SSLModes         []*SourceSSLMode         `json:"SSLModes"`
 }

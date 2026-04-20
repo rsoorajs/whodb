@@ -129,6 +129,38 @@ type SSLModeInfo struct {
 	Value       string
 	Label       string
 	Description string
+	Aliases     []string
+}
+
+// TypeSessionMetadata describes editor/query-builder metadata for one source type.
+type TypeSessionMetadata struct {
+	TypeDefinitions []TypeDefinition
+	Operators       []string
+	AliasMap        map[string]string
+}
+
+// DiscoveryPrefill describes how cloud-discovered resources should prefill a
+// connection form for a source type.
+type DiscoveryPrefill struct {
+	AdvancedDefaults []DiscoveryAdvancedDefault
+}
+
+// DiscoveryAdvancedDefault describes one discovered-metadata rule for an
+// advanced connection field.
+type DiscoveryAdvancedDefault struct {
+	Key           string
+	Value         string
+	MetadataKey   string
+	DefaultValue  string
+	ProviderTypes []string
+	Conditions    []DiscoveryMetadataCondition
+}
+
+// DiscoveryMetadataCondition restricts one discovery prefill rule to a
+// specific discovered metadata value.
+type DiscoveryMetadataCondition struct {
+	Key   string
+	Value string
 }
 
 // TypeCategory groups type definitions for UI consumers.

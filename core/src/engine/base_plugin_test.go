@@ -109,11 +109,8 @@ func TestBasePluginIsAvailableReturnsFalse(t *testing.T) {
 	}
 }
 
-func TestBasePluginMetadataReturnsNil(t *testing.T) {
+func TestBasePluginGetSSLStatusReturnsNil(t *testing.T) {
 	bp := &BasePlugin{}
-	if bp.GetDatabaseMetadata() != nil {
-		t.Fatalf("GetDatabaseMetadata should return nil by default")
-	}
 	status, err := bp.GetSSLStatus(nil)
 	if err != nil || status != nil {
 		t.Fatalf("GetSSLStatus should return nil, nil; got %v, %v", status, err)

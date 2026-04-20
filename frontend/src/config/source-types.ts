@@ -128,6 +128,33 @@ export interface SourceTraitsDescriptor {
 }
 
 /**
+ * Discovery-prefill metadata condition exposed by the backend source catalog.
+ */
+export interface SourceDiscoveryMetadataConditionDescriptor {
+    Key: string;
+    Value: string;
+}
+
+/**
+ * Discovery-prefill advanced-field default exposed by the backend source catalog.
+ */
+export interface SourceDiscoveryAdvancedDefaultDescriptor {
+    Key: string;
+    Value: string;
+    MetadataKey: string;
+    DefaultValue: string;
+    ProviderTypes: string[];
+    Conditions: SourceDiscoveryMetadataConditionDescriptor[];
+}
+
+/**
+ * Discovery-prefill metadata exposed by the backend source catalog.
+ */
+export interface SourceDiscoveryPrefillDescriptor {
+    AdvancedDefaults: SourceDiscoveryAdvancedDefaultDescriptor[];
+}
+
+/**
  * Defines a canonical source type for use in type selectors.
  * Types are from each database's official documentation.
  */
@@ -181,6 +208,7 @@ export interface SourceTypeItem {
     traits?: SourceTraitsDescriptor;
     connectionFields?: SourceConnectionFieldDescriptor[];
     contract?: SourceContractDescriptor;
+    discoveryPrefill?: SourceDiscoveryPrefillDescriptor;
     fields?: {
         hostname?: boolean;
         username?: boolean;
@@ -337,6 +365,7 @@ function decorateSourceType(item: BackendSourceType): SourceTypeItem {
         traits: item.traits,
         connectionFields: item.connectionFields,
         contract: item.contract,
+        discoveryPrefill: item.discoveryPrefill,
         fields: {
             hostname: hostnameField != null,
             username: usernameField != null,

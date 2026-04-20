@@ -366,6 +366,7 @@ func BuildTypeSpec(entry DatabaseEntry) (source.TypeSpec, bool) {
 		Traits:           traits,
 		ConnectionFields: buildConnectionFields(entry, traits),
 		Contract:         contract,
+		DiscoveryPrefill: buildDiscoveryPrefill(entry),
 		IsAWSManaged:     entry.IsAWSManaged,
 		SSLModes:         cloneSourceSSLModes(entry.SSLModes),
 	}, true
@@ -546,6 +547,14 @@ func buildConnectionFields(entry DatabaseEntry, traits source.TypeTraits) []sour
 	return fields
 }
 
+func buildDiscoveryPrefill(entry DatabaseEntry) source.DiscoveryPrefill {
+	prefill, ok := ResolveDiscoveryPrefill(entry.ID, entry.Connector)
+	if !ok {
+		return source.DiscoveryPrefill{}
+	}
+	return prefill
+}
+
 func orderedExtraKeys(extra map[string]string) []string {
 	keys := make([]string, 0, len(extra))
 	seen := map[string]bool{}
@@ -711,7 +720,12 @@ func keyValueExistingMutableObjectType(kind source.ObjectKind, singular string, 
 func cloneSourceSSLModes(modes []source.SSLModeInfo) []source.SSLModeInfo {
 	cloned := make([]source.SSLModeInfo, 0, len(modes))
 	for _, mode := range modes {
-		cloned = append(cloned, mode)
+		cloned = append(cloned, source.SSLModeInfo{
+			Value:       mode.Value,
+			Label:       mode.Label,
+			Description: mode.Description,
+			Aliases:     slices.Clone(mode.Aliases),
+		})
 	}
 	return cloned
 }

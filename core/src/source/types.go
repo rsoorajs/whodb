@@ -376,6 +376,7 @@ type TypeSpec struct {
 	Traits           TypeTraits
 	ConnectionFields []ConnectionField
 	Contract         Contract
+	DiscoveryPrefill DiscoveryPrefill
 	IsAWSManaged     bool
 	SSLModes         []SSLModeInfo
 }

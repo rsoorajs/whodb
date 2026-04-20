@@ -83,7 +83,6 @@ func TestGraphQLAddRowMutation(t *testing.T) {
 
 func TestGraphQLSourceSessionMetadataQueryReturnsDefaultsWhenNotProvided(t *testing.T) {
 	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
-	mock.GetDatabaseMetadataFunc = func() *engine.DatabaseMetadata { return nil }
 	setEngineMock(t, mock)
 
 	srv := handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: &Resolver{}}))
@@ -112,7 +111,7 @@ func TestGraphQLSourceSessionMetadataQueryReturnsDefaultsWhenNotProvided(t *test
 		t.Fatalf("failed to parse response: %v", err)
 	}
 	if resp.Data.SourceSessionMetadata == nil {
-		t.Fatalf("expected default metadata when plugin returns nil")
+		t.Fatalf("expected source metadata to be returned")
 	}
 	if resp.Data.SourceSessionMetadata.SourceType != "Postgres" {
 		t.Fatalf("expected source type metadata, got %+v", resp.Data.SourceSessionMetadata)

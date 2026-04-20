@@ -19,6 +19,7 @@ package postgres
 import (
 	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 // AliasMap maps PostgreSQL type aliases to their canonical names.
@@ -91,16 +92,10 @@ func NormalizeType(typeName string) string {
 	return common.NormalizeTypeWithMap(typeName, AliasMap)
 }
 
-// GetDatabaseMetadata returns PostgreSQL metadata for frontend configuration.
-func (p *PostgresPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
-	operators := make([]string, 0, len(supportedOperators))
-	for op := range supportedOperators {
-		operators = append(operators, op)
-	}
-	return &engine.DatabaseMetadata{
-		DatabaseType:    engine.DatabaseType(p.Type),
-		TypeDefinitions: TypeDefinitions,
-		Operators:       operators,
-		AliasMap:        AliasMap,
-	}
+func init() {
+	sourcecatalog.RegisterSessionMetadataAliases(
+		sourcecatalog.SessionMetadataFromOperatorMap(TypeDefinitions, supportedOperators, AliasMap),
+		string(engine.DatabaseType_Postgres),
+		string(engine.DatabaseType_QuestDB),
+	)
 }

@@ -21,6 +21,7 @@ import (
 
 	"github.com/clidey/whodb/core/src/common/ssl"
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/source"
 )
 
 func TestFindReturnsAliasPluginType(t *testing.T) {
@@ -83,8 +84,8 @@ func TestRegisterClonesEntriesAndReturnedValuesAreDefensiveCopies(t *testing.T) 
 		Label:      "Custom DB",
 		PluginType: engine.DatabaseType_Postgres,
 		Extra:      map[string]string{"Port": "15432"},
-		SSLModes: []ssl.SSLModeInfo{
-			{Value: ssl.SSLModeRequired, Label: "Required", Description: "Require TLS"},
+		SSLModes: []source.SSLModeInfo{
+			{Value: string(ssl.SSLModeRequired), Label: "Required", Description: "Require TLS"},
 		},
 	}
 

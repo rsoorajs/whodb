@@ -227,16 +227,5 @@ func NewQuestDBPlugin() *engine.Plugin {
 }
 
 func init() {
-	ssl.RegisterDatabaseSSLModes(engine.DatabaseType_QuestDB, []ssl.SSLModeInfo{
-		ssl.ModeInfoDisabled,
-		ssl.ModeInfoRequired,
-		ssl.ModeInfoVerifyCA,
-		ssl.ModeInfoVerifyIdentity,
-	})
-	ssl.RegisterSSLModeAliases(engine.DatabaseType_QuestDB, map[string]ssl.SSLMode{
-		"disable":     ssl.SSLModeDisabled,
-		"require":     ssl.SSLModeRequired,
-		"verify-full": ssl.SSLModeVerifyIdentity,
-	})
 	engine.RegisterPlugin(NewQuestDBPlugin())
 }

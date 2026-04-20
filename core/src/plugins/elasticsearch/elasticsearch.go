@@ -24,6 +24,7 @@ import (
 
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 var (
@@ -201,16 +202,10 @@ func (p *ElasticSearchPlugin) FormatValue(val any) string {
 	return fmt.Sprintf("%v", val)
 }
 
-// GetDatabaseMetadata returns ElasticSearch metadata for frontend configuration.
-// ElasticSearch is a search engine without traditional type definitions.
-func (p *ElasticSearchPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
-	operators := make([]string, 0, len(supportedOperators))
-	for op := range supportedOperators {
-		operators = append(operators, op)
-	}
-	return &engine.DatabaseMetadata{
-		DatabaseType: engine.DatabaseType_ElasticSearch,
-		TypeDefinitions: []engine.TypeDefinition{
+func init() {
+	sourcecatalog.RegisterSessionMetadata(
+		string(engine.DatabaseType_ElasticSearch),
+		sourcecatalog.SessionMetadataFromOperatorMap([]engine.TypeDefinition{
 			{ID: "text", Label: "text", Category: engine.TypeCategoryText},
 			{ID: "keyword", Label: "keyword", Category: engine.TypeCategoryText},
 			{ID: "boolean", Label: "boolean", Category: engine.TypeCategoryBoolean},
@@ -222,13 +217,8 @@ func (p *ElasticSearchPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
 			{ID: "geo_point", Label: "geo_point", Category: engine.TypeCategoryOther},
 			{ID: "nested", Label: "nested", Category: engine.TypeCategoryOther},
 			{ID: "mixed", Label: "mixed", Category: engine.TypeCategoryOther},
-		},
-		Operators: operators,
-		AliasMap:  map[string]string{},
-	}
-}
-
-func init() {
+		}, supportedOperators, nil),
+	)
 	engine.RegisterPlugin(NewElasticSearchPlugin())
 }
 

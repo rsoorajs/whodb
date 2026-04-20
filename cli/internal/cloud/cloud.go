@@ -29,7 +29,6 @@ import (
 
 	"github.com/clidey/whodb/cli/internal/config"
 	"github.com/clidey/whodb/cli/internal/sourcetypes"
-	"github.com/clidey/whodb/cli/pkg/cloudprefill"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/providers"
 	"github.com/clidey/whodb/core/src/settings"
@@ -211,7 +210,7 @@ func BuildPrefillConnection(summary ConnectionSummary) (config.Connection, error
 		Host:     host,
 		Port:     port,
 		Database: strings.TrimSpace(summary.Metadata["databaseName"]),
-		Advanced: cloudprefill.BuildAdvanced(summary.SourceType, summary.Metadata),
+		Advanced: sourcetypes.DiscoveryAdvanced(summary.SourceType, summary.ProviderType, summary.Metadata),
 	}, nil
 }
 

@@ -68,10 +68,9 @@ func (p *GormPlugin) ExportData(config *engine.PluginConfig, schema string, stor
 		return err
 	}
 
-	// Get ordered columns using GORM migrator (preserves column order)
-	helper := NewMigratorHelper(db, p.GormPluginFunctions)
-	fullTableName := p.FormTableName(schema, storageUnit)
-	orderedColumns, err := helper.GetOrderedColumns(fullTableName)
+	// Resolve columns through the plugin API so connector-specific overrides
+	// (QuestDB, ClickHouse, SQLite, etc.) are reused for exports too.
+	orderedColumns, err := p.PluginFunctions.GetColumnsForTable(config, schema, storageUnit)
 	if err != nil {
 		log.WithError(err).Error(fmt.Sprintf("Failed to get columns for export of table %s.%s", schema, storageUnit))
 		return fmt.Errorf("failed to get columns: %v", err)

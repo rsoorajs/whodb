@@ -733,9 +733,3 @@ func (p *GormPlugin) BuildSkipConflictClause(pkColumns []string) clause.OnConfli
 func (p *GormPlugin) MarkGeneratedColumns(config *engine.PluginConfig, schema string, storageUnit string, columns []engine.Column) error {
 	return nil
 }
-
-// GetDatabaseMetadata returns nil by default.
-// Database plugins should override this to provide metadata for frontend configuration.
-func (p *GormPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
-	return nil
-}

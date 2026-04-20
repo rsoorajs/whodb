@@ -122,14 +122,14 @@ GetSchemaTableQuery() string          // Query for columns in a table
 FormTableName(schema, table) string   // Default: "schema.table" (override for different behavior, e.g. SQLite ignores schema)
 GetPlaceholder(index int) string      // $1 for Postgres, ? for MySQL
 DB(config) (*gorm.DB, error)          // Connection with driver-specific config
-GetDatabaseMetadata() *DatabaseMetadata // Session metadata (operators, types, aliases)
 GetLastInsertID(db *gorm.DB) (int64, error) // Default: returns 0 (override for MySQL, Postgres, SQLite)
 ```
 
 ## Session Metadata (types.go)
 
-Each SQL plugin must provide session metadata for editor/query-builder UI via
-`GetDatabaseMetadata()`. This is the source of truth for:
+Each SQL plugin family must provide session metadata for editor/query-builder UI
+by registering it with `sourcecatalog.RegisterSessionMetadata(...)`. This is the
+source of truth for:
 - Valid operators (=, >=, LIKE, etc.)
 - Type definitions (VARCHAR, INTEGER, etc.) with UI hints (hasLength, hasPrecision)
 - Alias maps (INT → INTEGER, BOOL → BOOLEAN)
@@ -138,7 +138,7 @@ This metadata is exposed through the source-first GraphQL
 `SourceSessionMetadata` query after login. **No fallbacks** - if the backend
 doesn't provide it, the UI type selectors and query helpers will be broken.
 
-Feature gating is no longer owned by `GetDatabaseMetadata()`. Public behavior
+Feature gating is not owned by session metadata. Public behavior
 such as chat/query/graph surfaces and source object actions/views comes from the
 source catalog contract in `core/src/sourcecatalog/catalog.go`.
 
@@ -152,7 +152,7 @@ Do not reintroduce `DatabaseType` branches for those decisions.
 ```go
 package postgres
 
-import "github.com/clidey/whodb/core/src/engine"
+import "github.com/clidey/whodb/core/src/sourcecatalog"
 
 // AliasMap maps type aliases to canonical names (UPPERCASE keys and values)
 var AliasMap = map[string]string{
@@ -167,17 +167,13 @@ var TypeDefinitions = []engine.TypeDefinition{
     // ... more types
 }
 
-func (p *PostgresPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
-    operators := make([]string, 0, len(supportedOperators))
-    for op := range supportedOperators {
-        operators = append(operators, op)
-    }
-    return &engine.DatabaseMetadata{
-        DatabaseType:    engine.DatabaseType_Postgres, // internal plugin metadata
-        TypeDefinitions: TypeDefinitions,
-        Operators:       operators,
-        AliasMap:        AliasMap,
-    }
+func init() {
+    sourcecatalog.RegisterSessionMetadataAliases(
+        sourcecatalog.SessionMetadataFromOperatorMap(TypeDefinitions, supportedOperators, AliasMap),
+        string(engine.DatabaseType_Postgres),
+        string(engine.DatabaseType_YugabyteDB),
+        string(engine.DatabaseType_QuestDB),
+    )
 }
 ```
 
