@@ -273,9 +273,15 @@ func TestIsAllowedPermitsWhitelistedOperations(t *testing.T) {
 		t.Fatalf("expected SourceFieldOptions for Sqlite3 to be allowed")
 	}
 
+	getDuckDB := `{"operationName":"SourceFieldOptions","variables":{"sourceType":"DuckDB"}}`
+	req = httptest.NewRequest(http.MethodPost, "/api/query", strings.NewReader(getDuckDB))
+	if !isAllowed(req, []byte(getDuckDB)) {
+		t.Fatalf("expected SourceFieldOptions for DuckDB to be allowed")
+	}
+
 	denied := `{"operationName":"SourceFieldOptions","variables":{"sourceType":"Postgres"}}`
 	req = httptest.NewRequest(http.MethodPost, "/api/query", strings.NewReader(denied))
 	if isAllowed(req, []byte(denied)) {
-		t.Fatalf("expected SourceFieldOptions for non-sqlite to be rejected")
+		t.Fatalf("expected SourceFieldOptions for sources without public field options to be rejected")
 	}
 }

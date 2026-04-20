@@ -23,6 +23,9 @@ import {
     SourceProfilesDocument,
     LoginSourceDocument,
     LoginWithSourceProfileDocument,
+    SourceConnectionTransport,
+    SourceHostInputMode,
+    SourceHostInputUrlParser,
 } from '@graphql';
 import camelCase from "lodash/camelCase";
 import classNames from "classnames";
@@ -82,7 +85,6 @@ import {
     createProfilePayloadFromSourceProfile,
     getValue,
 } from '../../utils/source-credentials';
-import { DatabaseType } from "../../config/source-types";
 
 /**
  * URL params that are reserved for the standard login form fields and control flags.
@@ -109,8 +111,14 @@ const EMPTY_DATABASE_TYPE: SourceTypeItem = {
     requiredFields: {},
 };
 
-function isFileBasedDatabaseType(databaseType: SourceTypeItem): boolean {
-    return !databaseType.fields?.hostname && databaseType.fields?.database === true;
+function usesFileTransport(databaseType: SourceTypeItem): boolean {
+    return databaseType.traits?.connection.transport === SourceConnectionTransport.File;
+}
+
+function supportsDatabaseFieldOptions(databaseType: SourceTypeItem): boolean {
+    return databaseType.connectionFields?.some(field =>
+        field.Key.toLowerCase() === "database" && field.SupportsOptions
+    ) ?? false;
 }
 
 function canSubmitDatabaseCredentials(
@@ -478,10 +486,10 @@ export const LoginForm: FC<LoginFormProps> = ({
     // This must be in useEffect (not in handleDatabaseTypeChange) because
     // setFormResetKey causes a re-mount that resets the useLazyQuery hook state.
     useEffect(() => {
-        if (databaseType.connector === DatabaseType.Sqlite3 || databaseType.connector === DatabaseType.DuckDb) {
+        if (supportsDatabaseFieldOptions(databaseType)) {
             getDatabases({ variables: { sourceType: databaseType.id } });
         }
-    }, [databaseType.connector, getDatabases, formResetKey]);
+    }, [databaseType, getDatabases, formResetKey]);
 
     const handleAdvancedForm = useCallback((key: string, value: string) => {
         setAdvancedForm(form => {
@@ -535,7 +543,7 @@ export const LoginForm: FC<LoginFormProps> = ({
 
     const handleBrowseDatabaseFile = useCallback(async () => {
         try {
-            const filePath = await selectDatabaseFile(databaseType.connector);
+            const filePath = await selectDatabaseFile(databaseType.id);
             if (filePath) {
                 setDatabase(filePath);
             }
@@ -543,7 +551,7 @@ export const LoginForm: FC<LoginFormProps> = ({
             console.error('Failed to select database file:', error);
             toast.error(t('failedToSelectDatabaseFile'));
         }
-    }, [selectDatabaseFile, databaseType.connector, t]);
+    }, [selectDatabaseFile, databaseType.id, t]);
 
     useEffect(() => {
         dispatch(DatabaseActions.setSchema(""));
@@ -770,39 +778,9 @@ export const LoginForm: FC<LoginFormProps> = ({
     }, [pendingAutoLogin]);
 
     const handleHostNameChange = useCallback((newHostName: string) => {
-        if (databaseType.connector !== DatabaseType.MongoDb || !newHostName.startsWith("mongodb+srv://")) {
-            // Checks the valid postgres URL
-            if (databaseType.connector === DatabaseType.Postgres && (newHostName.startsWith("postgres://") || newHostName.startsWith("postgresql://"))) {
-                try {
-                    const url = new URL(newHostName);
-                    const hostname = url.hostname;
-                    const username = url.username;
-                    const password = url.password;
-                    const database = url.pathname.substring(1);
+        const urlParser = databaseType.traits?.connection.hostInputUrlParser ?? SourceHostInputUrlParser.None;
 
-                    if (!hostname || !username || !password || !database) {
-                        toast.warning(t('urlParseWarning'));
-                    }
-                    setHostName(hostname);
-                    setUsername(username);
-                    setPassword(password);
-                    setDatabase(database);
-
-                    if (url.port) {
-                        const advancedForm = {
-                            "Port": url.port,
-                            "SSL Mode": "disable"
-                        };
-                        setAdvancedForm(advancedForm);
-                        setShowAdvanced(true);
-                    }
-                } catch (error) {
-                    toast.warning(t('urlParseWarning'));
-                }
-            } else {
-                return setHostName(newHostName);
-            }
-        } else {
+        if (urlParser === SourceHostInputUrlParser.MongoSrv && newHostName.startsWith("mongodb+srv://")) {
             const url = new URL(newHostName);
             setHostName(url.hostname);
             setUsername(url.username);
@@ -819,8 +797,41 @@ export const LoginForm: FC<LoginFormProps> = ({
             }
             setAdvancedForm(advancedForm);
             setShowAdvanced(true);
+            return;
         }
-    }, [databaseType.connector, t]);
+
+        if (urlParser === SourceHostInputUrlParser.Postgres && (newHostName.startsWith("postgres://") || newHostName.startsWith("postgresql://"))) {
+            try {
+                const url = new URL(newHostName);
+                const hostname = url.hostname;
+                const username = url.username;
+                const password = url.password;
+                const database = url.pathname.substring(1);
+
+                if (!hostname || !username || !password || !database) {
+                    toast.warning(t('urlParseWarning'));
+                }
+                setHostName(hostname);
+                setUsername(username);
+                setPassword(password);
+                setDatabase(database);
+
+                if (url.port) {
+                    const advancedForm = {
+                        "Port": url.port,
+                        "SSL Mode": "disable"
+                    };
+                    setAdvancedForm(advancedForm);
+                    setShowAdvanced(true);
+                }
+            } catch (error) {
+                toast.warning(t('urlParseWarning'));
+            }
+            return;
+        }
+
+        setHostName(newHostName);
+    }, [databaseType.traits?.connection.hostInputUrlParser, t]);
 
     const fields = useMemo(() => {
         if (databaseType.customFormRenderer) {
@@ -837,7 +848,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                 setAdvancedForm={setAdvancedForm}
             />;
         }
-        if (isFileBasedDatabaseType(databaseType)) {
+        if (usesFileTransport(databaseType)) {
             return <div className="flex flex-col gap-lg w-full">
                 <div className="flex flex-col gap-xs w-full">
                     <Label htmlFor="sqlite-database">{t('database')}</Label>
@@ -892,7 +903,7 @@ export const LoginForm: FC<LoginFormProps> = ({
         return <div className="flex flex-col gap-lg w-full">
             { databaseType.fields?.hostname && (
                 <div className="flex flex-col gap-sm w-full">
-                    <Label htmlFor="login-hostname">{databaseType.connector === DatabaseType.MongoDb || databaseType.connector === DatabaseType.Postgres ? t('hostNameOrUrl') : t('hostName')}</Label>
+                    <Label htmlFor="login-hostname">{databaseType.traits?.connection.hostInputMode === SourceHostInputMode.HostnameOrUrl ? t('hostNameOrUrl') : t('hostName')}</Label>
                     <Input id="login-hostname" value={hostName} onChange={(e) => handleHostNameChange(e.target.value)} data-testid="hostname" placeholder={t('enterHostName')} aria-required="true" aria-invalid={error ? "true" : undefined} aria-describedby={error ? "login-error" : undefined} />
                 </div>
             )}
@@ -1068,7 +1079,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                 })}>
                     {!disableCredentialForm && <>
                     <Button className={classNames({
-                        "hidden": advancedForm == null || isFileBasedDatabaseType(databaseType) || databaseType.customFormRenderer != null,
+                        "hidden": advancedForm == null || usesFileTransport(databaseType) || databaseType.customFormRenderer != null,
                     })} onClick={handleAdvancedToggle} data-testid="advanced-button" variant="secondary">
                         <AdjustmentsHorizontalIcon className="w-4 h-4" /> {showAdvanced ? t('lessAdvancedButton') : t('advancedButton')}
                     </Button>

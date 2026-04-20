@@ -115,6 +115,50 @@ func TestDatabaseSessionAddRowRejectsUnsupportedAction(t *testing.T) {
 	}
 }
 
+func TestDatabaseSessionUpdateObjectRejectsUnsupportedAction(t *testing.T) {
+	mock := testutil.NewPluginMock(engine.DatabaseType("Athena"))
+	mock.StorageUnitExistsFunc = func(*engine.PluginConfig, string, string) (bool, error) {
+		t.Fatalf("expected updates to be blocked before object validation")
+		return false, nil
+	}
+
+	session := newTestDatabaseSession(testTypeWithObjectActions(
+		"Athena",
+		[]source.Surface{source.SurfaceBrowser, source.SurfaceQuery},
+		[]source.Action{source.ActionBrowse},
+		map[source.ObjectKind][]source.Action{
+			source.ObjectKindTable: {source.ActionInspect, source.ActionViewRows},
+		},
+	), mock)
+
+	_, err := session.UpdateObject(context.Background(), testTableRef(), map[string]string{"id": "1"}, []string{"id"})
+	if err == nil || !strings.Contains(err.Error(), "updating data") {
+		t.Fatalf("expected update error, got %v", err)
+	}
+}
+
+func TestDatabaseSessionDeleteRowRejectsUnsupportedAction(t *testing.T) {
+	mock := testutil.NewPluginMock(engine.DatabaseType("Athena"))
+	mock.StorageUnitExistsFunc = func(*engine.PluginConfig, string, string) (bool, error) {
+		t.Fatalf("expected deletes to be blocked before object validation")
+		return false, nil
+	}
+
+	session := newTestDatabaseSession(testTypeWithObjectActions(
+		"Athena",
+		[]source.Surface{source.SurfaceBrowser, source.SurfaceQuery},
+		[]source.Action{source.ActionBrowse},
+		map[source.ObjectKind][]source.Action{
+			source.ObjectKindTable: {source.ActionInspect, source.ActionViewRows, source.ActionUpdateData},
+		},
+	), mock)
+
+	_, err := session.DeleteRow(context.Background(), testTableRef(), map[string]string{"id": "1"})
+	if err == nil || !strings.Contains(err.Error(), "deleting data") {
+		t.Fatalf("expected delete error, got %v", err)
+	}
+}
+
 func TestDatabaseSessionImportDataRejectsUnsupportedAction(t *testing.T) {
 	mock := testutil.NewPluginMock(engine.DatabaseType("ElasticSearch"))
 	mock.StorageUnitExistsFunc = func(*engine.PluginConfig, string, string) (bool, error) {
@@ -211,6 +255,82 @@ func TestDatabaseSessionAddRowAllowsSupportedAction(t *testing.T) {
 	}
 	if !status || !addCalled {
 		t.Fatalf("expected plugin insert to run, got status=%t addCalled=%t", status, addCalled)
+	}
+}
+
+func TestDatabaseSessionUpdateObjectAllowsSupportedAction(t *testing.T) {
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
+	mock.StorageUnitExistsFunc = func(*engine.PluginConfig, string, string) (bool, error) {
+		return true, nil
+	}
+	updateCalled := false
+	mock.UpdateStorageUnitFunc = func(*engine.PluginConfig, string, string, map[string]string, []string) (bool, error) {
+		updateCalled = true
+		return true, nil
+	}
+
+	session := newTestDatabaseSession(testTypeWithObjectActions(
+		"Postgres",
+		[]source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
+		[]source.Action{source.ActionBrowse},
+		map[source.ObjectKind][]source.Action{
+			source.ObjectKindSchema: {source.ActionBrowse, source.ActionCreateChild},
+			source.ObjectKindTable: {
+				source.ActionInspect,
+				source.ActionViewRows,
+				source.ActionInsertData,
+				source.ActionUpdateData,
+				source.ActionDeleteData,
+				source.ActionImportData,
+				source.ActionGenerateMockData,
+			},
+		},
+	), mock)
+
+	status, err := session.UpdateObject(context.Background(), testTableRef(), map[string]string{"id": "1", "name": "alice"}, []string{"name"})
+	if err != nil {
+		t.Fatalf("expected update to succeed, got %v", err)
+	}
+	if !status || !updateCalled {
+		t.Fatalf("expected plugin update to run, got status=%t updateCalled=%t", status, updateCalled)
+	}
+}
+
+func TestDatabaseSessionDeleteRowAllowsSupportedAction(t *testing.T) {
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
+	mock.StorageUnitExistsFunc = func(*engine.PluginConfig, string, string) (bool, error) {
+		return true, nil
+	}
+	deleteCalled := false
+	mock.DeleteRowFunc = func(*engine.PluginConfig, string, string, map[string]string) (bool, error) {
+		deleteCalled = true
+		return true, nil
+	}
+
+	session := newTestDatabaseSession(testTypeWithObjectActions(
+		"Postgres",
+		[]source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
+		[]source.Action{source.ActionBrowse},
+		map[source.ObjectKind][]source.Action{
+			source.ObjectKindSchema: {source.ActionBrowse, source.ActionCreateChild},
+			source.ObjectKindTable: {
+				source.ActionInspect,
+				source.ActionViewRows,
+				source.ActionInsertData,
+				source.ActionUpdateData,
+				source.ActionDeleteData,
+				source.ActionImportData,
+				source.ActionGenerateMockData,
+			},
+		},
+	), mock)
+
+	status, err := session.DeleteRow(context.Background(), testTableRef(), map[string]string{"id": "1"})
+	if err != nil {
+		t.Fatalf("expected delete to succeed, got %v", err)
+	}
+	if !status || !deleteCalled {
+		t.Fatalf("expected plugin delete to run, got status=%t deleteCalled=%t", status, deleteCalled)
 	}
 }
 

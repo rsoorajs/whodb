@@ -47,6 +47,7 @@ enum SourceAction {
   Delete
   InsertData
   UpdateData
+  DeleteData
   ImportData
   GenerateMockData
   Execute
@@ -80,6 +81,35 @@ enum SourceConnectionFieldKind {
 enum SourceConnectionFieldSection {
   Primary
   Advanced
+}
+
+enum SourceConnectionTransport {
+  Network
+  File
+  Bridge
+}
+
+enum SourceHostInputMode {
+  None
+  Hostname
+  HostnameOrURL
+}
+
+enum SourceHostInputURLParser {
+  None
+  Postgres
+  MongoSRV
+}
+
+enum SourceProfileLabelStrategy {
+  Default
+  Hostname
+  Database
+}
+
+enum SourceSchemaFidelity {
+  Exact
+  Sampled
 }
 
 scalar Upload
@@ -388,11 +418,33 @@ type SourceContract {
   ObjectTypes: [SourceObjectType!]!
 }
 
+type SourceConnectionTraits {
+  Transport: SourceConnectionTransport!
+  HostInputMode: SourceHostInputMode!
+  HostInputURLParser: SourceHostInputURLParser!
+}
+
+type SourcePresentationTraits {
+  ProfileLabelStrategy: SourceProfileLabelStrategy!
+  SchemaFidelity: SourceSchemaFidelity!
+}
+
+type SourceQueryTraits {
+  SupportsAnalyze: Boolean!
+}
+
+type SourceTraits {
+  Connection: SourceConnectionTraits!
+  Presentation: SourcePresentationTraits!
+  Query: SourceQueryTraits!
+}
+
 type SourceType {
   Id: String!
   Label: String!
   Connector: String!
   Category: SourceCategory!
+  Traits: SourceTraits!
   ConnectionFields: [SourceConnectionField!]!
   Contract: SourceContract!
   IsAWSManaged: Boolean!

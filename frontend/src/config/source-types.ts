@@ -95,6 +95,39 @@ export interface SourceContractDescriptor {
 }
 
 /**
+ * Connection traits exposed by the backend source catalog.
+ */
+export interface SourceConnectionTraitsDescriptor {
+    transport: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['connection']['transport'];
+    hostInputMode: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['connection']['hostInputMode'];
+    hostInputUrlParser: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['connection']['hostInputUrlParser'];
+}
+
+/**
+ * Presentation traits exposed by the backend source catalog.
+ */
+export interface SourcePresentationTraitsDescriptor {
+    profileLabelStrategy: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['presentation']['profileLabelStrategy'];
+    schemaFidelity: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['presentation']['schemaFidelity'];
+}
+
+/**
+ * Query-surface traits exposed by the backend source catalog.
+ */
+export interface SourceQueryTraitsDescriptor {
+    supportsAnalyze: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['query']['supportsAnalyze'];
+}
+
+/**
+ * Backend-owned source traits that do not belong in the CRUD contract.
+ */
+export interface SourceTraitsDescriptor {
+    connection: SourceConnectionTraitsDescriptor;
+    presentation: SourcePresentationTraitsDescriptor;
+    query: SourceQueryTraitsDescriptor;
+}
+
+/**
  * Defines a canonical source type for use in type selectors.
  * Types are from each database's official documentation.
  */
@@ -145,6 +178,7 @@ export interface SourceTypeItem {
     icon: ReactElement;
     extra: Record<string, string>;
     category?: SourceTypesQuery['SourceTypes'][number]['category'];
+    traits?: SourceTraitsDescriptor;
     connectionFields?: SourceConnectionFieldDescriptor[];
     contract?: SourceContractDescriptor;
     fields?: {
@@ -300,6 +334,7 @@ function decorateSourceType(item: BackendSourceType): SourceTypeItem {
         icon: resolveIcon(item.id, item.connector),
         extra: mapAdvancedDefaults(item.connectionFields),
         category: item.category,
+        traits: item.traits,
         connectionFields: item.connectionFields,
         contract: item.contract,
         fields: {
@@ -357,6 +392,13 @@ function mergeSourceTypeOverride(
         ...item,
         ...override,
         extra: override.extra ? { ...item.extra, ...override.extra } : item.extra,
+        traits: override.traits
+            ? {
+                connection: { ...(item.traits?.connection ?? {}), ...override.traits.connection },
+                presentation: { ...(item.traits?.presentation ?? {}), ...override.traits.presentation },
+                query: { ...(item.traits?.query ?? {}), ...override.traits.query },
+            }
+            : item.traits,
         fields: override.fields ? { ...item.fields, ...override.fields } : item.fields,
         requiredFields: override.requiredFields ? { ...item.requiredFields, ...override.requiredFields } : item.requiredFields,
     };

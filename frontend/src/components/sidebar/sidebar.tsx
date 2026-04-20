@@ -51,6 +51,7 @@ import {
     GetSchemaDocument,
     GetSslStatusDocument,
     GetUpdateInfoDocument,
+    SourceProfileLabelStrategy,
     SourceFieldOptionsDocument,
 } from '@graphql';
 import {useTranslation} from '@/hooks/use-translation';
@@ -67,9 +68,10 @@ import {DatabaseActions} from "../../store/database";
 import {useAppSelector} from "../../store/hooks";
 import {featureFlags} from "../../config/features";
 import {getComponent} from "../../config/component-registry";
-import { DatabaseType } from "../../config/source-types";
+import { findSourceTypeItem, type SourceTypeItem } from "../../config/source-types";
 import {isAwsHostname} from "../../utils/cloud-connection-prefill";
 import {useSourceContract} from "../../hooks/useSourceContract";
+import {useSourceTypeItems} from "../../hooks/useSourceCatalog";
 import {
     ArrowLeftStartOnRectangleIcon,
     ChevronDownIcon,
@@ -87,10 +89,12 @@ import {DatabaseIconWithBadge, isAwsConnection} from "../aws";
 import {useProfileSwitch} from "@/hooks/use-profile-switch";
 import {buildSourceSchemaQuery} from "@/utils/source-refs";
 
-function getProfileLabel(profile: LocalLoginProfile) {
+function getProfileLabel(profile: LocalLoginProfile, item: SourceTypeItem | undefined) {
     if (profile.Saved) return profile.Id;
-    if (profile.Type === DatabaseType.Redis && profile.Hostname) return profile.Hostname;
-    if ((profile.Type === DatabaseType.Sqlite3 || profile.Type === DatabaseType.DuckDb) && profile.Database) {
+    if (item?.traits?.presentation.profileLabelStrategy === SourceProfileLabelStrategy.Hostname && profile.Hostname) {
+        return profile.Hostname;
+    }
+    if (item?.traits?.presentation.profileLabelStrategy === SourceProfileLabelStrategy.Database && profile.Database) {
         return profile.Database;
     }
     if (profile.Hostname && profile.Username) {
@@ -251,13 +255,14 @@ export const Sidebar: FC = () => {
     const { switchProfile } = useProfileSwitch({
         errorMessage: t('errorSigningIn'),
     });
+    const { items: sourceTypeItems } = useSourceTypeItems();
 
     // Profile select logic - filter out AWS profiles when cloud providers disabled
     const profileOptions = useMemo(() => profiles
         .filter(profile => cloudProvidersEnabled || !isAwsHostname(profile.Hostname))
         .map(profile => ({
             value: profile.Id,
-            label: getProfileLabel(profile),
+            label: getProfileLabel(profile, findSourceTypeItem(sourceTypeItems, profile.Type)),
             icon: (
                 <DatabaseIconWithBadge
                     icon={getProfileIcon(profile)}
@@ -269,7 +274,7 @@ export const Sidebar: FC = () => {
                 />
             ),
             profile,
-        })), [profiles, current?.Id, sslStatus, cloudProvidersEnabled]);
+        })), [profiles, current?.Id, sslStatus, cloudProvidersEnabled, sourceTypeItems]);
 
     const currentProfileOption = useMemo(() => {
         if (!current) return undefined;
@@ -691,20 +696,23 @@ export const Sidebar: FC = () => {
                         <DialogDescription>{t('switchProfileDescription')}</DialogDescription>
                     </DialogHeader>
                     <div className="flex flex-col gap-1 mt-2">
-                        {profiles.filter(p => p.Id !== logoutProfileId).map(profile => (
-                            <button
-                                key={profile.Id}
-                                className="flex items-center gap-3 p-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-left w-full"
-                                onClick={() => handleDialogProfileSwitch(profile)}
-                            >
-                                <DatabaseIconWithBadge
-                                    icon={getProfileIcon(profile)}
-                                    showCloudBadge={isAwsConnection(profile.Id)}
-                                    size="sm"
-                                />
-                                <span className="text-sm font-medium truncate">{getProfileLabel(profile)}</span>
-                            </button>
-                        ))}
+                        {profiles.filter(p => p.Id !== logoutProfileId).map(profile => {
+                            const sourceTypeItem = findSourceTypeItem(sourceTypeItems, profile.Type);
+                            return (
+                                <button
+                                    key={profile.Id}
+                                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-left w-full"
+                                    onClick={() => handleDialogProfileSwitch(profile)}
+                                >
+                                    <DatabaseIconWithBadge
+                                        icon={getProfileIcon(profile)}
+                                        showCloudBadge={isAwsConnection(profile.Id)}
+                                        size="sm"
+                                    />
+                                    <span className="text-sm font-medium truncate">{getProfileLabel(profile, sourceTypeItem)}</span>
+                                </button>
+                            );
+                        })}
                         <button
                             className="flex items-center gap-3 p-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-left w-full text-green-500"
                             onClick={handleDialogAddProfile}

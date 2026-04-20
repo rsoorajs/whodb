@@ -25,8 +25,9 @@ import (
 	cloudruntime "github.com/clidey/whodb/cli/internal/cloud"
 	"github.com/clidey/whodb/cli/internal/config"
 	"github.com/clidey/whodb/cli/internal/connectionopts"
+	"github.com/clidey/whodb/cli/internal/sourcetypes"
 	"github.com/clidey/whodb/cli/internal/tui"
-	"github.com/clidey/whodb/core/src/dbcatalog"
+	"github.com/clidey/whodb/core/src/source"
 )
 
 func resolveDiscoveredConnectionPrefill(ctx context.Context, id string) (config.Connection, error) {
@@ -37,7 +38,7 @@ func resolveDiscoveredConnectionPrefill(ctx context.Context, id string) (config.
 	return cloudruntime.BuildPrefillConnection(summary)
 }
 
-func mergeConnectionOverrides(base config.Connection, name, username, password, database, schema string, sslSettings connectionopts.SSLSettings) (config.Connection, dbcatalog.ConnectableDatabase, error) {
+func mergeConnectionOverrides(base config.Connection, name, username, password, database, schema string, sslSettings connectionopts.SSLSettings) (config.Connection, source.TypeSpec, error) {
 	conn := base
 	if strings.TrimSpace(name) != "" {
 		conn.Name = strings.TrimSpace(name)
@@ -55,32 +56,32 @@ func mergeConnectionOverrides(base config.Connection, name, username, password, 
 		conn.Schema = strings.TrimSpace(schema)
 	}
 
-	entry, ok := lookupDatabaseType(conn.Type)
+	spec, ok := lookupDatabaseType(conn.Type)
 	if !ok {
-		return config.Connection{}, dbcatalog.ConnectableDatabase{}, fmt.Errorf("unsupported database type %q", conn.Type)
+		return config.Connection{}, source.TypeSpec{}, fmt.Errorf("unsupported database type %q", conn.Type)
 	}
 
-	advanced, err := connectionopts.ApplySSLSettings(string(entry.ID), conn.Advanced, sslSettings)
+	advanced, err := connectionopts.ApplySSLSettings(spec.ID, conn.Advanced, sslSettings)
 	if err != nil {
-		return config.Connection{}, dbcatalog.ConnectableDatabase{}, err
+		return config.Connection{}, source.TypeSpec{}, err
 	}
-	conn.Type = string(entry.ID)
+	conn.Type = spec.ID
 	conn.Advanced = advanced
-	return conn, entry, nil
+	return conn, spec, nil
 }
 
-func normalizeDirectConnection(conn config.Connection, entry dbcatalog.ConnectableDatabase, defaultLocalhost bool) (config.Connection, error) {
+func normalizeDirectConnection(conn config.Connection, spec source.TypeSpec, defaultLocalhost bool) (config.Connection, error) {
 	if strings.TrimSpace(conn.Host) == "" {
 		switch {
 		case isFileBasedDatabaseType(conn.Type) && strings.TrimSpace(conn.Database) != "":
 			conn.Host = strings.TrimSpace(conn.Database)
-		case entry.RequiredFields.Hostname && defaultLocalhost:
+		case isConnectionFieldRequired(conn.Type, "Hostname") && defaultLocalhost:
 			conn.Host = "localhost"
 		}
 	}
 
 	if conn.Port == 0 {
-		if port, ok := dbcatalog.DefaultPort(string(entry.ID)); ok {
+		if port, ok := sourcetypes.DefaultPort(spec.ID); ok {
 			conn.Port = port
 		}
 	} else if conn.Port < 1024 || conn.Port > 65535 {
@@ -90,14 +91,14 @@ func normalizeDirectConnection(conn config.Connection, entry dbcatalog.Connectab
 	return conn, nil
 }
 
-func hasDirectConnectInputs(conn config.Connection, entry dbcatalog.ConnectableDatabase) bool {
-	if entry.RequiredFields.Hostname && strings.TrimSpace(conn.Host) == "" {
+func hasDirectConnectInputs(conn config.Connection) bool {
+	if isConnectionFieldRequired(conn.Type, "Hostname") && strings.TrimSpace(conn.Host) == "" {
 		return false
 	}
-	if entry.RequiredFields.Username && strings.TrimSpace(conn.Username) == "" {
+	if isConnectionFieldRequired(conn.Type, "Username") && strings.TrimSpace(conn.Username) == "" {
 		return false
 	}
-	if entry.RequiredFields.Database && strings.TrimSpace(conn.Database) == "" {
+	if isConnectionFieldRequired(conn.Type, "Database") && strings.TrimSpace(conn.Database) == "" {
 		return false
 	}
 	return true

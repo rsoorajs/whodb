@@ -269,7 +269,12 @@ func isAllowed(r *http.Request, body []byte) bool {
 
 	if query.OperationName == "SourceFieldOptions" {
 		sourceType, _ := query.Variables["sourceType"].(string)
-		return sourceType == string(engine.DatabaseType_Sqlite3) || sourceType == string(engine.DatabaseType_DuckDB)
+		spec, ok := sourcecatalog.Find(sourceType)
+		if !ok {
+			return false
+		}
+		field, ok := spec.ConnectionFieldByKey("Database")
+		return ok && field.SupportsOptions
 	}
 
 	switch query.OperationName {

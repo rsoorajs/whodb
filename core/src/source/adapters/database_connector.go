@@ -320,8 +320,12 @@ func (s *DatabaseSession) CreateObject(ctx context.Context, parent *source.Objec
 	return s.plugin.AddStorageUnit(config, namespace, name, fields)
 }
 
-// UpdateObject updates an existing source object.
+// UpdateObject updates data within an existing source object.
 func (s *DatabaseSession) UpdateObject(ctx context.Context, ref source.ObjectRef, values map[string]string, updatedColumns []string) (bool, error) {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionUpdateData); err != nil {
+		return false, err
+	}
+
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
@@ -346,8 +350,12 @@ func (s *DatabaseSession) AddRow(ctx context.Context, ref source.ObjectRef, valu
 	return s.plugin.AddRow(config, namespace, name, values)
 }
 
-// DeleteRow deletes a row from a source object.
+// DeleteRow deletes row/document data from a source object.
 func (s *DatabaseSession) DeleteRow(ctx context.Context, ref source.ObjectRef, values map[string]string) (bool, error) {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionDeleteData); err != nil {
+		return false, err
+	}
+
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
@@ -768,6 +776,8 @@ func sourceActionDescription(action source.Action) string {
 		return "inserting data"
 	case source.ActionUpdateData:
 		return "updating data"
+	case source.ActionDeleteData:
+		return "deleting data"
 	case source.ActionImportData:
 		return "importing data"
 	case source.ActionGenerateMockData:

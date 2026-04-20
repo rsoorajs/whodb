@@ -103,7 +103,7 @@ type ModelAwareSourceAssistant interface {
 type ObjectManager interface {
 	// CreateObject creates a new object beneath the provided parent.
 	CreateObject(ctx context.Context, parent *ObjectRef, name string, fields []Record) (bool, error)
-	// UpdateObject updates an existing object.
+	// UpdateObject updates data within an existing object.
 	UpdateObject(ctx context.Context, ref ObjectRef, values map[string]string, updatedColumns []string) (bool, error)
 	// AddRow inserts a row/document into an object.
 	AddRow(ctx context.Context, ref ObjectRef, values []Record) (bool, error)

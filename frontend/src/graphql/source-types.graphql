@@ -4,6 +4,20 @@ query SourceTypes {
     label: Label
     connector: Connector
     category: Category
+    traits: Traits {
+      connection: Connection {
+        transport: Transport
+        hostInputMode: HostInputMode
+        hostInputUrlParser: HostInputURLParser
+      }
+      presentation: Presentation {
+        profileLabelStrategy: ProfileLabelStrategy
+        schemaFidelity: SchemaFidelity
+      }
+      query: Query {
+        supportsAnalyze: SupportsAnalyze
+      }
+    }
     connectionFields: ConnectionFields {
       Key
       Kind

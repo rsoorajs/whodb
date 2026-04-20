@@ -27,6 +27,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/clidey/whodb/cli/internal/sourcetypes"
 	"github.com/clidey/whodb/cli/pkg/styles"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/sahilm/fuzzy"
@@ -351,9 +352,9 @@ func (v *BrowserView) View() string {
 
 	var b strings.Builder
 
-	// Build connection title — for file-based DBs (SQLite, DuckDB) show just the path
+	// Build connection title — file-backed sources should show their path directly.
 	var title string
-	isFileDB := conn.Host == conn.Database
+	isFileDB := sourcetypes.IsFileTransport(conn.Type) && conn.Database != ""
 	if conn.Name != "" {
 		if isFileDB {
 			title = fmt.Sprintf("Connected to: %s (%s)", conn.Name, conn.Database)

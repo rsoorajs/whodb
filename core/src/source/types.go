@@ -122,6 +122,8 @@ const (
 	ActionInsertData Action = "InsertData"
 	// ActionUpdateData indicates rows/documents can be updated.
 	ActionUpdateData Action = "UpdateData"
+	// ActionDeleteData indicates rows/documents can be deleted.
+	ActionDeleteData Action = "DeleteData"
 	// ActionImportData indicates import is supported.
 	ActionImportData Action = "ImportData"
 	// ActionGenerateMockData indicates mock data generation is supported.
@@ -220,6 +222,89 @@ type ConnectionField struct {
 	AdvancedKey     string
 }
 
+// ConnectionTransport identifies how a source is reached.
+type ConnectionTransport string
+
+const (
+	// ConnectionTransportNetwork is used for networked sources.
+	ConnectionTransportNetwork ConnectionTransport = "Network"
+	// ConnectionTransportFile is used for local file-backed sources.
+	ConnectionTransportFile ConnectionTransport = "File"
+	// ConnectionTransportBridge is used for bridge/sidecar-backed sources.
+	ConnectionTransportBridge ConnectionTransport = "Bridge"
+)
+
+// HostInputMode identifies how the hostname field should be presented.
+type HostInputMode string
+
+const (
+	// HostInputModeNone indicates the source does not expose a hostname field.
+	HostInputModeNone HostInputMode = "None"
+	// HostInputModeHostname indicates the source expects a plain hostname.
+	HostInputModeHostname HostInputMode = "Hostname"
+	// HostInputModeHostnameOrURL indicates the source accepts a hostname or URL.
+	HostInputModeHostnameOrURL HostInputMode = "HostnameOrURL"
+)
+
+// HostInputURLParser identifies how hostname URLs should be parsed.
+type HostInputURLParser string
+
+const (
+	// HostInputURLParserNone indicates no URL parsing is available.
+	HostInputURLParserNone HostInputURLParser = "None"
+	// HostInputURLParserPostgres parses postgres:// and postgresql:// URLs.
+	HostInputURLParserPostgres HostInputURLParser = "Postgres"
+	// HostInputURLParserMongoSRV parses mongodb+srv:// URLs.
+	HostInputURLParserMongoSRV HostInputURLParser = "MongoSRV"
+)
+
+// ProfileLabelStrategy identifies how saved profiles should be labeled in the UI.
+type ProfileLabelStrategy string
+
+const (
+	// ProfileLabelStrategyDefault uses the generic hostname/username/database fallback.
+	ProfileLabelStrategyDefault ProfileLabelStrategy = "Default"
+	// ProfileLabelStrategyHostname prefers the hostname as the primary label.
+	ProfileLabelStrategyHostname ProfileLabelStrategy = "Hostname"
+	// ProfileLabelStrategyDatabase prefers the database/file path as the primary label.
+	ProfileLabelStrategyDatabase ProfileLabelStrategy = "Database"
+)
+
+// SchemaFidelity identifies whether schema information is exact or sampled.
+type SchemaFidelity string
+
+const (
+	// SchemaFidelityExact indicates metadata is resolved exactly from the source.
+	SchemaFidelityExact SchemaFidelity = "Exact"
+	// SchemaFidelitySampled indicates metadata is inferred from sampled data.
+	SchemaFidelitySampled SchemaFidelity = "Sampled"
+)
+
+// ConnectionTraits describes UI-facing connection behavior for a source type.
+type ConnectionTraits struct {
+	Transport          ConnectionTransport
+	HostInputMode      HostInputMode
+	HostInputURLParser HostInputURLParser
+}
+
+// PresentationTraits describes UI-facing presentation behavior for a source type.
+type PresentationTraits struct {
+	ProfileLabelStrategy ProfileLabelStrategy
+	SchemaFidelity       SchemaFidelity
+}
+
+// QueryTraits describes query-surface behavior for a source type.
+type QueryTraits struct {
+	SupportsAnalyze bool
+}
+
+// TypeTraits describes non-CRUD source behavior consumed by frontend and CLI.
+type TypeTraits struct {
+	Connection   ConnectionTraits
+	Presentation PresentationTraits
+	Query        QueryTraits
+}
+
 // Contract describes the type-level support surface for a source type.
 type Contract struct {
 	Model             Model
@@ -288,6 +373,7 @@ type TypeSpec struct {
 	DriverID         string
 	Connector        string
 	Category         Category
+	Traits           TypeTraits
 	ConnectionFields []ConnectionField
 	Contract         Contract
 	IsAWSManaged     bool

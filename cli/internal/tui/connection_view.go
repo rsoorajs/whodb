@@ -35,9 +35,8 @@ import (
 	"github.com/clidey/whodb/cli/internal/connectionopts"
 	dbmgr "github.com/clidey/whodb/cli/internal/database"
 	"github.com/clidey/whodb/cli/internal/docker"
+	"github.com/clidey/whodb/cli/internal/sourcetypes"
 	"github.com/clidey/whodb/cli/pkg/styles"
-	"github.com/clidey/whodb/core/src/dbcatalog"
-	"github.com/clidey/whodb/core/src/engine"
 )
 
 type connectionItem struct {
@@ -259,7 +258,7 @@ func NewConnectionView(parent *MainModel) *ConnectionView {
 	prompt.EchoMode = textinput.EchoPassword
 	prompt.EchoCharacter = '•'
 
-	dbTypes := dbcatalog.IDs()
+	dbTypes := sourcetypes.IDs()
 
 	return &ConnectionView{
 		parent:           parent,
@@ -1406,7 +1405,7 @@ func (v *ConnectionView) updatePortPlaceholder() {
 }
 
 func (v *ConnectionView) getDefaultPort(dbType string) int {
-	port, ok := dbcatalog.DefaultPort(dbType)
+	port, ok := sourcetypes.DefaultPort(dbType)
 	if !ok {
 		return 5432
 	}
@@ -1416,31 +1415,17 @@ func (v *ConnectionView) getDefaultPort(dbType string) int {
 // isNetworkDatabase returns true for database types that connect over a network,
 // i.e. those where SSH tunneling is applicable.
 func isNetworkDatabase(dbType string) bool {
-	return dbcatalog.IsNetworkDatabase(dbType)
+	return sourcetypes.IsNetworkTransport(dbType)
 }
 
 func isFileBasedFormDatabase(dbType string) bool {
-	entry, ok := dbcatalog.Find(dbType)
-	if !ok {
-		return false
-	}
-
-	switch entry.PluginType {
-	case engine.DatabaseType_Sqlite3, engine.DatabaseType_DuckDB:
-		return true
-	default:
-		return false
-	}
+	return sourcetypes.IsFileTransport(dbType)
 }
 
 func (v *ConnectionView) sslModes() []string {
-	entry, ok := dbcatalog.Find(v.dbTypes[v.dbTypeIndex])
-	if !ok {
-		return nil
-	}
-
-	modes := make([]string, 0, len(entry.SSLModes))
-	for _, mode := range entry.SSLModes {
+	modeInfos := sourcetypes.SSLModes(v.dbTypes[v.dbTypeIndex])
+	modes := make([]string, 0, len(modeInfos))
+	for _, mode := range modeInfos {
 		modes = append(modes, string(mode.Value))
 	}
 	return modes
@@ -1465,33 +1450,32 @@ func (v *ConnectionView) sslFieldsVisible() bool {
 // getVisibleFields returns the input field indices visible for the given database type.
 // SSH fields are not included here; they are managed separately via the SSH toggle.
 func getVisibleFields(dbType string) []int {
-	entry, ok := dbcatalog.Find(dbType)
+	spec, ok := sourcetypes.Find(dbType)
 	if !ok {
 		return []int{fieldName, fieldHost, fieldPort, fieldUsername, fieldPassword, fieldDatabase}
 	}
 
 	fields := []int{fieldName}
-	if entry.Fields.Hostname {
+	if _, ok := spec.ConnectionFieldByKey("Hostname"); ok {
 		fields = append(fields, fieldHost, fieldPort)
 	}
-	if entry.Fields.Username {
+	if _, ok := spec.ConnectionFieldByKey("Username"); ok {
 		fields = append(fields, fieldUsername)
 	}
-	if entry.Fields.Password {
+	if _, ok := spec.ConnectionFieldByKey("Password"); ok {
 		fields = append(fields, fieldPassword)
 	}
-	if entry.Fields.Database {
+	if _, ok := spec.ConnectionFieldByKey("Database"); ok {
 		fields = append(fields, fieldDatabase)
 	}
-	if entry.Fields.SearchPath {
+	if _, ok := spec.ConnectionFieldByKey("Search Path"); ok {
 		fields = append(fields, fieldSchema)
 	}
 	return fields
 }
 
 func passwordRequired(dbType string) bool {
-	entry, ok := dbcatalog.Find(dbType)
-	return ok && entry.RequiredFields.Password
+	return sourcetypes.ConnectionFieldRequired(dbType, "Password")
 }
 
 func (v *ConnectionView) isFieldVisible(index int) bool {
@@ -1534,7 +1518,7 @@ func (v *ConnectionView) onDbTypeChanged() {
 	}
 
 	// Update database placeholder for file-based databases
-	if !isNetworkDatabase(v.dbTypes[v.dbTypeIndex]) {
+	if isFileBasedFormDatabase(v.dbTypes[v.dbTypeIndex]) {
 		v.inputs[fieldDatabase].Placeholder = "/path/to/database.db"
 	} else {
 		v.inputs[fieldDatabase].Placeholder = "mydb"
@@ -1567,10 +1551,9 @@ func (v *ConnectionView) connect() tea.Cmd {
 		host = v.inputs[fieldHost].Value()
 	}
 	if host == "" {
-		entry, _ := dbcatalog.Find(dbType)
 		if database := v.inputs[fieldDatabase].Value(); isFileBasedFormDatabase(dbType) && database != "" {
 			host = database
-		} else if entry.RequiredFields.Hostname {
+		} else if sourcetypes.ConnectionFieldRequired(dbType, "Hostname") {
 			host = "localhost"
 		}
 	}
@@ -1589,7 +1572,7 @@ func (v *ConnectionView) connect() tea.Cmd {
 			}
 			port = portNum
 		}
-	} else if defaultPort, ok := dbcatalog.DefaultPort(dbType); ok {
+	} else if defaultPort, ok := sourcetypes.DefaultPort(dbType); ok {
 		port = defaultPort
 	}
 

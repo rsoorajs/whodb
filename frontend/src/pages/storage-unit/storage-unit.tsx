@@ -49,6 +49,7 @@ import {
     GetStorageUnitsQuery,
     GetStorageUnitsDocument,
     RecordInput,
+    SourceSchemaFidelity,
     SourceAction,
 } from '@graphql';
 import {
@@ -81,7 +82,7 @@ import {Tip} from '../../components/tip';
 import {SettingsActions} from '../../store/settings';
 import {useTranslation} from '../../hooks/use-translation';
 import {buildSourceParentObjectRef, buildSourceParentRef} from '../../utils/source-refs';
-import { DatabaseType, findSourceObjectType, type SourceTypeItem } from '../../config/source-types';
+import { findSourceObjectType, type SourceTypeItem } from '../../config/source-types';
 
 type SourceBrowserObject = GetStorageUnitsQuery['StorageUnit'][number];
 
@@ -116,7 +117,7 @@ const StorageUnitCard: FC<{
     const navigate = useNavigate();
     const { t } = useTranslation('pages/storage-unit');
     const current = useAppSelector(state => state.auth.current);
-    const { item, connector } = useSourceContract(current?.Type);
+    const { item, schemaFidelity } = useSourceContract(current?.Type);
     const [columns, setColumns] = useState<any[] | undefined>(undefined);
     const [columnsLoading, setColumnsLoading] = useState(false);
     const [fetchColumnsBatch] = useLazyQuery(GetColumnsBatchDocument);
@@ -209,7 +210,7 @@ const StorageUnitCard: FC<{
                 <TableCellsIcon className="w-5 h-5" />
                 {unit.Name}
             </SheetTitle>
-            {(connector === DatabaseType.MongoDb || connector === DatabaseType.ElasticSearch) && (
+            {schemaFidelity === SourceSchemaFidelity.Sampled && (
                 <div className="mb-2" data-testid="sampled-schema-warning">
                     <div className="flex items-center gap-xs text-sm">
                         <InformationCircleIcon className="w-4 h-4" />

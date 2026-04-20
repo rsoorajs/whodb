@@ -27,7 +27,7 @@ import (
 	dbmgr "github.com/clidey/whodb/cli/internal/database"
 	"github.com/clidey/whodb/cli/pkg/analytics"
 	"github.com/clidey/whodb/cli/pkg/output"
-	"github.com/clidey/whodb/core/src/dbcatalog"
+	"github.com/clidey/whodb/core/src/source"
 	"github.com/spf13/cobra"
 )
 
@@ -204,7 +204,7 @@ var connectionsAddCmd = &cobra.Command{
 
 		var (
 			conn         config.Connection
-			resolvedType dbcatalog.ConnectableDatabase
+			resolvedType source.TypeSpec
 			ok           bool
 		)
 
@@ -249,10 +249,10 @@ var connectionsAddCmd = &cobra.Command{
 			if !ok {
 				return fmt.Errorf("unsupported database type %q", connAddType)
 			}
-			if resolvedType.RequiredFields.Hostname && connAddHost == "" {
+			if isConnectionFieldRequired(string(resolvedType.ID), "Hostname") && connAddHost == "" {
 				return fmt.Errorf("--host is required")
 			}
-			if resolvedType.RequiredFields.Database && connAddDatabase == "" {
+			if isConnectionFieldRequired(string(resolvedType.ID), "Database") && connAddDatabase == "" {
 				return fmt.Errorf("--database is required")
 			}
 

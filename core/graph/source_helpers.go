@@ -215,10 +215,28 @@ func sourceTypeToModel(spec source.TypeSpec) *model.SourceType {
 		Label:            spec.Label,
 		Connector:        spec.Connector,
 		Category:         model.SourceCategory(spec.Category),
+		Traits:           sourceTraitsToModel(spec.Traits),
 		ConnectionFields: fields,
 		Contract:         sourceContractToModel(spec.Contract),
 		IsAWSManaged:     spec.IsAWSManaged,
 		SSLModes:         sslModes,
+	}
+}
+
+func sourceTraitsToModel(traits source.TypeTraits) *model.SourceTraits {
+	return &model.SourceTraits{
+		Connection: &model.SourceConnectionTraits{
+			Transport:          model.SourceConnectionTransport(traits.Connection.Transport),
+			HostInputMode:      model.SourceHostInputMode(traits.Connection.HostInputMode),
+			HostInputURLParser: model.SourceHostInputURLParser(traits.Connection.HostInputURLParser),
+		},
+		Presentation: &model.SourcePresentationTraits{
+			ProfileLabelStrategy: model.SourceProfileLabelStrategy(traits.Presentation.ProfileLabelStrategy),
+			SchemaFidelity:       model.SourceSchemaFidelity(traits.Presentation.SchemaFidelity),
+		},
+		Query: &model.SourceQueryTraits{
+			SupportsAnalyze: traits.Query.SupportsAnalyze,
+		},
 	}
 }
 

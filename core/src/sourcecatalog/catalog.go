@@ -31,6 +31,7 @@ import (
 // the public source-first catalog.
 type FamilySpec struct {
 	Category       source.Category
+	Traits         source.TypeTraits
 	Model          source.Model
 	Surfaces       []source.Surface
 	RootActions    []source.Action
@@ -75,6 +76,7 @@ var (
 var familySpecs = map[string]FamilySpec{
 	connectorPostgres: {
 		Category:       source.CategoryDatabase,
+		Traits:         networkTraits(source.HostInputModeHostnameOrURL, source.HostInputURLParserPostgres),
 		Model:          source.ModelRelational,
 		Surfaces:       []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
 		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindSchema, objectKindTable},
@@ -89,6 +91,7 @@ var familySpecs = map[string]FamilySpec{
 	},
 	connectorCockroachDB: {
 		Category:       source.CategoryDatabase,
+		Traits:         networkTraits(source.HostInputModeHostname, source.HostInputURLParserNone),
 		Model:          source.ModelRelational,
 		Surfaces:       []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
 		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindSchema, objectKindTable},
@@ -103,6 +106,7 @@ var familySpecs = map[string]FamilySpec{
 	},
 	connectorMySQL: {
 		Category:       source.CategoryDatabase,
+		Traits:         networkTraits(source.HostInputModeHostname, source.HostInputURLParserNone),
 		Model:          source.ModelRelational,
 		Surfaces:       []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
 		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindTable},
@@ -116,6 +120,7 @@ var familySpecs = map[string]FamilySpec{
 	},
 	connectorMariaDB: {
 		Category:       source.CategoryDatabase,
+		Traits:         networkTraits(source.HostInputModeHostname, source.HostInputURLParserNone),
 		Model:          source.ModelRelational,
 		Surfaces:       []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
 		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindTable},
@@ -129,6 +134,7 @@ var familySpecs = map[string]FamilySpec{
 	},
 	connectorTiDB: {
 		Category:       source.CategoryDatabase,
+		Traits:         networkTraits(source.HostInputModeHostname, source.HostInputURLParserNone),
 		Model:          source.ModelRelational,
 		Surfaces:       []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
 		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindTable},
@@ -142,6 +148,7 @@ var familySpecs = map[string]FamilySpec{
 	},
 	connectorClickHouse: {
 		Category:       source.CategoryDatabase,
+		Traits:         networkTraits(source.HostInputModeHostname, source.HostInputURLParserNone),
 		Model:          source.ModelRelational,
 		Surfaces:       []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
 		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindTable},
@@ -154,6 +161,7 @@ var familySpecs = map[string]FamilySpec{
 	},
 	connectorSqlite3: {
 		Category:      source.CategoryDatabase,
+		Traits:        fileTraits(source.ProfileLabelStrategyDatabase),
 		Model:         source.ModelRelational,
 		Surfaces:      []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
 		RootActions:   []source.Action{source.ActionBrowse, source.ActionCreateChild},
@@ -165,6 +173,7 @@ var familySpecs = map[string]FamilySpec{
 	},
 	connectorDuckDB: {
 		Category:       source.CategoryDatabase,
+		Traits:         fileTraits(source.ProfileLabelStrategyDatabase),
 		Model:          source.ModelRelational,
 		Surfaces:       []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
 		RootActions:    []source.Action{source.ActionBrowse, source.ActionCreateChild},
@@ -179,6 +188,7 @@ var familySpecs = map[string]FamilySpec{
 	},
 	connectorQuestDB: {
 		Category:      source.CategoryDatabase,
+		Traits:        networkTraits(source.HostInputModeHostname, source.HostInputURLParserNone),
 		Model:         source.ModelRelational,
 		Surfaces:      []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
 		RootActions:   []source.Action{source.ActionBrowse, source.ActionCreateChild},
@@ -191,6 +201,7 @@ var familySpecs = map[string]FamilySpec{
 	},
 	connectorMongoDB: {
 		Category:       source.CategoryDatabase,
+		Traits:         sampledNetworkTraits(source.HostInputModeHostnameOrURL, source.HostInputURLParserMongoSRV, source.ProfileLabelStrategyDefault),
 		Model:          source.ModelDocument,
 		Surfaces:       []source.Surface{source.SurfaceBrowser, source.SurfaceGraph},
 		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindColl},
@@ -204,6 +215,7 @@ var familySpecs = map[string]FamilySpec{
 	},
 	connectorRedis: {
 		Category:      source.CategoryCache,
+		Traits:        networkTraitsWithProfileLabel(source.HostInputModeHostname, source.HostInputURLParserNone, source.ProfileLabelStrategyHostname),
 		Model:         source.ModelKeyValue,
 		Surfaces:      []source.Surface{source.SurfaceBrowser},
 		BrowsePath:    []source.ObjectKind{objectKindDatabase, objectKindKey},
@@ -215,16 +227,18 @@ var familySpecs = map[string]FamilySpec{
 	},
 	connectorMemcached: {
 		Category:      source.CategoryCache,
+		Traits:        networkTraits(source.HostInputModeHostname, source.HostInputURLParserNone),
 		Model:         source.ModelKeyValue,
 		Surfaces:      []source.Surface{source.SurfaceBrowser},
 		BrowsePath:    []source.ObjectKind{objectKindItem},
 		DefaultObject: objectKindItem,
 		ObjectTypes: []source.ObjectType{
-			keyValueReadOnlyObjectType(objectKindItem, "Item", "Items"),
+			keyValueExistingMutableObjectType(objectKindItem, "Item", "Items"),
 		},
 	},
 	connectorElasticSearch: {
 		Category:       source.CategorySearch,
+		Traits:         sampledNetworkTraits(source.HostInputModeHostname, source.HostInputURLParserNone, source.ProfileLabelStrategyDefault),
 		Model:          source.ModelSearch,
 		Surfaces:       []source.Surface{source.SurfaceBrowser, source.SurfaceGraph},
 		BrowsePath:     []source.ObjectKind{objectKindIndex},
@@ -342,13 +356,16 @@ func BuildTypeSpec(entry DatabaseEntry) (source.TypeSpec, bool) {
 		ObjectTypes:       cloneObjectTypes(family.ObjectTypes),
 	}
 
+	traits := buildTypeTraits(entry, family)
+
 	return source.TypeSpec{
 		ID:               entry.ID,
 		Label:            entry.Label,
 		DriverID:         "database",
 		Connector:        entry.Connector,
 		Category:         family.Category,
-		ConnectionFields: buildConnectionFields(entry),
+		Traits:           traits,
+		ConnectionFields: buildConnectionFields(entry, traits),
 		Contract:         contract,
 		IsAWSManaged:     entry.IsAWSManaged,
 		SSLModes:         cloneSourceSSLModes(entry.SSLModes),
@@ -410,7 +427,34 @@ func buildSurfaces(family FamilySpec) []source.Surface {
 	return surfaces
 }
 
-func buildConnectionFields(entry DatabaseEntry) []source.ConnectionField {
+func buildTypeTraits(entry DatabaseEntry, family FamilySpec) source.TypeTraits {
+	traits := family.Traits
+	if traits.Connection.Transport == "" {
+		traits.Connection.Transport = source.ConnectionTransportNetwork
+	}
+	if traits.Connection.HostInputMode == "" {
+		if entry.Fields.Hostname {
+			traits.Connection.HostInputMode = source.HostInputModeHostname
+		} else {
+			traits.Connection.HostInputMode = source.HostInputModeNone
+		}
+	}
+	if traits.Connection.HostInputURLParser == "" {
+		traits.Connection.HostInputURLParser = source.HostInputURLParserNone
+	}
+	if traits.Presentation.ProfileLabelStrategy == "" {
+		traits.Presentation.ProfileLabelStrategy = source.ProfileLabelStrategyDefault
+	}
+	if traits.Presentation.SchemaFidelity == "" {
+		traits.Presentation.SchemaFidelity = source.SchemaFidelityExact
+	}
+	if entry.ID == connectorPostgres {
+		traits.Query.SupportsAnalyze = true
+	}
+	return traits
+}
+
+func buildConnectionFields(entry DatabaseEntry, traits source.TypeTraits) []source.ConnectionField {
 	fields := make([]source.ConnectionField, 0, len(entry.Extra)+5)
 
 	if entry.Fields.Hostname {
@@ -450,7 +494,7 @@ func buildConnectionFields(entry DatabaseEntry) []source.ConnectionField {
 	}
 
 	if entry.Fields.Database {
-		fileBased := !entry.Fields.Hostname
+		fileBased := traits.Connection.Transport == source.ConnectionTransportFile
 		kind := source.ConnectionFieldKindText
 		placeholderKey := "enterDatabase"
 		supportsOptions := false
@@ -567,6 +611,7 @@ func tabularObjectType(kind source.ObjectKind, singular string, plural string) s
 			source.ActionViewRows,
 			source.ActionInsertData,
 			source.ActionUpdateData,
+			source.ActionDeleteData,
 			source.ActionImportData,
 			source.ActionGenerateMockData,
 		},
@@ -597,6 +642,7 @@ func documentObjectType(kind source.ObjectKind, singular string, plural string, 
 		source.ActionViewRows,
 		source.ActionInsertData,
 		source.ActionUpdateData,
+		source.ActionDeleteData,
 	}
 
 	for _, action := range extraActions {
@@ -624,6 +670,7 @@ func keyValueObjectType(kind source.ObjectKind, singular string, plural string) 
 			source.ActionViewRows,
 			source.ActionInsertData,
 			source.ActionUpdateData,
+			source.ActionDeleteData,
 		},
 		Views:         []source.View{source.ViewGrid, source.ViewMetadata},
 		SingularLabel: singular,
@@ -631,13 +678,15 @@ func keyValueObjectType(kind source.ObjectKind, singular string, plural string) 
 	}
 }
 
-func keyValueReadOnlyObjectType(kind source.ObjectKind, singular string, plural string) source.ObjectType {
+func keyValueExistingMutableObjectType(kind source.ObjectKind, singular string, plural string) source.ObjectType {
 	return source.ObjectType{
 		Kind:      kind,
 		DataShape: source.DataShapeContent,
 		Actions: []source.Action{
 			source.ActionInspect,
 			source.ActionViewRows,
+			source.ActionUpdateData,
+			source.ActionDeleteData,
 		},
 		Views:         []source.View{source.ViewGrid, source.ViewMetadata},
 		SingularLabel: singular,
@@ -671,6 +720,7 @@ func cloneObjectTypes(objectTypes []source.ObjectType) []source.ObjectType {
 func cloneFamilySpec(spec FamilySpec) FamilySpec {
 	return FamilySpec{
 		Category:       spec.Category,
+		Traits:         spec.Traits,
 		Model:          spec.Model,
 		Surfaces:       slices.Clone(spec.Surfaces),
 		RootActions:    slices.Clone(spec.RootActions),
@@ -678,6 +728,52 @@ func cloneFamilySpec(spec FamilySpec) FamilySpec {
 		DefaultObject:  spec.DefaultObject,
 		GraphScopeKind: spec.GraphScopeKind,
 		ObjectTypes:    cloneObjectTypes(spec.ObjectTypes),
+	}
+}
+
+func networkTraits(hostInputMode source.HostInputMode, urlParser source.HostInputURLParser) source.TypeTraits {
+	return networkTraitsWithProfileLabel(hostInputMode, urlParser, source.ProfileLabelStrategyDefault)
+}
+
+func networkTraitsWithProfileLabel(
+	hostInputMode source.HostInputMode,
+	urlParser source.HostInputURLParser,
+	profileLabelStrategy source.ProfileLabelStrategy,
+) source.TypeTraits {
+	return source.TypeTraits{
+		Connection: source.ConnectionTraits{
+			Transport:          source.ConnectionTransportNetwork,
+			HostInputMode:      hostInputMode,
+			HostInputURLParser: urlParser,
+		},
+		Presentation: source.PresentationTraits{
+			ProfileLabelStrategy: profileLabelStrategy,
+			SchemaFidelity:       source.SchemaFidelityExact,
+		},
+	}
+}
+
+func sampledNetworkTraits(
+	hostInputMode source.HostInputMode,
+	urlParser source.HostInputURLParser,
+	profileLabelStrategy source.ProfileLabelStrategy,
+) source.TypeTraits {
+	traits := networkTraitsWithProfileLabel(hostInputMode, urlParser, profileLabelStrategy)
+	traits.Presentation.SchemaFidelity = source.SchemaFidelitySampled
+	return traits
+}
+
+func fileTraits(profileLabelStrategy source.ProfileLabelStrategy) source.TypeTraits {
+	return source.TypeTraits{
+		Connection: source.ConnectionTraits{
+			Transport:          source.ConnectionTransportFile,
+			HostInputMode:      source.HostInputModeNone,
+			HostInputURLParser: source.HostInputURLParserNone,
+		},
+		Presentation: source.PresentationTraits{
+			ProfileLabelStrategy: profileLabelStrategy,
+			SchemaFidelity:       source.SchemaFidelityExact,
+		},
 	}
 }
 

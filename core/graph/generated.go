@@ -356,6 +356,12 @@ type ComplexityRoot struct {
 		SupportsOptions func(childComplexity int) int
 	}
 
+	SourceConnectionTraits struct {
+		HostInputMode      func(childComplexity int) int
+		HostInputURLParser func(childComplexity int) int
+		Transport          func(childComplexity int) int
+	}
+
 	SourceContent struct {
 		FileName   func(childComplexity int) int
 		IsBinary   func(childComplexity int) int
@@ -406,6 +412,11 @@ type ComplexityRoot struct {
 		Views         func(childComplexity int) int
 	}
 
+	SourcePresentationTraits struct {
+		ProfileLabelStrategy func(childComplexity int) int
+		SchemaFidelity       func(childComplexity int) int
+	}
+
 	SourceProfile struct {
 		DisplayName          func(childComplexity int) int
 		ID                   func(childComplexity int) int
@@ -421,6 +432,10 @@ type ComplexityRoot struct {
 		Description func(childComplexity int) int
 	}
 
+	SourceQueryTraits struct {
+		SupportsAnalyze func(childComplexity int) int
+	}
+
 	SourceSSLMode struct {
 		Aliases func(childComplexity int) int
 		Value   func(childComplexity int) int
@@ -434,6 +449,12 @@ type ComplexityRoot struct {
 		TypeDefinitions func(childComplexity int) int
 	}
 
+	SourceTraits struct {
+		Connection   func(childComplexity int) int
+		Presentation func(childComplexity int) int
+		Query        func(childComplexity int) int
+	}
+
 	SourceType struct {
 		Category         func(childComplexity int) int
 		ConnectionFields func(childComplexity int) int
@@ -443,6 +464,7 @@ type ComplexityRoot struct {
 		IsAWSManaged     func(childComplexity int) int
 		Label            func(childComplexity int) int
 		SSLModes         func(childComplexity int) int
+		Traits           func(childComplexity int) int
 	}
 
 	StatusResponse struct {
@@ -2094,6 +2116,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.SourceConnectionField.SupportsOptions(childComplexity), true
 
+	case "SourceConnectionTraits.HostInputMode":
+		if e.ComplexityRoot.SourceConnectionTraits.HostInputMode == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceConnectionTraits.HostInputMode(childComplexity), true
+	case "SourceConnectionTraits.HostInputURLParser":
+		if e.ComplexityRoot.SourceConnectionTraits.HostInputURLParser == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceConnectionTraits.HostInputURLParser(childComplexity), true
+	case "SourceConnectionTraits.Transport":
+		if e.ComplexityRoot.SourceConnectionTraits.Transport == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceConnectionTraits.Transport(childComplexity), true
+
 	case "SourceContent.FileName":
 		if e.ComplexityRoot.SourceContent.FileName == nil {
 			break
@@ -2292,6 +2333,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.SourceObjectType.Views(childComplexity), true
 
+	case "SourcePresentationTraits.ProfileLabelStrategy":
+		if e.ComplexityRoot.SourcePresentationTraits.ProfileLabelStrategy == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourcePresentationTraits.ProfileLabelStrategy(childComplexity), true
+	case "SourcePresentationTraits.SchemaFidelity":
+		if e.ComplexityRoot.SourcePresentationTraits.SchemaFidelity == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourcePresentationTraits.SchemaFidelity(childComplexity), true
+
 	case "SourceProfile.DisplayName":
 		if e.ComplexityRoot.SourceProfile.DisplayName == nil {
 			break
@@ -2348,6 +2402,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.SourceQuerySuggestion.Description(childComplexity), true
 
+	case "SourceQueryTraits.SupportsAnalyze":
+		if e.ComplexityRoot.SourceQueryTraits.SupportsAnalyze == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceQueryTraits.SupportsAnalyze(childComplexity), true
+
 	case "SourceSSLMode.aliases":
 		if e.ComplexityRoot.SourceSSLMode.Aliases == nil {
 			break
@@ -2391,6 +2452,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.SourceSessionMetadata.TypeDefinitions(childComplexity), true
+
+	case "SourceTraits.Connection":
+		if e.ComplexityRoot.SourceTraits.Connection == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceTraits.Connection(childComplexity), true
+	case "SourceTraits.Presentation":
+		if e.ComplexityRoot.SourceTraits.Presentation == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceTraits.Presentation(childComplexity), true
+	case "SourceTraits.Query":
+		if e.ComplexityRoot.SourceTraits.Query == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceTraits.Query(childComplexity), true
 
 	case "SourceType.Category":
 		if e.ComplexityRoot.SourceType.Category == nil {
@@ -2440,6 +2520,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.SourceType.SSLModes(childComplexity), true
+	case "SourceType.Traits":
+		if e.ComplexityRoot.SourceType.Traits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceType.Traits(childComplexity), true
 
 	case "StatusResponse.Status":
 		if e.ComplexityRoot.StatusResponse.Status == nil {
@@ -8806,6 +8892,8 @@ func (ec *executionContext) fieldContext_Query_SourceTypes(_ context.Context, fi
 				return ec.fieldContext_SourceType_Connector(ctx, field)
 			case "Category":
 				return ec.fieldContext_SourceType_Category(ctx, field)
+			case "Traits":
+				return ec.fieldContext_SourceType_Traits(ctx, field)
 			case "ConnectionFields":
 				return ec.fieldContext_SourceType_ConnectionFields(ctx, field)
 			case "Contract":
@@ -11039,6 +11127,93 @@ func (ec *executionContext) fieldContext_SourceConnectionField_SupportsOptions(_
 	return fc, nil
 }
 
+func (ec *executionContext) _SourceConnectionTraits_Transport(ctx context.Context, field graphql.CollectedField, obj *model.SourceConnectionTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceConnectionTraits_Transport,
+		func(ctx context.Context) (any, error) {
+			return obj.Transport, nil
+		},
+		nil,
+		ec.marshalNSourceConnectionTransport2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionTransport,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceConnectionTraits_Transport(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceConnectionTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceConnectionTransport does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceConnectionTraits_HostInputMode(ctx context.Context, field graphql.CollectedField, obj *model.SourceConnectionTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceConnectionTraits_HostInputMode,
+		func(ctx context.Context) (any, error) {
+			return obj.HostInputMode, nil
+		},
+		nil,
+		ec.marshalNSourceHostInputMode2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceHostInputMode,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceConnectionTraits_HostInputMode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceConnectionTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceHostInputMode does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceConnectionTraits_HostInputURLParser(ctx context.Context, field graphql.CollectedField, obj *model.SourceConnectionTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceConnectionTraits_HostInputURLParser,
+		func(ctx context.Context) (any, error) {
+			return obj.HostInputURLParser, nil
+		},
+		nil,
+		ec.marshalNSourceHostInputURLParser2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceHostInputURLParser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceConnectionTraits_HostInputURLParser(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceConnectionTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceHostInputURLParser does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _SourceContent_Text(ctx context.Context, field graphql.CollectedField, obj *model.SourceContent) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -12023,6 +12198,64 @@ func (ec *executionContext) fieldContext_SourceObjectType_PluralLabel(_ context.
 	return fc, nil
 }
 
+func (ec *executionContext) _SourcePresentationTraits_ProfileLabelStrategy(ctx context.Context, field graphql.CollectedField, obj *model.SourcePresentationTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourcePresentationTraits_ProfileLabelStrategy,
+		func(ctx context.Context) (any, error) {
+			return obj.ProfileLabelStrategy, nil
+		},
+		nil,
+		ec.marshalNSourceProfileLabelStrategy2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceProfileLabelStrategy,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourcePresentationTraits_ProfileLabelStrategy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourcePresentationTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceProfileLabelStrategy does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourcePresentationTraits_SchemaFidelity(ctx context.Context, field graphql.CollectedField, obj *model.SourcePresentationTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourcePresentationTraits_SchemaFidelity,
+		func(ctx context.Context) (any, error) {
+			return obj.SchemaFidelity, nil
+		},
+		nil,
+		ec.marshalNSourceSchemaFidelity2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSchemaFidelity,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourcePresentationTraits_SchemaFidelity(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourcePresentationTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceSchemaFidelity does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _SourceProfile_Id(ctx context.Context, field graphql.CollectedField, obj *model.SourceProfile) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -12290,6 +12523,35 @@ func (ec *executionContext) fieldContext_SourceQuerySuggestion_category(_ contex
 	return fc, nil
 }
 
+func (ec *executionContext) _SourceQueryTraits_SupportsAnalyze(ctx context.Context, field graphql.CollectedField, obj *model.SourceQueryTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceQueryTraits_SupportsAnalyze,
+		func(ctx context.Context) (any, error) {
+			return obj.SupportsAnalyze, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceQueryTraits_SupportsAnalyze(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceQueryTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _SourceSSLMode_value(ctx context.Context, field graphql.CollectedField, obj *model.SourceSSLMode) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -12519,6 +12781,111 @@ func (ec *executionContext) fieldContext_SourceSessionMetadata_AliasMap(_ contex
 	return fc, nil
 }
 
+func (ec *executionContext) _SourceTraits_Connection(ctx context.Context, field graphql.CollectedField, obj *model.SourceTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceTraits_Connection,
+		func(ctx context.Context) (any, error) {
+			return obj.Connection, nil
+		},
+		nil,
+		ec.marshalNSourceConnectionTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionTraits,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceTraits_Connection(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Transport":
+				return ec.fieldContext_SourceConnectionTraits_Transport(ctx, field)
+			case "HostInputMode":
+				return ec.fieldContext_SourceConnectionTraits_HostInputMode(ctx, field)
+			case "HostInputURLParser":
+				return ec.fieldContext_SourceConnectionTraits_HostInputURLParser(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceConnectionTraits", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceTraits_Presentation(ctx context.Context, field graphql.CollectedField, obj *model.SourceTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceTraits_Presentation,
+		func(ctx context.Context) (any, error) {
+			return obj.Presentation, nil
+		},
+		nil,
+		ec.marshalNSourcePresentationTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourcePresentationTraits,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceTraits_Presentation(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "ProfileLabelStrategy":
+				return ec.fieldContext_SourcePresentationTraits_ProfileLabelStrategy(ctx, field)
+			case "SchemaFidelity":
+				return ec.fieldContext_SourcePresentationTraits_SchemaFidelity(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourcePresentationTraits", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceTraits_Query(ctx context.Context, field graphql.CollectedField, obj *model.SourceTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceTraits_Query,
+		func(ctx context.Context) (any, error) {
+			return obj.Query, nil
+		},
+		nil,
+		ec.marshalNSourceQueryTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceQueryTraits,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceTraits_Query(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "SupportsAnalyze":
+				return ec.fieldContext_SourceQueryTraits_SupportsAnalyze(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceQueryTraits", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _SourceType_Id(ctx context.Context, field graphql.CollectedField, obj *model.SourceType) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -12630,6 +12997,43 @@ func (ec *executionContext) fieldContext_SourceType_Category(_ context.Context, 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type SourceCategory does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceType_Traits(ctx context.Context, field graphql.CollectedField, obj *model.SourceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceType_Traits,
+		func(ctx context.Context) (any, error) {
+			return obj.Traits, nil
+		},
+		nil,
+		ec.marshalNSourceTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceTraits,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceType_Traits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Connection":
+				return ec.fieldContext_SourceTraits_Connection(ctx, field)
+			case "Presentation":
+				return ec.fieldContext_SourceTraits_Presentation(ctx, field)
+			case "Query":
+				return ec.fieldContext_SourceTraits_Query(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceTraits", field.Name)
 		},
 	}
 	return fc, nil
@@ -18462,6 +18866,55 @@ func (ec *executionContext) _SourceConnectionField(ctx context.Context, sel ast.
 	return out
 }
 
+var sourceConnectionTraitsImplementors = []string{"SourceConnectionTraits"}
+
+func (ec *executionContext) _SourceConnectionTraits(ctx context.Context, sel ast.SelectionSet, obj *model.SourceConnectionTraits) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceConnectionTraitsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceConnectionTraits")
+		case "Transport":
+			out.Values[i] = ec._SourceConnectionTraits_Transport(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "HostInputMode":
+			out.Values[i] = ec._SourceConnectionTraits_HostInputMode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "HostInputURLParser":
+			out.Values[i] = ec._SourceConnectionTraits_HostInputURLParser(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var sourceContentImplementors = []string{"SourceContent"}
 
 func (ec *executionContext) _SourceContent(ctx context.Context, sel ast.SelectionSet, obj *model.SourceContent) graphql.Marshaler {
@@ -18817,6 +19270,50 @@ func (ec *executionContext) _SourceObjectType(ctx context.Context, sel ast.Selec
 	return out
 }
 
+var sourcePresentationTraitsImplementors = []string{"SourcePresentationTraits"}
+
+func (ec *executionContext) _SourcePresentationTraits(ctx context.Context, sel ast.SelectionSet, obj *model.SourcePresentationTraits) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourcePresentationTraitsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourcePresentationTraits")
+		case "ProfileLabelStrategy":
+			out.Values[i] = ec._SourcePresentationTraits_ProfileLabelStrategy(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "SchemaFidelity":
+			out.Values[i] = ec._SourcePresentationTraits_SchemaFidelity(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var sourceProfileImplementors = []string{"SourceProfile"}
 
 func (ec *executionContext) _SourceProfile(ctx context.Context, sel ast.SelectionSet, obj *model.SourceProfile) graphql.Marshaler {
@@ -18904,6 +19401,45 @@ func (ec *executionContext) _SourceQuerySuggestion(ctx context.Context, sel ast.
 			}
 		case "category":
 			out.Values[i] = ec._SourceQuerySuggestion_category(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceQueryTraitsImplementors = []string{"SourceQueryTraits"}
+
+func (ec *executionContext) _SourceQueryTraits(ctx context.Context, sel ast.SelectionSet, obj *model.SourceQueryTraits) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceQueryTraitsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceQueryTraits")
+		case "SupportsAnalyze":
+			out.Values[i] = ec._SourceQueryTraits_SupportsAnalyze(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -19033,6 +19569,55 @@ func (ec *executionContext) _SourceSessionMetadata(ctx context.Context, sel ast.
 	return out
 }
 
+var sourceTraitsImplementors = []string{"SourceTraits"}
+
+func (ec *executionContext) _SourceTraits(ctx context.Context, sel ast.SelectionSet, obj *model.SourceTraits) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceTraitsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceTraits")
+		case "Connection":
+			out.Values[i] = ec._SourceTraits_Connection(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Presentation":
+			out.Values[i] = ec._SourceTraits_Presentation(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Query":
+			out.Values[i] = ec._SourceTraits_Query(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var sourceTypeImplementors = []string{"SourceType"}
 
 func (ec *executionContext) _SourceType(ctx context.Context, sel ast.SelectionSet, obj *model.SourceType) graphql.Marshaler {
@@ -19061,6 +19646,11 @@ func (ec *executionContext) _SourceType(ctx context.Context, sel ast.SelectionSe
 			}
 		case "Category":
 			out.Values[i] = ec._SourceType_Category(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Traits":
+			out.Values[i] = ec._SourceType_Traits(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -20571,6 +21161,26 @@ func (ec *executionContext) marshalNSourceConnectionFieldSection2githubᚗcomᚋ
 	return v
 }
 
+func (ec *executionContext) marshalNSourceConnectionTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionTraits(ctx context.Context, sel ast.SelectionSet, v *model.SourceConnectionTraits) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceConnectionTraits(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSourceConnectionTransport2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionTransport(ctx context.Context, v any) (model.SourceConnectionTransport, error) {
+	var res model.SourceConnectionTransport
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceConnectionTransport2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionTransport(ctx context.Context, sel ast.SelectionSet, v model.SourceConnectionTransport) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNSourceContract2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceContract(ctx context.Context, sel ast.SelectionSet, v *model.SourceContract) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -20579,6 +21189,26 @@ func (ec *executionContext) marshalNSourceContract2ᚖgithubᚗcomᚋclideyᚋwh
 		return graphql.Null
 	}
 	return ec._SourceContract(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSourceHostInputMode2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceHostInputMode(ctx context.Context, v any) (model.SourceHostInputMode, error) {
+	var res model.SourceHostInputMode
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceHostInputMode2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceHostInputMode(ctx context.Context, sel ast.SelectionSet, v model.SourceHostInputMode) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNSourceHostInputURLParser2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceHostInputURLParser(ctx context.Context, v any) (model.SourceHostInputURLParser, error) {
+	var res model.SourceHostInputURLParser
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceHostInputURLParser2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceHostInputURLParser(ctx context.Context, sel ast.SelectionSet, v model.SourceHostInputURLParser) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNSourceLoginInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceLoginInput(ctx context.Context, v any) (model.SourceLoginInput, error) {
@@ -20750,6 +21380,16 @@ func (ec *executionContext) marshalNSourceObjectType2ᚖgithubᚗcomᚋclideyᚋ
 	return ec._SourceObjectType(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNSourcePresentationTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourcePresentationTraits(ctx context.Context, sel ast.SelectionSet, v *model.SourcePresentationTraits) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourcePresentationTraits(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNSourceProfile2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceProfileᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SourceProfile) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
@@ -20774,6 +21414,16 @@ func (ec *executionContext) marshalNSourceProfile2ᚖgithubᚗcomᚋclideyᚋwho
 		return graphql.Null
 	}
 	return ec._SourceProfile(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSourceProfileLabelStrategy2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceProfileLabelStrategy(ctx context.Context, v any) (model.SourceProfileLabelStrategy, error) {
+	var res model.SourceProfileLabelStrategy
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceProfileLabelStrategy2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceProfileLabelStrategy(ctx context.Context, sel ast.SelectionSet, v model.SourceProfileLabelStrategy) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNSourceProfileLoginInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceProfileLoginInput(ctx context.Context, v any) (model.SourceProfileLoginInput, error) {
@@ -20807,6 +21457,16 @@ func (ec *executionContext) marshalNSourceQuerySuggestion2ᚖgithubᚗcomᚋclid
 	return ec._SourceQuerySuggestion(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNSourceQueryTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceQueryTraits(ctx context.Context, sel ast.SelectionSet, v *model.SourceQueryTraits) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceQueryTraits(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNSourceSSLMode2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSSLModeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SourceSSLMode) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
@@ -20831,6 +21491,16 @@ func (ec *executionContext) marshalNSourceSSLMode2ᚖgithubᚗcomᚋclideyᚋwho
 		return graphql.Null
 	}
 	return ec._SourceSSLMode(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSourceSchemaFidelity2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSchemaFidelity(ctx context.Context, v any) (model.SourceSchemaFidelity, error) {
+	var res model.SourceSchemaFidelity
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceSchemaFidelity2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSchemaFidelity(ctx context.Context, sel ast.SelectionSet, v model.SourceSchemaFidelity) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNSourceSurface2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSurface(ctx context.Context, v any) (model.SourceSurface, error) {
@@ -20872,6 +21542,16 @@ func (ec *executionContext) marshalNSourceSurface2ᚕgithubᚗcomᚋclideyᚋwho
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNSourceTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceTraits(ctx context.Context, sel ast.SelectionSet, v *model.SourceTraits) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceTraits(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNSourceType2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SourceType) graphql.Marshaler {

@@ -94,7 +94,7 @@ import {whereConditionToSql} from "../../utils/where-condition-to-sql";
 import {isDestructiveQuery} from "../../utils/query-utils";
 import {useContainerWidth} from "../../hooks/use-container-width";
 import {getComponent} from "../../config/component-registry";
-import { DatabaseType, findSourceObjectType } from "../../config/source-types";
+import { findSourceObjectType } from "../../config/source-types";
 import {buildSourceObjectRef, buildSourceParentObjectRef} from "../../utils/source-refs";
 
 type SourceBrowserObject = GetStorageUnitsQuery['StorageUnit'][number];
@@ -151,8 +151,12 @@ export const ExploreStorageUnit: FC = () => {
     }
 
     const currentObjectType = useMemo(() => findSourceObjectType(item, unit?.Kind), [item, unit?.Kind]);
+    const currentObjectActions = unit?.Actions ?? currentObjectType?.Actions ?? [];
     const isTabularObject = currentObjectType?.DataShape === DataShape.Tabular || currentObjectType?.DataShape === DataShape.Document;
     const isContentObject = currentObjectType?.DataShape === DataShape.Content || unit?.Actions?.includes(SourceAction.ViewContent) === true;
+    const allowsInsertData = currentObjectActions.includes(SourceAction.InsertData);
+    const allowsUpdateData = currentObjectActions.includes(SourceAction.UpdateData);
+    const allowsDeleteData = currentObjectActions.includes(SourceAction.DeleteData);
     const currentParentRef = useMemo(() => {
         if (locationState?.parentRef) {
             return locationState.parentRef;
@@ -978,7 +982,7 @@ export const ExploreStorageUnit: FC = () => {
                                 )}
                             </div>
                         </div>
-                        {current?.Type !== DatabaseType.Redis && (
+                        {isTabularObject && (
                             whereConditionMode === 'sheet' ? (
                                 <ExploreStorageUnitWhereConditionSheet 
                                     defaultWhere={whereCondition} 
@@ -1112,13 +1116,15 @@ export const ExploreStorageUnit: FC = () => {
                         isValidForeignKey={isValidForeignKey}
                         onEntitySearch={handleEntitySearch}
                         databaseType={current?.Type}
+                        allowRowUpdate={allowsUpdateData}
+                        allowRowDelete={allowsDeleteData}
                         // Mock data control - disabled for views/materialized views
                         isMockDataGenerationAllowed={isMockDataGenerationAllowed}
                         // Import control - enabled for explore view
                         allowImport={true}
                         enableKeyboardShortcuts={true}
                     >
-                        {current?.Type !== DatabaseType.Memcached && <div className="flex gap-2">
+                        {allowsInsertData && <div className="flex gap-2">
                             <Button onClick={handleOpenAddSheet} disabled={adding} data-testid="add-row-button">
                                 <PlusCircleIcon className="w-4 h-4" /> {t('addRowButton')}
                             </Button>

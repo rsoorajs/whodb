@@ -173,11 +173,11 @@ Usage modes:
 				return err
 			}
 
-			if !hasDirectConnectInputs(conn, resolvedType) {
+			if !hasDirectConnectInputs(conn) {
 				return runPrefilledConnectionForm(conn)
 			}
 
-			if resolvedType.RequiredFields.Password && strings.TrimSpace(conn.Username) != "" {
+			if isConnectionFieldRequired(conn.Type, "Password") && strings.TrimSpace(conn.Username) != "" {
 				if term.IsTerminal(int(os.Stdin.Fd())) {
 					fmt.Fprint(os.Stderr, "Password: ")
 					b, err := term.ReadPassword(int(os.Stdin.Fd()))
@@ -227,7 +227,7 @@ Usage modes:
 		// If type and database are provided, connect directly.
 		// Username is optional for file-based databases (SQLite, DuckDB) and
 		// some NoSQL databases (Redis, MongoDB).
-		if typeKnown && (database != "" || !resolvedType.RequiredFields.Database) {
+		if typeKnown && (database != "" || !isConnectionFieldRequired(string(resolvedType.ID), "Database")) {
 			advanced, err := connectionopts.ApplySSLSettings(string(resolvedType.ID), nil, connectionopts.SSLSettings{
 				Mode:           connectSSLMode,
 				CAFile:         connectSSLCA,
@@ -254,11 +254,11 @@ Usage modes:
 			if err != nil {
 				return err
 			}
-			if !hasDirectConnectInputs(conn, resolvedType) {
+			if !hasDirectConnectInputs(conn) {
 				return runPrefilledConnectionForm(conn)
 			}
 
-			needsPassword := conn.Username != "" && resolvedType.RequiredFields.Password
+			needsPassword := conn.Username != "" && isConnectionFieldRequired(conn.Type, "Password")
 			if needsPassword {
 				if term.IsTerminal(int(os.Stdin.Fd())) {
 					fmt.Fprint(os.Stderr, "Password: ")

@@ -1,19 +1,3 @@
-/*
- * Copyright 2026 Clidey, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 /* eslint-disable */
 import type { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/core';
 export type Maybe<T> = T | null;
@@ -804,6 +788,7 @@ export enum SourceAction {
   Browse = 'Browse',
   CreateChild = 'CreateChild',
   Delete = 'Delete',
+  DeleteData = 'DeleteData',
   Execute = 'Execute',
   GenerateMockData = 'GenerateMockData',
   ImportData = 'ImportData',
@@ -847,6 +832,19 @@ export enum SourceConnectionFieldSection {
   Primary = 'Primary'
 }
 
+export type SourceConnectionTraits = {
+  __typename?: 'SourceConnectionTraits';
+  HostInputMode: SourceHostInputMode;
+  HostInputURLParser: SourceHostInputUrlParser;
+  Transport: SourceConnectionTransport;
+};
+
+export enum SourceConnectionTransport {
+  Bridge = 'Bridge',
+  File = 'File',
+  Network = 'Network'
+}
+
 export type SourceContent = {
   __typename?: 'SourceContent';
   FileName: Scalars['String']['output'];
@@ -868,6 +866,18 @@ export type SourceContract = {
   RootActions: Array<SourceAction>;
   Surfaces: Array<SourceSurface>;
 };
+
+export enum SourceHostInputMode {
+  Hostname = 'Hostname',
+  HostnameOrUrl = 'HostnameOrURL',
+  None = 'None'
+}
+
+export enum SourceHostInputUrlParser {
+  MongoSrv = 'MongoSRV',
+  None = 'None',
+  Postgres = 'Postgres'
+}
 
 export type SourceLoginInput = {
   AccessToken?: InputMaybe<Scalars['String']['input']>;
@@ -940,6 +950,12 @@ export type SourceObjectType = {
   Views: Array<SourceView>;
 };
 
+export type SourcePresentationTraits = {
+  __typename?: 'SourcePresentationTraits';
+  ProfileLabelStrategy: SourceProfileLabelStrategy;
+  SchemaFidelity: SourceSchemaFidelity;
+};
+
 export type SourceProfile = {
   __typename?: 'SourceProfile';
   DisplayName: Scalars['String']['output'];
@@ -950,6 +966,12 @@ export type SourceProfile = {
   SourceType: Scalars['String']['output'];
   Values: Array<Record>;
 };
+
+export enum SourceProfileLabelStrategy {
+  Database = 'Database',
+  Default = 'Default',
+  Hostname = 'Hostname'
+}
 
 export type SourceProfileLoginInput = {
   Id: Scalars['String']['input'];
@@ -962,11 +984,21 @@ export type SourceQuerySuggestion = {
   description: Scalars['String']['output'];
 };
 
+export type SourceQueryTraits = {
+  __typename?: 'SourceQueryTraits';
+  SupportsAnalyze: Scalars['Boolean']['output'];
+};
+
 export type SourceSslMode = {
   __typename?: 'SourceSSLMode';
   aliases: Array<Scalars['String']['output']>;
   value: Scalars['String']['output'];
 };
+
+export enum SourceSchemaFidelity {
+  Exact = 'Exact',
+  Sampled = 'Sampled'
+}
 
 export type SourceSessionMetadata = {
   __typename?: 'SourceSessionMetadata';
@@ -984,6 +1016,13 @@ export enum SourceSurface {
   Query = 'Query'
 }
 
+export type SourceTraits = {
+  __typename?: 'SourceTraits';
+  Connection: SourceConnectionTraits;
+  Presentation: SourcePresentationTraits;
+  Query: SourceQueryTraits;
+};
+
 export type SourceType = {
   __typename?: 'SourceType';
   Category: SourceCategory;
@@ -994,6 +1033,7 @@ export type SourceType = {
   IsAWSManaged: Scalars['Boolean']['output'];
   Label: Scalars['String']['output'];
   SSLModes: Array<SourceSslMode>;
+  Traits: SourceTraits;
 };
 
 export enum SourceView {
@@ -1136,7 +1176,7 @@ export type SourceSessionMetadataQuery = { __typename?: 'Query', SourceSessionMe
 export type SourceTypesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type SourceTypesQuery = { __typename?: 'Query', SourceTypes: Array<{ __typename?: 'SourceType', id: string, label: string, connector: string, category: SourceCategory, isAwsManaged: boolean, connectionFields: Array<{ __typename?: 'SourceConnectionField', Key: string, Kind: SourceConnectionFieldKind, Section: SourceConnectionFieldSection, Required: boolean, LabelKey: string, PlaceholderKey?: string | null, DefaultValue?: string | null, SupportsOptions: boolean }>, contract: { __typename?: 'SourceContract', Model: SourceModel, Surfaces: Array<SourceSurface>, RootActions: Array<SourceAction>, BrowsePath: Array<SourceObjectKind>, DefaultObjectKind: SourceObjectKind, GraphScopeKind?: SourceObjectKind | null, ObjectTypes: Array<{ __typename?: 'SourceObjectType', Kind: SourceObjectKind, DataShape: DataShape, Actions: Array<SourceAction>, Views: Array<SourceView>, SingularLabel: string, PluralLabel: string }> }, sslModes: Array<{ __typename?: 'SourceSSLMode', value: string, aliases: Array<string> }> }> };
+export type SourceTypesQuery = { __typename?: 'Query', SourceTypes: Array<{ __typename?: 'SourceType', id: string, label: string, connector: string, category: SourceCategory, isAwsManaged: boolean, traits: { __typename?: 'SourceTraits', connection: { __typename?: 'SourceConnectionTraits', transport: SourceConnectionTransport, hostInputMode: SourceHostInputMode, hostInputUrlParser: SourceHostInputUrlParser }, presentation: { __typename?: 'SourcePresentationTraits', profileLabelStrategy: SourceProfileLabelStrategy, schemaFidelity: SourceSchemaFidelity }, query: { __typename?: 'SourceQueryTraits', supportsAnalyze: boolean } }, connectionFields: Array<{ __typename?: 'SourceConnectionField', Key: string, Kind: SourceConnectionFieldKind, Section: SourceConnectionFieldSection, Required: boolean, LabelKey: string, PlaceholderKey?: string | null, DefaultValue?: string | null, SupportsOptions: boolean }>, contract: { __typename?: 'SourceContract', Model: SourceModel, Surfaces: Array<SourceSurface>, RootActions: Array<SourceAction>, BrowsePath: Array<SourceObjectKind>, DefaultObjectKind: SourceObjectKind, GraphScopeKind?: SourceObjectKind | null, ObjectTypes: Array<{ __typename?: 'SourceObjectType', Kind: SourceObjectKind, DataShape: DataShape, Actions: Array<SourceAction>, Views: Array<SourceView>, SingularLabel: string, PluralLabel: string }> }, sslModes: Array<{ __typename?: 'SourceSSLMode', value: string, aliases: Array<string> }> }> };
 
 export type GetSslStatusQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1549,7 +1589,7 @@ export const ImportPreviewDocument = {"kind":"Document","definitions":[{"kind":"
 export const ImportSqlDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ImportSQL"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ImportSQLInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"ImportSQL"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Status"}},{"kind":"Field","name":{"kind":"Name","value":"Message"}},{"kind":"Field","name":{"kind":"Name","value":"Detail"}}]}}]}}]} as unknown as DocumentNode<ImportSqlMutation, ImportSqlMutationVariables>;
 export const ImportTableFileDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ImportTableFile"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ImportFileInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"ImportTableFile"},"name":{"kind":"Name","value":"ImportSourceObjectFile"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Status"}},{"kind":"Field","name":{"kind":"Name","value":"Message"}},{"kind":"Field","name":{"kind":"Name","value":"Detail"}}]}}]}}]} as unknown as DocumentNode<ImportTableFileMutation, ImportTableFileMutationVariables>;
 export const SourceSessionMetadataDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SourceSessionMetadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"SourceSessionMetadata"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"sourceType"},"name":{"kind":"Name","value":"SourceType"}},{"kind":"Field","alias":{"kind":"Name","value":"queryLanguages"},"name":{"kind":"Name","value":"QueryLanguages"}},{"kind":"Field","alias":{"kind":"Name","value":"typeDefinitions"},"name":{"kind":"Name","value":"TypeDefinitions"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"label"}},{"kind":"Field","name":{"kind":"Name","value":"hasLength"}},{"kind":"Field","name":{"kind":"Name","value":"hasPrecision"}},{"kind":"Field","name":{"kind":"Name","value":"defaultLength"}},{"kind":"Field","name":{"kind":"Name","value":"defaultPrecision"}},{"kind":"Field","name":{"kind":"Name","value":"category"}}]}},{"kind":"Field","alias":{"kind":"Name","value":"operators"},"name":{"kind":"Name","value":"Operators"}},{"kind":"Field","alias":{"kind":"Name","value":"aliasMap"},"name":{"kind":"Name","value":"AliasMap"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Key"}},{"kind":"Field","name":{"kind":"Name","value":"Value"}}]}}]}}]}}]} as unknown as DocumentNode<SourceSessionMetadataQuery, SourceSessionMetadataQueryVariables>;
-export const SourceTypesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SourceTypes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"SourceTypes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"id"},"name":{"kind":"Name","value":"Id"}},{"kind":"Field","alias":{"kind":"Name","value":"label"},"name":{"kind":"Name","value":"Label"}},{"kind":"Field","alias":{"kind":"Name","value":"connector"},"name":{"kind":"Name","value":"Connector"}},{"kind":"Field","alias":{"kind":"Name","value":"category"},"name":{"kind":"Name","value":"Category"}},{"kind":"Field","alias":{"kind":"Name","value":"connectionFields"},"name":{"kind":"Name","value":"ConnectionFields"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Key"}},{"kind":"Field","name":{"kind":"Name","value":"Kind"}},{"kind":"Field","name":{"kind":"Name","value":"Section"}},{"kind":"Field","name":{"kind":"Name","value":"Required"}},{"kind":"Field","name":{"kind":"Name","value":"LabelKey"}},{"kind":"Field","name":{"kind":"Name","value":"PlaceholderKey"}},{"kind":"Field","name":{"kind":"Name","value":"DefaultValue"}},{"kind":"Field","name":{"kind":"Name","value":"SupportsOptions"}}]}},{"kind":"Field","alias":{"kind":"Name","value":"contract"},"name":{"kind":"Name","value":"Contract"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Model"}},{"kind":"Field","name":{"kind":"Name","value":"Surfaces"}},{"kind":"Field","name":{"kind":"Name","value":"RootActions"}},{"kind":"Field","name":{"kind":"Name","value":"BrowsePath"}},{"kind":"Field","name":{"kind":"Name","value":"DefaultObjectKind"}},{"kind":"Field","name":{"kind":"Name","value":"GraphScopeKind"}},{"kind":"Field","name":{"kind":"Name","value":"ObjectTypes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Kind"}},{"kind":"Field","name":{"kind":"Name","value":"DataShape"}},{"kind":"Field","name":{"kind":"Name","value":"Actions"}},{"kind":"Field","name":{"kind":"Name","value":"Views"}},{"kind":"Field","name":{"kind":"Name","value":"SingularLabel"}},{"kind":"Field","name":{"kind":"Name","value":"PluralLabel"}}]}}]}},{"kind":"Field","alias":{"kind":"Name","value":"isAwsManaged"},"name":{"kind":"Name","value":"IsAWSManaged"}},{"kind":"Field","alias":{"kind":"Name","value":"sslModes"},"name":{"kind":"Name","value":"SSLModes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"aliases"}}]}}]}}]}}]} as unknown as DocumentNode<SourceTypesQuery, SourceTypesQueryVariables>;
+export const SourceTypesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"SourceTypes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"SourceTypes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"id"},"name":{"kind":"Name","value":"Id"}},{"kind":"Field","alias":{"kind":"Name","value":"label"},"name":{"kind":"Name","value":"Label"}},{"kind":"Field","alias":{"kind":"Name","value":"connector"},"name":{"kind":"Name","value":"Connector"}},{"kind":"Field","alias":{"kind":"Name","value":"category"},"name":{"kind":"Name","value":"Category"}},{"kind":"Field","alias":{"kind":"Name","value":"traits"},"name":{"kind":"Name","value":"Traits"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"connection"},"name":{"kind":"Name","value":"Connection"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"transport"},"name":{"kind":"Name","value":"Transport"}},{"kind":"Field","alias":{"kind":"Name","value":"hostInputMode"},"name":{"kind":"Name","value":"HostInputMode"}},{"kind":"Field","alias":{"kind":"Name","value":"hostInputUrlParser"},"name":{"kind":"Name","value":"HostInputURLParser"}}]}},{"kind":"Field","alias":{"kind":"Name","value":"presentation"},"name":{"kind":"Name","value":"Presentation"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"profileLabelStrategy"},"name":{"kind":"Name","value":"ProfileLabelStrategy"}},{"kind":"Field","alias":{"kind":"Name","value":"schemaFidelity"},"name":{"kind":"Name","value":"SchemaFidelity"}}]}},{"kind":"Field","alias":{"kind":"Name","value":"query"},"name":{"kind":"Name","value":"Query"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"supportsAnalyze"},"name":{"kind":"Name","value":"SupportsAnalyze"}}]}}]}},{"kind":"Field","alias":{"kind":"Name","value":"connectionFields"},"name":{"kind":"Name","value":"ConnectionFields"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Key"}},{"kind":"Field","name":{"kind":"Name","value":"Kind"}},{"kind":"Field","name":{"kind":"Name","value":"Section"}},{"kind":"Field","name":{"kind":"Name","value":"Required"}},{"kind":"Field","name":{"kind":"Name","value":"LabelKey"}},{"kind":"Field","name":{"kind":"Name","value":"PlaceholderKey"}},{"kind":"Field","name":{"kind":"Name","value":"DefaultValue"}},{"kind":"Field","name":{"kind":"Name","value":"SupportsOptions"}}]}},{"kind":"Field","alias":{"kind":"Name","value":"contract"},"name":{"kind":"Name","value":"Contract"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Model"}},{"kind":"Field","name":{"kind":"Name","value":"Surfaces"}},{"kind":"Field","name":{"kind":"Name","value":"RootActions"}},{"kind":"Field","name":{"kind":"Name","value":"BrowsePath"}},{"kind":"Field","name":{"kind":"Name","value":"DefaultObjectKind"}},{"kind":"Field","name":{"kind":"Name","value":"GraphScopeKind"}},{"kind":"Field","name":{"kind":"Name","value":"ObjectTypes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Kind"}},{"kind":"Field","name":{"kind":"Name","value":"DataShape"}},{"kind":"Field","name":{"kind":"Name","value":"Actions"}},{"kind":"Field","name":{"kind":"Name","value":"Views"}},{"kind":"Field","name":{"kind":"Name","value":"SingularLabel"}},{"kind":"Field","name":{"kind":"Name","value":"PluralLabel"}}]}}]}},{"kind":"Field","alias":{"kind":"Name","value":"isAwsManaged"},"name":{"kind":"Name","value":"IsAWSManaged"}},{"kind":"Field","alias":{"kind":"Name","value":"sslModes"},"name":{"kind":"Name","value":"SSLModes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"value"}},{"kind":"Field","name":{"kind":"Name","value":"aliases"}}]}}]}}]}}]} as unknown as DocumentNode<SourceTypesQuery, SourceTypesQueryVariables>;
 export const GetSslStatusDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetSSLStatus"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"SSLStatus"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"IsEnabled"}},{"kind":"Field","name":{"kind":"Name","value":"Mode"}}]}}]}}]} as unknown as DocumentNode<GetSslStatusQuery, GetSslStatusQueryVariables>;
 export const AnalyzeMockDataDependenciesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"AnalyzeMockDataDependencies"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"ref"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"SourceObjectRefInput"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"rowCount"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"fkDensityRatio"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"AnalyzeMockDataDependencies"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"ref"},"value":{"kind":"Variable","name":{"kind":"Name","value":"ref"}}},{"kind":"Argument","name":{"kind":"Name","value":"rowCount"},"value":{"kind":"Variable","name":{"kind":"Name","value":"rowCount"}}},{"kind":"Argument","name":{"kind":"Name","value":"fkDensityRatio"},"value":{"kind":"Variable","name":{"kind":"Name","value":"fkDensityRatio"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"GenerationOrder"}},{"kind":"Field","name":{"kind":"Name","value":"Tables"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"Table"}},{"kind":"Field","name":{"kind":"Name","value":"RowsToGenerate"}},{"kind":"Field","name":{"kind":"Name","value":"IsBlocked"}},{"kind":"Field","name":{"kind":"Name","value":"UsesExistingData"}}]}},{"kind":"Field","name":{"kind":"Name","value":"TotalRows"}},{"kind":"Field","name":{"kind":"Name","value":"Warnings"}},{"kind":"Field","name":{"kind":"Name","value":"Error"}}]}}]}}]} as unknown as DocumentNode<AnalyzeMockDataDependenciesQuery, AnalyzeMockDataDependenciesQueryVariables>;
 export const MockDataMaxRowCountDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"MockDataMaxRowCount"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"MockDataMaxRowCount"}}]}}]} as unknown as DocumentNode<MockDataMaxRowCountQuery, MockDataMaxRowCountQueryVariables>;

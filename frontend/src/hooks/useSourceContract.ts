@@ -15,7 +15,14 @@
  */
 
 import { useMemo } from "react";
-import { SourceModel } from "@graphql";
+import {
+    SourceConnectionTransport,
+    SourceHostInputMode,
+    SourceHostInputUrlParser,
+    SourceModel,
+    SourceProfileLabelStrategy,
+    SourceSchemaFidelity,
+} from "@graphql";
 import { SourceTypeItem } from "../config/source-types";
 import { resolveSourceContractFlags, type SourceContractFlags } from "../utils/source-contract-flags";
 import { useSourceTypeItem } from "./useSourceCatalog";
@@ -28,6 +35,18 @@ export interface SourceContractState extends SourceContractFlags {
     item?: SourceTypeItem;
     /** Resolved backend connector id for the source. */
     connector?: string;
+    /** Transport used to reach the source. */
+    connectionTransport: SourceConnectionTransport;
+    /** Host input mode exposed by the source. */
+    hostInputMode: SourceHostInputMode;
+    /** Host URL parsing mode exposed by the source. */
+    hostInputUrlParser: SourceHostInputUrlParser;
+    /** Saved-profile label strategy exposed by the source. */
+    profileLabelStrategy: SourceProfileLabelStrategy;
+    /** Schema fidelity exposed by the source. */
+    schemaFidelity: SourceSchemaFidelity;
+    /** Whether the source supports explain/analyze-style query tooling. */
+    supportsAnalyze: boolean;
     /** Whether the catalog is still loading without cached data. */
     loading: boolean;
     /** Whether the source behaves like a NoSQL database in the UI. */
@@ -54,10 +73,17 @@ export function useSourceContract(sourceType: string | undefined): SourceContrac
         const defaultObjectKind = contract?.DefaultObjectKind;
         const defaultObjectType = contract?.ObjectTypes.find(objectType => objectType.Kind === defaultObjectKind);
         const model = contract?.Model;
+        const traits = item?.traits;
 
         return {
             item,
             connector,
+            connectionTransport: traits?.connection.transport ?? SourceConnectionTransport.Network,
+            hostInputMode: traits?.connection.hostInputMode ?? SourceHostInputMode.None,
+            hostInputUrlParser: traits?.connection.hostInputUrlParser ?? SourceHostInputUrlParser.None,
+            profileLabelStrategy: traits?.presentation.profileLabelStrategy ?? SourceProfileLabelStrategy.Default,
+            schemaFidelity: traits?.presentation.schemaFidelity ?? SourceSchemaFidelity.Exact,
+            supportsAnalyze: traits?.query.supportsAnalyze ?? false,
             loading,
             isNoSQL: model != null && model !== SourceModel.Relational,
             storageUnitLabel: item?.storageUnitLabel ?? defaultObjectType?.PluralLabel ?? "Storage Units",

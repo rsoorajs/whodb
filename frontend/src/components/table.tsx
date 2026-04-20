@@ -289,6 +289,8 @@ interface TableProps {
     height?: number;
     onRowUpdate?: (row: Record<string, string | number>, originalRow?: Record<string, string | number>) => Promise<void>;
     disableEdit?: boolean;
+    allowRowUpdate?: boolean;
+    allowRowDelete?: boolean;
     limitContextMenu?: boolean;
     schema?: string;
     storageUnit?: string;
@@ -329,6 +331,8 @@ export const StorageUnitTable: FC<TableProps> = ({
     height = 500,
     onRowUpdate,
     disableEdit = false,
+    allowRowUpdate = true,
+    allowRowDelete = true,
     limitContextMenu = false,
     schema,
     storageUnit,
@@ -399,8 +403,13 @@ export const StorageUnitTable: FC<TableProps> = ({
     const [deleteRow, ] = useMutation(DeleteRowDocument);
     const [containerWidth, setContainerWidth] = useState<number>(0);
     const lastSearchState = useRef<{ search: string; matchIdx: number }>({ search: '', matchIdx: 0 });
+    const canEditRows = !disableEdit && allowRowUpdate && onRowUpdate != null;
+    const canDeleteRows = !disableEdit && allowRowDelete && objectRef != null;
 
     const handleEdit = (index: number) => {
+        if (!canEditRows) {
+            return;
+        }
         setEditIndex(index);
         const rowData = [...rows[index]];
         setEditRow(rowData);
@@ -417,6 +426,9 @@ export const StorageUnitTable: FC<TableProps> = ({
     };
 
     const handleUpdate = useCallback(() => {
+        if (!canEditRows) {
+            return;
+        }
         if (editIndex !== null && editRow) {
             const updatedRow: Record<string, string | number> = {};
             columns.forEach((col, idx) => {
@@ -441,7 +453,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                     toast.error(t('errorUpdatingRow'));
                 });
         }
-    }, [editIndex, editRow, columns, onRowUpdate, rows, onRefresh, t]);
+    }, [canEditRows, editIndex, editRow, columns, onRowUpdate, rows, onRefresh, t]);
 
     // --- Export logic ---
     const hasSelectedRows = checked.length > 0;
@@ -477,6 +489,9 @@ export const StorageUnitTable: FC<TableProps> = ({
 
     // Delete logic, adapted from explore-storage-unit.tsx
     const doDeleteRows = useCallback(async (indexesToDelete: number[]) => {
+        if (!canDeleteRows) {
+            return;
+        }
         if (!objectRef) {
             toast.error(t('storageUnitRequired'));
             return;
@@ -507,9 +522,12 @@ export const StorageUnitTable: FC<TableProps> = ({
             toast.success(t('rowDeleted'));
         }
         onRefresh?.();
-    }, [columns, deleteRow, objectRef, onRefresh, rows, t]);
+    }, [canDeleteRows, columns, deleteRow, objectRef, onRefresh, rows, t]);
 
     const handleDeleteRow = useCallback((rowIndex: number) => {
+        if (!canDeleteRows) {
+            return;
+        }
         if (!rows || !columns) return;
         let indexesToDelete: number[] = [];
         if (Array.isArray(rowIndex)) {
@@ -522,7 +540,7 @@ export const StorageUnitTable: FC<TableProps> = ({
         }
         if (indexesToDelete.length === 0) return;
         setPendingDeleteIndexes(indexesToDelete);
-    }, [rows, columns, checked]);
+    }, [canDeleteRows, rows, columns, checked]);
 
     const handleConfirmDelete = useCallback(async () => {
         if (pendingDeleteIndexes) {
@@ -973,14 +991,14 @@ export const StorageUnitTable: FC<TableProps> = ({
                 return;
             }
             if (matchesShortcut(event, SHORTCUTS.editRowAlt)) {
-                if (focusedRowIndex !== null && !disableEdit) {
+                if (focusedRowIndex !== null && canEditRows) {
                     event.preventDefault();
                     handleEdit(focusedRowIndex);
                 }
                 return;
             }
             if (matchesShortcut(event, SHORTCUTS.deleteRow) || matchesShortcut(event, SHORTCUTS.deleteRowAlt)) {
-                if (focusedRowIndex !== null && !disableEdit) {
+                if (focusedRowIndex !== null && canDeleteRows) {
                     event.preventDefault();
                     handleDeleteRow(focusedRowIndex);
                 }
@@ -1056,7 +1074,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                 return;
             }
             if (matchesShortcut(event, SHORTCUTS.editRow)) {
-                if (focusedRowIndex !== null && !disableEdit) {
+                if (focusedRowIndex !== null && canEditRows) {
                     event.preventDefault();
                     handleEdit(focusedRowIndex);
                 }
@@ -1071,7 +1089,7 @@ export const StorageUnitTable: FC<TableProps> = ({
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [enableKeyboardShortcuts, onRefresh, checked, paginatedRows, handleDeleteRow, handleEdit, focusedRowIndex, moveFocus, visibleRowCount, handleSelectRow, disableEdit, onPageChange, currentPage, totalPages, openExport]);
+    }, [enableKeyboardShortcuts, onRefresh, checked, paginatedRows, handleDeleteRow, handleEdit, focusedRowIndex, moveFocus, visibleRowCount, handleSelectRow, canEditRows, canDeleteRows, onPageChange, currentPage, totalPages, openExport]);
 
 
 
@@ -1307,7 +1325,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                         <ContextMenuShortcut>Space</ContextMenuShortcut>
                     </ContextMenuItem>
                 )}
-                {!limitContextMenu && (
+                {!limitContextMenu && canEditRows && (
                     <ContextMenuItem onSelect={() => handleEdit(index)} disabled={checked.length > 1} data-testid="context-menu-edit-row">
                         <PencilSquareIcon className="w-4 h-4" />
                         {t('editRow')}
@@ -1365,7 +1383,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                         <ContextMenuShortcut>{formatShortcut(SHORTCUTS.mockData.displayKeys)}</ContextMenuShortcut>
                     </ContextMenuItem>
                 )}
-                {!limitContextMenu && (
+                {!limitContextMenu && canDeleteRows && (
                     <ContextMenuItem
                         variant="destructive"
                         disabled={deleting}
@@ -1381,7 +1399,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                 )}
             </ContextMenuContent>
         </ContextMenu>
-    }, [checked, handleCellClick, handleEdit, handleSelectRow, handleDeleteRow, paginatedRows, disableEdit, limitContextMenu, onRefresh, t, contextMenuCellIdx, columns, columnIsForeignKey, columnIsPrimary, onEntitySearch, deleting, focusedRowIndex, isMockDataSupported, openExport]);
+    }, [checked, handleCellClick, handleEdit, handleSelectRow, handleDeleteRow, paginatedRows, disableEdit, limitContextMenu, onRefresh, t, contextMenuCellIdx, columns, columnIsForeignKey, columnIsPrimary, onEntitySearch, deleting, focusedRowIndex, isMockDataSupported, openExport, canEditRows, canDeleteRows]);
 
     return (
         <div ref={tableRef} className="flex min-w-0 w-full">
