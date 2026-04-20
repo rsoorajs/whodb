@@ -334,10 +334,142 @@ func TestDatabaseSessionDeleteRowAllowsSupportedAction(t *testing.T) {
 	}
 }
 
+func TestDatabaseSessionColumnsCachesMetadataWithinSession(t *testing.T) {
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
+
+	validationCalls := 0
+	columnCalls := 0
+	markCalls := 0
+	length := 32
+
+	mock.StorageUnitExistsFunc = func(*engine.PluginConfig, string, string) (bool, error) {
+		validationCalls++
+		return true, nil
+	}
+	mock.GetColumnsForTableFunc = func(*engine.PluginConfig, string, string) ([]engine.Column, error) {
+		columnCalls++
+		return []engine.Column{
+			{Name: "id", Type: "INTEGER", IsPrimary: true, Length: &length},
+		}, nil
+	}
+	mock.MarkGeneratedColumnsFunc = func(_ *engine.PluginConfig, _ string, _ string, columns []engine.Column) error {
+		markCalls++
+		columns[0].IsAutoIncrement = true
+		return nil
+	}
+
+	session := newTestDatabaseSession(testTypeWithObjectActions(
+		"Postgres",
+		[]source.Surface{source.SurfaceBrowser},
+		[]source.Action{source.ActionBrowse},
+		map[source.ObjectKind][]source.Action{
+			source.ObjectKindTable: {source.ActionInspect, source.ActionViewRows},
+		},
+	), mock)
+
+	columns, err := session.Columns(context.Background(), testTableRef())
+	if err != nil {
+		t.Fatalf("expected first columns call to succeed, got %v", err)
+	}
+	if len(columns) != 1 || columns[0].Length == nil {
+		t.Fatalf("expected one cached column with length, got %#v", columns)
+	}
+
+	columns[0].Name = "mutated"
+	columns[0].IsAutoIncrement = false
+	*columns[0].Length = 99
+
+	cachedColumns, err := session.Columns(context.Background(), testTableRef())
+	if err != nil {
+		t.Fatalf("expected cached columns call to succeed, got %v", err)
+	}
+	if len(cachedColumns) != 1 {
+		t.Fatalf("expected one cached column, got %#v", cachedColumns)
+	}
+	if cachedColumns[0].Name != "id" {
+		t.Fatalf("expected cached column name to remain unchanged, got %#v", cachedColumns[0])
+	}
+	if !cachedColumns[0].IsAutoIncrement {
+		t.Fatalf("expected cached generated-column metadata to be preserved, got %#v", cachedColumns[0])
+	}
+	if cachedColumns[0].Length == nil || *cachedColumns[0].Length != 32 {
+		t.Fatalf("expected cached column length to remain 32, got %#v", cachedColumns[0].Length)
+	}
+	if validationCalls != 1 {
+		t.Fatalf("expected one validation call, got %d", validationCalls)
+	}
+	if columnCalls != 1 {
+		t.Fatalf("expected one column lookup call, got %d", columnCalls)
+	}
+	if markCalls != 1 {
+		t.Fatalf("expected one generated-column call, got %d", markCalls)
+	}
+}
+
+func TestDatabaseSessionReadRowsThenColumnsReusesValidation(t *testing.T) {
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
+
+	validationCalls := 0
+	rowCalls := 0
+	columnCalls := 0
+	markCalls := 0
+
+	mock.StorageUnitExistsFunc = func(*engine.PluginConfig, string, string) (bool, error) {
+		validationCalls++
+		return true, nil
+	}
+	mock.GetRowsFunc = func(*engine.PluginConfig, *engine.GetRowsRequest) (*engine.GetRowsResult, error) {
+		rowCalls++
+		return &engine.GetRowsResult{
+			Columns: []engine.Column{{Name: "id", Type: "INTEGER"}},
+			Rows:    [][]string{{"1"}},
+		}, nil
+	}
+	mock.GetColumnsForTableFunc = func(*engine.PluginConfig, string, string) ([]engine.Column, error) {
+		columnCalls++
+		return []engine.Column{{Name: "id", Type: "INTEGER"}}, nil
+	}
+	mock.MarkGeneratedColumnsFunc = func(_ *engine.PluginConfig, _ string, _ string, _ []engine.Column) error {
+		markCalls++
+		return nil
+	}
+
+	session := newTestDatabaseSession(testTypeWithObjectActions(
+		"Postgres",
+		[]source.Surface{source.SurfaceBrowser},
+		[]source.Action{source.ActionBrowse},
+		map[source.ObjectKind][]source.Action{
+			source.ObjectKindTable: {source.ActionInspect, source.ActionViewRows},
+		},
+	), mock)
+
+	if _, err := session.ReadRows(context.Background(), testTableRef(), nil, nil, 10, 0); err != nil {
+		t.Fatalf("expected row read to succeed, got %v", err)
+	}
+	if _, err := session.Columns(context.Background(), testTableRef()); err != nil {
+		t.Fatalf("expected columns lookup to succeed, got %v", err)
+	}
+
+	if validationCalls != 1 {
+		t.Fatalf("expected validation to run once across row and column reads, got %d", validationCalls)
+	}
+	if rowCalls != 1 {
+		t.Fatalf("expected one row lookup, got %d", rowCalls)
+	}
+	if columnCalls != 1 {
+		t.Fatalf("expected one column lookup, got %d", columnCalls)
+	}
+	if markCalls != 1 {
+		t.Fatalf("expected one generated-column call, got %d", markCalls)
+	}
+}
+
 func newTestDatabaseSession(spec source.TypeSpec, mock *testutil.PluginMock) *DatabaseSession {
 	return &DatabaseSession{
-		spec:   spec,
-		plugin: mock.AsPlugin(),
+		spec:      spec,
+		plugin:    mock.AsPlugin(),
+		validated: map[databaseObjectCacheKey]struct{}{},
+		columns:   map[databaseObjectCacheKey][]source.Column{},
 		credentials: &source.Credentials{
 			SourceType: spec.ID,
 			Values: map[string]string{

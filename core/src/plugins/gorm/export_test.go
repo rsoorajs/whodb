@@ -27,8 +27,9 @@ import (
 
 type exportTestPlugin struct {
 	GormPlugin
-	db          *gorm.DB
-	columnsRead atomic.Int32
+	db                     *gorm.DB
+	columnsRead            atomic.Int32
+	columnsUsedTransaction atomic.Bool
 }
 
 func newExportTestPlugin(t *testing.T) *exportTestPlugin {
@@ -58,6 +59,9 @@ func (p *exportTestPlugin) DB(config *engine.PluginConfig) (*gorm.DB, error) {
 
 func (p *exportTestPlugin) GetColumnsForTable(config *engine.PluginConfig, schema string, storageUnit string) ([]engine.Column, error) {
 	p.columnsRead.Add(1)
+	if config != nil && config.Transaction != nil {
+		p.columnsUsedTransaction.Store(true)
+	}
 	return []engine.Column{
 		{Name: "id", Type: "INTEGER", IsPrimary: true},
 		{Name: "customer_name", Type: "TEXT", IsNullable: false},
@@ -79,6 +83,9 @@ func TestExportDataUsesPluginColumnLookup(t *testing.T) {
 
 	if plugin.columnsRead.Load() != 1 {
 		t.Fatalf("expected export to use plugin GetColumnsForTable exactly once, got %d", plugin.columnsRead.Load())
+	}
+	if !plugin.columnsUsedTransaction.Load() {
+		t.Fatal("expected export column lookup to reuse the active connection")
 	}
 	if len(written) < 2 {
 		t.Fatalf("expected headers and at least one row, got %#v", written)

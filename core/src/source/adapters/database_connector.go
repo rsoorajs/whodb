@@ -62,6 +62,8 @@ func (c *DatabaseConnector) Open(_ context.Context, spec source.TypeSpec, creden
 		spec:        spec,
 		plugin:      plugin,
 		credentials: credentials,
+		validated:   map[databaseObjectCacheKey]struct{}{},
+		columns:     map[databaseObjectCacheKey][]source.Column{},
 	}, nil
 }
 
@@ -70,6 +72,13 @@ type DatabaseSession struct {
 	spec        source.TypeSpec
 	plugin      *engine.Plugin
 	credentials *source.Credentials
+	validated   map[databaseObjectCacheKey]struct{}
+	columns     map[databaseObjectCacheKey][]source.Column
+}
+
+type databaseObjectCacheKey struct {
+	namespace string
+	name      string
 }
 
 // Metadata returns source session metadata derived from the source registry.
@@ -254,6 +263,9 @@ func (s *DatabaseSession) Columns(ctx context.Context, ref source.ObjectRef) ([]
 	if err := s.validateObject(config, namespace, name); err != nil {
 		return nil, err
 	}
+	if cachedColumns, ok := s.cachedColumns(namespace, name); ok {
+		return cachedColumns, nil
+	}
 
 	columns, err := s.plugin.GetColumnsForTable(config, namespace, name)
 	if err != nil {
@@ -262,7 +274,8 @@ func (s *DatabaseSession) Columns(ctx context.Context, ref source.ObjectRef) ([]
 	if err := s.plugin.MarkGeneratedColumns(config, namespace, name, columns); err != nil {
 		log.WithError(err).Warn("Failed to mark generated columns for source object")
 	}
-	return columns, nil
+	s.cacheColumns(namespace, name, columns)
+	return cloneSourceColumns(columns), nil
 }
 
 // ColumnsBatch returns columns for multiple source objects.
@@ -729,6 +742,10 @@ func (s *DatabaseSession) kindForUnit(defaultKind source.ObjectKind, unit engine
 }
 
 func (s *DatabaseSession) validateObject(config *engine.PluginConfig, namespace string, name string) error {
+	if s.isValidatedObject(namespace, name) {
+		return nil
+	}
+
 	log.WithFields(map[string]any{
 		"sourceType": s.spec.ID,
 		"connector":  s.spec.Connector,
@@ -760,7 +777,51 @@ func (s *DatabaseSession) validateObject(config *engine.PluginConfig, namespace 
 		"namespace":  namespace,
 		"objectName": name,
 	}).Debug("Source object validation succeeded")
+	s.rememberValidatedObject(namespace, name)
 	return nil
+}
+
+func (s *DatabaseSession) cacheKey(namespace string, name string) databaseObjectCacheKey {
+	return databaseObjectCacheKey{namespace: namespace, name: name}
+}
+
+func (s *DatabaseSession) isValidatedObject(namespace string, name string) bool {
+	if len(s.validated) == 0 {
+		return false
+	}
+
+	_, ok := s.validated[s.cacheKey(namespace, name)]
+	return ok
+}
+
+func (s *DatabaseSession) rememberValidatedObject(namespace string, name string) {
+	if s.validated == nil {
+		s.validated = map[databaseObjectCacheKey]struct{}{}
+	}
+
+	s.validated[s.cacheKey(namespace, name)] = struct{}{}
+}
+
+func (s *DatabaseSession) cachedColumns(namespace string, name string) ([]source.Column, bool) {
+	if len(s.columns) == 0 {
+		return nil, false
+	}
+
+	columns, ok := s.columns[s.cacheKey(namespace, name)]
+	if !ok {
+		return nil, false
+	}
+
+	return cloneSourceColumns(columns), true
+}
+
+func (s *DatabaseSession) cacheColumns(namespace string, name string, columns []source.Column) {
+	if s.columns == nil {
+		s.columns = map[databaseObjectCacheKey][]source.Column{}
+	}
+
+	s.columns[s.cacheKey(namespace, name)] = cloneSourceColumns(columns)
+	s.rememberValidatedObject(namespace, name)
 }
 
 func (s *DatabaseSession) ensureSurface(surface source.Surface) error {
@@ -898,6 +959,50 @@ func cloneImportRows(rows [][]string) [][]string {
 		cloned = append(cloned, slices.Clone(row))
 	}
 	return cloned
+}
+
+func cloneSourceColumns(columns []source.Column) []source.Column {
+	if columns == nil {
+		return nil
+	}
+
+	cloned := make([]source.Column, 0, len(columns))
+	for _, column := range columns {
+		cloned = append(cloned, source.Column{
+			Type:             column.Type,
+			Name:             column.Name,
+			IsNullable:       column.IsNullable,
+			IsPrimary:        column.IsPrimary,
+			IsAutoIncrement:  column.IsAutoIncrement,
+			IsComputed:       column.IsComputed,
+			IsForeignKey:     column.IsForeignKey,
+			ReferencedTable:  cloneStringPointer(column.ReferencedTable),
+			ReferencedColumn: cloneStringPointer(column.ReferencedColumn),
+			Length:           cloneIntPointer(column.Length),
+			Precision:        cloneIntPointer(column.Precision),
+			Scale:            cloneIntPointer(column.Scale),
+		})
+	}
+
+	return cloned
+}
+
+func cloneStringPointer(value *string) *string {
+	if value == nil {
+		return nil
+	}
+
+	cloned := *value
+	return &cloned
+}
+
+func cloneIntPointer(value *int) *int {
+	if value == nil {
+		return nil
+	}
+
+	cloned := *value
+	return &cloned
 }
 
 func importerColumnMappings(mappings []source.ImportColumnMapping) []importer.ColumnMapping {
