@@ -22,6 +22,20 @@ import yamlPlugin from './plugins/vite-plugin-yaml';
 
 const baseHrefPlaceholder = '__WHODB_BASE_HREF__';
 
+const resolveBuildSourcemap = (): boolean | 'hidden' | 'inline' => {
+  switch (process.env.WHODB_BUILD_SOURCEMAP) {
+    case 'true':
+      return true;
+    case 'false':
+      return false;
+    case 'hidden':
+    case 'inline':
+      return process.env.WHODB_BUILD_SOURCEMAP;
+    default:
+      return process.env.NODE_ENV === 'production' ? 'hidden' : true;
+  }
+};
+
 // Resolve app meta (title, description) at build time
 const htmlMetaPlugin = () => {
   const title = 'Clidey WhoDB';
@@ -99,7 +113,7 @@ export default defineConfig(async ({command}) => {
     base: command === 'build' ? './' : '/',
     build: {
       outDir: 'build',
-      sourcemap: process.env.NODE_ENV === 'production' ? 'hidden' : true,
+      sourcemap: resolveBuildSourcemap(),
       chunkSizeWarningLimit: 1000,
     },
     define: {
