@@ -66,7 +66,6 @@ func init() {
 
 // configureBamlLibraryPath sets BAML_LIBRARY_PATH for macOS desktop builds.
 // On macOS, when running as a .app bundle, we bundle a signed copy of the BAML
-// native library in Contents/Frameworks/ to satisfy Gatekeeper requirements.
 func configureBamlLibraryPath() {
 	// Skip if already set
 	if existing := os.Getenv("BAML_LIBRARY_PATH"); existing != "" {
