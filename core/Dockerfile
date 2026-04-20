@@ -41,7 +41,8 @@ RUN apk add --no-cache \
 	git \
 	ca-certificates \
 	curl \
-	binutils
+	binutils \
+	upx
 
 # Download official musl-compiled DuckDB shared library.
 # Native musl build — no glibc stubs or compatibility hacks needed.
@@ -60,7 +61,7 @@ RUN ENCODED=$(grep 'github.com/duckdb/duckdb-go/v2 ' /tmp/go.mod | awk '{print $
         "https://github.com/duckdb/duckdb/releases/download/${DUCKDB_VERSION}/libduckdb-${DUCKDB_ARCH}-musl.zip" && \
     unzip -j /tmp/libduckdb-musl.zip libduckdb.so -d /usr/local/lib/ && \
     unzip -j /tmp/libduckdb-musl.zip duckdb.h -d /usr/local/include/ && \
-    strip --strip-debug /usr/local/lib/libduckdb.so && \
+    strip --strip-unneeded /usr/local/lib/libduckdb.so && \
     rm /tmp/libduckdb-musl.zip
 
 WORKDIR /app
@@ -82,6 +83,11 @@ RUN CGO_CFLAGS="-Os -ffunction-sections -fdata-sections -fno-asynchronous-unwind
 	-ldflags="-s -w -X github.com/clidey/whodb/core/src/env.ApplicationVersion=${VERSION} -X github.com/clidey/whodb/core/src/env.ApplicationEnvironment=${PLATFORM}-${TARGETARCH}" \
 	-o /core ./cmd/whodb
 
+RUN chmod +x /usr/local/lib/libduckdb.so && \
+    if [ "$TARGETARCH" = "amd64" ]; then \
+        upx --best --lzma /usr/local/lib/libduckdb.so; \
+    fi
+
 # Pre-download BAML native library for the target architecture (musl for Alpine)
 # Extract BAML version from go.mod to stay in sync
 ARG TARGETARCH
@@ -96,6 +102,11 @@ RUN BAML_VERSION=$(grep 'github.com/boundaryml/baml ' go.mod | awk '{print $2}' 
     mkdir -p /baml-lib && \
     curl -L -o /baml-lib/libbaml_cffi.so \
         https://github.com/boundaryml/baml/releases/download/${BAML_VERSION}/libbaml_cffi-${BAML_ARCH}-unknown-linux-musl.so && \
+    chmod +x /baml-lib/libbaml_cffi.so && \
+    strip --strip-unneeded /baml-lib/libbaml_cffi.so && \
+    if [ "$TARGETARCH" = "amd64" ]; then \
+        upx --best --lzma /baml-lib/libbaml_cffi.so; \
+    fi && \
     echo "Downloaded BAML musl library for ${BAML_ARCH}"
 
 FROM alpine:3.23
