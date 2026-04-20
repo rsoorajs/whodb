@@ -115,7 +115,6 @@ func TestChooseResolvesDisplayTypesToUnderlyingPlugins(t *testing.T) {
 		{DatabaseType_StarRocks, mysql},
 		// Postgres aliases
 		{DatabaseType_YugabyteDB, postgres},
-		{DatabaseType_QuestDB, postgres},
 	}
 
 	for _, tt := range tests {

@@ -134,6 +134,49 @@ func TestBuildTypeSpecExposesMutableDataActions(t *testing.T) {
 	}
 }
 
+func TestBuildTypeSpecKeepsQuestDBAppendOnlyAndSchemaLess(t *testing.T) {
+	t.Parallel()
+
+	entry, ok := dbcatalog.Find("QuestDB")
+	if !ok {
+		t.Fatal("expected database catalog entry for QuestDB")
+	}
+
+	spec, ok := BuildTypeSpec(DatabaseEntry{
+		ID:             string(entry.ID),
+		Label:          entry.Label,
+		Connector:      string(entry.PluginType),
+		Extra:          maps.Clone(entry.Extra),
+		Fields:         FieldVisibility(entry.Fields),
+		RequiredFields: FieldRequirements(entry.RequiredFields),
+		IsAWSManaged:   entry.IsAWSManaged,
+		SSLModes:       sourceSSLModes(entry.SSLModes),
+	})
+	if !ok {
+		t.Fatal("expected QuestDB to map into the source catalog")
+	}
+
+	if spec.Contract.SupportsSurface(source.SurfaceGraph) {
+		t.Fatalf("expected QuestDB graph surface to be disabled, got %v", spec.Contract.Surfaces)
+	}
+	if slices.Contains(spec.Contract.BrowsePath, source.ObjectKindSchema) {
+		t.Fatalf("expected QuestDB browse path to remain schema-less, got %v", spec.Contract.BrowsePath)
+	}
+
+	objectType, ok := spec.Contract.ObjectTypeForKind(source.ObjectKindTable)
+	if !ok {
+		t.Fatal("expected QuestDB table object type")
+	}
+	for _, action := range []source.Action{source.ActionUpdateData, source.ActionDeleteData, source.ActionGenerateMockData, source.ActionImportData} {
+		if slices.Contains(objectType.Actions, action) {
+			t.Fatalf("expected QuestDB tables to omit action %q, got %v", action, objectType.Actions)
+		}
+	}
+	if !slices.Contains(objectType.Actions, source.ActionInsertData) {
+		t.Fatalf("expected QuestDB tables to keep insert support, got %v", objectType.Actions)
+	}
+}
+
 func TestBuildTypeSpecExposesSourceTraits(t *testing.T) {
 	t.Parallel()
 

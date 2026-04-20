@@ -96,11 +96,12 @@ func GetLoginProfileId(index int, profile types.DatabaseCredentials) string {
 }
 
 func GetLoginCredentials(profile types.DatabaseCredentials) *engine.Credentials {
-	advanced := []engine.Record{
-		{
+	advanced := []engine.Record{}
+	if port := defaultPortForProfile(profile.Type, profile.Port); port != "" {
+		advanced = append(advanced, engine.Record{
 			Key:   "Port",
-			Value: profile.Port,
-		},
+			Value: port,
+		})
 	}
 
 	for key, value := range profile.Advanced {
@@ -119,6 +120,24 @@ func GetLoginCredentials(profile types.DatabaseCredentials) *engine.Credentials 
 		Advanced:  advanced,
 		IsProfile: profile.IsProfile,
 	}
+}
+
+func defaultPortForProfile(sourceType string, configuredPort string) string {
+	if configuredPort != "" {
+		return configuredPort
+	}
+
+	spec, ok := sourcecatalog.Find(sourceType)
+	if !ok {
+		return ""
+	}
+
+	field, ok := spec.ConnectionFieldByKey("Port")
+	if !ok {
+		return ""
+	}
+
+	return field.DefaultValue
 }
 
 // NewMockDataGenerator creates a new mock data generator with the specified FK density ratio.

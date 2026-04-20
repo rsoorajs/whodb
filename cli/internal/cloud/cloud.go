@@ -28,8 +28,8 @@ import (
 	"time"
 
 	"github.com/clidey/whodb/cli/internal/config"
+	"github.com/clidey/whodb/cli/internal/sourcetypes"
 	"github.com/clidey/whodb/cli/pkg/cloudprefill"
-	"github.com/clidey/whodb/core/src/dbcatalog"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/providers"
 	"github.com/clidey/whodb/core/src/settings"
@@ -184,13 +184,13 @@ func ResolveConnection(ctx context.Context, id string) (ConnectionSummary, error
 // BuildPrefillConnection converts a discovered cloud resource into a CLI
 // connection prefill that can be used by the connect flow or connection form.
 func BuildPrefillConnection(summary ConnectionSummary) (config.Connection, error) {
-	entry, ok := dbcatalog.Find(summary.SourceType)
+	spec, ok := sourcetypes.Find(summary.SourceType)
 	if !ok {
 		return config.Connection{}, fmt.Errorf("discovered connection %q uses unsupported database type %q", summary.ID, summary.SourceType)
 	}
 
 	host := strings.TrimSpace(summary.Metadata["endpoint"])
-	if host == "" && entry.RequiredFields.Hostname {
+	if host == "" && sourcetypes.ConnectionFieldRequired(spec.ID, "Hostname") {
 		return config.Connection{}, fmt.Errorf("discovered connection %q does not expose a connectable endpoint", summary.ID)
 	}
 
@@ -201,7 +201,7 @@ func BuildPrefillConnection(summary ConnectionSummary) (config.Connection, error
 			return config.Connection{}, fmt.Errorf("discovered connection %q has invalid port %q", summary.ID, rawPort)
 		}
 		port = parsed
-	} else if defaultPort, ok := dbcatalog.DefaultPort(summary.SourceType); ok {
+	} else if defaultPort, ok := sourcetypes.DefaultPort(spec.ID); ok {
 		port = defaultPort
 	}
 

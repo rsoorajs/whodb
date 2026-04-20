@@ -21,7 +21,6 @@ import (
 
 	"github.com/clidey/whodb/core/src/common/ssl"
 	"github.com/clidey/whodb/core/src/engine"
-	"github.com/clidey/whodb/core/src/plugins"
 )
 
 func TestFindReturnsAliasPluginType(t *testing.T) {
@@ -32,6 +31,17 @@ func TestFindReturnsAliasPluginType(t *testing.T) {
 
 	if entry.PluginType != engine.DatabaseType_MongoDB {
 		t.Fatalf("expected FerretDB to resolve to MongoDB plugin, got %q", entry.PluginType)
+	}
+}
+
+func TestFindReturnsPromotedQuestDBPluginType(t *testing.T) {
+	entry, ok := Find("QuestDB")
+	if !ok {
+		t.Fatal("expected QuestDB catalog entry")
+	}
+
+	if entry.PluginType != engine.DatabaseType_QuestDB {
+		t.Fatalf("expected QuestDB to resolve to its own plugin, got %q", entry.PluginType)
 	}
 }
 
@@ -130,7 +140,7 @@ func TestRegisterClonesEntriesAndReturnedValuesAreDefensiveCopies(t *testing.T) 
 	}
 }
 
-func TestDefaultPortFallsBackToPluginRegistryWhenCatalogPortIsInvalid(t *testing.T) {
+func TestDefaultPortReturnsFalseWhenCatalogPortIsInvalid(t *testing.T) {
 	originalRegisteredCatalog := registeredCatalog
 	registeredCatalog = nil
 	t.Cleanup(func() {
@@ -138,7 +148,6 @@ func TestDefaultPortFallsBackToPluginRegistryWhenCatalogPortIsInvalid(t *testing
 	})
 
 	const customID = engine.DatabaseType("CustomPortDB")
-	plugins.RegisterDatabasePort(customID, "6543")
 	Register(ConnectableDatabase{
 		ID:         customID,
 		Label:      "Custom Port DB",
@@ -146,11 +155,7 @@ func TestDefaultPortFallsBackToPluginRegistryWhenCatalogPortIsInvalid(t *testing
 		Extra:      map[string]string{"Port": "invalid"},
 	})
 
-	port, ok := DefaultPort(string(customID))
-	if !ok {
-		t.Fatal("expected DefaultPort to fall back to the plugin registry when catalog port is invalid")
-	}
-	if port != 6543 {
-		t.Fatalf("expected fallback plugin port 6543, got %d", port)
+	if port, ok := DefaultPort(string(customID)); ok {
+		t.Fatalf("expected invalid catalog port to be rejected, got %d", port)
 	}
 }

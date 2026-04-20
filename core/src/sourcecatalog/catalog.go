@@ -190,13 +190,12 @@ var familySpecs = map[string]FamilySpec{
 		Category:      source.CategoryDatabase,
 		Traits:        networkTraits(source.HostInputModeHostname, source.HostInputURLParserNone),
 		Model:         source.ModelRelational,
-		Surfaces:      []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
+		Surfaces:      []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat},
 		RootActions:   []source.Action{source.ActionBrowse, source.ActionCreateChild},
 		BrowsePath:    []source.ObjectKind{objectKindTable},
 		DefaultObject: objectKindTable,
 		ObjectTypes: []source.ObjectType{
-			tabularObjectType(objectKindTable, "Table", "Tables"),
-			tabularReadOnlyObjectType(objectKindView, "View", "Views"),
+			questDBObjectType(objectKindTable, "Table", "Tables"),
 		},
 	},
 	connectorMongoDB: {
@@ -629,6 +628,21 @@ func tabularReadOnlyObjectType(kind source.ObjectKind, singular string, plural s
 			source.ActionInspect,
 			source.ActionViewRows,
 			source.ActionViewDefinition,
+		},
+		Views:         []source.View{source.ViewGrid, source.ViewMetadata},
+		SingularLabel: singular,
+		PluralLabel:   plural,
+	}
+}
+
+func questDBObjectType(kind source.ObjectKind, singular string, plural string) source.ObjectType {
+	return source.ObjectType{
+		Kind:      kind,
+		DataShape: source.DataShapeTabular,
+		Actions: []source.Action{
+			source.ActionInspect,
+			source.ActionViewRows,
+			source.ActionInsertData,
 		},
 		Views:         []source.View{source.ViewGrid, source.ViewMetadata},
 		SingularLabel: singular,

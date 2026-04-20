@@ -39,6 +39,36 @@ plugin layer:
 
 If the change is purely plugin-internal, you may only need steps 1, 4, and 5.
 
+## Alias Databases vs Wrapper Plugins
+
+Database catalog aliases are only for cases where the runtime behavior is
+genuinely identical and only the product metadata changes (label, default port,
+TLS defaults, managed-service flags, source traits, etc.).
+
+Connection defaults such as ports belong in the shared database/source catalog
+metadata (`dbcatalog` `Extra["Port"]`, which flows into
+`SourceType.ConnectionFields`), not in per-plugin registries.
+
+If an alias needs even one runtime override, promote it to a thin first-class
+plugin wrapper instead of adding alias-specific branches in shared code. Common
+promotion triggers:
+
+- different introspection SQL or system catalog support
+- different namespace or schema handling
+- different auth/DSN behavior
+- different mutation semantics
+- different graph or metadata queries
+
+Examples in the repo:
+- `CockroachDB` is a PostgreSQL-derived wrapper plugin because it needs catalog
+  query overrides
+- `MariaDB` and `TiDB` are MySQL-derived wrapper plugin types
+- `QuestDB` is treated as a PostgreSQL-derived wrapper because it is schema-less
+  in our product model and cannot use the default PostgreSQL table-info query
+
+Do not solve alias incompatibilities with `if dbType == ...` checks in shared
+code.
+
 ## Request Context and Cancellation
 
 Every request-scoped plugin operation must use the context carried by `*engine.PluginConfig`. Do not use `context.Background()` for query execution, metadata fetches, SDK calls, or health checks that are part of a user request.
@@ -111,6 +141,11 @@ doesn't provide it, the UI type selectors and query helpers will be broken.
 Feature gating is no longer owned by `GetDatabaseMetadata()`. Public behavior
 such as chat/query/graph surfaces and source object actions/views comes from the
 source catalog contract in `core/src/sourcecatalog/catalog.go`.
+
+Frontend and CLI connection/presentation behavior also comes from the source
+model now. Use `SourceType.Traits` for things like file-vs-network transport,
+host input parsing, profile labeling, schema fidelity, and query UI options.
+Do not reintroduce `DatabaseType` branches for those decisions.
 
 ### types.go Structure
 

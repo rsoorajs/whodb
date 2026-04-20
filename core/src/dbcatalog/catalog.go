@@ -24,7 +24,6 @@ import (
 
 	"github.com/clidey/whodb/core/src/common/ssl"
 	"github.com/clidey/whodb/core/src/engine"
-	"github.com/clidey/whodb/core/src/plugins"
 )
 
 // FieldVisibility declares which standard connection form fields are shown for
@@ -300,7 +299,7 @@ var catalog = []ConnectableDatabase{
 	{
 		ID:         engine.DatabaseType_QuestDB,
 		Label:      "QuestDB",
-		PluginType: engine.DatabaseType_Postgres,
+		PluginType: engine.DatabaseType_QuestDB,
 		Extra:      map[string]string{"Port": "8812"},
 		Fields: FieldVisibility{
 			Hostname: true,
@@ -426,16 +425,7 @@ func DefaultPort(id string) (int, bool) {
 		return 0, false
 	}
 
-	if port, ok := parsePort(entry.Extra["Port"]); ok {
-		return port, true
-	}
-
-	defaultPort, ok := plugins.GetDefaultPort(entry.PluginType)
-	if !ok {
-		return 0, false
-	}
-
-	return parsePort(defaultPort)
+	return parsePort(entry.Extra["Port"])
 }
 
 // IsNetworkDatabase reports whether the database connects via a hostname.
