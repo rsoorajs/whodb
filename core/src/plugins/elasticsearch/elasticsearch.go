@@ -24,16 +24,6 @@ import (
 
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
-	"github.com/clidey/whodb/core/src/sourcecatalog"
-)
-
-var (
-	supportedOperators = map[string]string{
-		"match": "match", "match_phrase": "match_phrase", "match_phrase_prefix": "match_phrase_prefix", "multi_match": "multi_match",
-		"bool": "bool", "term": "term", "terms": "terms", "range": "range", "exists": "exists", "prefix": "prefix", "wildcard": "wildcard",
-		"regexp": "regexp", "fuzzy": "fuzzy", "ids": "ids", "constant_score": "constant_score", "function_score": "function_score",
-		"dis_max": "dis_max", "nested": "nested", "has_child": "has_child", "has_parent": "has_parent",
-	}
 )
 
 type ElasticSearchPlugin struct {
@@ -203,22 +193,6 @@ func (p *ElasticSearchPlugin) FormatValue(val any) string {
 }
 
 func init() {
-	sourcecatalog.RegisterSessionMetadata(
-		string(engine.DatabaseType_ElasticSearch),
-		sourcecatalog.SessionMetadataFromOperatorMap([]engine.TypeDefinition{
-			{ID: "text", Label: "text", Category: engine.TypeCategoryText},
-			{ID: "keyword", Label: "keyword", Category: engine.TypeCategoryText},
-			{ID: "boolean", Label: "boolean", Category: engine.TypeCategoryBoolean},
-			{ID: "long", Label: "long", Category: engine.TypeCategoryNumeric},
-			{ID: "double", Label: "double", Category: engine.TypeCategoryNumeric},
-			{ID: "date", Label: "date", Category: engine.TypeCategoryDatetime},
-			{ID: "object", Label: "object", Category: engine.TypeCategoryOther},
-			{ID: "array", Label: "array", Category: engine.TypeCategoryOther},
-			{ID: "geo_point", Label: "geo_point", Category: engine.TypeCategoryOther},
-			{ID: "nested", Label: "nested", Category: engine.TypeCategoryOther},
-			{ID: "mixed", Label: "mixed", Category: engine.TypeCategoryOther},
-		}, supportedOperators, nil),
-	)
 	engine.RegisterPlugin(NewElasticSearchPlugin())
 }
 

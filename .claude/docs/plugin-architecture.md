@@ -97,8 +97,12 @@ func queryWithContext(session *gocql.Session, config *engine.PluginConfig, stmt 
 SQL-based plugins follow this structure (see `core/src/plugins/postgres/` as reference):
 - `db.go` - Connection creation (implements DB method)
 - `postgres.go` (or `mysql.go`, etc.) - Plugin struct, NewXxxPlugin(), database-specific queries
-- `types.go` - Type definitions, alias map, and session metadata hook implementation
+- `types.go` - Type definitions and alias map wrappers used by the plugin runtime
 - `constraints.go` - Column constraint detection (optional override)
+
+Source-owned editor/query metadata now lives in side-effect-free specs under
+`core/src/sourcecatalog/specs/`. Plugins may read those specs, but they should
+not register session metadata themselves.
 
 GormPlugin base class (`core/src/plugins/gorm/`) provides:
 - `plugin.go` - 40+ default method implementations
@@ -128,8 +132,9 @@ GetLastInsertID(db *gorm.DB) (int64, error) // Default: returns 0 (override for 
 ## Session Metadata (types.go)
 
 Each SQL plugin family must provide session metadata for editor/query-builder UI
-by registering it with `sourcecatalog.RegisterSessionMetadata(...)`. This is the
-source of truth for:
+through the source-owned specs in `core/src/sourcecatalog/specs/`. The shared
+`core/src/sourcecatalog/metadata.go` file registers those specs centrally. This
+metadata is the source of truth for:
 - Valid operators (=, >=, LIKE, etc.)
 - Type definitions (VARCHAR, INTEGER, etc.) with UI hints (hasLength, hasPrecision)
 - Alias maps (INT → INTEGER, BOOL → BOOLEAN)
@@ -137,6 +142,12 @@ source of truth for:
 This metadata is exposed through the source-first GraphQL
 `SourceSessionMetadata` query after login. **No fallbacks** - if the backend
 doesn't provide it, the UI type selectors and query helpers will be broken.
+
+Do not call `sourcecatalog.RegisterSessionMetadata(...)` from plugin `init()`
+functions anymore. Keep plugin `init()` limited to runtime plugin registration
+(`engine.RegisterPlugin(...)`). If a plugin needs to reuse the same alias map or
+type definitions for runtime normalization, import them from
+`core/src/sourcecatalog/specs/`.
 
 Feature gating is not owned by session metadata. Public behavior
 such as chat/query/graph surfaces and source object actions/views comes from the
@@ -152,28 +163,19 @@ Do not reintroduce `DatabaseType` branches for those decisions.
 ```go
 package postgres
 
-import "github.com/clidey/whodb/core/src/sourcecatalog"
+import (
+    "github.com/clidey/whodb/core/src/common"
+    sourcecatalogspecs "github.com/clidey/whodb/core/src/sourcecatalog/specs"
+)
 
 // AliasMap maps type aliases to canonical names (UPPERCASE keys and values)
-var AliasMap = map[string]string{
-    "INT":  "INTEGER",
-    "BOOL": "BOOLEAN",
-}
+var AliasMap = sourcecatalogspecs.PostgresAliasMap
 
 // TypeDefinitions - canonical types shown in UI type selector
-var TypeDefinitions = []engine.TypeDefinition{
-    {ID: "INTEGER", Label: "integer", Category: engine.TypeCategoryNumeric},
-    {ID: "VARCHAR", Label: "varchar", HasLength: true, DefaultLength: engine.IntPtr(255), Category: engine.TypeCategoryText},
-    // ... more types
-}
+var TypeDefinitions = sourcecatalogspecs.PostgresTypeDefinitions
 
-func init() {
-    sourcecatalog.RegisterSessionMetadataAliases(
-        sourcecatalog.SessionMetadataFromOperatorMap(TypeDefinitions, supportedOperators, AliasMap),
-        string(engine.DatabaseType_Postgres),
-        string(engine.DatabaseType_YugabyteDB),
-        string(engine.DatabaseType_QuestDB),
-    )
+func NormalizeType(typeName string) string {
+    return common.NormalizeTypeWithMap(typeName, AliasMap)
 }
 ```
 

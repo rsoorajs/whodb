@@ -27,27 +27,11 @@ import (
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/query"
-	"github.com/clidey/whodb/core/src/sourcecatalog"
 	"github.com/go-redis/redis/v8"
 )
 
 type RedisPlugin struct {
 	engine.BasePlugin
-}
-
-var redisOperators = map[string]string{
-	"=":           "=",
-	"!=":          "!=",
-	"<>":          "!=",
-	">":           ">",
-	">=":          ">=",
-	"<":           "<",
-	"<=":          "<=",
-	"CONTAINS":    "CONTAINS",
-	"STARTS WITH": "STARTS WITH",
-	"ENDS WITH":   "ENDS WITH",
-	"IN":          "IN",
-	"NOT IN":      "NOT IN",
 }
 
 func (p *RedisPlugin) IsAvailable(ctx context.Context, config *engine.PluginConfig) bool {
@@ -587,10 +571,6 @@ func (p *RedisPlugin) FormatValue(val any) string {
 }
 
 func init() {
-	sourcecatalog.RegisterSessionMetadata(
-		string(engine.DatabaseType_Redis),
-		sourcecatalog.SessionMetadataFromOperators(nil, sortedRedisOperators(), nil),
-	)
 	engine.RegisterPlugin(NewRedisPlugin())
 }
 
@@ -599,13 +579,4 @@ func NewRedisPlugin() *engine.Plugin {
 		Type:            engine.DatabaseType_Redis,
 		PluginFunctions: &RedisPlugin{},
 	}
-}
-
-func sortedRedisOperators() []string {
-	ops := make([]string, 0, len(redisOperators))
-	for op := range redisOperators {
-		ops = append(ops, op)
-	}
-	sort.Strings(ops)
-	return ops
 }

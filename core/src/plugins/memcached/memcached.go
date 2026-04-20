@@ -19,7 +19,6 @@ package memcached
 import (
 	"context"
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -27,27 +26,11 @@ import (
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/query"
-	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 // MemcachedPlugin implements PluginFunctions for Memcached.
 type MemcachedPlugin struct {
 	engine.BasePlugin
-}
-
-var memcachedOperators = map[string]string{
-	"=":           "=",
-	"!=":          "!=",
-	"<>":          "!=",
-	">":           ">",
-	">=":          ">=",
-	"<":           "<",
-	"<=":          "<=",
-	"CONTAINS":    "CONTAINS",
-	"STARTS WITH": "STARTS WITH",
-	"ENDS WITH":   "ENDS WITH",
-	"IN":          "IN",
-	"NOT IN":      "NOT IN",
 }
 
 // IsAvailable checks if the Memcached server is reachable.
@@ -197,10 +180,6 @@ func (p *MemcachedPlugin) FormatValue(val any) string {
 }
 
 func init() {
-	sourcecatalog.RegisterSessionMetadata(
-		string(engine.DatabaseType_Memcached),
-		sourcecatalog.SessionMetadataFromOperators(nil, sortedMemcachedOperators(), nil),
-	)
 	engine.RegisterPlugin(NewMemcachedPlugin())
 }
 
@@ -218,15 +197,6 @@ func memcachedColumns() []engine.Column {
 		{Name: "Value", Type: "string"},
 		{Name: "Flags", Type: "uint32"},
 	}
-}
-
-func sortedMemcachedOperators() []string {
-	ops := make([]string, 0, len(memcachedOperators))
-	for op := range memcachedOperators {
-		ops = append(ops, op)
-	}
-	sort.Strings(ops)
-	return ops
 }
 
 // filterMemcachedRows applies a where condition to memcached rows.

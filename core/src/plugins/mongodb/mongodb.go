@@ -23,20 +23,8 @@ import (
 
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
-	"github.com/clidey/whodb/core/src/sourcecatalog"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
-)
-
-var (
-	supportedOperators = map[string]string{
-		"eq": "eq", "ne": "ne", "gt": "gt", "gte": "gte", "lt": "lt", "lte": "lte",
-		"in": "in", "nin": "nin", "and": "and", "or": "or", "not": "not", "nor": "nor",
-		"exists": "exists", "type": "type", "regex": "regex", "expr": "expr", "mod": "mod",
-		"all": "all", "elemMatch": "elemMatch", "size": "size", "bitsAllClear": "bitsAllClear",
-		"bitsAllSet": "bitsAllSet", "bitsAnyClear": "bitsAnyClear", "bitsAnySet": "bitsAnySet",
-		"geoIntersects": "geoIntersects", "geoWithin": "geoWithin", "near": "near", "nearSphere": "nearSphere",
-	}
 )
 
 type MongoDBPlugin struct {
@@ -402,20 +390,6 @@ func (p *MongoDBPlugin) ClearTableData(config *engine.PluginConfig, schema strin
 }
 
 func init() {
-	sourcecatalog.RegisterSessionMetadata(
-		string(engine.DatabaseType_MongoDB),
-		sourcecatalog.SessionMetadataFromOperatorMap([]engine.TypeDefinition{
-			{ID: "string", Label: "string", Category: engine.TypeCategoryText},
-			{ID: "int", Label: "int", Category: engine.TypeCategoryNumeric},
-			{ID: "double", Label: "double", Category: engine.TypeCategoryNumeric},
-			{ID: "bool", Label: "bool", Category: engine.TypeCategoryBoolean},
-			{ID: "date", Label: "date", Category: engine.TypeCategoryDatetime},
-			{ID: "objectId", Label: "objectId", Category: engine.TypeCategoryOther},
-			{ID: "array", Label: "array", Category: engine.TypeCategoryOther},
-			{ID: "object", Label: "object", Category: engine.TypeCategoryOther},
-			{ID: "mixed", Label: "mixed", Category: engine.TypeCategoryOther},
-		}, supportedOperators, nil),
-	)
 	engine.RegisterPlugin(NewMongoDBPlugin())
 }
 

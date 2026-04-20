@@ -779,7 +779,10 @@ export const StorageUnitPage: FC = () => {
     </InternalPage>
 }
 
-type StorageUnitGraphCardData = GetGraphQuery['Graph'][number]['Unit'] & { columns?: any[] };
+type StorageUnitGraphCardData = GetGraphQuery['Graph'][number]['Unit'] & {
+    columns?: any[];
+    columnsLoading?: boolean;
+};
 
 export const StorageUnitGraphCard: FC<IGraphCardProps<StorageUnitGraphCardData>> = ({ data }) => {
     const navigate = useNavigate();
@@ -800,6 +803,7 @@ export const StorageUnitGraphCard: FC<IGraphCardProps<StorageUnitGraphCardData>>
     // Columns contains field definitions with FK/PK info for handles
     const metadataItems = data?.Attributes || [];
     const columnItems = data?.columns || [];
+    const columnsLoading = data?.columnsLoading || false;
 
     if (data == null) {
         return (<Card icon={<ArrowPathRoundedSquareIcon className="w-4 h-4" />}>
@@ -828,9 +832,16 @@ export const StorageUnitGraphCard: FC<IGraphCardProps<StorageUnitGraphCardData>>
                                     );
                                 })
                             }
+                            {
+                                columnsLoading && (
+                                    <div className="py-4">
+                                        <Loading hideText={true} />
+                                    </div>
+                                )
+                            }
                             {/* Show columns with FK/PK handles */}
                             {
-                                columnItems.map((col: any, index: number) => {
+                                !columnsLoading && columnItems.map((col: any, index: number) => {
                                     const name = col.Name;
                                     const value = col.Type?.toLowerCase();
                                     const isFKColumn = col.IsForeignKey || false;

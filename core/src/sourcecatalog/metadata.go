@@ -22,7 +22,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/source"
+	"github.com/clidey/whodb/core/src/sourcecatalog/specs"
 )
 
 var (
@@ -34,6 +36,8 @@ var (
 )
 
 func init() {
+	registerSessionMetadata()
+
 	RegisterDiscoveryPrefill(connectorPostgres, source.DiscoveryPrefill{
 		AdvancedDefaults: []source.DiscoveryAdvancedDefault{
 			{Key: "SSL Mode", Value: "require"},
@@ -89,6 +93,52 @@ func init() {
 			},
 		},
 	})
+}
+
+func registerSessionMetadata() {
+	RegisterSessionMetadataAliases(
+		SessionMetadataFromOperatorMap(specs.PostgresTypeDefinitions, specs.PostgreSQLSupportedOperators, specs.PostgresAliasMap),
+		string(engine.DatabaseType_Postgres),
+		string(engine.DatabaseType_QuestDB),
+	)
+	RegisterSessionMetadata(
+		string(engine.DatabaseType_CockroachDB),
+		SessionMetadataFromOperatorMap(specs.CockroachDBTypeDefinitions, specs.PostgreSQLSupportedOperators, specs.PostgresAliasMap),
+	)
+	RegisterSessionMetadataAliases(
+		SessionMetadataFromOperatorMap(specs.MySQLTypeDefinitions, specs.MySQLSupportedOperators, specs.MySQLAliasMap),
+		string(engine.DatabaseType_MySQL),
+		string(engine.DatabaseType_MariaDB),
+		string(engine.DatabaseType_TiDB),
+	)
+	RegisterSessionMetadata(
+		string(engine.DatabaseType_ClickHouse),
+		SessionMetadataFromOperatorMap(specs.ClickHouseTypeDefinitions, specs.ClickHouseSupportedOperators, specs.ClickHouseAliasMap),
+	)
+	RegisterSessionMetadata(
+		string(engine.DatabaseType_Sqlite3),
+		SessionMetadataFromOperatorMap(specs.SQLiteTypeDefinitions, specs.SQLiteSupportedOperators, specs.SQLiteAliasMap),
+	)
+	RegisterSessionMetadata(
+		string(engine.DatabaseType_DuckDB),
+		SessionMetadataFromOperatorMap(specs.DuckDBTypeDefinitions, specs.DuckDBSupportedOperators, specs.DuckDBAliasMap),
+	)
+	RegisterSessionMetadata(
+		string(engine.DatabaseType_ElasticSearch),
+		SessionMetadataFromOperatorMap(specs.ElasticSearchTypeDefinitions, specs.ElasticSearchSupportedOperators, nil),
+	)
+	RegisterSessionMetadata(
+		string(engine.DatabaseType_MongoDB),
+		SessionMetadataFromOperatorMap(specs.MongoDBTypeDefinitions, specs.MongoDBSupportedOperators, nil),
+	)
+	RegisterSessionMetadata(
+		string(engine.DatabaseType_Redis),
+		SessionMetadataFromOperatorMap(nil, specs.RedisOperators, nil),
+	)
+	RegisterSessionMetadata(
+		string(engine.DatabaseType_Memcached),
+		SessionMetadataFromOperatorMap(nil, specs.MemcachedOperators, nil),
+	)
 }
 
 // RegisterSessionMetadata registers source-owned editor/query metadata for one

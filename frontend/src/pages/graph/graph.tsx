@@ -16,7 +16,7 @@
 
 import {skipToken, useLazyQuery, useQuery} from "@apollo/client/react";
 import {FC, useCallback, useEffect, useMemo, useRef, useState} from "react";
-import {Edge, Node, ReactFlowProvider, useEdgesState, useNodesState} from "reactflow";
+import {Edge, Node, NodeMouseHandler, ReactFlowProvider, useEdgesState, useNodesState} from "reactflow";
 import {GraphElements} from "../../components/graph/constants";
 import {Graph, IGraphInstance} from "../../components/graph/graph";
 import {createEdge, createNode} from "../../components/graph/utils";
@@ -165,6 +165,7 @@ export const GraphPage: FC = () => {
     const [selectedUnits, setSelectedUnits] = useState<Set<string>>(new Set());
     const [isInitialized, setIsInitialized] = useState(false);
     const [tableColumns, setTableColumns] = useState<Record<string, any[]>>({});
+    const [loadingColumns, setLoadingColumns] = useState<Record<string, boolean>>({});
 
     const [fetchColumnsBatch] = useLazyQuery(GetColumnsBatchDocument);
     const graphScopeRef = useMemo(() => buildSourceScopeRef(item, current, schema), [current, item, schema]);
@@ -194,6 +195,7 @@ export const GraphPage: FC = () => {
     useEffect(() => {
         setSelectedUnits(new Set());
         setTableColumns({});
+        setLoadingColumns({});
     }, [currentProfileId, currentDatabase, schema]);
 
     // Refetch when the connection context changes (profile switch or database switch).
@@ -214,22 +216,32 @@ export const GraphPage: FC = () => {
         });
     }, [storageUnits]);
 
-    // Incrementally fetch columns for newly selected units
-    useEffect(() => {
-        if (selectedUnits.size === 0) return;
-        const needed = [...selectedUnits].filter(name => !(name in tableColumns));
-        if (needed.length === 0) return;
-        const refs = storageUnits
-            .filter(unit => needed.includes(unit.Name))
-            .map(unit => unit.Ref);
-        if (refs.length === 0) return;
+    const loadColumnsForRefs = useCallback((refs: GraphStorageUnit["Ref"][]) => {
+        const refsToFetch = refs.filter(ref => {
+            const unitName = getObjectNameFromRef(ref);
+            return !(unitName in tableColumns) && !loadingColumns[unitName];
+        });
+        if (refsToFetch.length === 0) {
+            return;
+        }
+
+        const unitNames = refsToFetch.map(ref => getObjectNameFromRef(ref));
+        setLoadingColumns(prev => {
+            const next = { ...prev };
+            for (const unitName of unitNames) {
+                next[unitName] = true;
+            }
+            return next;
+        });
+
         fetchColumnsBatch({
-            variables: { refs },
+            variables: { refs: refsToFetch },
         }).then(result => {
-            if (result.data?.ColumnsBatch) {
+            const batch = result.data?.ColumnsBatch;
+            if (batch) {
                 setTableColumns(prev => {
                     const next = { ...prev };
-                    for (const item of result.data!.ColumnsBatch) {
+                    for (const item of batch) {
                         next[getObjectNameFromRef(item.StorageUnit)] = item.Columns;
                     }
                     return next;
@@ -237,8 +249,24 @@ export const GraphPage: FC = () => {
             }
         }).catch(error => {
             console.error('Failed to fetch columns batch:', error);
+        }).finally(() => {
+            setLoadingColumns(prev => {
+                const next = { ...prev };
+                for (const unitName of unitNames) {
+                    delete next[unitName];
+                }
+                return next;
+            });
         });
-    }, [fetchColumnsBatch, selectedUnits, storageUnits, tableColumns]);
+    }, [fetchColumnsBatch, loadingColumns, tableColumns]);
+
+    const handleNodeClick = useCallback<NodeMouseHandler>((_, node) => {
+        const ref = node.data?.Ref;
+        if (!ref) {
+            return;
+        }
+        loadColumnsForRefs([ref]);
+    }, [loadColumnsForRefs]);
 
     // Build nodes and edges from graph data and selection
     const { computedNodes, computedEdges } = useMemo(() => {
@@ -264,16 +292,17 @@ export const GraphPage: FC = () => {
             const itemCount = metadataCount + columnCount;
             const calculatedHeight = Math.max(250, 200 + (itemCount * 50));
 
-            newNodes.push(createNode({
-                id: node.Unit.Name,
-                type: GraphElements.StorageUnit,
-                data: {
-                    ...node.Unit,
-                    columns: columns,
-                },
-                width: 400,
-                height: calculatedHeight,
-            }));
+                newNodes.push(createNode({
+                    id: node.Unit.Name,
+                    type: GraphElements.StorageUnit,
+                    data: {
+                        ...node.Unit,
+                        columns: columns,
+                        columnsLoading: loadingColumns[node.Unit.Name] || false,
+                    },
+                    width: 400,
+                    height: calculatedHeight,
+                }));
         }
         
         // Create edges between selected nodes with column-level connections
@@ -367,7 +396,7 @@ export const GraphPage: FC = () => {
         }
 
         return { computedNodes: newNodes, computedEdges: newEdges };
-    }, [graphData, selectedUnits, tableColumns]);
+    }, [graphData, loadingColumns, selectedUnits, tableColumns]);
 
     // Update nodes and edges when computed values change
     useEffect(() => {
@@ -429,6 +458,7 @@ export const GraphPage: FC = () => {
                                 setNodes={setNodes} setEdges={setEdges}
                                 onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
                                 minZoom={0.1}
+                                onNodeClick={handleNodeClick}
                                 onReady={handleOnReady} />
                 }
             </ReactFlowProvider>

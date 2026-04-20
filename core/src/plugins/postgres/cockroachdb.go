@@ -23,7 +23,7 @@ import (
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/plugins"
-	"github.com/clidey/whodb/core/src/sourcecatalog"
+	sourcecatalogspecs "github.com/clidey/whodb/core/src/sourcecatalog/specs"
 	"gorm.io/gorm"
 )
 
@@ -120,32 +120,7 @@ func (p *CockroachDBPlugin) GetSSLStatus(config *engine.PluginConfig) (*engine.S
 
 // CockroachDB-supported type definitions (excludes MONEY, XML, HSTORE, geometric types,
 // CIDR, MACADDR, TIMETZ which CockroachDB does not support).
-var cockroachDBTypeDefinitions = []engine.TypeDefinition{
-	{ID: "SMALLINT", Label: "smallint", Category: engine.TypeCategoryNumeric},
-	{ID: "INTEGER", Label: "integer", Category: engine.TypeCategoryNumeric},
-	{ID: "BIGINT", Label: "bigint", Category: engine.TypeCategoryNumeric},
-	{ID: "SMALLSERIAL", Label: "smallserial", Category: engine.TypeCategoryNumeric},
-	{ID: "SERIAL", Label: "serial", Category: engine.TypeCategoryNumeric},
-	{ID: "BIGSERIAL", Label: "bigserial", Category: engine.TypeCategoryNumeric},
-	{ID: "DECIMAL", Label: "decimal", HasPrecision: true, DefaultPrecision: engine.IntPtr(10), Category: engine.TypeCategoryNumeric},
-	{ID: "NUMERIC", Label: "numeric", HasPrecision: true, DefaultPrecision: engine.IntPtr(10), Category: engine.TypeCategoryNumeric},
-	{ID: "REAL", Label: "real", Category: engine.TypeCategoryNumeric},
-	{ID: "DOUBLE PRECISION", Label: "double precision", Category: engine.TypeCategoryNumeric},
-	{ID: "CHARACTER VARYING", Label: "varchar", HasLength: true, DefaultLength: engine.IntPtr(255), Category: engine.TypeCategoryText},
-	{ID: "CHARACTER", Label: "char", HasLength: true, DefaultLength: engine.IntPtr(1), Category: engine.TypeCategoryText},
-	{ID: "TEXT", Label: "text", Category: engine.TypeCategoryText},
-	{ID: "BYTEA", Label: "bytea", Category: engine.TypeCategoryBinary},
-	{ID: "TIMESTAMP", Label: "timestamp", Category: engine.TypeCategoryDatetime},
-	{ID: "TIMESTAMP WITH TIME ZONE", Label: "timestamptz", Category: engine.TypeCategoryDatetime},
-	{ID: "DATE", Label: "date", Category: engine.TypeCategoryDatetime},
-	{ID: "TIME", Label: "time", Category: engine.TypeCategoryDatetime},
-	{ID: "BOOLEAN", Label: "boolean", Category: engine.TypeCategoryBoolean},
-	{ID: "JSON", Label: "json", Category: engine.TypeCategoryJSON},
-	{ID: "JSONB", Label: "jsonb", Category: engine.TypeCategoryJSON},
-	{ID: "UUID", Label: "uuid", Category: engine.TypeCategoryOther},
-	{ID: "INET", Label: "inet", Category: engine.TypeCategoryOther},
-	{ID: "ARRAY", Label: "array", Category: engine.TypeCategoryOther},
-}
+var cockroachDBTypeDefinitions = sourcecatalogspecs.CockroachDBTypeDefinitions
 
 // NewCockroachDBPlugin creates a CockroachDB plugin with PostgreSQL compatibility
 // and CockroachDB-specific overrides for unsupported catalog functions.
@@ -158,9 +133,5 @@ func NewCockroachDBPlugin() *engine.Plugin {
 }
 
 func init() {
-	sourcecatalog.RegisterSessionMetadata(
-		string(engine.DatabaseType_CockroachDB),
-		sourcecatalog.SessionMetadataFromOperatorMap(cockroachDBTypeDefinitions, supportedOperators, AliasMap),
-	)
 	engine.RegisterPlugin(NewCockroachDBPlugin())
 }
