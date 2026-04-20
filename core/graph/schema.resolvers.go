@@ -840,14 +840,19 @@ func (r *mutationResolver) RefreshAzureProvider(ctx context.Context, id string) 
 }
 
 // GenerateAzureADToken is the resolver for the GenerateAzureADToken field.
-func (r *mutationResolver) GenerateAzureADToken(ctx context.Context, providerID string, databaseType string) (string, error) {
+func (r *mutationResolver) GenerateAzureADToken(ctx context.Context, providerID string, sourceType string) (string, error) {
 	if !env.IsAzureProviderEnabled {
 		return "", azure.ErrAzureProviderDisabled
 	}
 
-	scope, err := azure.ScopeForDatabaseType(databaseType)
-	if err != nil {
-		return "", err
+	spec, ok := sourcecatalog.Find(sourceType)
+	if !ok {
+		return "", fmt.Errorf("unsupported source type: %s", sourceType)
+	}
+
+	scope, ok := sourcecatalog.ResolveAzureADScope(spec.ID, spec.Connector)
+	if !ok {
+		return "", fmt.Errorf("Azure AD authentication is not supported for source type: %s", sourceType)
 	}
 
 	registry := providers.GetDefaultRegistry()

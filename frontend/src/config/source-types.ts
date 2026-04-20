@@ -116,6 +116,14 @@ export interface SourcePresentationTraitsDescriptor {
  */
 export interface SourceQueryTraitsDescriptor {
     supportsAnalyze: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['query']['supportsAnalyze'];
+    explainMode: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['query']['explainMode'];
+}
+
+/**
+ * Mock-data traits exposed by the backend source catalog.
+ */
+export interface SourceMockDataTraitsDescriptor {
+    supportsRelationalDependencies: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['mockData']['supportsRelationalDependencies'];
 }
 
 /**
@@ -125,6 +133,7 @@ export interface SourceTraitsDescriptor {
     connection: SourceConnectionTraitsDescriptor;
     presentation: SourcePresentationTraitsDescriptor;
     query: SourceQueryTraitsDescriptor;
+    mockData: SourceMockDataTraitsDescriptor;
 }
 
 /**
@@ -426,6 +435,7 @@ function mergeSourceTypeOverride(
                 connection: { ...(item.traits?.connection ?? {}), ...override.traits.connection },
                 presentation: { ...(item.traits?.presentation ?? {}), ...override.traits.presentation },
                 query: { ...(item.traits?.query ?? {}), ...override.traits.query },
+                mockData: { ...(item.traits?.mockData ?? {}), ...override.traits.mockData },
             }
             : item.traits,
         fields: override.fields ? { ...item.fields, ...override.fields } : item.fields,

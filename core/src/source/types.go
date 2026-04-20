@@ -280,6 +280,20 @@ const (
 	SchemaFidelitySampled SchemaFidelity = "Sampled"
 )
 
+// QueryExplainMode identifies how query-plan inspection should be invoked.
+type QueryExplainMode string
+
+const (
+	// QueryExplainModeNone indicates the source does not declare explain support.
+	QueryExplainModeNone QueryExplainMode = "None"
+	// QueryExplainModeExplain indicates standard EXPLAIN support.
+	QueryExplainModeExplain QueryExplainMode = "Explain"
+	// QueryExplainModeExplainAnalyze indicates EXPLAIN ANALYZE support.
+	QueryExplainModeExplainAnalyze QueryExplainMode = "ExplainAnalyze"
+	// QueryExplainModeExplainPipeline indicates EXPLAIN PIPELINE support.
+	QueryExplainModeExplainPipeline QueryExplainMode = "ExplainPipeline"
+)
+
 // ConnectionTraits describes UI-facing connection behavior for a source type.
 type ConnectionTraits struct {
 	Transport          ConnectionTransport
@@ -296,6 +310,12 @@ type PresentationTraits struct {
 // QueryTraits describes query-surface behavior for a source type.
 type QueryTraits struct {
 	SupportsAnalyze bool
+	ExplainMode     QueryExplainMode
+}
+
+// MockDataTraits describes mock-data behavior for a source type.
+type MockDataTraits struct {
+	SupportsRelationalDependencies bool
 }
 
 // TypeTraits describes non-CRUD source behavior consumed by frontend and CLI.
@@ -303,6 +323,7 @@ type TypeTraits struct {
 	Connection   ConnectionTraits
 	Presentation PresentationTraits
 	Query        QueryTraits
+	MockData     MockDataTraits
 }
 
 // Contract describes the type-level support surface for a source type.

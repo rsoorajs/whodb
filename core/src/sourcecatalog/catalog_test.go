@@ -222,6 +222,12 @@ func TestBuildTypeSpecExposesSourceTraits(t *testing.T) {
 				if !spec.Traits.Query.SupportsAnalyze {
 					t.Fatalf("expected Postgres analyze support")
 				}
+				if spec.Traits.Query.ExplainMode != source.QueryExplainModeExplainAnalyze {
+					t.Fatalf("expected Postgres explain mode %q, got %q", source.QueryExplainModeExplainAnalyze, spec.Traits.Query.ExplainMode)
+				}
+				if !spec.Traits.MockData.SupportsRelationalDependencies {
+					t.Fatalf("expected Postgres mock-data relational dependency support")
+				}
 			},
 		},
 		{
@@ -263,6 +269,18 @@ func TestBuildTypeSpecExposesSourceTraits(t *testing.T) {
 				t.Helper()
 				if spec.Traits.Presentation.SchemaFidelity != source.SchemaFidelitySampled {
 					t.Fatalf("expected OpenSearch schema fidelity %q, got %q", source.SchemaFidelitySampled, spec.Traits.Presentation.SchemaFidelity)
+				}
+			},
+		},
+		{
+			id: "ClickHouse",
+			want: func(t *testing.T, spec source.TypeSpec) {
+				t.Helper()
+				if spec.Traits.Query.ExplainMode != source.QueryExplainModeExplainPipeline {
+					t.Fatalf("expected ClickHouse explain mode %q, got %q", source.QueryExplainModeExplainPipeline, spec.Traits.Query.ExplainMode)
+				}
+				if spec.Traits.MockData.SupportsRelationalDependencies {
+					t.Fatalf("expected ClickHouse mock-data relational dependency support to remain disabled")
 				}
 			},
 		},

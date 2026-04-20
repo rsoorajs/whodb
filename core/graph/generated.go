@@ -239,7 +239,7 @@ type ComplexityRoot struct {
 		CreateSourceObject           func(childComplexity int, parent *model.SourceObjectRefInput, name string, fields []*model.RecordInput) int
 		DeleteSourceRow              func(childComplexity int, ref model.SourceObjectRefInput, values []*model.RecordInput) int
 		ExecuteConfirmedSQL          func(childComplexity int, query string, operationType string) int
-		GenerateAzureADToken         func(childComplexity int, providerID string, databaseType string) int
+		GenerateAzureADToken         func(childComplexity int, providerID string, sourceType string) int
 		GenerateChatTitle            func(childComplexity int, input model.GenerateChatTitleInput) int
 		GenerateCloudSQLIAMAuthToken func(childComplexity int, providerID string, username string) int
 		GenerateMockData             func(childComplexity int, input model.MockDataGenerationInput) int
@@ -384,6 +384,10 @@ type ComplexityRoot struct {
 		AdvancedDefaults func(childComplexity int) int
 	}
 
+	SourceMockDataTraits struct {
+		SupportsRelationalDependencies func(childComplexity int) int
+	}
+
 	SourceObject struct {
 		Actions     func(childComplexity int) int
 		HasChildren func(childComplexity int) int
@@ -435,6 +439,7 @@ type ComplexityRoot struct {
 	}
 
 	SourceQueryTraits struct {
+		ExplainMode     func(childComplexity int) int
 		SupportsAnalyze func(childComplexity int) int
 	}
 
@@ -453,6 +458,7 @@ type ComplexityRoot struct {
 
 	SourceTraits struct {
 		Connection   func(childComplexity int) int
+		MockData     func(childComplexity int) int
 		Presentation func(childComplexity int) int
 		Query        func(childComplexity int) int
 	}
@@ -529,7 +535,7 @@ type MutationResolver interface {
 	UpdateAzureProvider(ctx context.Context, id string, input model.AzureProviderInput) (*model.AzureProvider, error)
 	TestAzureCredentials(ctx context.Context, input model.AzureProviderInput) (model.CloudProviderStatus, error)
 	RefreshAzureProvider(ctx context.Context, id string) (*model.AzureProvider, error)
-	GenerateAzureADToken(ctx context.Context, providerID string, databaseType string) (string, error)
+	GenerateAzureADToken(ctx context.Context, providerID string, sourceType string) (string, error)
 	GenerateCloudSQLIAMAuthToken(ctx context.Context, providerID string, username string) (string, error)
 }
 type QueryResolver interface {
@@ -1435,7 +1441,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.GenerateAzureADToken(childComplexity, args["providerID"].(string), args["databaseType"].(string)), true
+		return e.ComplexityRoot.Mutation.GenerateAzureADToken(childComplexity, args["providerID"].(string), args["sourceType"].(string)), true
 	case "Mutation.GenerateChatTitle":
 		if e.ComplexityRoot.Mutation.GenerateChatTitle == nil {
 			break
@@ -2281,6 +2287,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.SourceDiscoveryPrefill.AdvancedDefaults(childComplexity), true
 
+	case "SourceMockDataTraits.SupportsRelationalDependencies":
+		if e.ComplexityRoot.SourceMockDataTraits.SupportsRelationalDependencies == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceMockDataTraits.SupportsRelationalDependencies(childComplexity), true
+
 	case "SourceObject.Actions":
 		if e.ComplexityRoot.SourceObject.Actions == nil {
 			break
@@ -2462,6 +2475,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.SourceQuerySuggestion.Description(childComplexity), true
 
+	case "SourceQueryTraits.ExplainMode":
+		if e.ComplexityRoot.SourceQueryTraits.ExplainMode == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceQueryTraits.ExplainMode(childComplexity), true
 	case "SourceQueryTraits.SupportsAnalyze":
 		if e.ComplexityRoot.SourceQueryTraits.SupportsAnalyze == nil {
 			break
@@ -2519,6 +2538,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.SourceTraits.Connection(childComplexity), true
+	case "SourceTraits.MockData":
+		if e.ComplexityRoot.SourceTraits.MockData == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceTraits.MockData(childComplexity), true
 	case "SourceTraits.Presentation":
 		if e.ComplexityRoot.SourceTraits.Presentation == nil {
 			break
@@ -2924,11 +2949,11 @@ func (ec *executionContext) field_Mutation_GenerateAzureADToken_args(ctx context
 		return nil, err
 	}
 	args["providerID"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "databaseType", ec.unmarshalNString2string)
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "sourceType", ec.unmarshalNString2string)
 	if err != nil {
 		return nil, err
 	}
-	args["databaseType"] = arg1
+	args["sourceType"] = arg1
 	return args, nil
 }
 
@@ -8704,7 +8729,7 @@ func (ec *executionContext) _Mutation_GenerateAzureADToken(ctx context.Context, 
 		ec.fieldContext_Mutation_GenerateAzureADToken,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().GenerateAzureADToken(ctx, fc.Args["providerID"].(string), fc.Args["databaseType"].(string))
+			return ec.Resolvers.Mutation().GenerateAzureADToken(ctx, fc.Args["providerID"].(string), fc.Args["sourceType"].(string))
 		},
 		nil,
 		ec.marshalNString2string,
@@ -11983,6 +12008,35 @@ func (ec *executionContext) fieldContext_SourceDiscoveryPrefill_AdvancedDefaults
 	return fc, nil
 }
 
+func (ec *executionContext) _SourceMockDataTraits_SupportsRelationalDependencies(ctx context.Context, field graphql.CollectedField, obj *model.SourceMockDataTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceMockDataTraits_SupportsRelationalDependencies,
+		func(ctx context.Context) (any, error) {
+			return obj.SupportsRelationalDependencies, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceMockDataTraits_SupportsRelationalDependencies(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceMockDataTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _SourceObject_Ref(ctx context.Context, field graphql.CollectedField, obj *model.SourceObject) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -12901,6 +12955,35 @@ func (ec *executionContext) fieldContext_SourceQueryTraits_SupportsAnalyze(_ con
 	return fc, nil
 }
 
+func (ec *executionContext) _SourceQueryTraits_ExplainMode(ctx context.Context, field graphql.CollectedField, obj *model.SourceQueryTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceQueryTraits_ExplainMode,
+		func(ctx context.Context) (any, error) {
+			return obj.ExplainMode, nil
+		},
+		nil,
+		ec.marshalNSourceQueryExplainMode2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceQueryExplainMode,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceQueryTraits_ExplainMode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceQueryTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceQueryExplainMode does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _SourceSSLMode_value(ctx context.Context, field graphql.CollectedField, obj *model.SourceSSLMode) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -13228,8 +13311,43 @@ func (ec *executionContext) fieldContext_SourceTraits_Query(_ context.Context, f
 			switch field.Name {
 			case "SupportsAnalyze":
 				return ec.fieldContext_SourceQueryTraits_SupportsAnalyze(ctx, field)
+			case "ExplainMode":
+				return ec.fieldContext_SourceQueryTraits_ExplainMode(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SourceQueryTraits", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceTraits_MockData(ctx context.Context, field graphql.CollectedField, obj *model.SourceTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceTraits_MockData,
+		func(ctx context.Context) (any, error) {
+			return obj.MockData, nil
+		},
+		nil,
+		ec.marshalNSourceMockDataTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceMockDataTraits,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceTraits_MockData(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "SupportsRelationalDependencies":
+				return ec.fieldContext_SourceMockDataTraits_SupportsRelationalDependencies(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceMockDataTraits", field.Name)
 		},
 	}
 	return fc, nil
@@ -13381,6 +13499,8 @@ func (ec *executionContext) fieldContext_SourceType_Traits(_ context.Context, fi
 				return ec.fieldContext_SourceTraits_Presentation(ctx, field)
 			case "Query":
 				return ec.fieldContext_SourceTraits_Query(ctx, field)
+			case "MockData":
+				return ec.fieldContext_SourceTraits_MockData(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SourceTraits", field.Name)
 		},
@@ -19573,6 +19693,45 @@ func (ec *executionContext) _SourceDiscoveryPrefill(ctx context.Context, sel ast
 	return out
 }
 
+var sourceMockDataTraitsImplementors = []string{"SourceMockDataTraits"}
+
+func (ec *executionContext) _SourceMockDataTraits(ctx context.Context, sel ast.SelectionSet, obj *model.SourceMockDataTraits) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceMockDataTraitsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceMockDataTraits")
+		case "SupportsRelationalDependencies":
+			out.Values[i] = ec._SourceMockDataTraits_SupportsRelationalDependencies(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var sourceObjectImplementors = []string{"SourceObject"}
 
 func (ec *executionContext) _SourceObject(ctx context.Context, sel ast.SelectionSet, obj *model.SourceObject) graphql.Marshaler {
@@ -19972,6 +20131,11 @@ func (ec *executionContext) _SourceQueryTraits(ctx context.Context, sel ast.Sele
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "ExplainMode":
+			out.Values[i] = ec._SourceQueryTraits_ExplainMode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -20121,6 +20285,11 @@ func (ec *executionContext) _SourceTraits(ctx context.Context, sel ast.Selection
 			}
 		case "Query":
 			out.Values[i] = ec._SourceTraits_Query(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "MockData":
+			out.Values[i] = ec._SourceTraits_MockData(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -21812,6 +21981,16 @@ func (ec *executionContext) unmarshalNSourceLoginInput2githubᚗcomᚋclideyᚋw
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNSourceMockDataTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceMockDataTraits(ctx context.Context, sel ast.SelectionSet, v *model.SourceMockDataTraits) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceMockDataTraits(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNSourceModel2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceModel(ctx context.Context, v any) (model.SourceModel, error) {
 	var res model.SourceModel
 	err := res.UnmarshalGQL(v)
@@ -22025,6 +22204,16 @@ func (ec *executionContext) marshalNSourceProfileLabelStrategy2githubᚗcomᚋcl
 func (ec *executionContext) unmarshalNSourceProfileLoginInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceProfileLoginInput(ctx context.Context, v any) (model.SourceProfileLoginInput, error) {
 	res, err := ec.unmarshalInputSourceProfileLoginInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNSourceQueryExplainMode2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceQueryExplainMode(ctx context.Context, v any) (model.SourceQueryExplainMode, error) {
+	var res model.SourceQueryExplainMode
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceQueryExplainMode2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceQueryExplainMode(ctx context.Context, sel ast.SelectionSet, v model.SourceQueryExplainMode) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNSourceQuerySuggestion2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceQuerySuggestionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SourceQuerySuggestion) graphql.Marshaler {

@@ -251,6 +251,9 @@ var familySpecs = map[string]FamilySpec{
 
 var extraFieldOrder = []string{
 	"Port",
+	"Region",
+	"Auth Method",
+	"Profile Name",
 	"Parse Time",
 	"Loc",
 	"Allow clear text passwords",
@@ -448,8 +451,32 @@ func buildTypeTraits(entry DatabaseEntry, family FamilySpec) source.TypeTraits {
 	if traits.Presentation.SchemaFidelity == "" {
 		traits.Presentation.SchemaFidelity = source.SchemaFidelityExact
 	}
+	if traits.Query.ExplainMode == "" {
+		switch entry.Connector {
+		case connectorPostgres, connectorCockroachDB, connectorQuestDB:
+			traits.Query.ExplainMode = source.QueryExplainModeExplain
+		case connectorMySQL, connectorMariaDB, connectorTiDB, connectorSqlite3, connectorDuckDB:
+			traits.Query.ExplainMode = source.QueryExplainModeExplain
+		case connectorClickHouse:
+			traits.Query.ExplainMode = source.QueryExplainModeExplainPipeline
+		}
+	}
 	if entry.ID == connectorPostgres {
 		traits.Query.SupportsAnalyze = true
+		traits.Query.ExplainMode = source.QueryExplainModeExplainAnalyze
+	}
+	if traits.Query.ExplainMode == source.QueryExplainModeExplainAnalyze {
+		traits.Query.SupportsAnalyze = true
+	}
+	supportsMockData := false
+	for _, objectType := range family.ObjectTypes {
+		if slices.Contains(objectType.Actions, source.ActionGenerateMockData) {
+			supportsMockData = true
+			break
+		}
+	}
+	if supportsMockData && entry.Connector != connectorClickHouse {
+		traits.MockData.SupportsRelationalDependencies = true
 	}
 	return traits
 }

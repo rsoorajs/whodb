@@ -229,7 +229,7 @@ func NewConnectionView(parent *MainModel) *ConnectionView {
 	inputs := make([]textinput.Model, 15)
 	inputs[fieldName] = newInput("My Connection", 50)
 	inputs[fieldHost] = newInput("localhost", 100)
-	inputs[fieldPort] = newInput("5432", 5)
+	inputs[fieldPort] = newInput("", 5)
 	inputs[fieldUsername] = newInput("postgres", 50)
 
 	inputs[fieldPassword] = newInput("password", 100)
@@ -266,7 +266,7 @@ func NewConnectionView(parent *MainModel) *ConnectionView {
 
 	dbTypes := sourcetypes.IDs()
 
-	return &ConnectionView{
+	view := &ConnectionView{
 		parent:           parent,
 		list:             l,
 		mode:             mode,
@@ -282,6 +282,8 @@ func NewConnectionView(parent *MainModel) *ConnectionView {
 		pingResults:      pingResults,
 		selectorCache:    make(map[string]wrappedSelectableOptionsCacheEntry),
 	}
+	view.updatePortPlaceholder()
+	return view
 }
 
 func (v *ConnectionView) Update(msg tea.Msg) (*ConnectionView, tea.Cmd) {
@@ -1447,7 +1449,7 @@ func (v *ConnectionView) updatePortPlaceholder() {
 func (v *ConnectionView) getDefaultPort(dbType string) int {
 	port, ok := sourcetypes.DefaultPort(dbType)
 	if !ok {
-		return 5432
+		return 0
 	}
 	return port
 }

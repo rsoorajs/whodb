@@ -20,6 +20,7 @@ import {
     SourceHostInputMode,
     SourceHostInputUrlParser,
     SourceModel,
+    SourceQueryExplainMode,
     SourceProfileLabelStrategy,
     SourceSchemaFidelity,
 } from "@graphql";
@@ -47,6 +48,10 @@ export interface SourceContractState extends SourceContractFlags {
     schemaFidelity: SourceSchemaFidelity;
     /** Whether the source supports explain/analyze-style query tooling. */
     supportsAnalyze: boolean;
+    /** Source-owned explain mode for CLI/UI query planning. */
+    explainMode: SourceQueryExplainMode;
+    /** Whether mock-data generation can reason about relational dependencies. */
+    supportsMockDataRelations: boolean;
     /** Whether the catalog is still loading without cached data. */
     loading: boolean;
     /** Whether the source behaves like a NoSQL database in the UI. */
@@ -84,6 +89,8 @@ export function useSourceContract(sourceType: string | undefined): SourceContrac
             profileLabelStrategy: traits?.presentation.profileLabelStrategy ?? SourceProfileLabelStrategy.Default,
             schemaFidelity: traits?.presentation.schemaFidelity ?? SourceSchemaFidelity.Exact,
             supportsAnalyze: traits?.query.supportsAnalyze ?? false,
+            explainMode: traits?.query.explainMode ?? SourceQueryExplainMode.None,
+            supportsMockDataRelations: traits?.mockData.supportsRelationalDependencies ?? true,
             loading,
             isNoSQL: model != null && model !== SourceModel.Relational,
             storageUnitLabel: item?.storageUnitLabel ?? defaultObjectType?.PluralLabel ?? "Storage Units",

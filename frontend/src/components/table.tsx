@@ -386,9 +386,8 @@ export const StorageUnitTable: FC<TableProps> = ({
     const [mockDataOverwriteExisting, setMockDataOverwriteExisting] = useState("append");
     const [mockDataFkDensityRatio, setMockDataFkDensityRatio] = useState("20");
     const [showMockDataConfirmation, setShowMockDataConfirmation] = useState(false);
-    const { isNoSQL, supportsImportData, supportsMockData } = useSourceContract(databaseType);
+    const { isNoSQL, supportsImportData, supportsMockData, supportsMockDataRelations } = useSourceContract(databaseType);
     const isMockDataSupported = supportsMockData && isMockDataGenerationAllowed;
-    const isClickHouse = databaseType === "ClickHouse";
     const isImportSupported = supportsImportData;
     const { data: maxRowData } = useQuery(MockDataMaxRowCountDocument);
     const maxRowCount = maxRowData?.MockDataMaxRowCount || 200;
@@ -1792,7 +1791,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                                         <SelectItem value="overwrite" data-value="overwrite">{t('overwriteExisting')}</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                {!isClickHouse && (
+                                {supportsMockDataRelations && (
                                     <>
                                         <div>
                                             <Label>{t('fkVariety')}</Label>
@@ -1868,10 +1867,10 @@ export const StorageUnitTable: FC<TableProps> = ({
                         )}
                     </div>
                     <SheetFooter className="flex gap-sm px-0">
-                        <Alert variant={isClickHouse ? "default" : "info"} className="mb-4">
+                        <Alert variant={supportsMockDataRelations ? "info" : "default"} className="mb-4">
                             <AlertTitle>{t('mockDataNote')}</AlertTitle>
                             <AlertDescription>
-                                {isClickHouse ? t('mockDataWarningClickHouse') : t('mockDataWarning')}
+                                {supportsMockDataRelations ? t('mockDataWarning') : t('mockDataWarningClickHouse')}
                             </AlertDescription>
                         </Alert>
                         <Button

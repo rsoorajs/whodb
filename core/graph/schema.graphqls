@@ -112,6 +112,13 @@ enum SourceSchemaFidelity {
   Sampled
 }
 
+enum SourceQueryExplainMode {
+  None
+  Explain
+  ExplainAnalyze
+  ExplainPipeline
+}
+
 scalar Upload
 
 enum ImportFileFormat {
@@ -431,12 +438,18 @@ type SourcePresentationTraits {
 
 type SourceQueryTraits {
   SupportsAnalyze: Boolean!
+  ExplainMode: SourceQueryExplainMode!
+}
+
+type SourceMockDataTraits {
+  SupportsRelationalDependencies: Boolean!
 }
 
 type SourceTraits {
   Connection: SourceConnectionTraits!
   Presentation: SourcePresentationTraits!
   Query: SourceQueryTraits!
+  MockData: SourceMockDataTraits!
 }
 
 type SourceType {
@@ -850,7 +863,7 @@ type Mutation {
   TestAzureCredentials(input: AzureProviderInput!): CloudProviderStatus!
   RefreshAzureProvider(id: ID!): AzureProvider!
   # Azure-specific: Generate a short-lived Azure AD token for database authentication
-  GenerateAzureADToken(providerID: ID!, databaseType: String!): String!
+  GenerateAzureADToken(providerID: ID!, sourceType: String!): String!
   # GCP-specific: Generate an OAuth2 access token for Cloud SQL IAM database authentication
   GenerateCloudSQLIAMAuthToken(providerID: ID!, username: String!): String!
 }

@@ -32,7 +32,7 @@ func normalizeDBType(dbType string) string {
 func getDefaultPort(dbType string) int {
 	port, ok := sourcetypes.DefaultPort(dbType)
 	if !ok {
-		return 5432
+		return 0
 	}
 	return port
 }

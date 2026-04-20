@@ -450,6 +450,10 @@ type SourceLoginInput struct {
 	AccessToken *string        `json:"AccessToken,omitempty"`
 }
 
+type SourceMockDataTraits struct {
+	SupportsRelationalDependencies bool `json:"SupportsRelationalDependencies"`
+}
+
 type SourceObject struct {
 	Ref         *SourceObjectRef `json:"Ref"`
 	Kind        SourceObjectKind `json:"Kind"`
@@ -512,7 +516,8 @@ type SourceQuerySuggestion struct {
 }
 
 type SourceQueryTraits struct {
-	SupportsAnalyze bool `json:"SupportsAnalyze"`
+	SupportsAnalyze bool                   `json:"SupportsAnalyze"`
+	ExplainMode     SourceQueryExplainMode `json:"ExplainMode"`
 }
 
 type SourceSSLMode struct {
@@ -532,6 +537,7 @@ type SourceTraits struct {
 	Connection   *SourceConnectionTraits   `json:"Connection"`
 	Presentation *SourcePresentationTraits `json:"Presentation"`
 	Query        *SourceQueryTraits        `json:"Query"`
+	MockData     *SourceMockDataTraits     `json:"MockData"`
 }
 
 type SourceType struct {
@@ -1663,6 +1669,65 @@ func (e *SourceProfileLabelStrategy) UnmarshalJSON(b []byte) error {
 }
 
 func (e SourceProfileLabelStrategy) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SourceQueryExplainMode string
+
+const (
+	SourceQueryExplainModeNone            SourceQueryExplainMode = "None"
+	SourceQueryExplainModeExplain         SourceQueryExplainMode = "Explain"
+	SourceQueryExplainModeExplainAnalyze  SourceQueryExplainMode = "ExplainAnalyze"
+	SourceQueryExplainModeExplainPipeline SourceQueryExplainMode = "ExplainPipeline"
+)
+
+var AllSourceQueryExplainMode = []SourceQueryExplainMode{
+	SourceQueryExplainModeNone,
+	SourceQueryExplainModeExplain,
+	SourceQueryExplainModeExplainAnalyze,
+	SourceQueryExplainModeExplainPipeline,
+}
+
+func (e SourceQueryExplainMode) IsValid() bool {
+	switch e {
+	case SourceQueryExplainModeNone, SourceQueryExplainModeExplain, SourceQueryExplainModeExplainAnalyze, SourceQueryExplainModeExplainPipeline:
+		return true
+	}
+	return false
+}
+
+func (e SourceQueryExplainMode) String() string {
+	return string(e)
+}
+
+func (e *SourceQueryExplainMode) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SourceQueryExplainMode(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SourceQueryExplainMode", str)
+	}
+	return nil
+}
+
+func (e SourceQueryExplainMode) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SourceQueryExplainMode) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SourceQueryExplainMode) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

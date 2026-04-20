@@ -114,6 +114,15 @@ func DefaultPort(input string) (int, bool) {
 	return port, true
 }
 
+// ExplainMode returns the declared explain strategy for a source type.
+func ExplainMode(input string) (source.QueryExplainMode, bool) {
+	spec, ok := Find(input)
+	if !ok || spec.Traits.Query.ExplainMode == "" || spec.Traits.Query.ExplainMode == source.QueryExplainModeNone {
+		return source.QueryExplainModeNone, false
+	}
+	return spec.Traits.Query.ExplainMode, true
+}
+
 // IsFileTransport reports whether a source uses file-backed transport.
 func IsFileTransport(input string) bool {
 	spec, ok := Find(input)

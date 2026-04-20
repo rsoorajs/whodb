@@ -582,7 +582,7 @@ func TestConnectionView_GetDefaultPort(t *testing.T) {
 		{"ClickHouse", 9000},
 		{"ElasticSearch", 9200},
 		{"Sqlite3", 0},
-		{"Unknown", 5432},
+		{"Unknown", 0},
 	}
 
 	for _, tt := range tests {

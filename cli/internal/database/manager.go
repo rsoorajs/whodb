@@ -30,6 +30,7 @@ import (
 	"github.com/clidey/whodb/cli/internal/bootstrap"
 	"github.com/clidey/whodb/cli/internal/config"
 	connresolver "github.com/clidey/whodb/cli/internal/connections"
+	"github.com/clidey/whodb/cli/internal/sourcetypes"
 	tunnelpkg "github.com/clidey/whodb/cli/internal/ssh"
 	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src"
@@ -38,6 +39,7 @@ import (
 	"github.com/clidey/whodb/core/src/llm"
 	queryast "github.com/clidey/whodb/core/src/query"
 	"github.com/clidey/whodb/core/src/querysuggestions"
+	"github.com/clidey/whodb/core/src/source"
 	"github.com/clidey/whodb/core/src/sourcecatalog"
 	"github.com/xuri/excelize/v2"
 	"golang.org/x/sync/errgroup"
@@ -828,25 +830,29 @@ func (w *countingQueryStreamWriter) WriteRow(row []string) error {
 	return w.writer.WriteRow(row)
 }
 
-// ExecuteExplain prepends the appropriate EXPLAIN prefix for the current
-// database type and executes the resulting query. The raw result is returned
-// so callers can display the plan output.
+// ExecuteExplain prepends the source-declared explain prefix for the current
+// source type and executes the resulting query. The raw result is returned so
+// callers can display the plan output.
 func (m *Manager) ExecuteExplain(query string) (*engine.GetRowsResult, error) {
 	if m.currentConnection == nil {
 		return nil, fmt.Errorf("not connected to any database")
 	}
 
-	dbType := strings.ToLower(m.currentConnection.Type)
+	explainMode, ok := sourcetypes.ExplainMode(m.currentConnection.Type)
+	if !ok {
+		return nil, fmt.Errorf("explain is not supported for source type %s", m.currentConnection.Type)
+	}
+
 	var explainQuery string
-	switch dbType {
-	case "postgres":
+	switch explainMode {
+	case source.QueryExplainModeExplainAnalyze:
 		explainQuery = "EXPLAIN ANALYZE " + query
-	case "mysql", "mariadb", "sqlite3":
-		explainQuery = "EXPLAIN " + query
-	case "clickhouse":
+	case source.QueryExplainModeExplainPipeline:
 		explainQuery = "EXPLAIN PIPELINE " + query
-	default:
+	case source.QueryExplainModeExplain:
 		explainQuery = "EXPLAIN " + query
+	default:
+		return nil, fmt.Errorf("unsupported explain mode %s for source type %s", explainMode, m.currentConnection.Type)
 	}
 
 	return m.ExecuteQuery(explainQuery)

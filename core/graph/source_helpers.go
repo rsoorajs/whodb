@@ -260,6 +260,10 @@ func sourceTraitsToModel(traits source.TypeTraits) *model.SourceTraits {
 		},
 		Query: &model.SourceQueryTraits{
 			SupportsAnalyze: traits.Query.SupportsAnalyze,
+			ExplainMode:     model.SourceQueryExplainMode(traits.Query.ExplainMode),
+		},
+		MockData: &model.SourceMockDataTraits{
+			SupportsRelationalDependencies: traits.MockData.SupportsRelationalDependencies,
 		},
 	}
 }

@@ -28,8 +28,6 @@ import {
     GetGraphQuery,
     GetGraphQueryVariables,
     GetColumnsBatchDocument,
-    GetStorageUnitsDocument,
-    StorageUnit,
 } from '@graphql';
 import {useSourceContract} from "../../hooks/useSourceContract";
 import {useAppSelector} from "../../store/hooks";
@@ -48,11 +46,13 @@ import {
 } from "@clidey/ux";
 import {useNavigate} from "react-router-dom";
 import {FolderIcon, RectangleGroupIcon, TableCellsIcon} from "../../components/heroicons";
-import {buildSourceParentRef, buildSourceScopeRef, getObjectNameFromRef} from "../../utils/source-refs";
+import {buildSourceScopeRef, getObjectNameFromRef} from "../../utils/source-refs";
+
+type GraphStorageUnit = NonNullable<GetGraphQuery["Graph"]>[number]["Unit"];
 
 // Helper function to group storage units by type
-function groupByType(units: StorageUnit[]) {
-    const groups: Record<string, StorageUnit[]> = {};
+function groupByType(units: GraphStorageUnit[]) {
+    const groups: Record<string, GraphStorageUnit[]> = {};
     for (const unit of units) {
         const typeAttr = unit.Attributes.find(a => a.Key === "Type")?.Value ?? "";
         const type = toTitleCase(typeAttr);
@@ -70,7 +70,7 @@ interface GraphSidebarProps {
     setSearch: (search: string) => void;
     selectedUnits: Set<string>;
     setSelectedUnits: (units: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
-    storageUnits: StorageUnit[];
+    storageUnits: GraphStorageUnit[];
     unitsLoading: boolean;
 }
 
@@ -87,7 +87,7 @@ const GraphSidebar: FC<GraphSidebarProps> = ({
     const { storageUnitLabel } = useSourceContract(current?.Type);
     const children = useMemo(() => {
         const units = storageUnits
-            .filter((u: StorageUnit) => u.Name.toLowerCase().includes(search.trim().toLowerCase()));
+            .filter((u: GraphStorageUnit) => u.Name.toLowerCase().includes(search.trim().toLowerCase()));
         const groups = groupByType(units);
         const groupEntries = Object.entries(groups);
         if (groupEntries.length === 0) {
@@ -159,7 +159,7 @@ export const GraphPage: FC = () => {
     const reactFlowRef = useRef<IGraphInstance>();
     const schema = useAppSelector(state => state.database.schema);
     const current = useAppSelector(state => state.auth.current);
-    const { item, singularStorageUnitLabel, storageUnitLabel, supportsSchema } = useSourceContract(current?.Type);
+    const { item, singularStorageUnitLabel, storageUnitLabel } = useSourceContract(current?.Type);
     const navigate = useNavigate();
     const [search, setSearch] = useState("");
     const [selectedUnits, setSelectedUnits] = useState<Set<string>>(new Set());
@@ -168,21 +168,11 @@ export const GraphPage: FC = () => {
 
     const [fetchColumnsBatch] = useLazyQuery(GetColumnsBatchDocument);
     const graphScopeRef = useMemo(() => buildSourceScopeRef(item, current, schema), [current, item, schema]);
-    const browseParentRef = useMemo(() => buildSourceParentRef(item, current, schema), [current, item, schema]);
     const graphQueryOptions = current
         ? {
             variables: {
                 ref: graphScopeRef,
             },
-        }
-        : skipToken;
-    const storageUnitsQueryOptions = current && (!supportsSchema || schema !== "")
-        ? {
-            variables: {
-                parent: browseParentRef,
-            },
-            fetchPolicy: "cache-and-network" as const,
-            nextFetchPolicy: "cache-first" as const,
         }
         : skipToken;
 
@@ -194,22 +184,24 @@ export const GraphPage: FC = () => {
     const graphData = useMemo(() => {
         return (graphQueryData?.Graph ?? []) as GetGraphQuery["Graph"];
     }, [graphQueryData?.Graph]);
-
-    // Fetch all storage units for sidebar selection
-    const {data: storageUnitsData, loading: unitsLoading, refetch: refetchStorageUnits} = useQuery(GetStorageUnitsDocument, storageUnitsQueryOptions);
     const storageUnits = useMemo(() => {
-        return (storageUnitsData?.StorageUnit ?? []) as StorageUnit[];
-    }, [storageUnitsData?.StorageUnit]);
+        return graphData.map(node => node.Unit);
+    }, [graphData]);
 
-    // Refetch when the connection context changes (profile switch or database switch)
+    // Clear graph-specific UI state when the connection context changes.
     const currentProfileId = current?.Id;
     const currentDatabase = current?.Database;
     useEffect(() => {
+        setSelectedUnits(new Set());
+        setTableColumns({});
+    }, [currentProfileId, currentDatabase, schema]);
+
+    // Refetch when the connection context changes (profile switch or database switch).
+    useEffect(() => {
         if (currentProfileId) {
             refetchGraph();
-            refetchStorageUnits();
         }
-    }, [currentProfileId, currentDatabase, refetchGraph, refetchStorageUnits]);
+    }, [currentProfileId, currentDatabase, refetchGraph]);
 
     // Default selection logic: auto-select up to 10 units
     useEffect(() => {
@@ -418,7 +410,7 @@ export const GraphPage: FC = () => {
             selectedUnits={selectedUnits}
             setSelectedUnits={setSelectedUnits}
             storageUnits={storageUnits}
-            unitsLoading={unitsLoading}
+            unitsLoading={graphLoading}
         />
     }>
         <div className="flex-1 h-full">
