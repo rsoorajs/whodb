@@ -82,3 +82,33 @@ func TestQuestDBRegistersPostgresStyleSSLModes(t *testing.T) {
 		t.Fatal("expected QuestDB to reuse PostgreSQL SSL mode aliases")
 	}
 }
+
+func TestQuestDBGetSSLStatusUsesConfiguredMode(t *testing.T) {
+	plugin := NewQuestDBPlugin().PluginFunctions.(*QuestDBPlugin)
+
+	disabledStatus, err := plugin.GetSSLStatus(&engine.PluginConfig{
+		Credentials: &engine.Credentials{
+			Type: string(engine.DatabaseType_QuestDB),
+		},
+	})
+	if err != nil {
+		t.Fatalf("GetSSLStatus returned error for disabled config: %v", err)
+	}
+	if disabledStatus == nil || disabledStatus.IsEnabled || disabledStatus.Mode != string(ssl.SSLModeDisabled) {
+		t.Fatalf("expected disabled QuestDB SSL status, got %#v", disabledStatus)
+	}
+
+	enabledStatus, err := plugin.GetSSLStatus(&engine.PluginConfig{
+		Credentials: &engine.Credentials{
+			Type:     string(engine.DatabaseType_QuestDB),
+			Hostname: "questdb.local",
+			Advanced: []engine.Record{{Key: ssl.KeySSLMode, Value: "require"}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("GetSSLStatus returned error for enabled config: %v", err)
+	}
+	if enabledStatus == nil || !enabledStatus.IsEnabled || enabledStatus.Mode != string(ssl.SSLModeRequired) {
+		t.Fatalf("expected enabled QuestDB SSL status, got %#v", enabledStatus)
+	}
+}

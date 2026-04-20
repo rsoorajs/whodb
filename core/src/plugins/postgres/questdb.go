@@ -22,6 +22,7 @@ import (
 	"github.com/clidey/whodb/core/src/common/ssl"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
+	"github.com/clidey/whodb/core/src/plugins"
 )
 
 // QuestDBPlugin extends PostgresPlugin with QuestDB-specific catalog behavior.
@@ -90,6 +91,33 @@ func (p *QuestDBPlugin) GetPrimaryKeyColQuery() string {
 // graph metadata.
 func (p *QuestDBPlugin) GetForeignKeyRelationships(_ *engine.PluginConfig, _, _ string) (map[string]*engine.ForeignKeyRelationship, error) {
 	return map[string]*engine.ForeignKeyRelationship{}, nil
+}
+
+// GetSSLStatus derives QuestDB SSL status from connection configuration.
+// QuestDB speaks the PostgreSQL wire protocol but does not expose pg_stat_ssl,
+// so the generic PostgreSQL runtime query fails.
+func (p *QuestDBPlugin) GetSSLStatus(config *engine.PluginConfig) (*engine.SSLStatus, error) {
+	if cached := plugins.GetCachedSSLStatus(config); cached != nil {
+		return cached, nil
+	}
+
+	sslConfig := ssl.ParseSSLConfig(engine.DatabaseType_QuestDB, config.Credentials.Advanced, config.Credentials.Hostname, config.Credentials.IsProfile)
+
+	var status *engine.SSLStatus
+	if sslConfig == nil || !sslConfig.IsEnabled() {
+		status = &engine.SSLStatus{
+			IsEnabled: false,
+			Mode:      string(ssl.SSLModeDisabled),
+		}
+	} else {
+		status = &engine.SSLStatus{
+			IsEnabled: true,
+			Mode:      string(sslConfig.Mode),
+		}
+	}
+
+	plugins.SetCachedSSLStatus(config, status)
+	return status, nil
 }
 
 // NewQuestDBPlugin creates a QuestDB plugin that reuses the PostgreSQL runtime

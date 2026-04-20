@@ -63,7 +63,10 @@ export function useSourceTypeItems(
 ): UseSourceTypeItemsResult {
     const [cachedCatalog] = useState<BackendSourceType[]>(() => readCachedSourceCatalog());
     const { data, loading, error } = useQuery(SourceTypesDocument, {
-        fetchPolicy: "cache-first",
+        // The backend source catalog is authoritative. In dev, always hit the
+        // backend so HMR sessions do not keep stale source surfaces in the
+        // Apollo cache after backend contract changes.
+        fetchPolicy: import.meta.env.DEV ? "network-only" : "cache-and-network",
     });
     const cloudProvidersEnabled = options.cloudProvidersEnabled;
 

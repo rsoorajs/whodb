@@ -199,7 +199,6 @@ export const Sidebar: FC = () => {
     const sslStatus = useAppSelector(state => state.auth.sslStatus);
     const {
         item,
-        isNoSQL,
         storageUnitLabel,
         supportsChat,
         supportsGraph,
@@ -598,14 +597,17 @@ export const Sidebar: FC = () => {
                                             )}
                                         </div>
                                     )}
-                                    {current != null && !isNoSQL && (
-                                        <NavItem icon={<SparklesIcon className="w-4 h-4" />} label={t('chat')} path={InternalRoutes.Chat.path} pathname={pathname} open={open} tooltip={t('chat')} />
-                                    )}
-                                    <NavItem icon={<TableCellsIcon className="w-4 h-4" />} label={storageUnitLabel} path={InternalRoutes.Dashboard.StorageUnit.path} pathname={pathname} open={open} tooltip={storageUnitLabel} />
-                                    <NavItem icon={<RectangleGroupIcon className="w-4 h-4" />} label={t('graph')} path={InternalRoutes.Graph.path} pathname={pathname} open={open} tooltip={t('graph')} />
-                                    {supportsScratchpad && (
-                                        <NavItem icon={<CommandLineIcon className="w-4 h-4" />} label={t('scratchpad')} path={InternalRoutes.RawExecute.path} pathname={pathname} open={open} tooltip={t('scratchpad')} />
-                                    )}
+                                    {sidebarRoutes.map(route => (
+                                        <NavItem
+                                            key={route.path}
+                                            icon={route.icon}
+                                            label={route.title}
+                                            path={route.path}
+                                            pathname={pathname}
+                                            open={open}
+                                            tooltip={route.title}
+                                        />
+                                    ))}
 
                                     <SidebarSeparator className={cn("my-4", { "mx-0": !open })} />
 
