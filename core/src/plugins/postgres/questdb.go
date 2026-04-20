@@ -18,11 +18,16 @@ package postgres
 
 import (
 	"database/sql"
+	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/clidey/whodb/core/src/common/ssl"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/plugins"
+	gorm_plugin "github.com/clidey/whodb/core/src/plugins/gorm"
+	"gorm.io/gorm"
 )
 
 // QuestDBPlugin extends PostgresPlugin with QuestDB-specific catalog behavior.
@@ -31,6 +36,12 @@ import (
 // relation size functions used by the base plugin.
 type QuestDBPlugin struct {
 	PostgresPlugin
+}
+
+type questDBColumnMetadata struct {
+	name       string
+	dataType   string
+	isNullable bool
 }
 
 // GetTableInfoQuery returns a QuestDB-compatible table info query.
@@ -63,14 +74,99 @@ func (p *QuestDBPlugin) GetTableNameAndAttributes(rows *sql.Rows) (string, []eng
 // GetStorageUnitExistsQuery returns a QuestDB-compatible table existence check.
 func (p *QuestDBPlugin) GetStorageUnitExistsQuery() string {
 	return `
-		SELECT EXISTS(
-			SELECT 1
-			FROM information_schema.tables
-			WHERE ($1 = '' OR table_schema = $1)
-				AND table_name = $2
-				AND table_schema NOT IN ('information_schema', 'pg_catalog')
-		)
+		SELECT CASE
+			WHEN COUNT(1) > 0 THEN TRUE
+			ELSE FALSE
+		END
+		FROM information_schema.tables
+		WHERE ($1 = '' OR table_schema = $1)
+			AND table_name = $2
+			AND table_schema NOT IN ('information_schema', 'pg_catalog')
 	`
+}
+
+func (p *QuestDBPlugin) getColumnsQuery() string {
+	return `
+		SELECT column_name, data_type, is_nullable
+		FROM information_schema.columns
+		WHERE ($1 = '' OR table_schema = $1)
+			AND table_name = $2
+		ORDER BY ordinal_position
+	`
+}
+
+func (p *QuestDBPlugin) normalizeQuestDBColumnMetadata(columnName string, dataType string, isNullable string) questDBColumnMetadata {
+	return questDBColumnMetadata{
+		name:       columnName,
+		dataType:   p.NormalizeType(dataType),
+		isNullable: strings.EqualFold(isNullable, "yes"),
+	}
+}
+
+func (p *QuestDBPlugin) readQuestDBColumns(db *gorm.DB, schema string, tableName string) ([]questDBColumnMetadata, error) {
+	rows, err := db.Raw(p.getColumnsQuery(), schema, tableName).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	columns := make([]questDBColumnMetadata, 0)
+	for rows.Next() {
+		var columnName string
+		var dataType string
+		var isNullable string
+		if err := rows.Scan(&columnName, &dataType, &isNullable); err != nil {
+			return nil, err
+		}
+		columns = append(columns, p.normalizeQuestDBColumnMetadata(columnName, dataType, isNullable))
+	}
+	return columns, nil
+}
+
+// GetColumnTypes returns QuestDB column types via information_schema.columns.
+func (p *QuestDBPlugin) GetColumnTypes(db *gorm.DB, schema, tableName string) (map[string]gorm_plugin.ColumnTypeInfo, error) {
+	columns, err := p.readQuestDBColumns(db, schema, tableName)
+	if err != nil {
+		return nil, err
+	}
+
+	columnTypes := make(map[string]gorm_plugin.ColumnTypeInfo, len(columns))
+	for _, column := range columns {
+		columnTypes[column.name] = gorm_plugin.ColumnTypeInfo{
+			Type:       column.dataType,
+			IsNullable: column.isNullable,
+		}
+	}
+	return columnTypes, nil
+}
+
+// GetColumnsForTable returns QuestDB columns via information_schema.columns.
+func (p *QuestDBPlugin) GetColumnsForTable(config *engine.PluginConfig, schema string, storageUnit string) ([]engine.Column, error) {
+	return plugins.WithConnection(config, p.DB, func(db *gorm.DB) ([]engine.Column, error) {
+		columnMetadata, err := p.readQuestDBColumns(db, schema, storageUnit)
+		if err != nil {
+			log.WithError(err).Error(fmt.Sprintf("Failed to get columns for table %s.%s", schema, storageUnit))
+			return nil, err
+		}
+
+		primaryKeys, err := p.GetPrimaryKeyColumns(db, schema, storageUnit)
+		if err != nil {
+			log.WithError(err).Warn(fmt.Sprintf("Failed to get primary keys for table %s.%s", schema, storageUnit))
+			primaryKeys = []string{}
+		}
+
+		columns := make([]engine.Column, 0, len(columnMetadata))
+		for _, column := range columnMetadata {
+			columns = append(columns, engine.Column{
+				Name:       column.name,
+				Type:       column.dataType,
+				IsNullable: column.isNullable,
+				IsPrimary:  slices.Contains(primaryKeys, column.name),
+			})
+		}
+
+		return columns, nil
+	})
 }
 
 // GetPrimaryKeyColQuery returns a primary key query that tolerates schema-less

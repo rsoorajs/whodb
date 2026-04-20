@@ -54,10 +54,39 @@ func TestQuestDBOverridesPostgresCatalogQueries(t *testing.T) {
 	if !strings.Contains(existsQuery, "($1 = '' OR table_schema = $1)") {
 		t.Fatalf("expected QuestDB storage-unit exists query to tolerate empty schema, got:\n%s", existsQuery)
 	}
+	if strings.Contains(strings.ToUpper(existsQuery), "EXISTS(") {
+		t.Fatalf("expected QuestDB storage-unit exists query to avoid EXISTS(), got:\n%s", existsQuery)
+	}
+	if strings.Contains(existsQuery, "COUNT(*)") {
+		t.Fatalf("expected QuestDB storage-unit exists query to avoid COUNT(*), got:\n%s", existsQuery)
+	}
+	if !strings.Contains(existsQuery, "COUNT(1)") {
+		t.Fatalf("expected QuestDB storage-unit exists query to use COUNT(1), got:\n%s", existsQuery)
+	}
+
+	columnQuery := plugin.getColumnsQuery()
+	if !strings.Contains(columnQuery, "information_schema.columns") {
+		t.Fatalf("expected QuestDB columns query to use information_schema.columns, got:\n%s", columnQuery)
+	}
 
 	pkQuery := plugin.GetPrimaryKeyColQuery()
 	if !strings.Contains(pkQuery, "($1 = '' OR n.nspname = $1)") {
 		t.Fatalf("expected QuestDB primary-key query to tolerate empty schema, got:\n%s", pkQuery)
+	}
+}
+
+func TestQuestDBNormalizesColumnMetadata(t *testing.T) {
+	plugin := NewQuestDBPlugin().PluginFunctions.(*QuestDBPlugin)
+
+	column := plugin.normalizeQuestDBColumnMetadata("created_at", "timestamp without time zone", "YES")
+	if column.name != "created_at" {
+		t.Fatalf("expected column name created_at, got %q", column.name)
+	}
+	if column.dataType != "TIMESTAMP" {
+		t.Fatalf("expected normalized type TIMESTAMP, got %q", column.dataType)
+	}
+	if !column.isNullable {
+		t.Fatal("expected YES nullable metadata to map to true")
 	}
 }
 
