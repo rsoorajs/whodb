@@ -60,6 +60,15 @@ func TestCloudCmd_HasExpectedSubcommands(t *testing.T) {
 	}
 }
 
+func TestCloudCmd_HelpIncludesAlphaWarning(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	if !strings.Contains(cloudCmd.Long, "ALPHA WARNING:") {
+		t.Fatalf("expected cloud help to include alpha warning, got %q", cloudCmd.Long)
+	}
+}
+
 func TestCloudProvidersList_DisabledSupportReturnsError(t *testing.T) {
 	cleanup := setupTestEnv(t)
 	defer cleanup()
@@ -104,7 +113,7 @@ func TestCloudProvidersList_JSONNoProviders(t *testing.T) {
 	env.IsGCPProviderEnabled = false
 
 	command := newCloudProvidersListCommand()
-	stdout, _ := setCommandBuffers(t, command)
+	stdout, stderr := setCommandBuffers(t, command)
 	command.SetArgs([]string{"--format", "json"})
 
 	if err := command.Execute(); err != nil {
@@ -112,6 +121,9 @@ func TestCloudProvidersList_JSONNoProviders(t *testing.T) {
 	}
 	if stdout.String() != "[]\n" {
 		t.Fatalf("expected empty JSON array, got %q", stdout.String())
+	}
+	if strings.Contains(stderr.String(), "ALPHA") {
+		t.Fatalf("expected JSON output to suppress alpha warning, got %q", stderr.String())
 	}
 }
 

@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"sort"
 	"strings"
 	"time"
@@ -33,6 +34,11 @@ var cloudCmd = &cobra.Command{
 	Use:   "cloud",
 	Short: "Inspect cloud providers and discovered resources",
 	Long: `Inspect configured cloud providers and the resources they discover.
+
+ALPHA WARNING:
+  The cloud provider and discovered-resource workflow is still in testing.
+  It is not ready for production use yet, and provider/resource coverage may
+  still have rough edges. Mileage may vary.
 
 This command works with the shared WhoDB cloud provider runtime. When provider
 support is enabled, it can inspect configured providers and discover
@@ -93,6 +99,8 @@ func newCloudProvidersListCommand() *cobra.Command {
 				return err
 			}
 
+			writeCloudAlphaWarning(cmd, format, quiet)
+
 			providers, err := cloudruntime.ListProviders()
 			if err != nil {
 				return err
@@ -125,6 +133,8 @@ func newCloudProvidersTestCommand() *cobra.Command {
 				return err
 			}
 
+			writeCloudAlphaWarning(cmd, format, false)
+
 			provider, err := cloudruntime.TestProvider(args[0])
 			if err != nil {
 				return err
@@ -156,6 +166,8 @@ func newCloudProvidersRefreshCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			writeCloudAlphaWarning(cmd, format, false)
 
 			if refreshAll && len(args) > 0 {
 				return fmt.Errorf("provider ID cannot be used with --all")
@@ -219,6 +231,8 @@ func newCloudConnectionsListCommand() *cobra.Command {
 				return err
 			}
 
+			writeCloudAlphaWarning(cmd, format, quiet)
+
 			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 			defer cancel()
 
@@ -239,6 +253,33 @@ func newCloudConnectionsListCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&quiet, "quiet", false, "suppress informational output")
 
 	return cmd
+}
+
+func writeCloudAlphaWarning(cmd *cobra.Command, format output.Format, quiet bool) {
+	if quiet || shouldSuppressInformationalOutput(cmd, format) {
+		return
+	}
+
+	writeAlphaWarningBlock(
+		cmd.ErrOrStderr(),
+		"CLOUD IS ALPHA / IN TESTING",
+		"The cloud provider and discovered-resource workflow is not ready for production use yet.",
+		"Expect rough edges, incomplete provider/resource coverage, and behavior changes.",
+		"Mileage may vary.",
+	)
+}
+
+func writeAlphaWarningBlock(w io.Writer, title string, lines ...string) {
+	if w == nil {
+		return
+	}
+
+	fmt.Fprintf(w, "\n========== %s ==========\n", title)
+	for _, line := range lines {
+		fmt.Fprintln(w, line)
+	}
+	fmt.Fprintln(w, "========================================")
+	fmt.Fprintln(w)
 }
 
 func renderProviderList(cmd *cobra.Command, providers []cloudruntime.ProviderSummary, format output.Format, quiet bool) error {

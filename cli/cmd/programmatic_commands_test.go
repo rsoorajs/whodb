@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -28,6 +29,9 @@ import (
 	dbmgr "github.com/clidey/whodb/cli/internal/database"
 	"github.com/clidey/whodb/cli/internal/history"
 	"github.com/clidey/whodb/cli/internal/schemadiff"
+	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/env"
+	"github.com/clidey/whodb/core/src/providers"
 	"github.com/spf13/cobra"
 )
 
@@ -122,6 +126,30 @@ func saveTestConnection(t *testing.T, conn config.Connection) {
 	}
 }
 
+type commandTestProvider struct {
+	id          string
+	name        string
+	connections []providers.DiscoveredConnection
+}
+
+func (p *commandTestProvider) Type() providers.ProviderType { return providers.ProviderTypeAWS }
+
+func (p *commandTestProvider) ID() string { return p.id }
+
+func (p *commandTestProvider) Name() string { return p.name }
+
+func (p *commandTestProvider) DiscoverConnections(ctx context.Context) ([]providers.DiscoveredConnection, error) {
+	return append([]providers.DiscoveredConnection(nil), p.connections...), nil
+}
+
+func (p *commandTestProvider) TestConnection(ctx context.Context) error { return nil }
+
+func (p *commandTestProvider) RefreshConnection(ctx context.Context, connectionID string) (bool, error) {
+	return false, nil
+}
+
+func (p *commandTestProvider) Close(ctx context.Context) error { return nil }
+
 // TestSchemasCmd_Exists verifies the schemas command is registered
 func TestSchemasCmd_Exists(t *testing.T) {
 	cleanup := setupTestEnv(t)
@@ -166,6 +194,15 @@ func TestTablesCmd_Exists(t *testing.T) {
 	}
 	if !found {
 		t.Error("Expected 'tables' command to be registered")
+	}
+}
+
+func TestConnectCmd_HelpIncludesAlphaWarning(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	if !strings.Contains(connectCmd.Long, "ALPHA WARNING:") {
+		t.Fatalf("expected connect help to include alpha warning, got %q", connectCmd.Long)
 	}
 }
 
@@ -595,6 +632,99 @@ func TestConnectionsAddCmd_SSLAdvanced(t *testing.T) {
 	}
 	if errBuf.Len() != 0 {
 		t.Errorf("Expected no stderr output, got %q", errBuf.String())
+	}
+}
+
+func TestConnectionsAddCmd_FromDiscovered(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+	defer func() {
+		connAddName = ""
+		connAddType = ""
+		connAddHost = ""
+		connAddPort = 0
+		connAddUser = ""
+		connAddPassword = ""
+		connAddDatabase = ""
+		connAddSchema = ""
+		connAddFromDiscovered = ""
+		connAddSSLMode = ""
+		connAddSSLCA = ""
+		connAddSSLCert = ""
+		connAddSSLKey = ""
+		connAddSSLServerName = ""
+		connectionsFormat = "auto"
+		connectionsQuiet = false
+		_ = providers.GetDefaultRegistry().Close(context.Background())
+	}()
+
+	originalAWS := env.IsAWSProviderEnabled
+	originalAzure := env.IsAzureProviderEnabled
+	originalGCP := env.IsGCPProviderEnabled
+	t.Cleanup(func() {
+		env.IsAWSProviderEnabled = originalAWS
+		env.IsAzureProviderEnabled = originalAzure
+		env.IsGCPProviderEnabled = originalGCP
+	})
+	env.IsAWSProviderEnabled = true
+	env.IsAzureProviderEnabled = false
+	env.IsGCPProviderEnabled = false
+
+	if err := providers.GetDefaultRegistry().Register(&commandTestProvider{
+		id:   "aws-prod",
+		name: "AWS Prod",
+		connections: []providers.DiscoveredConnection{{
+			ID:           "aws-prod/prod-db",
+			ProviderType: providers.ProviderTypeAWS,
+			ProviderID:   "aws-prod",
+			Name:         "prod-db",
+			DatabaseType: engine.DatabaseType_Postgres,
+			Status:       providers.ConnectionStatusAvailable,
+			Metadata: map[string]string{
+				"endpoint": "prod-db.example.com",
+				"port":     "5432",
+			},
+		}},
+	}); err != nil {
+		t.Fatalf("Register failed: %v", err)
+	}
+
+	connectionsFormat = "json"
+	connAddName = ""
+	connAddType = ""
+	connAddUser = "alice"
+	connAddPassword = "secret"
+	connAddDatabase = "app"
+	connAddFromDiscovered = "aws-prod/prod-db"
+
+	outBuf, errBuf := setCommandBuffers(t, connectionsAddCmd)
+
+	if err := connectionsAddCmd.RunE(connectionsAddCmd, []string{}); err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		t.Fatalf("LoadConfig failed: %v", err)
+	}
+	conn, err := cfg.GetConnection("prod-db")
+	if err != nil {
+		t.Fatalf("expected saved connection: %v", err)
+	}
+
+	if conn.Host != "prod-db.example.com" || conn.Port != 5432 {
+		t.Fatalf("expected discovered host/port, got %#v", conn)
+	}
+	if conn.Advanced["SSL Mode"] != "require" {
+		t.Fatalf("expected discovered SSL prefill, got %#v", conn.Advanced)
+	}
+
+	envelope := decodeJSONEnvelope[safeConnectionOutput](t, outBuf)
+	if envelope.Data.Name != "prod-db" {
+		t.Fatalf("expected discovered name to be used, got %#v", envelope.Data)
+	}
+	if errBuf.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", errBuf.String())
 	}
 }
 

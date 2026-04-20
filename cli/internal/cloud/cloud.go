@@ -23,8 +23,13 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/clidey/whodb/cli/internal/config"
+	"github.com/clidey/whodb/cli/pkg/cloudprefill"
+	"github.com/clidey/whodb/core/src/dbcatalog"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/providers"
 	"github.com/clidey/whodb/core/src/settings"
@@ -153,6 +158,61 @@ func ListConnections(ctx context.Context, providerID string) ([]ConnectionSummar
 	})
 
 	return result, err
+}
+
+// ResolveConnection returns one discovered connection by its globally unique
+// discovery ID.
+func ResolveConnection(ctx context.Context, id string) (ConnectionSummary, error) {
+	connections, err := ListConnections(ctx, "")
+	if err != nil && len(connections) == 0 {
+		return ConnectionSummary{}, err
+	}
+
+	for _, conn := range connections {
+		if conn.ID == id {
+			return conn, nil
+		}
+	}
+
+	if err != nil {
+		return ConnectionSummary{}, err
+	}
+
+	return ConnectionSummary{}, fmt.Errorf("discovered connection %q not found", id)
+}
+
+// BuildPrefillConnection converts a discovered cloud resource into a CLI
+// connection prefill that can be used by the connect flow or connection form.
+func BuildPrefillConnection(summary ConnectionSummary) (config.Connection, error) {
+	entry, ok := dbcatalog.Find(summary.SourceType)
+	if !ok {
+		return config.Connection{}, fmt.Errorf("discovered connection %q uses unsupported database type %q", summary.ID, summary.SourceType)
+	}
+
+	host := strings.TrimSpace(summary.Metadata["endpoint"])
+	if host == "" && entry.RequiredFields.Hostname {
+		return config.Connection{}, fmt.Errorf("discovered connection %q does not expose a connectable endpoint", summary.ID)
+	}
+
+	port := 0
+	if rawPort := strings.TrimSpace(summary.Metadata["port"]); rawPort != "" {
+		parsed, err := strconv.Atoi(rawPort)
+		if err != nil {
+			return config.Connection{}, fmt.Errorf("discovered connection %q has invalid port %q", summary.ID, rawPort)
+		}
+		port = parsed
+	} else if defaultPort, ok := dbcatalog.DefaultPort(summary.SourceType); ok {
+		port = defaultPort
+	}
+
+	return config.Connection{
+		Name:     strings.TrimSpace(summary.Name),
+		Type:     strings.TrimSpace(summary.SourceType),
+		Host:     host,
+		Port:     port,
+		Database: strings.TrimSpace(summary.Metadata["databaseName"]),
+		Advanced: cloudprefill.BuildAdvanced(summary.SourceType, summary.Metadata),
+	}, nil
 }
 
 // TestProvider runs the provider connectivity check for the given provider ID

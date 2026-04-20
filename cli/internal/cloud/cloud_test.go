@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	commonconfig "github.com/clidey/whodb/core/src/common/config"
+	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/providers"
 	"github.com/clidey/whodb/core/src/settings"
@@ -214,3 +215,98 @@ func TestTestProvider_MissingProvider(t *testing.T) {
 		t.Fatalf("expected missing provider error, got %v", err)
 	}
 }
+
+func TestBuildPrefillConnection_UsesMetadataAndPrefillRules(t *testing.T) {
+	conn, err := BuildPrefillConnection(ConnectionSummary{
+		ID:         "aws-prod/prod-db",
+		Name:       "prod-db",
+		SourceType: "Postgres",
+		Metadata: map[string]string{
+			"endpoint": "prod-db.example.com",
+			"port":     "5432",
+		},
+	})
+	if err != nil {
+		t.Fatalf("BuildPrefillConnection failed: %v", err)
+	}
+
+	if conn.Host != "prod-db.example.com" {
+		t.Fatalf("expected endpoint host, got %#v", conn)
+	}
+	if conn.Port != 5432 {
+		t.Fatalf("expected port 5432, got %#v", conn)
+	}
+	if conn.Advanced["SSL Mode"] != "require" {
+		t.Fatalf("expected SSL prefill, got %#v", conn.Advanced)
+	}
+}
+
+func TestBuildPrefillConnection_RejectsUnsupportedType(t *testing.T) {
+	_, err := BuildPrefillConnection(ConnectionSummary{
+		ID:         "aws-prod/unknown",
+		Name:       "unknown",
+		SourceType: "Neptune",
+		Metadata:   map[string]string{},
+	})
+	if err == nil || !strings.Contains(err.Error(), "unsupported database type") {
+		t.Fatalf("expected unsupported type error, got %v", err)
+	}
+}
+
+func TestResolveConnection_FindsRegisteredProviderDiscovery(t *testing.T) {
+	cleanup := setupCloudTestEnv(t)
+	defer cleanup()
+
+	registry := providers.GetDefaultRegistry()
+	if err := registry.Register(&testProvider{
+		id:   "aws-test",
+		name: "AWS Test",
+		connections: []providers.DiscoveredConnection{{
+			ID:           "aws-test/prod-db",
+			ProviderType: providers.ProviderTypeAWS,
+			ProviderID:   "aws-test",
+			Name:         "prod-db",
+			DatabaseType: engine.DatabaseType_Postgres,
+			Status:       providers.ConnectionStatusAvailable,
+			Metadata: map[string]string{
+				"endpoint": "prod-db.example.com",
+				"port":     "5432",
+			},
+		}},
+	}); err != nil {
+		t.Fatalf("Register failed: %v", err)
+	}
+
+	summary, err := ResolveConnection(context.Background(), "aws-test/prod-db")
+	if err != nil {
+		t.Fatalf("ResolveConnection failed: %v", err)
+	}
+
+	if summary.ProviderID != "aws-test" || summary.Name != "prod-db" {
+		t.Fatalf("unexpected resolved summary: %#v", summary)
+	}
+}
+
+type testProvider struct {
+	id          string
+	name        string
+	connections []providers.DiscoveredConnection
+}
+
+func (p *testProvider) Type() providers.ProviderType { return providers.ProviderTypeAWS }
+
+func (p *testProvider) ID() string { return p.id }
+
+func (p *testProvider) Name() string { return p.name }
+
+func (p *testProvider) DiscoverConnections(ctx context.Context) ([]providers.DiscoveredConnection, error) {
+	return append([]providers.DiscoveredConnection(nil), p.connections...), nil
+}
+
+func (p *testProvider) TestConnection(ctx context.Context) error { return nil }
+
+func (p *testProvider) RefreshConnection(ctx context.Context, connectionID string) (bool, error) {
+	return false, nil
+}
+
+func (p *testProvider) Close(ctx context.Context) error { return nil }

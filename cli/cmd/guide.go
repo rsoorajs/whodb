@@ -166,6 +166,25 @@ MOCK DATA
   data in the correct order. Blocked tables reuse existing rows instead
   of writing new data.
 
+CLOUD DISCOVERY
+───────────────
+  When cloud provider support is enabled, you can inspect configured
+  providers and their discovered resources directly from the CLI, then
+  prefill normal connection flows from a discovered resource ID:
+
+    whodb-cli cloud providers list
+    whodb-cli cloud providers test aws-prod-us-west-2
+    whodb-cli cloud providers refresh --all
+    whodb-cli cloud connections list
+    whodb-cli cloud connections list --provider aws-prod-us-west-2
+    whodb-cli connect --discovered aws-prod-us-west-2/prod-db
+    whodb-cli connections add --from-discovered aws-prod-us-west-2/prod-db --user alice --database app
+
+  Cloud provider support follows the shared provider flags:
+    WHODB_ENABLE_AWS_PROVIDER=true
+    WHODB_ENABLE_AZURE_PROVIDER=true
+    WHODB_ENABLE_GCP_PROVIDER=true
+
 SCHEMA DIFF
 ───────────
   Ctrl+V      Open schema diff in the TUI

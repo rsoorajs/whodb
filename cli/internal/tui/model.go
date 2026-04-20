@@ -213,6 +213,23 @@ func NewMainModelWithConnection(conn *config.Connection) *MainModel {
 	return m
 }
 
+// NewMainModelWithConnectionPrefill creates a model that starts on the
+// connection form with the provided connection fields pre-populated.
+func NewMainModelWithConnectionPrefill(conn *config.Connection) *MainModel {
+	m := newMainModel(nil, false)
+	if m.err != nil {
+		return m
+	}
+
+	if conn != nil {
+		m.connectionView.mode = "form"
+		m.connectionView.resetForm()
+		m.connectionView.prefillFromConnection(*conn)
+	}
+
+	return m
+}
+
 // NewMainModelWithProfile creates a model that connects using the given
 // connection and applies the provided config (which already has profile
 // settings like theme, page size, and timeout applied).

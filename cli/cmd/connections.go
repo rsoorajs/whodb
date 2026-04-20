@@ -19,6 +19,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/clidey/whodb/cli/internal/config"
@@ -26,6 +27,7 @@ import (
 	dbmgr "github.com/clidey/whodb/cli/internal/database"
 	"github.com/clidey/whodb/cli/pkg/analytics"
 	"github.com/clidey/whodb/cli/pkg/output"
+	"github.com/clidey/whodb/core/src/dbcatalog"
 	"github.com/spf13/cobra"
 )
 
@@ -152,19 +154,20 @@ var connectionsListCmd = &cobra.Command{
 
 // connections add flags
 var (
-	connAddName          string
-	connAddType          string
-	connAddHost          string
-	connAddPort          int
-	connAddUser          string
-	connAddPassword      string
-	connAddDatabase      string
-	connAddSchema        string
-	connAddSSLMode       string
-	connAddSSLCA         string
-	connAddSSLCert       string
-	connAddSSLKey        string
-	connAddSSLServerName string
+	connAddName           string
+	connAddType           string
+	connAddHost           string
+	connAddPort           int
+	connAddUser           string
+	connAddPassword       string
+	connAddDatabase       string
+	connAddSchema         string
+	connAddFromDiscovered string
+	connAddSSLMode        string
+	connAddSSLCA          string
+	connAddSSLCert        string
+	connAddSSLKey         string
+	connAddSSLServerName  string
 )
 
 var connectionsAddCmd = &cobra.Command{
@@ -179,8 +182,11 @@ var connectionsAddCmd = &cobra.Command{
   # Add with schema
   whodb-cli connections add --name mydb --type Postgres --host localhost --user admin --database myapp --schema public
 
-  # Add with SSL
-  whodb-cli connections add --name mydb --type Postgres --host localhost --user admin --database myapp --ssl-mode verify-identity --ssl-ca ./ca.pem --ssl-server-name db.internal`,
+ # Add with SSL
+  whodb-cli connections add --name mydb --type Postgres --host localhost --user admin --database myapp --ssl-mode verify-identity --ssl-ca ./ca.pem --ssl-server-name db.internal
+
+  # Save a discovered cloud resource as a normal connection
+  whodb-cli connections add --from-discovered aws-prod-us-west-2/prod-db --user admin --database myapp`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 		format, err := output.ParseFormat(connectionsFormat)
@@ -189,24 +195,6 @@ var connectionsAddCmd = &cobra.Command{
 		}
 		quiet := connectionsQuiet || format == output.FormatJSON
 
-		if connAddName == "" {
-			return fmt.Errorf("--name is required")
-		}
-		if connAddType == "" {
-			return fmt.Errorf("--type is required")
-		}
-
-		resolvedType, ok := lookupDatabaseType(connAddType)
-		if !ok {
-			return fmt.Errorf("unsupported database type %q", connAddType)
-		}
-		if resolvedType.RequiredFields.Hostname && connAddHost == "" {
-			return fmt.Errorf("--host is required")
-		}
-		if resolvedType.RequiredFields.Database && connAddDatabase == "" {
-			return fmt.Errorf("--database is required")
-		}
-
 		out := newCommandOutput(cmd, format, quiet)
 
 		cfg, err := config.LoadConfig()
@@ -214,36 +202,91 @@ var connectionsAddCmd = &cobra.Command{
 			return fmt.Errorf("cannot load config: %w", err)
 		}
 
-		if connAddHost == "" && isFileBasedDatabaseType(string(resolvedType.ID)) {
-			connAddHost = connAddDatabase
-		}
-		if connAddPort == 0 {
-			connAddPort = getDefaultPort(string(resolvedType.ID))
-		} else if connAddPort < 1024 || connAddPort > 65535 {
-			return fmt.Errorf("invalid port number %d: must be between 1024 and 65535 (ports below 1024 are system reserved)", connAddPort)
+		var (
+			conn         config.Connection
+			resolvedType dbcatalog.ConnectableDatabase
+			ok           bool
+		)
+
+		if discoveredID := strings.TrimSpace(connAddFromDiscovered); discoveredID != "" {
+			if strings.TrimSpace(connAddType) != "" {
+				return fmt.Errorf("--type cannot be used with --from-discovered")
+			}
+			if strings.TrimSpace(connAddHost) != "" {
+				return fmt.Errorf("--host cannot be used with --from-discovered")
+			}
+			if connAddPort != 0 {
+				return fmt.Errorf("--port cannot be used with --from-discovered")
+			}
+
+			conn, err = resolveDiscoveredConnectionPrefill(ctx, discoveredID)
+			if err != nil {
+				return err
+			}
+			conn, resolvedType, err = mergeConnectionOverrides(conn, connAddName, connAddUser, connAddPassword, connAddDatabase, connAddSchema, connectionopts.SSLSettings{
+				Mode:           connAddSSLMode,
+				CAFile:         connAddSSLCA,
+				ClientCertFile: connAddSSLCert,
+				ClientKeyFile:  connAddSSLKey,
+				ServerName:     connAddSSLServerName,
+			})
+			if err != nil {
+				return err
+			}
+			conn, err = normalizeDirectConnection(conn, resolvedType, false)
+			if err != nil {
+				return err
+			}
+		} else {
+			if connAddName == "" {
+				return fmt.Errorf("--name is required")
+			}
+			if connAddType == "" {
+				return fmt.Errorf("--type is required")
+			}
+
+			resolvedType, ok = lookupDatabaseType(connAddType)
+			if !ok {
+				return fmt.Errorf("unsupported database type %q", connAddType)
+			}
+			if resolvedType.RequiredFields.Hostname && connAddHost == "" {
+				return fmt.Errorf("--host is required")
+			}
+			if resolvedType.RequiredFields.Database && connAddDatabase == "" {
+				return fmt.Errorf("--database is required")
+			}
+
+			advanced, err := connectionopts.ApplySSLSettings(string(resolvedType.ID), nil, connectionopts.SSLSettings{
+				Mode:           connAddSSLMode,
+				CAFile:         connAddSSLCA,
+				ClientCertFile: connAddSSLCert,
+				ClientKeyFile:  connAddSSLKey,
+				ServerName:     connAddSSLServerName,
+			})
+			if err != nil {
+				return err
+			}
+
+			conn = config.Connection{
+				Name:     connAddName,
+				Type:     string(resolvedType.ID),
+				Host:     connAddHost,
+				Port:     connAddPort,
+				Username: connAddUser,
+				Password: connAddPassword,
+				Database: connAddDatabase,
+				Schema:   connAddSchema,
+				Advanced: advanced,
+			}
+
+			conn, err = normalizeDirectConnection(conn, resolvedType, true)
+			if err != nil {
+				return err
+			}
 		}
 
-		advanced, err := connectionopts.ApplySSLSettings(string(resolvedType.ID), nil, connectionopts.SSLSettings{
-			Mode:           connAddSSLMode,
-			CAFile:         connAddSSLCA,
-			ClientCertFile: connAddSSLCert,
-			ClientKeyFile:  connAddSSLKey,
-			ServerName:     connAddSSLServerName,
-		})
-		if err != nil {
-			return err
-		}
-
-		conn := config.Connection{
-			Name:     connAddName,
-			Type:     string(resolvedType.ID),
-			Host:     connAddHost,
-			Port:     connAddPort,
-			Username: connAddUser,
-			Password: connAddPassword,
-			Database: connAddDatabase,
-			Schema:   connAddSchema,
-			Advanced: advanced,
+		if strings.TrimSpace(conn.Name) == "" {
+			return fmt.Errorf("--name is required")
 		}
 
 		cfg.AddConnection(conn)
@@ -421,6 +464,7 @@ func init() {
 	connectionsAddCmd.Flags().StringVar(&connAddPassword, "password", "", "database password")
 	connectionsAddCmd.Flags().StringVar(&connAddDatabase, "database", "", "database name (required)")
 	connectionsAddCmd.Flags().StringVar(&connAddSchema, "schema", "", "default schema (optional)")
+	connectionsAddCmd.Flags().StringVar(&connAddFromDiscovered, "from-discovered", "", "prefill from a discovered cloud resource ID from `cloud connections list`")
 	connectionsAddCmd.Flags().StringVar(&connAddSSLMode, "ssl-mode", "", "SSL mode from the selected database type's supported modes")
 	connectionsAddCmd.Flags().StringVar(&connAddSSLCA, "ssl-ca", "", "path to a CA certificate PEM file")
 	connectionsAddCmd.Flags().StringVar(&connAddSSLCert, "ssl-cert", "", "path to a client certificate PEM file")

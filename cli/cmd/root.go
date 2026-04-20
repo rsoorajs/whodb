@@ -53,6 +53,7 @@ Features:
   - FK-aware mock data generation (mock-data) with dependency analysis
   - Schema diff between saved connections in the TUI (Ctrl+V) and CLI (diff)
   - Cloud provider discovery commands (cloud) when provider support is enabled
+  - Connect/save flows from discovered cloud resources (connect --discovered, connections add --from-discovered)
   - Backend-generated query suggestions (suggestions + editor empty state)
   - AI chat with streaming responses (OpenAI, Anthropic, Ollama, LM Studio)
   - SSH tunnel support for remote databases
