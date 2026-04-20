@@ -16,15 +16,20 @@ FROM node:25.6.0-alpine3.23 AS build-stage
 RUN npm i -g pnpm@10.29.3
 WORKDIR /app
 COPY ./frontend/package.json ./frontend/pnpm-lock.yaml ./
+ARG USE_PREBUILT_FRONTEND=false
 # Skip test framework browser downloads - not needed for production builds
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-RUN pnpm install
+RUN if [ "${USE_PREBUILT_FRONTEND}" != "true" ]; then pnpm install; fi
 COPY ./frontend/ ./
 
 ARG VERSION=dev
 ENV VITE_APP_VERSION=${VERSION}
 ENV WHODB_BUILD_SOURCEMAP=false
-RUN pnpm run build
+RUN if [ "${USE_PREBUILT_FRONTEND}" = "true" ]; then \
+        test -d build && test -f build/index.html; \
+    else \
+        pnpm run build; \
+    fi
 ARG TARGETARCH
 ARG PLATFORM=docker
 
