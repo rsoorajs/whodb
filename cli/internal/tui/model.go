@@ -107,7 +107,16 @@ type MainModel struct {
 	savedLayout    layout.LayoutName // saved when opening a modal, restored on pop
 	layoutRoot     *layout.Container
 	focusedPaneIdx int
+
+	pendingConfigSave bool
+	configSaveToken   uint64
 }
+
+type configSaveMsg struct {
+	token uint64
+}
+
+const configSaveDebounce = 250 * time.Millisecond
 
 func NewMainModel() *MainModel {
 	return newMainModel(nil, true)
@@ -317,6 +326,14 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.statusMessage = ""
 		return m, nil
 
+	case configSaveMsg:
+		if !m.pendingConfigSave || msg.token != m.configSaveToken {
+			return m, nil
+		}
+		m.pendingConfigSave = false
+		_ = m.config.Save()
+		return m, nil
+
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -354,7 +371,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
-			return m, tea.Quit
+			return m, tea.Batch(m.flushConfigSave(), tea.Quit)
 
 		case "?":
 			// Show help for views without active text input
@@ -1513,8 +1530,7 @@ func (m *MainModel) cycleTheme() (tea.Model, tea.Cmd) {
 	if t := styles.GetThemeByName(next); t != nil {
 		styles.SetTheme(t)
 		m.config.SetThemeName(next)
-		m.config.Save()
-		return m, m.SetStatus("Theme: " + next)
+		return m, tea.Batch(m.requestConfigSave(), m.SetStatus("Theme: "+next))
 	}
 	return m, nil
 }
@@ -1523,13 +1539,12 @@ func (m *MainModel) cycleTheme() (tea.Model, tea.Cmd) {
 func (m *MainModel) toggleReadOnly() (tea.Model, tea.Cmd) {
 	newState := !m.config.GetReadOnly()
 	m.config.SetReadOnly(newState)
-	m.config.Save()
 
 	label := "OFF"
 	if newState {
 		label = "ON"
 	}
-	return m, m.SetStatus("Read-only: " + label)
+	return m, tea.Batch(m.requestConfigSave(), m.SetStatus("Read-only: "+label))
 }
 
 // GetPane returns the Pane for the given ViewMode.
@@ -1546,6 +1561,33 @@ func renderError(message string) string {
 	errorBox := styles.RenderErrorBox(message)
 	helpText := styles.RenderHelp("esc", "dismiss", "ctrl+c", "exit")
 	return "\n" + errorBox + "\n\n" + helpText + "\n"
+}
+
+func (m *MainModel) requestConfigSave() tea.Cmd {
+	if m == nil || m.config == nil {
+		return nil
+	}
+
+	m.pendingConfigSave = true
+	m.configSaveToken++
+	token := m.configSaveToken
+
+	return tea.Tick(configSaveDebounce, func(time.Time) tea.Msg {
+		return configSaveMsg{token: token}
+	})
+}
+
+func (m *MainModel) flushConfigSave() tea.Cmd {
+	if m == nil || m.config == nil {
+		return nil
+	}
+	if !m.pendingConfigSave {
+		return nil
+	}
+
+	m.pendingConfigSave = false
+	_ = m.config.Save()
+	return nil
 }
 
 // PersistWorkspace stores the reconnectable TUI workspace so it can be

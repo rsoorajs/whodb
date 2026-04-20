@@ -266,6 +266,26 @@ func TestConnectionView_ListMode_Delete(t *testing.T) {
 	}
 }
 
+func TestConnectionView_RenderWrappedSelectableOptions_CachesResult(t *testing.T) {
+	v, cleanup := setupConnectionViewTest(t)
+	defer cleanup()
+
+	options := []string{"Postgres", "MySQL", "Sqlite3"}
+
+	rendered1, lineCount1 := v.renderWrappedSelectableOptions(options, 1, true, 24)
+	rendered2, lineCount2 := v.renderWrappedSelectableOptions(options, 1, true, 24)
+
+	if rendered1 != rendered2 {
+		t.Fatalf("expected cached wrapped options render to match, got %q vs %q", rendered1, rendered2)
+	}
+	if lineCount1 != lineCount2 {
+		t.Fatalf("expected cached wrapped option line count to match, got %d vs %d", lineCount1, lineCount2)
+	}
+	if got := len(v.selectorCache); got != 1 {
+		t.Fatalf("expected selector cache size 1, got %d", got)
+	}
+}
+
 func TestConnectionView_ListMode_EscConfirmation(t *testing.T) {
 	v, cleanup := setupConnectionViewTest(t)
 	defer cleanup()

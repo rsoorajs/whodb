@@ -65,6 +65,7 @@ func GetTheme() *Theme {
 // SetTheme applies a theme by updating all global color and style variables.
 func SetTheme(t *Theme) {
 	currentTheme = t
+	clearHelpRenderCaches()
 
 	// Update color variables
 	Primary = t.Primary

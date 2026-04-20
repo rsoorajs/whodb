@@ -183,11 +183,17 @@ type ConnectionView struct {
 	width        int
 	height       int
 	// Background ping status for each connection
-	pingResults map[string]connectionPingResult
-	dockerItems []connectionItem
-	cloudItems  []connectionItem
-	pingQueue   []config.Connection
-	advanced    map[string]string
+	pingResults   map[string]connectionPingResult
+	dockerItems   []connectionItem
+	cloudItems    []connectionItem
+	pingQueue     []config.Connection
+	advanced      map[string]string
+	selectorCache map[string]wrappedSelectableOptionsCacheEntry
+}
+
+type wrappedSelectableOptionsCacheEntry struct {
+	rendered  string
+	lineCount int
 }
 
 // NewConnectionView creates a connection view initialized with saved connections
@@ -274,6 +280,7 @@ func NewConnectionView(parent *MainModel) *ConnectionView {
 		awaitingPassword: false,
 		passwordPrompt:   prompt,
 		pingResults:      pingResults,
+		selectorCache:    make(map[string]wrappedSelectableOptionsCacheEntry),
 	}
 }
 
@@ -416,9 +423,8 @@ func (v *ConnectionView) updateList(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 					return v, nil
 				}
 				v.parent.config.RemoveConnection(item.conn.Name)
-				v.parent.config.Save()
 				v.refreshList()
-				return v, tea.Batch(v.pingAllConnections(), v.loadDockerConnections(), v.loadCloudConnections())
+				return v, tea.Batch(v.parent.requestConfigSave(), v.pingAllConnections(), v.loadDockerConnections(), v.loadCloudConnections())
 			}
 
 		case key.Matches(msg, Keys.ConnectionList.QuitEsc):
@@ -738,7 +744,7 @@ func (v *ConnectionView) renderForm() string {
 		body.WriteString("  Database Type:")
 	}
 	body.WriteString("\n  ")
-	dbTypeOptions, _ := renderWrappedSelectableOptions(v.dbTypes, v.dbTypeIndex, v.focusIndex == focusDBType, v.selectorWrapWidth())
+	dbTypeOptions, _ := v.renderWrappedSelectableOptions(v.dbTypes, v.dbTypeIndex, v.focusIndex == focusDBType, v.selectorWrapWidth())
 	body.WriteString(dbTypeOptions)
 	body.WriteString("\n\n")
 
@@ -816,7 +822,7 @@ func (v *ConnectionView) renderForm() string {
 			body.WriteString("  SSL Mode:")
 		}
 		body.WriteString("\n  ")
-		sslModeOptions, _ := renderWrappedSelectableOptions(sslModes, v.sslModeIndex, v.focusIndex == focusSSLMode, v.selectorWrapWidth())
+		sslModeOptions, _ := v.renderWrappedSelectableOptions(sslModes, v.sslModeIndex, v.focusIndex == focusSSLMode, v.selectorWrapWidth())
 		body.WriteString(sslModeOptions)
 		body.WriteString("\n\n")
 
@@ -970,6 +976,40 @@ func renderWrappedSelectableOptions(options []string, selectedIndex int, focused
 	return strings.Join(lines, "\n  "), len(lines)
 }
 
+func (v *ConnectionView) renderWrappedSelectableOptions(options []string, selectedIndex int, focused bool, maxWidth int) (string, int) {
+	key := v.selectorCacheKey(options, selectedIndex, focused, maxWidth)
+	if cached, ok := v.selectorCache[key]; ok {
+		return cached.rendered, cached.lineCount
+	}
+
+	rendered, lineCount := renderWrappedSelectableOptions(options, selectedIndex, focused, maxWidth)
+	v.selectorCache[key] = wrappedSelectableOptionsCacheEntry{
+		rendered:  rendered,
+		lineCount: lineCount,
+	}
+	return rendered, lineCount
+}
+
+func (v *ConnectionView) selectorCacheKey(options []string, selectedIndex int, focused bool, maxWidth int) string {
+	focusedKey := "0"
+	if focused {
+		focusedKey = "1"
+	}
+
+	themeName := ""
+	if theme := styles.GetTheme(); theme != nil {
+		themeName = theme.Name
+	}
+
+	return strings.Join([]string{
+		themeName,
+		strconv.Itoa(maxWidth),
+		strconv.Itoa(selectedIndex),
+		focusedKey,
+		strings.Join(options, "\x1f"),
+	}, "\x00")
+}
+
 func renderSelectableOption(option string, selected bool, focused bool) string {
 	if selected {
 		if focused {
@@ -997,7 +1037,7 @@ func (v *ConnectionView) selectorWrapWidth() int {
 }
 
 func (v *ConnectionView) dbTypeSectionHeight() int {
-	_, lineCount := renderWrappedSelectableOptions(v.dbTypes, v.dbTypeIndex, v.focusIndex == focusDBType, v.selectorWrapWidth())
+	_, lineCount := v.renderWrappedSelectableOptions(v.dbTypes, v.dbTypeIndex, v.focusIndex == focusDBType, v.selectorWrapWidth())
 	if lineCount == 0 {
 		lineCount = 1
 	}
@@ -1010,7 +1050,7 @@ func (v *ConnectionView) sslModeSectionHeight() int {
 		return 0
 	}
 
-	_, lineCount := renderWrappedSelectableOptions(sslModes, v.sslModeIndex, v.focusIndex == focusSSLMode, v.selectorWrapWidth())
+	_, lineCount := v.renderWrappedSelectableOptions(sslModes, v.sslModeIndex, v.focusIndex == focusSSLMode, v.selectorWrapWidth())
 	if lineCount == 0 {
 		lineCount = 1
 	}

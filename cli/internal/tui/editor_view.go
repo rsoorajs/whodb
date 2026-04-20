@@ -187,7 +187,7 @@ func (v *EditorView) Update(msg tea.Msg) (*EditorView, tea.Cmd) {
 					v.err = nil
 					if result.Save {
 						v.parent.config.SetPreferredTimeout(int(result.Timeout.Seconds()))
-						v.parent.config.Save()
+						return v, tea.Batch(v.parent.requestConfigSave(), v.executeQueryWithTimeout(v.retryPrompt.TimedOutQuery(), result.Timeout))
 					}
 					return v, v.executeQueryWithTimeout(v.retryPrompt.TimedOutQuery(), result.Timeout)
 				}

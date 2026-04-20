@@ -264,6 +264,39 @@ func TestResultsView_Navigation_VimKeys(t *testing.T) {
 	}
 }
 
+func TestResultsView_UpdateTable_VirtualizesRows(t *testing.T) {
+	v, cleanup := setupResultsViewTest(t)
+	defer cleanup()
+
+	rows := make([][]string, 30)
+	for i := range rows {
+		rows[i] = []string{fmt.Sprintf("%d", i)}
+	}
+
+	v.table.SetHeight(5)
+	v.pageSize = 50
+	v.results = &engine.GetRowsResult{
+		Columns: []engine.Column{{Name: "id", Type: "integer"}},
+		Rows:    rows,
+	}
+
+	v.cursor = 10
+	v.updateTable()
+
+	if got := len(v.table.Rows()); got != 4 {
+		t.Fatalf("expected 4 visible rows, got %d", got)
+	}
+	if got := v.rowWindowStart; got != 7 {
+		t.Fatalf("expected row window start 7, got %d", got)
+	}
+	if got := string(v.table.Rows()[0][0]); got != "7" {
+		t.Fatalf("expected first visible row to be 7, got %q", got)
+	}
+	if got := v.table.Cursor(); got != 3 {
+		t.Fatalf("expected virtual cursor 3, got %d", got)
+	}
+}
+
 func TestResultsView_PageSizeCycle(t *testing.T) {
 	v, cleanup := setupResultsViewTest(t)
 	defer cleanup()

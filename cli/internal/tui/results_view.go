@@ -42,6 +42,8 @@ type ResultsView struct {
 	schema          string
 	tableName       string
 	columnOffset    int
+	cursor          int
+	rowWindowStart  int
 	maxColumns      int
 	whereCondition  *model.WhereCondition
 	visibleColumns  []string
@@ -114,17 +116,18 @@ func (v *ResultsView) Update(msg tea.Msg) (*ResultsView, tea.Cmd) {
 		}
 		v.table.SetHeight(h)
 		v.table.SetWidth(msg.Width - 8)
+		if v.results != nil {
+			v.updateTable()
+		}
 		return v, nil
 
 	case tea.MouseMsg:
 		switch msg.Type {
 		case tea.MouseWheelUp:
-			// Move selection up (bubbles table doesn't handle mouse wheel directly)
-			v.table.MoveUp(1)
+			v.moveSelectionUp()
 			return v, nil
 		case tea.MouseWheelDown:
-			// Move selection down (bubbles table doesn't handle mouse wheel directly)
-			v.table.MoveDown(1)
+			v.moveSelectionDown()
 			return v, nil
 		}
 		return v, nil
@@ -143,18 +146,23 @@ func (v *ResultsView) Update(msg tea.Msg) (*ResultsView, tea.Cmd) {
 			v.query = ""
 			v.columnOffset = 0
 			v.currentPage = 0
+			v.cursor = 0
+			v.rowWindowStart = 0
 		}
 		if msg.Results != nil {
 			v.results = msg.Results
 			v.totalRows = int(msg.Results.TotalCount)
-			v.updateTable()
-			// If goToBottom flag is set, move cursor to bottom
 			if v.goToBottom {
 				if pageRows := v.currentPageRows(); len(pageRows) > 0 {
-					v.table.SetCursor(len(pageRows) - 1)
+					v.cursor = len(pageRows) - 1
+				} else {
+					v.cursor = 0
 				}
 				v.goToBottom = false
+			} else if len(v.currentPageRows()) == 0 || v.currentPage == 0 {
+				v.cursor = 0
 			}
+			v.updateTable()
 		}
 		return v, nil
 
@@ -166,11 +174,12 @@ func (v *ResultsView) Update(msg tea.Msg) (*ResultsView, tea.Cmd) {
 				if size, err := strconv.Atoi(v.pageSizeInput.Value()); err == nil && size > 0 {
 					v.pageSize = size
 					v.currentPage = 0
+					v.cursor = 0
+					v.rowWindowStart = 0
 					v.editingPageSize = false
 					v.pageSizeInput.Blur()
 					v.parent.config.SetPageSize(v.pageSize)
-					v.parent.config.Save()
-					return v, v.loadPage()
+					return v, tea.Batch(v.parent.requestConfigSave(), v.loadPage())
 				}
 				// Invalid input, just exit edit mode
 				v.editingPageSize = false
@@ -197,6 +206,8 @@ func (v *ResultsView) Update(msg tea.Msg) (*ResultsView, tea.Cmd) {
 			// Check if we can go to next page
 			if v.hasNextPage() {
 				v.currentPage++
+				v.cursor = 0
+				v.rowWindowStart = 0
 				return v, v.loadPage()
 			}
 			return v, nil
@@ -204,6 +215,8 @@ func (v *ResultsView) Update(msg tea.Msg) (*ResultsView, tea.Cmd) {
 		case key.Matches(msg, Keys.Results.PrevPage):
 			if v.hasPreviousPage() {
 				v.currentPage--
+				v.cursor = 0
+				v.rowWindowStart = 0
 				return v, v.loadPage()
 			}
 			return v, nil
@@ -264,10 +277,7 @@ func (v *ResultsView) Update(msg tea.Msg) (*ResultsView, tea.Cmd) {
 		case key.Matches(msg, Keys.Results.EditRow):
 			if v.tableName != "" && v.results != nil && !v.results.DisableUpdate {
 				pageRows := v.currentPageRows()
-				cursor := v.table.Cursor()
-				if cursor < 0 && len(pageRows) > 0 {
-					cursor = 0
-				}
+				cursor := v.selectedRowIndex(pageRows)
 				if cursor >= 0 && cursor < len(pageRows) {
 					v.parent.suspendLayout()
 					v.parent.rowWriteView.SetEditContext(v.schema, v.tableName, v.results.Columns, v.selectedRowValues(pageRows, cursor))
@@ -279,10 +289,7 @@ func (v *ResultsView) Update(msg tea.Msg) (*ResultsView, tea.Cmd) {
 		case key.Matches(msg, Keys.Results.DeleteRow):
 			if v.tableName != "" && v.results != nil {
 				pageRows := v.currentPageRows()
-				cursor := v.table.Cursor()
-				if cursor < 0 && len(pageRows) > 0 {
-					cursor = 0
-				}
+				cursor := v.selectedRowIndex(pageRows)
 				if cursor >= 0 && cursor < len(pageRows) {
 					v.parent.suspendLayout()
 					v.parent.rowWriteView.SetDeleteContext(v.schema, v.tableName, v.results.Columns, v.selectedRowValues(pageRows, cursor))
@@ -315,9 +322,10 @@ func (v *ResultsView) Update(msg tea.Msg) (*ResultsView, tea.Cmd) {
 			}
 			v.pageSize = pageSizes[(currentIndex+1)%len(pageSizes)]
 			v.currentPage = 0
+			v.cursor = 0
+			v.rowWindowStart = 0
 			v.parent.config.SetPageSize(v.pageSize)
-			v.parent.config.Save()
-			return v, v.loadPage()
+			return v, tea.Batch(v.parent.requestConfigSave(), v.loadPage())
 
 		case key.Matches(msg, Keys.Results.CustomSize):
 			// Enter custom page size mode
@@ -329,7 +337,7 @@ func (v *ResultsView) Update(msg tea.Msg) (*ResultsView, tea.Cmd) {
 		case key.Matches(msg, Keys.Results.ViewCell):
 			if v.results != nil {
 				pageRows := v.currentPageRows()
-				cursor := v.table.Cursor()
+				cursor := v.selectedRowIndex(pageRows)
 				if cursor >= 0 && cursor < len(pageRows) {
 					colName, cellValue := v.selectedCell(pageRows, cursor)
 					v.parent.jsonViewer.SetContent(colName, cellValue)
@@ -345,14 +353,18 @@ func (v *ResultsView) Update(msg tea.Msg) (*ResultsView, tea.Cmd) {
 				if len(pageRows) == 0 {
 					return v, nil
 				}
-				cursor := v.table.Cursor()
+				cursor := v.selectedRowIndex(pageRows)
 				if cursor >= len(pageRows)-1 {
 					// At bottom, try to go to next page
 					if v.hasNextPage() {
 						v.currentPage++
-						v.table.SetCursor(0)
+						v.cursor = 0
+						v.rowWindowStart = 0
 						return v, v.loadPage()
 					}
+				} else {
+					v.moveSelectionDown()
+					return v, nil
 				}
 			}
 
@@ -363,10 +375,14 @@ func (v *ResultsView) Update(msg tea.Msg) (*ResultsView, tea.Cmd) {
 				if len(pageRows) == 0 {
 					return v, nil
 				}
-				cursor := v.table.Cursor()
+				cursor := v.selectedRowIndex(pageRows)
 				if cursor <= 0 && v.currentPage > 0 {
 					v.currentPage--
 					return v, v.loadPageAndGoToBottom()
+				}
+				if cursor > 0 {
+					v.moveSelectionUp()
+					return v, nil
 				}
 			}
 		}
@@ -374,6 +390,7 @@ func (v *ResultsView) Update(msg tea.Msg) (*ResultsView, tea.Cmd) {
 
 	// Pass to table for navigation (arrows, page up/down, etc.)
 	v.table, cmd = v.table.Update(msg)
+	v.syncSelectionFromTable()
 	return v, cmd
 }
 
@@ -506,6 +523,8 @@ func (v *ResultsView) SetResults(results *engine.GetRowsResult, query string) {
 	v.query = query
 	v.currentPage = 0
 	v.columnOffset = 0
+	v.cursor = 0
+	v.rowWindowStart = 0
 	v.schema = ""
 	v.tableName = ""
 	v.totalRows = int(results.TotalCount)
@@ -604,6 +623,23 @@ func (v *ResultsView) currentPageRows() [][]string {
 	return v.results.Rows[start:end]
 }
 
+func (v *ResultsView) selectedRowIndex(pageRows [][]string) int {
+	if len(pageRows) == 0 {
+		return -1
+	}
+	cursor := v.rowWindowStart + v.table.Cursor()
+	if cursor < 0 || cursor >= len(pageRows) {
+		cursor = v.cursor
+	}
+	if cursor < 0 {
+		cursor = 0
+	}
+	if cursor >= len(pageRows) {
+		cursor = len(pageRows) - 1
+	}
+	return cursor
+}
+
 func (v *ResultsView) hasNextPage() bool {
 	if v.pageSize <= 0 {
 		return false
@@ -625,6 +661,8 @@ func (v *ResultsView) hasPreviousPage() bool {
 func (v *ResultsView) updateTable() {
 	if v.results == nil {
 		v.table.SetRows([]table.Row{})
+		v.cursor = 0
+		v.rowWindowStart = 0
 		return
 	}
 
@@ -675,8 +713,9 @@ func (v *ResultsView) updateTable() {
 
 	// Extract visible column data from rows
 	currentRows := v.currentPageRows()
-	rows := make([]table.Row, len(currentRows))
-	for i, row := range currentRows {
+	visibleRows, windowStart := v.visibleRows(currentRows)
+	rows := make([]table.Row, len(visibleRows))
+	for i, row := range visibleRows {
 		visibleRow := make([]string, len(visibleIndices))
 		for j, idx := range visibleIndices {
 			if idx < len(row) {
@@ -691,18 +730,31 @@ func (v *ResultsView) updateTable() {
 	// Handle the ordering carefully to avoid index out of range:
 	// 1. Clear rows first to prevent index issues
 	// 2. Set new columns (headers need to update even if count is same)
-	// 3. Reset cursor
-	// 4. Set the rows
+	// 3. Set the rows
 	v.table.SetRows([]table.Row{})
 	v.table.SetColumns(columns)
-	v.table.SetCursor(0)
 	v.table.SetRows(rows)
+	if len(rows) == 0 {
+		v.table.SetCursor(0)
+		return
+	}
+
+	virtualCursor := v.cursor - windowStart
+	if virtualCursor < 0 {
+		virtualCursor = 0
+	}
+	if virtualCursor >= len(rows) {
+		virtualCursor = len(rows) - 1
+	}
+	v.table.SetCursor(virtualCursor)
 }
 
 func (v *ResultsView) loadPage() tea.Cmd {
 	// Only reload if we're viewing a table (not query results)
 	if !v.isTableData() {
 		// For query results, just update the table locally (pagination is client-side)
+		v.cursor = 0
+		v.rowWindowStart = 0
 		v.updateTable()
 		return nil
 	}
@@ -726,10 +778,13 @@ func (v *ResultsView) loadPageAndGoToBottom() tea.Cmd {
 	// Only reload if we're viewing a table (not query results)
 	if !v.isTableData() {
 		// For query results, just update the table locally and set cursor to bottom
-		v.updateTable()
 		if pageRows := v.currentPageRows(); len(pageRows) > 0 {
-			v.table.SetCursor(len(pageRows) - 1)
+			v.cursor = len(pageRows) - 1
+		} else {
+			v.cursor = 0
 		}
+		v.rowWindowStart = 0
+		v.updateTable()
 		return nil
 	}
 
@@ -881,4 +936,83 @@ func (v *ResultsView) selectedRowValues(pageRows [][]string, cursor int) map[str
 		}
 	}
 	return values
+}
+
+func (v *ResultsView) visibleRows(pageRows [][]string) ([][]string, int) {
+	total := len(pageRows)
+	if total == 0 {
+		v.cursor = 0
+		v.rowWindowStart = 0
+		return nil, 0
+	}
+
+	if v.cursor < 0 {
+		v.cursor = 0
+	}
+	if v.cursor >= total {
+		v.cursor = total - 1
+	}
+
+	windowSize := v.table.Height()
+	if windowSize <= 0 || windowSize > total {
+		windowSize = total
+	}
+
+	maxStart := total - windowSize
+	if v.rowWindowStart < 0 {
+		v.rowWindowStart = 0
+	}
+	if v.rowWindowStart > maxStart {
+		v.rowWindowStart = maxStart
+	}
+	if v.cursor < v.rowWindowStart {
+		v.rowWindowStart = v.cursor
+	}
+	if v.cursor >= v.rowWindowStart+windowSize {
+		v.rowWindowStart = v.cursor - windowSize + 1
+	}
+
+	end := v.rowWindowStart + windowSize
+	if end > total {
+		end = total
+	}
+	return pageRows[v.rowWindowStart:end], v.rowWindowStart
+}
+
+func (v *ResultsView) moveSelectionUp() {
+	pageRows := v.currentPageRows()
+	if len(pageRows) == 0 || v.cursor <= 0 {
+		return
+	}
+
+	v.cursor--
+	v.updateTable()
+}
+
+func (v *ResultsView) moveSelectionDown() {
+	pageRows := v.currentPageRows()
+	if len(pageRows) == 0 || v.cursor >= len(pageRows)-1 {
+		return
+	}
+
+	v.cursor++
+	v.updateTable()
+}
+
+func (v *ResultsView) syncSelectionFromTable() {
+	pageRows := v.currentPageRows()
+	if len(pageRows) == 0 {
+		v.cursor = 0
+		v.rowWindowStart = 0
+		return
+	}
+
+	cursor := v.rowWindowStart + v.table.Cursor()
+	if cursor < 0 {
+		cursor = 0
+	}
+	if cursor >= len(pageRows) {
+		cursor = len(pageRows) - 1
+	}
+	v.cursor = cursor
 }

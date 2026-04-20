@@ -229,6 +229,15 @@ func (p *GormPlugin) GetAllSchemas(config *engine.PluginConfig) ([]string, error
 }
 
 func (p *GormPlugin) GetRows(config *engine.PluginConfig, req *engine.GetRowsRequest) (*engine.GetRowsResult, error) {
+	log.WithFields(map[string]any{
+		"databaseType": config.Credentials.Type,
+		"schema":       req.Schema,
+		"storageUnit":  req.StorageUnit,
+		"pageSize":     req.PageSize,
+		"pageOffset":   req.PageOffset,
+		"hasWhere":     req.Where != nil,
+		"sortCount":    len(req.Sort),
+	}).Debug("GORM row fetch requested")
 	return plugins.WithConnection(config, p.DB, func(db *gorm.DB) (*engine.GetRowsResult, error) {
 		// Use generic implementation; database-specific behavior should be handled in each plugin
 		return p.getGenericRows(db, req.Schema, req.StorageUnit, req.Where, req.Sort, req.PageSize, req.PageOffset)
@@ -319,6 +328,16 @@ func (p *GormPlugin) getGenericRows(db *gorm.DB, schema, storageUnit string, whe
 
 	builder := p.GormPluginFunctions.CreateSQLBuilder(db)
 	fullTable := builder.BuildFullTableName(schema, storageUnit)
+	log.WithFields(map[string]any{
+		"dialect":     db.Dialector.Name(),
+		"schema":      schema,
+		"storageUnit": storageUnit,
+		"fullTable":   fullTable,
+		"pageSize":    pageSize,
+		"pageOffset":  pageOffset,
+		"hasWhere":    where != nil,
+		"sortCount":   len(sort),
+	}).Debug("GORM generic row fetch starting")
 
 	// Parallel count query improves performance for large tables
 	var totalCount int64
@@ -382,6 +401,12 @@ func (p *GormPlugin) getGenericRows(db *gorm.DB, schema, storageUnit string, whe
 		log.WithError(err).Error(fmt.Sprintf("Failed to convert raw rows for table %s.%s", schema, storageUnit))
 		return nil, err
 	}
+	log.WithFields(map[string]any{
+		"schema":      schema,
+		"storageUnit": storageUnit,
+		"rowCount":    len(result.Rows),
+		"columnCount": len(result.Columns),
+	}).Debug("GORM generic row fetch converted rows")
 
 	// Fix any missing column type metadata
 	for i, col := range result.Columns {
@@ -397,6 +422,13 @@ func (p *GormPlugin) getGenericRows(db *gorm.DB, schema, storageUnit string, whe
 	} else {
 		result.TotalCount = totalCount
 	}
+	log.WithFields(map[string]any{
+		"schema":      schema,
+		"storageUnit": storageUnit,
+		"rowCount":    len(result.Rows),
+		"columnCount": len(result.Columns),
+		"totalCount":  result.TotalCount,
+	}).Debug("GORM generic row fetch completed")
 
 	return result, nil
 }

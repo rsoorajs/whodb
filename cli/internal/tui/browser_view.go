@@ -183,7 +183,7 @@ func (v *BrowserView) Update(msg tea.Msg) (*BrowserView, tea.Cmd) {
 					v.loading = true
 					if result.Save {
 						v.parent.config.SetPreferredTimeout(int(result.Timeout.Seconds()))
-						v.parent.config.Save()
+						return v, tea.Batch(v.parent.requestConfigSave(), v.loadTablesWithTimeout(result.Timeout))
 					}
 					return v, v.loadTablesWithTimeout(result.Timeout)
 				}
