@@ -185,6 +185,10 @@ func (s *DatabaseSession) GetObject(ctx context.Context, ref source.ObjectRef) (
 
 // ReadRows returns rows for a tabular source object.
 func (s *DatabaseSession) ReadRows(ctx context.Context, ref source.ObjectRef, where *query.WhereCondition, sort []*query.SortCondition, pageSize int, pageOffset int) (*source.RowsResult, error) {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionViewRows); err != nil {
+		return nil, err
+	}
+
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
@@ -204,6 +208,10 @@ func (s *DatabaseSession) ReadRows(ctx context.Context, ref source.ObjectRef, wh
 
 // Columns returns columns for one source object.
 func (s *DatabaseSession) Columns(ctx context.Context, ref source.ObjectRef) ([]source.Column, error) {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionInspect); err != nil {
+		return nil, err
+	}
+
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
@@ -239,12 +247,20 @@ func (s *DatabaseSession) ColumnsBatch(ctx context.Context, refs []source.Object
 
 // RunQuery executes a query against the source session.
 func (s *DatabaseSession) RunQuery(ctx context.Context, query string, params ...any) (*source.RowsResult, error) {
+	if err := s.ensureSurface(source.SurfaceQuery); err != nil {
+		return nil, err
+	}
+
 	config := s.pluginConfig(ctx, nil)
 	return s.plugin.RawExecute(config, query, params...)
 }
 
 // RunScript executes a source-native script against the session.
 func (s *DatabaseSession) RunScript(ctx context.Context, script string, multiStatement bool, params ...any) (*source.RowsResult, error) {
+	if err := s.ensureSurface(source.SurfaceQuery); err != nil {
+		return nil, err
+	}
+
 	config := s.pluginConfig(ctx, nil)
 	config.MultiStatement = multiStatement
 	return s.plugin.RawExecute(config, script, params...)
@@ -252,6 +268,10 @@ func (s *DatabaseSession) RunScript(ctx context.Context, script string, multiSta
 
 // ReadGraph returns graph data for a source scope.
 func (s *DatabaseSession) ReadGraph(ctx context.Context, ref *source.ObjectRef) ([]source.GraphUnit, error) {
+	if err := s.ensureSurface(source.SurfaceGraph); err != nil {
+		return nil, err
+	}
+
 	config := s.pluginConfig(ctx, ref)
 	scope := ""
 	if ref != nil {
@@ -262,6 +282,10 @@ func (s *DatabaseSession) ReadGraph(ctx context.Context, ref *source.ObjectRef) 
 
 // Reply runs AI chat against the source session.
 func (s *DatabaseSession) Reply(ctx context.Context, ref *source.ObjectRef, previousConversation string, query string) ([]*source.ChatMessage, error) {
+	if err := s.ensureSurface(source.SurfaceChat); err != nil {
+		return nil, err
+	}
+
 	config := s.pluginConfig(ctx, ref)
 	scope := ""
 	if ref != nil {
@@ -272,6 +296,10 @@ func (s *DatabaseSession) Reply(ctx context.Context, ref *source.ObjectRef, prev
 
 // ReplyWithModel runs AI chat against the source session with an explicit model.
 func (s *DatabaseSession) ReplyWithModel(ctx context.Context, ref *source.ObjectRef, previousConversation string, query string, model *source.ExternalModel) ([]*source.ChatMessage, error) {
+	if err := s.ensureSurface(source.SurfaceChat); err != nil {
+		return nil, err
+	}
+
 	config := s.pluginConfig(ctx, ref)
 	config.ExternalModel = model
 	scope := ""
@@ -283,6 +311,10 @@ func (s *DatabaseSession) ReplyWithModel(ctx context.Context, ref *source.Object
 
 // CreateObject creates a new source object.
 func (s *DatabaseSession) CreateObject(ctx context.Context, parent *source.ObjectRef, name string, fields []source.Record) (bool, error) {
+	if err := s.ensureCreateChildSupported(parent); err != nil {
+		return false, err
+	}
+
 	config := s.pluginConfig(ctx, parent)
 	namespace := s.namespaceForRef(parent)
 	return s.plugin.AddStorageUnit(config, namespace, name, fields)
@@ -301,6 +333,10 @@ func (s *DatabaseSession) UpdateObject(ctx context.Context, ref source.ObjectRef
 
 // AddRow inserts a row into a source object.
 func (s *DatabaseSession) AddRow(ctx context.Context, ref source.ObjectRef, values []source.Record) (bool, error) {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionInsertData); err != nil {
+		return false, err
+	}
+
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
@@ -330,6 +366,10 @@ func (s *DatabaseSession) IsAvailable(ctx context.Context) bool {
 
 // ExportRows streams tabular rows for one source object.
 func (s *DatabaseSession) ExportRows(ctx context.Context, ref source.ObjectRef, writer func([]string) error, selectedRows []map[string]any) error {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionViewRows); err != nil {
+		return err
+	}
+
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
@@ -338,6 +378,10 @@ func (s *DatabaseSession) ExportRows(ctx context.Context, ref source.ObjectRef, 
 
 // ExportRowsNDJSON streams NDJSON rows for one source object.
 func (s *DatabaseSession) ExportRowsNDJSON(ctx context.Context, ref source.ObjectRef, writer func(string) error, selectedRows []map[string]any) error {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionViewRows); err != nil {
+		return err
+	}
+
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
@@ -360,6 +404,10 @@ func (s *DatabaseSession) SSLStatus(ctx context.Context) (*source.SSLStatus, err
 
 // ImportData imports parsed tabular data into one source object.
 func (s *DatabaseSession) ImportData(ctx context.Context, ref source.ObjectRef, request source.ImportRequest) error {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionImportData); err != nil {
+		return err
+	}
+
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
@@ -387,6 +435,10 @@ func (s *DatabaseSession) ImportData(ctx context.Context, ref source.ObjectRef, 
 
 // GenerateMockData creates synthetic data for one source object.
 func (s *DatabaseSession) GenerateMockData(ctx context.Context, ref source.ObjectRef, rowCount int, fkDensityRatio int, overwriteExisting bool) (*source.MockDataGenerationResult, error) {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionGenerateMockData); err != nil {
+		return nil, err
+	}
+
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
@@ -416,6 +468,10 @@ func (s *DatabaseSession) GenerateMockData(ctx context.Context, ref source.Objec
 // AnalyzeMockDataDependencies computes the dependency plan for mock-data
 // generation on one source object.
 func (s *DatabaseSession) AnalyzeMockDataDependencies(ctx context.Context, ref source.ObjectRef, rowCount int, fkDensityRatio int) (*source.MockDataDependencyAnalysis, error) {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionGenerateMockData); err != nil {
+		return nil, err
+	}
+
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
@@ -639,11 +695,90 @@ func (s *DatabaseSession) validateObject(config *engine.PluginConfig, namespace 
 	return nil
 }
 
+func (s *DatabaseSession) ensureSurface(surface source.Surface) error {
+	if s.spec.Contract.SupportsSurface(surface) {
+		return nil
+	}
+
+	return fmt.Errorf("%s is not supported for %s", sourceSurfaceDescription(surface), s.spec.Label)
+}
+
+func (s *DatabaseSession) ensureObjectAction(kind source.ObjectKind, action source.Action) error {
+	objectType, ok := s.spec.Contract.ObjectTypeForKind(kind)
+	if !ok {
+		return fmt.Errorf("%s objects are not supported for %s", kind, s.spec.Label)
+	}
+	if objectType.SupportsAction(action) {
+		return nil
+	}
+
+	return fmt.Errorf("%s is not supported for %s objects in %s", sourceActionDescription(action), kind, s.spec.Label)
+}
+
+func (s *DatabaseSession) ensureCreateChildSupported(parent *source.ObjectRef) error {
+	if parent == nil {
+		if slices.Contains(s.spec.Contract.RootActions, source.ActionCreateChild) {
+			return nil
+		}
+		return fmt.Errorf("%s is not supported at the source root for %s", sourceActionDescription(source.ActionCreateChild), s.spec.Label)
+	}
+
+	return s.ensureObjectAction(parent.Kind, source.ActionCreateChild)
+}
+
 func queryLanguagesForSpec(spec source.TypeSpec) []string {
 	if spec.Contract.SupportsSurface(source.SurfaceQuery) {
 		return []string{"sql"}
 	}
 	return []string{}
+}
+
+func sourceSurfaceDescription(surface source.Surface) string {
+	switch surface {
+	case source.SurfaceQuery:
+		return "querying"
+	case source.SurfaceGraph:
+		return "graph views"
+	case source.SurfaceChat:
+		return "chat"
+	case source.SurfaceBrowser:
+		return "browsing"
+	default:
+		return strings.ToLower(string(surface))
+	}
+}
+
+func sourceActionDescription(action source.Action) string {
+	switch action {
+	case source.ActionBrowse:
+		return "browsing"
+	case source.ActionInspect:
+		return "inspecting objects"
+	case source.ActionViewRows:
+		return "viewing rows"
+	case source.ActionViewContent:
+		return "viewing content"
+	case source.ActionViewDefinition:
+		return "viewing definitions"
+	case source.ActionCreateChild:
+		return "creating child objects"
+	case source.ActionDelete:
+		return "deleting objects"
+	case source.ActionInsertData:
+		return "inserting data"
+	case source.ActionUpdateData:
+		return "updating data"
+	case source.ActionImportData:
+		return "importing data"
+	case source.ActionGenerateMockData:
+		return "generating mock data"
+	case source.ActionExecute:
+		return "executing actions"
+	case source.ActionViewGraph:
+		return "viewing graphs"
+	default:
+		return strings.ToLower(string(action))
+	}
 }
 
 func appendPath(parent *source.ObjectRef, name string) []string {
