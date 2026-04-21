@@ -235,6 +235,11 @@ type ImportRequest struct {
 	BatchSize          int
 }
 
+// ImportResult summarizes a completed import operation.
+type ImportResult struct {
+	RowsImported int
+}
+
 // QuerySuggestion is one source-scoped onboarding suggestion for the query UI.
 type QuerySuggestion struct {
 	Description string

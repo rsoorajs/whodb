@@ -175,7 +175,7 @@ func TestDatabaseSessionImportDataRejectsUnsupportedAction(t *testing.T) {
 		},
 	), mock)
 
-	err := session.ImportData(context.Background(), source.NewObjectRef(source.ObjectKindIndex, []string{"events"}), source.ImportRequest{})
+	_, err := session.ImportData(context.Background(), source.NewObjectRef(source.ObjectKindIndex, []string{"events"}), source.ImportRequest{})
 	if err == nil || !strings.Contains(err.Error(), "importing data") {
 		t.Fatalf("expected import error, got %v", err)
 	}

@@ -81,6 +81,18 @@ type databaseObjectCacheKey struct {
 	name      string
 }
 
+type sourceQueryStreamWriterAdapter struct {
+	writer source.QueryStreamWriter
+}
+
+func (w *sourceQueryStreamWriterAdapter) WriteColumns(columns []engine.Column) error {
+	return w.writer.WriteColumns(columns)
+}
+
+func (w *sourceQueryStreamWriterAdapter) WriteRow(row []string) error {
+	return w.writer.WriteRow(row)
+}
+
 // Metadata returns source session metadata derived from the source registry.
 func (s *DatabaseSession) Metadata(_ context.Context) (*source.SessionMetadata, error) {
 	metadata, _ := sourcecatalog.ResolveSessionMetadata(s.spec.ID, s.spec.Connector)
@@ -294,6 +306,23 @@ func (s *DatabaseSession) ColumnsBatch(ctx context.Context, refs []source.Object
 	return results, nil
 }
 
+// ColumnConstraints returns per-column constraint metadata for one source
+// object.
+func (s *DatabaseSession) ColumnConstraints(ctx context.Context, ref source.ObjectRef) (map[string]map[string]any, error) {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionInspect); err != nil {
+		return nil, err
+	}
+
+	config := s.pluginConfig(ctx, &ref)
+	namespace := s.namespaceForRef(&ref)
+	name := objectName(ref)
+	if err := s.validateObject(config, namespace, name); err != nil {
+		return nil, err
+	}
+
+	return s.plugin.GetColumnConstraints(config, namespace, name)
+}
+
 // RunQuery executes a query against the source session.
 func (s *DatabaseSession) RunQuery(ctx context.Context, query string, params ...any) (*source.RowsResult, error) {
 	if err := s.ensureSurface(source.SurfaceQuery); err != nil {
@@ -302,6 +331,25 @@ func (s *DatabaseSession) RunQuery(ctx context.Context, query string, params ...
 
 	config := s.pluginConfig(ctx, nil)
 	return s.plugin.RawExecute(config, query, params...)
+}
+
+// RunQueryStream executes a query through the active source session's
+// streaming path when supported.
+func (s *DatabaseSession) RunQueryStream(ctx context.Context, query string, writer source.QueryStreamWriter, params ...any) error {
+	if err := s.ensureSurface(source.SurfaceQuery); err != nil {
+		return err
+	}
+	if writer == nil {
+		return fmt.Errorf("stream writer is required")
+	}
+
+	streamer, ok := s.plugin.PluginFunctions.(engine.QueryStreamer)
+	if !ok {
+		return fmt.Errorf("streaming queries are not supported for %s", s.spec.Label)
+	}
+
+	config := s.pluginConfig(ctx, nil)
+	return streamer.StreamRawExecute(config, query, &sourceQueryStreamWriterAdapter{writer: writer}, params...)
 }
 
 // RunScript executes a source-native script against the session.
@@ -460,24 +508,24 @@ func (s *DatabaseSession) SSLStatus(ctx context.Context) (*source.SSLStatus, err
 }
 
 // ImportData imports parsed tabular data into one source object.
-func (s *DatabaseSession) ImportData(ctx context.Context, ref source.ObjectRef, request source.ImportRequest) error {
+func (s *DatabaseSession) ImportData(ctx context.Context, ref source.ObjectRef, request source.ImportRequest) (*source.ImportResult, error) {
 	if err := s.ensureObjectAction(ref.Kind, source.ActionImportData); err != nil {
-		return err
+		return nil, err
 	}
 
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
 	if err := s.validateObject(config, namespace, name); err != nil {
-		return err
+		return nil, err
 	}
 
 	columns, err := s.Columns(ctx, ref)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = importer.Execute(s.plugin, config, &importer.ExecuteRequest{
+	result, err := importer.Execute(s.plugin, config, &importer.ExecuteRequest{
 		Schema:             namespace,
 		StorageUnit:        name,
 		Mode:               importer.Mode(request.Mode),
@@ -487,7 +535,11 @@ func (s *DatabaseSession) ImportData(ctx context.Context, ref source.ObjectRef, 
 		BatchSize:          request.BatchSize,
 		TargetColumns:      columns,
 	})
-	return err
+	if err != nil {
+		return nil, err
+	}
+
+	return &source.ImportResult{RowsImported: result.RowsImported}, nil
 }
 
 // GenerateMockData creates synthetic data for one source object.
@@ -563,10 +615,11 @@ func (s *DatabaseSession) AnalyzeMockDataDependencies(ctx context.Context, ref s
 func (s *DatabaseSession) QuerySuggestions(ctx context.Context, ref *source.ObjectRef) ([]source.QuerySuggestion, error) {
 	config := s.pluginConfig(ctx, ref)
 	scope := s.namespaceForRef(ref)
-	suggestions, err := querysuggestions.FromPlugin(s.plugin, config, scope)
+	units, err := s.plugin.GetStorageUnits(config, scope)
 	if err != nil {
 		return nil, err
 	}
+	suggestions := querysuggestions.FromStorageUnits(units)
 
 	mapped := make([]source.QuerySuggestion, 0, len(suggestions))
 	for _, suggestion := range suggestions {

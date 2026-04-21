@@ -52,6 +52,14 @@ type TabularReader interface {
 	ColumnsBatch(ctx context.Context, refs []ObjectRef) ([]ObjectColumns, error)
 }
 
+// ColumnConstraintReader loads per-column constraint metadata for one source
+// object.
+type ColumnConstraintReader interface {
+	// ColumnConstraints returns database-specific column constraints such as
+	// uniqueness, defaults, and check values for one object.
+	ColumnConstraints(ctx context.Context, ref ObjectRef) (map[string]map[string]any, error)
+}
+
 // ContentReader reads blob/text content from a source object.
 type ContentReader interface {
 	// ReadContent returns a content payload for the provided object reference.
@@ -69,6 +77,22 @@ type AvailabilityChecker interface {
 type QueryRunner interface {
 	// RunQuery executes a query against the active source session.
 	RunQuery(ctx context.Context, query string, params ...any) (*RowsResult, error)
+}
+
+// QueryStreamWriter receives streamed query output row by row.
+type QueryStreamWriter interface {
+	// WriteColumns writes the result columns once before any rows.
+	WriteColumns(columns []Column) error
+	// WriteRow writes one streamed row.
+	WriteRow(row []string) error
+}
+
+// StreamQueryRunner executes source-native queries through a streaming result
+// path when the active source supports it.
+type StreamQueryRunner interface {
+	// RunQueryStream executes a query and streams the result rows through the
+	// supplied writer.
+	RunQueryStream(ctx context.Context, query string, writer QueryStreamWriter, params ...any) error
 }
 
 // ScriptRunner executes source-native scripts that may require special runtime
@@ -140,7 +164,7 @@ type SecurityReader interface {
 // DataImporter applies parsed tabular data to a destination source object.
 type DataImporter interface {
 	// ImportData imports parsed rows into the provided object reference.
-	ImportData(ctx context.Context, ref ObjectRef, request ImportRequest) error
+	ImportData(ctx context.Context, ref ObjectRef, request ImportRequest) (*ImportResult, error)
 }
 
 // MockDataManager handles mock-data planning and generation for supported

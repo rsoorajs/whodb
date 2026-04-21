@@ -23,7 +23,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/clidey/whodb/cli/internal/bootstrap"
 	"github.com/clidey/whodb/cli/internal/config"
+	"github.com/clidey/whodb/core/src"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/types"
 )
@@ -38,10 +40,6 @@ func TestNewManager(t *testing.T) {
 
 	if mgr == nil {
 		t.Fatal("NewManager returned nil")
-	}
-
-	if mgr.engine == nil {
-		t.Fatal("Manager engine is nil")
 	}
 
 	if mgr.config == nil {
@@ -144,7 +142,7 @@ func TestGetEnvConnectionsIncludesCatalogAlias(t *testing.T) {
 	}
 	t.Setenv("WHODB_FERRETDB", string(envValue))
 
-	mgr := &Manager{engine: &engine.Engine{}}
+	mgr := &Manager{}
 	for _, conn := range mgr.getEnvConnections() {
 		if conn.Type == string(engine.DatabaseType_FerretDB) &&
 			conn.Host == "ferret-host" &&
@@ -623,15 +621,23 @@ func (p *contextCapturePlugin) GetStorageUnits(config *engine.PluginConfig, sche
 	return []engine.StorageUnit{{Name: "users"}}, nil
 }
 
+func (p *contextCapturePlugin) StorageUnitExists(config *engine.PluginConfig, schema string, storageUnit string) (bool, error) {
+	return true, nil
+}
+
 func newContextCaptureManager(plugin engine.PluginFunctions) *Manager {
+	bootstrap.Ensure()
+
+	eng := &engine.Engine{
+		Plugins: []*engine.Plugin{{
+			Type:            engine.DatabaseType_Postgres,
+			PluginFunctions: plugin,
+		}},
+	}
+	src.MainEngine = eng
+
 	return &Manager{
-		engine: &engine.Engine{
-			Plugins: []*engine.Plugin{{
-				Type:            engine.DatabaseType_Postgres,
-				PluginFunctions: plugin,
-			}},
-		},
-		currentConnection: &Connection{Type: string(engine.DatabaseType_Postgres)},
+		currentConnection: &Connection{Type: string(engine.DatabaseType_Postgres), Database: "app"},
 		config:            config.DefaultConfig(),
 		cache:             NewMetadataCache(DefaultCacheTTL),
 	}
@@ -727,6 +733,10 @@ func (p *metadataBatchPlugin) GetColumnsForTable(config *engine.PluginConfig, sc
 	p.columnCalls = append(p.columnCalls, storageUnit)
 	p.mu.Unlock()
 	return p.columnsByStorageUnit[storageUnit], nil
+}
+
+func (p *metadataBatchPlugin) StorageUnitExists(config *engine.PluginConfig, schema string, storageUnit string) (bool, error) {
+	return true, nil
 }
 
 func (p *metadataBatchPlugin) GetColumnConstraints(config *engine.PluginConfig, schema string, storageUnit string) (map[string]map[string]any, error) {

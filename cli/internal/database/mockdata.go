@@ -17,10 +17,10 @@
 package database
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
-	"github.com/clidey/whodb/core/src"
 	"github.com/clidey/whodb/core/src/engine"
 	coremockdata "github.com/clidey/whodb/core/src/mockdata"
 	"github.com/clidey/whodb/core/src/source"
@@ -55,21 +55,30 @@ func (m *Manager) AnalyzeMockDataDependencies(
 		return nil, err
 	}
 
-	plugin, config, err := m.currentPlugin()
+	spec, session, err := m.currentSourceSession(context.Background())
 	if err != nil {
 		return nil, err
 	}
 
-	generator := src.NewMockDataGenerator(fkDensityRatio)
-	analysis, err := generator.AnalyzeDependencies(plugin, config, schema, table, rowCount)
+	manager, ok := session.(source.MockDataManager)
+	if !ok {
+		return nil, fmt.Errorf("mock data generation is not supported for %s", spec.Label)
+	}
+
+	ref, err := m.storageUnitRef(spec, schema, table)
+	if err != nil {
+		return nil, err
+	}
+
+	analysis, err := manager.AnalyzeMockDataDependencies(context.Background(), ref, rowCount, fkDensityRatio)
 	if err != nil {
 		return nil, fmt.Errorf("dependency analysis failed: %w", err)
 	}
 	if analysis.Error != "" {
-		return analysis, fmt.Errorf("%s", analysis.Error)
+		return mockDataDependencyAnalysisFromSource(analysis), fmt.Errorf("%s", analysis.Error)
 	}
 
-	return analysis, nil
+	return mockDataDependencyAnalysisFromSource(analysis), nil
 }
 
 // GenerateMockData generates mock data for the target table and its dependencies.
@@ -104,13 +113,22 @@ func (m *Manager) GenerateMockData(
 		return nil, err
 	}
 
-	plugin, config, err := m.currentPlugin()
+	spec, session, err := m.currentSourceSession(context.Background())
 	if err != nil {
 		return nil, err
 	}
 
-	generator := src.NewMockDataGenerator(fkDensityRatio)
-	result, err := generator.Generate(plugin, config, schema, table, rowCount, overwrite)
+	manager, ok := session.(source.MockDataManager)
+	if !ok {
+		return nil, fmt.Errorf("mock data generation is not supported for %s", spec.Label)
+	}
+
+	ref, err := m.storageUnitRef(spec, schema, table)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := manager.GenerateMockData(context.Background(), ref, rowCount, fkDensityRatio, overwrite)
 	if err != nil {
 		return nil, fmt.Errorf("mock data generation failed: %w", err)
 	}
@@ -119,7 +137,7 @@ func (m *Manager) GenerateMockData(
 		m.cache.Clear()
 	}
 
-	return result, nil
+	return mockDataGenerationResultFromSource(result), nil
 }
 
 func (m *Manager) ensureMockDataSupported() error {
@@ -169,4 +187,50 @@ func storageUnitType(unit engine.StorageUnit) string {
 		}
 	}
 	return ""
+}
+
+func mockDataDependencyAnalysisFromSource(analysis *source.MockDataDependencyAnalysis) *coremockdata.DependencyAnalysis {
+	if analysis == nil {
+		return nil
+	}
+
+	tables := make([]coremockdata.TableDependency, 0, len(analysis.Tables))
+	for _, table := range analysis.Tables {
+		tables = append(tables, coremockdata.TableDependency{
+			Table:            table.Table,
+			DependsOn:        table.DependsOn,
+			RowCount:         table.RowCount,
+			IsBlocked:        table.IsBlocked,
+			UsesExistingData: table.UsesExistingData,
+		})
+	}
+
+	return &coremockdata.DependencyAnalysis{
+		GenerationOrder: analysis.GenerationOrder,
+		Tables:          tables,
+		TotalRows:       analysis.TotalRows,
+		Warnings:        analysis.Warnings,
+		Error:           analysis.Error,
+	}
+}
+
+func mockDataGenerationResultFromSource(result *source.MockDataGenerationResult) *coremockdata.GenerationResult {
+	if result == nil {
+		return nil
+	}
+
+	details := make([]coremockdata.TableDetail, 0, len(result.Details))
+	for _, detail := range result.Details {
+		details = append(details, coremockdata.TableDetail{
+			Table:            detail.Table,
+			RowsGenerated:    detail.RowsGenerated,
+			UsedExistingData: detail.UsedExistingData,
+		})
+	}
+
+	return &coremockdata.GenerationResult{
+		TotalGenerated: result.TotalGenerated,
+		Details:        details,
+		Warnings:       result.Warnings,
+	}
 }
