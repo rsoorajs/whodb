@@ -260,6 +260,13 @@ export const GraphPage: FC = () => {
         });
     }, [fetchColumnsBatch, loadingColumns, tableColumns]);
 
+    useEffect(() => {
+        const refs = storageUnits
+            .filter(unit => selectedUnits.has(unit.Name))
+            .map(unit => unit.Ref);
+        loadColumnsForRefs(refs);
+    }, [loadColumnsForRefs, selectedUnits, storageUnits]);
+
     const handleNodeClick = useCallback<NodeMouseHandler>((_, node) => {
         const ref = node.data?.Ref;
         if (!ref) {

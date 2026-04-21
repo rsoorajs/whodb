@@ -229,15 +229,19 @@ export const Sidebar: FC = () => {
         return availableSchemas?.Schema?.map(schemaObject => schemaObject.Name) ?? [];
     }, [availableSchemas?.Schema]);
 
-    // Default schema selection: prefer Search Path from login config, fall back to first schema
+    // Default schema selection: prefer Search Path, then profile database for schema-scoped
+    // sources, then fall back to the first available schema.
     useEffect(() => {
         if (current == null || schema !== "" || availableSchemaNames.length === 0) return;
         const searchPath = current.Advanced?.find(a => a.Key === "Search Path")?.Value;
+        const profileDatabase = (!supportsDatabaseSwitching && current.Database && availableSchemaNames.includes(current.Database))
+            ? current.Database
+            : undefined;
         const defaultSchema = (searchPath && availableSchemaNames.includes(searchPath))
             ? searchPath
-            : availableSchemaNames[0] ?? "";
+            : (profileDatabase ?? availableSchemaNames[0] ?? "");
         dispatch(DatabaseActions.setSchema(defaultSchema));
-    }, [availableSchemaNames, current, dispatch, schema]);
+    }, [availableSchemaNames, current, dispatch, schema, supportsDatabaseSwitching]);
     const { data: updateInfo } = useQuery(GetUpdateInfoDocument);
     const { data: sslStatusData, refetch: refetchSslStatus } = useQuery(GetSslStatusDocument, sslStatusQueryOptions);
     useEffect(() => {
