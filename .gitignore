@@ -62,3 +62,4 @@ tools/
 .claude/worktrees
 .pnpm-store
 .codex
+frontend/build-ee

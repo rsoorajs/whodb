@@ -26,10 +26,12 @@ ARG VERSION=dev
 ENV VITE_APP_VERSION=${VERSION}
 ENV WHODB_BUILD_SOURCEMAP=false
 RUN if [ "${USE_PREBUILT_FRONTEND}" = "true" ]; then \
-        test -d build && test -f build/index.html; \
+        test -d build && test -f build/index.html && test -f build/.whodb-edition && grep -qx 'ce' build/.whodb-edition; \
     else \
-        pnpm run build; \
-    fi
+        pnpm run build:ce; \
+    fi && \
+    test -f build/.whodb-edition && grep -qx 'ce' build/.whodb-edition && \
+    rm -f build/.whodb-edition
 ARG TARGETARCH
 ARG PLATFORM=docker
 
@@ -82,6 +84,9 @@ RUN CGO_CFLAGS="-Os -ffunction-sections -fdata-sections -fno-asynchronous-unwind
 	CGO_ENABLED=1 GOOS=linux GOARCH=${TARGETARCH} go build -tags "prod duckdb_use_lib" -trimpath \
 	-ldflags="-s -w -X github.com/clidey/whodb/core/src/env.ApplicationVersion=${VERSION} -X github.com/clidey/whodb/core/src/env.ApplicationEnvironment=${PLATFORM}-${TARGETARCH}" \
 	-o /core ./cmd/whodb
+
+RUN chmod +x /core && \
+    upx --best --lzma /core
 
 RUN chmod +x /usr/local/lib/libduckdb.so && \
     if [ "$TARGETARCH" = "amd64" ]; then \
