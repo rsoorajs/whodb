@@ -25,6 +25,7 @@ import (
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/plugins"
+	"github.com/clidey/whodb/core/src/source"
 	"gorm.io/gorm"
 )
 
@@ -73,6 +74,17 @@ func (p *GormPlugin) Chat(config *engine.PluginConfig, schema string, previousCo
 		// Use BAML for structured SQL query generation
 		callCtx := ctx.Background()
 
-		return bamlconfig.ExecuteChatQuery(callCtx, string(p.Type), schema, tableContext, previousConversation, query, config, p)
+		return bamlconfig.ExecuteChatQuery(
+			callCtx,
+			string(p.Type),
+			schema,
+			tableContext,
+			previousConversation,
+			query,
+			config.ExternalModel,
+			bamlconfig.ChatQueryExecutorFunc(func(_ ctx.Context, query string, params ...any) (*source.RowsResult, error) {
+				return p.RawExecute(config, query, params...)
+			}),
+		)
 	})
 }

@@ -57,9 +57,7 @@ func TestGraphQLAddRowMutation(t *testing.T) {
 	payload, _ := json.Marshal(body)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewReader(payload))
-	ctx := context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres", Database: "app"})
-	ctx = context.WithValue(ctx, auth.AuthKey_Source, &source.Credentials{SourceType: "Postgres", Values: map[string]string{"Database": "app"}})
-	req = req.WithContext(ctx)
+	req = req.WithContext(testSourceContext("Postgres", map[string]string{"Database": "app"}))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	srv.ServeHTTP(w, req)
@@ -151,9 +149,7 @@ func TestGraphQLRowQueryWithSortAndWhere(t *testing.T) {
 	payload, _ := json.Marshal(body)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewReader(payload))
-	ctx := context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres", Database: "app"})
-	ctx = context.WithValue(ctx, auth.AuthKey_Source, &source.Credentials{SourceType: "Postgres", Values: map[string]string{"Database": "app"}})
-	req = req.WithContext(ctx)
+	req = req.WithContext(testSourceContext("Postgres", map[string]string{"Database": "app"}))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	srv.ServeHTTP(w, req)

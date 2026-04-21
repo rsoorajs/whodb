@@ -30,29 +30,7 @@ import (
 )
 
 func testSourceContext(sourceType string, values map[string]string) context.Context {
-	engineCredentials := &engine.Credentials{
-		Type: sourceType,
-	}
-	for key, value := range values {
-		switch key {
-		case "Hostname":
-			engineCredentials.Hostname = value
-		case "Username":
-			engineCredentials.Username = value
-		case "Password":
-			engineCredentials.Password = value
-		case "Database":
-			engineCredentials.Database = value
-		default:
-			engineCredentials.Advanced = append(engineCredentials.Advanced, engine.Record{
-				Key:   key,
-				Value: value,
-			})
-		}
-	}
-
-	ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, engineCredentials)
-	return context.WithValue(ctx, auth.AuthKey_Source, &source.Credentials{
+	return context.WithValue(context.Background(), auth.AuthKey_Source, &source.Credentials{
 		SourceType: sourceType,
 		Values:     cloneStringMap(values),
 	})

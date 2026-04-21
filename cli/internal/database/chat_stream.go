@@ -27,7 +27,6 @@ import (
 	"github.com/clidey/whodb/core/baml_client"
 	"github.com/clidey/whodb/core/baml_client/types"
 	"github.com/clidey/whodb/core/src/bamlconfig"
-	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/source"
 )
 
@@ -57,7 +56,6 @@ func (m *Manager) SendAIChatStream(ctx context.Context, providerID, modelType, t
 	}
 
 	externalModel := resolveExternalModel(providerID, modelType, token, model)
-	config := &engine.PluginConfig{ExternalModel: externalModel}
 
 	tableDetails, err := m.buildSourceChatTableDetails(ctx, spec, session, reader, schema)
 	if err != nil {
@@ -73,7 +71,7 @@ func (m *Manager) SendAIChatStream(ctx context.Context, providerID, modelType, t
 	}
 
 	// Setup BAML client
-	callOpts := bamlconfig.SetupAIClient(config.ExternalModel)
+	callOpts := bamlconfig.SetupAIClient(externalModel)
 
 	// Start BAML stream
 	bamlStream, err := baml_client.Stream.GenerateSQLQuery(ctx, dbContext, query, callOpts...)
@@ -100,7 +98,7 @@ func (m *Manager) SendAIChatStream(ctx context.Context, providerID, modelType, t
 					out <- StreamChunk{IsFinal: true, Final: []*ChatMessage{}}
 					return
 				}
-				messages := convertSourceFinalResponses(ctx, *final, runner, config)
+				messages := convertSourceFinalResponses(ctx, *final, runner)
 				out <- StreamChunk{IsFinal: true, Final: messages}
 				return
 			}
@@ -161,20 +159,20 @@ type sourceChatQueryExecutor struct {
 	runner source.QueryRunner
 }
 
-func (e *sourceChatQueryExecutor) RawExecute(_ *engine.PluginConfig, query string, params ...any) (*engine.GetRowsResult, error) {
+func (e *sourceChatQueryExecutor) RunQuery(_ context.Context, query string, params ...any) (*source.RowsResult, error) {
 	return e.runner.RunQuery(e.ctx, query, params...)
 }
 
 // convertSourceFinalResponses converts BAML final responses to ChatMessages,
 // executing read queries through the active source session and leaving mutations
 // gated for user confirmation.
-func convertSourceFinalResponses(ctx context.Context, responses []types.ChatResponse, runner source.QueryRunner, config *engine.PluginConfig) []*ChatMessage {
+func convertSourceFinalResponses(ctx context.Context, responses []types.ChatResponse, runner source.QueryRunner) []*ChatMessage {
 	var messages []*ChatMessage
 	executor := &sourceChatQueryExecutor{ctx: ctx, runner: runner}
 	for _, resp := range responses {
 		resp.Text = strings.TrimRight(strings.TrimSpace(resp.Text), ";")
 
-		chatMsg := bamlconfig.ProcessBAMLResponse(&resp, config, executor)
+		chatMsg := bamlconfig.ProcessChatResponse(ctx, &resp, executor)
 		messages = append(messages, &ChatMessage{
 			Type:                 chatMsg.Type,
 			Text:                 chatMsg.Text,

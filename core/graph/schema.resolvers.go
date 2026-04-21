@@ -1237,10 +1237,7 @@ func (r *queryResolver) AIProviders(ctx context.Context) ([]*model.AIProvider, e
 
 // AIModel is the resolver for the AIModel field.
 func (r *queryResolver) AIModel(ctx context.Context, providerID *string, modelType string, token *string) ([]string, error) {
-	config := &engine.PluginConfig{}
-
-	// Initialize ExternalModel to prevent nil pointer dereference
-	config.ExternalModel = &engine.ExternalModel{
+	externalModel := &engine.ExternalModel{
 		Type: modelType,
 	}
 
@@ -1250,7 +1247,7 @@ func (r *queryResolver) AIModel(ctx context.Context, providerID *string, modelTy
 		found := false
 		for _, provider := range chatProviders {
 			if provider.ProviderId == *providerID {
-				config.ExternalModel.Token = provider.APIKey
+				externalModel.Token = provider.APIKey
 				found = true
 
 				// For generic providers, return models from config instead of querying registry
@@ -1267,12 +1264,12 @@ func (r *queryResolver) AIModel(ctx context.Context, providerID *string, modelTy
 		// If provider not found in environment but token is provided, use the token
 		// This handles user-added providers that aren't in environment
 		if !found && token != nil {
-			config.ExternalModel.Token = *token
+			externalModel.Token = *token
 		}
 	} else if token != nil {
-		config.ExternalModel.Token = *token
+		externalModel.Token = *token
 	}
-	models, err := llm.Instance(config).GetSupportedModels()
+	models, err := llm.ClientForModel(externalModel).GetSupportedModels()
 	if err != nil {
 		log.WithFields(log.Fields{
 			"operation":   "GetSupportedModels",

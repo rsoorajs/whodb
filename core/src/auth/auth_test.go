@@ -25,7 +25,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/source"
 )
@@ -85,9 +84,9 @@ func TestAuthMiddlewareExtractsCredentialsFromBearer(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 
-	var captured *engine.Credentials
+	var captured *source.Credentials
 	handler := AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		captured = GetCredentials(r.Context())
+		captured = GetSourceCredentials(r.Context())
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -97,7 +96,7 @@ func TestAuthMiddlewareExtractsCredentialsFromBearer(t *testing.T) {
 		t.Fatalf("expected request to pass through middleware, got status %d", rr.Code)
 	}
 
-	if captured == nil || captured.Username != "alice" || captured.Database != "app" {
+	if captured == nil || captured.Values["Username"] != "alice" || captured.Values["Database"] != "app" {
 		t.Fatalf("expected credentials to be populated from bearer token, got %+v", captured)
 	}
 }
@@ -154,9 +153,9 @@ func TestAuthMiddlewarePreservesAdvancedOptions(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 
-	var captured *engine.Credentials
+	var captured *source.Credentials
 	handler := AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		captured = GetCredentials(r.Context())
+		captured = GetSourceCredentials(r.Context())
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -170,25 +169,17 @@ func TestAuthMiddlewarePreservesAdvancedOptions(t *testing.T) {
 		t.Fatal("expected credentials to be populated")
 	}
 
-	advancedByKey := map[string]string{}
-	for _, record := range captured.Advanced {
-		advancedByKey[record.Key] = record.Value
+	if captured.Values["SSL Mode"] != "verify-ca" {
+		t.Fatalf("expected SSL Mode=verify-ca, got %+v", captured.Values)
 	}
-
-	if advancedByKey["Port"] != "5432" {
-		t.Fatalf("expected default Postgres port to be injected, got %+v", captured.Advanced)
-	}
-	if advancedByKey["SSL Mode"] != "verify-ca" {
-		t.Fatalf("expected SSL Mode=verify-ca, got %+v", captured.Advanced)
-	}
-	if advancedByKey["SSL CA Certificate Path"] != "/path/to/ca.crt" {
-		t.Fatalf("expected SSL CA Certificate Path to be preserved, got %+v", captured.Advanced)
+	if captured.Values["SSL CA Certificate Path"] != "/path/to/ca.crt" {
+		t.Fatalf("expected SSL CA Certificate Path to be preserved, got %+v", captured.Values)
 	}
 }
 
 func TestAuthMiddlewareDecodesSourceCredentialsFormat(t *testing.T) {
 	// This test verifies that credentials marshaled from the source-first format
-	// are correctly unmarshaled into engine.Credentials.
+	// are correctly unmarshaled into source.Credentials.
 	originalDev := env.IsDevelopment
 	originalGateway := env.IsAPIGatewayEnabled
 	env.IsDevelopment = false
@@ -216,9 +207,9 @@ func TestAuthMiddlewareDecodesSourceCredentialsFormat(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 
-	var captured *engine.Credentials
+	var captured *source.Credentials
 	handler := AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		captured = GetCredentials(r.Context())
+		captured = GetSourceCredentials(r.Context())
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -232,19 +223,11 @@ func TestAuthMiddlewareDecodesSourceCredentialsFormat(t *testing.T) {
 		t.Fatal("expected credentials to be populated")
 	}
 
-	advancedByKey := map[string]string{}
-	for _, record := range captured.Advanced {
-		advancedByKey[record.Key] = record.Value
+	if captured.Values["SSL Mode"] != "verify-ca" {
+		t.Fatalf("expected SSL Mode=verify-ca, got %+v", captured.Values)
 	}
-
-	if advancedByKey["Port"] != "5432" {
-		t.Fatalf("expected default Postgres port to be injected, got %+v", captured.Advanced)
-	}
-	if advancedByKey["SSL Mode"] != "verify-ca" {
-		t.Fatalf("expected SSL Mode=verify-ca, got %+v", captured.Advanced)
-	}
-	if advancedByKey["SSL CA Certificate Path"] != "/path/to/ca.crt" {
-		t.Fatalf("expected SSL CA Certificate Path to be preserved, got %+v", captured.Advanced)
+	if captured.Values["SSL CA Certificate Path"] != "/path/to/ca.crt" {
+		t.Fatalf("expected SSL CA Certificate Path to be preserved, got %+v", captured.Values)
 	}
 }
 

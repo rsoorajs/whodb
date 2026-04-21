@@ -28,6 +28,7 @@ import (
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/importer"
 	"github.com/clidey/whodb/core/src/log"
+	"github.com/clidey/whodb/core/src/plugins"
 	"github.com/clidey/whodb/core/src/query"
 	"github.com/clidey/whodb/core/src/querysuggestions"
 	"github.com/clidey/whodb/core/src/source"
@@ -65,6 +66,20 @@ func (c *DatabaseConnector) Open(_ context.Context, spec source.TypeSpec, creden
 		validated:   map[databaseObjectCacheKey]struct{}{},
 		columns:     map[databaseObjectCacheKey][]source.Column{},
 	}, nil
+}
+
+// Invalidate clears cached plugin connection state for one database-backed
+// source credential set.
+func (c *DatabaseConnector) Invalidate(_ context.Context, spec source.TypeSpec, credentials *source.Credentials) error {
+	plugins.RemoveConnection(engine.NewPluginConfig(EngineCredentials(spec, credentials)))
+	return nil
+}
+
+// Shutdown releases all cached plugin connections owned by the database-backed
+// source driver.
+func (c *DatabaseConnector) Shutdown(ctx context.Context) error {
+	plugins.CloseAllConnections(ctx)
+	return nil
 }
 
 // DatabaseSession adapts one database plugin instance to the source session interfaces.

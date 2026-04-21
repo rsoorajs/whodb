@@ -34,6 +34,21 @@ type SourceConnector interface {
 	Open(ctx context.Context, spec TypeSpec, credentials *Credentials) (SourceSession, error)
 }
 
+// SessionInvalidator clears cached runtime state associated with one source
+// type and credential set.
+type SessionInvalidator interface {
+	// Invalidate clears any cached connections or sessions associated with the
+	// provided source type and credentials.
+	Invalidate(ctx context.Context, spec TypeSpec, credentials *Credentials) error
+}
+
+// DriverShutdowner releases any process-wide runtime state owned by one source
+// driver.
+type DriverShutdowner interface {
+	// Shutdown releases all cached state owned by the source driver.
+	Shutdown(ctx context.Context) error
+}
+
 // SourceBrowser lists and resolves browseable objects.
 type SourceBrowser interface {
 	// ListObjects lists objects beneath the provided parent.

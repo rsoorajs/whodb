@@ -1576,10 +1576,7 @@ func (m *Manager) GetAIModels(providerID, modelType, token string) ([]string, er
 		return nil, fmt.Errorf("not connected to any database")
 	}
 
-	credentials := m.buildCredentials(m.currentConnection)
-	config := engine.NewPluginConfig(credentials)
-
-	config.ExternalModel = &engine.ExternalModel{
+	externalModel := &engine.ExternalModel{
 		Type: modelType,
 	}
 
@@ -1587,15 +1584,15 @@ func (m *Manager) GetAIModels(providerID, modelType, token string) ([]string, er
 		providers := envconfig.GetConfiguredChatProviders()
 		for _, provider := range providers {
 			if provider.ProviderId == providerID {
-				config.ExternalModel.Token = provider.APIKey
+				externalModel.Token = provider.APIKey
 				break
 			}
 		}
 	} else if token != "" {
-		config.ExternalModel.Token = token
+		externalModel.Token = token
 	}
 
-	return llm.Instance(config).GetSupportedModels()
+	return llm.ClientForModel(externalModel).GetSupportedModels()
 }
 
 // GetAIModelsWithContext fetches AI models with context support for timeout/cancellation
