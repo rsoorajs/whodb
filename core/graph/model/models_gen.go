@@ -400,9 +400,10 @@ type SourceConnectionField struct {
 }
 
 type SourceConnectionTraits struct {
-	Transport          SourceConnectionTransport `json:"Transport"`
-	HostInputMode      SourceHostInputMode       `json:"HostInputMode"`
-	HostInputURLParser SourceHostInputURLParser  `json:"HostInputURLParser"`
+	Transport               SourceConnectionTransport `json:"Transport"`
+	HostInputMode           SourceHostInputMode       `json:"HostInputMode"`
+	HostInputURLParser      SourceHostInputURLParser  `json:"HostInputURLParser"`
+	SupportsCustomCAContent bool                      `json:"SupportsCustomCAContent"`
 }
 
 type SourceContent struct {

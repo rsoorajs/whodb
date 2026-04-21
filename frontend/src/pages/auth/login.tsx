@@ -1127,7 +1127,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                                 </div>
                             ))}
                             <SSLConfig
-                                databaseType={databaseType.id}
+                                supportsCustomCAContent={databaseType.traits?.connection.supportsCustomCAContent ?? true}
                                 sslModes={databaseType.sslModes}
                                 advancedForm={advancedForm}
                                 onAdvancedFormChange={handleAdvancedForm}

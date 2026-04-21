@@ -429,6 +429,7 @@ type SourceConnectionTraits {
   Transport: SourceConnectionTransport!
   HostInputMode: SourceHostInputMode!
   HostInputURLParser: SourceHostInputURLParser!
+  SupportsCustomCAContent: Boolean!
 }
 
 type SourcePresentationTraits {

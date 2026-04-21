@@ -341,9 +341,10 @@ type ComplexityRoot struct {
 	}
 
 	SourceConnectionTraits struct {
-		HostInputMode      func(childComplexity int) int
-		HostInputURLParser func(childComplexity int) int
-		Transport          func(childComplexity int) int
+		HostInputMode           func(childComplexity int) int
+		HostInputURLParser      func(childComplexity int) int
+		SupportsCustomCAContent func(childComplexity int) int
+		Transport               func(childComplexity int) int
 	}
 
 	SourceContent struct {
@@ -2137,6 +2138,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.SourceConnectionTraits.HostInputURLParser(childComplexity), true
+	case "SourceConnectionTraits.SupportsCustomCAContent":
+		if e.ComplexityRoot.SourceConnectionTraits.SupportsCustomCAContent == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceConnectionTraits.SupportsCustomCAContent(childComplexity), true
 	case "SourceConnectionTraits.Transport":
 		if e.ComplexityRoot.SourceConnectionTraits.Transport == nil {
 			break
@@ -11307,6 +11314,35 @@ func (ec *executionContext) fieldContext_SourceConnectionTraits_HostInputURLPars
 	return fc, nil
 }
 
+func (ec *executionContext) _SourceConnectionTraits_SupportsCustomCAContent(ctx context.Context, field graphql.CollectedField, obj *model.SourceConnectionTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceConnectionTraits_SupportsCustomCAContent,
+		func(ctx context.Context) (any, error) {
+			return obj.SupportsCustomCAContent, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceConnectionTraits_SupportsCustomCAContent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceConnectionTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _SourceContent_Text(ctx context.Context, field graphql.CollectedField, obj *model.SourceContent) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -13243,6 +13279,8 @@ func (ec *executionContext) fieldContext_SourceTraits_Connection(_ context.Conte
 				return ec.fieldContext_SourceConnectionTraits_HostInputMode(ctx, field)
 			case "HostInputURLParser":
 				return ec.fieldContext_SourceConnectionTraits_HostInputURLParser(ctx, field)
+			case "SupportsCustomCAContent":
+				return ec.fieldContext_SourceConnectionTraits_SupportsCustomCAContent(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type SourceConnectionTraits", field.Name)
 		},
@@ -19391,6 +19429,11 @@ func (ec *executionContext) _SourceConnectionTraits(ctx context.Context, sel ast
 			}
 		case "HostInputURLParser":
 			out.Values[i] = ec._SourceConnectionTraits_HostInputURLParser(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "SupportsCustomCAContent":
+			out.Values[i] = ec._SourceConnectionTraits_SupportsCustomCAContent(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

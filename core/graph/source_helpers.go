@@ -250,9 +250,10 @@ func sourceDiscoveryPrefillToModel(prefill source.DiscoveryPrefill) *model.Sourc
 func sourceTraitsToModel(traits source.TypeTraits) *model.SourceTraits {
 	return &model.SourceTraits{
 		Connection: &model.SourceConnectionTraits{
-			Transport:          model.SourceConnectionTransport(traits.Connection.Transport),
-			HostInputMode:      model.SourceHostInputMode(traits.Connection.HostInputMode),
-			HostInputURLParser: model.SourceHostInputURLParser(traits.Connection.HostInputURLParser),
+			Transport:               model.SourceConnectionTransport(traits.Connection.Transport),
+			HostInputMode:           model.SourceHostInputMode(traits.Connection.HostInputMode),
+			HostInputURLParser:      model.SourceHostInputURLParser(traits.Connection.HostInputURLParser),
+			SupportsCustomCAContent: traits.Connection.SupportsCustomCAContent,
 		},
 		Presentation: &model.SourcePresentationTraits{
 			ProfileLabelStrategy: model.SourceProfileLabelStrategy(traits.Presentation.ProfileLabelStrategy),

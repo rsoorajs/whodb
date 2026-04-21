@@ -9,6 +9,7 @@ query SourceTypes {
         transport: Transport
         hostInputMode: HostInputMode
         hostInputUrlParser: HostInputURLParser
+        supportsCustomCAContent: SupportsCustomCAContent
       }
       presentation: Presentation {
         profileLabelStrategy: ProfileLabelStrategy

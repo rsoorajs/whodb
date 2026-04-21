@@ -598,7 +598,7 @@ export const StorageUnitPage: FC = () => {
                                             <Input value={field.Key} onChange={e => handleFieldValueChange("Key", index, e.target.value)} placeholder={t('fieldNamePlaceholder')}/>
                                             <Label>{t('fieldTypeLabel')}</Label>
                                             <TypeSelector
-                                                databaseType={current?.Type}
+                                                sourceType={current?.Type}
                                                 value={field.Value}
                                                 onChange={value => handleFieldValueChange("Value", index, value)}
                                                 placeholder={t('fieldTypePlaceholder')}

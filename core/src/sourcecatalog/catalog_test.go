@@ -194,6 +194,9 @@ func TestBuildTypeSpecExposesSourceTraits(t *testing.T) {
 				if spec.Traits.Connection.HostInputMode != source.HostInputModeNone {
 					t.Fatalf("expected Sqlite3 host input mode %q, got %q", source.HostInputModeNone, spec.Traits.Connection.HostInputMode)
 				}
+				if !spec.Traits.Connection.SupportsCustomCAContent {
+					t.Fatalf("expected Sqlite3 custom CA support to remain enabled")
+				}
 				if spec.Traits.Presentation.ProfileLabelStrategy != source.ProfileLabelStrategyDatabase {
 					t.Fatalf("expected Sqlite3 profile label strategy %q, got %q", source.ProfileLabelStrategyDatabase, spec.Traits.Presentation.ProfileLabelStrategy)
 				}
@@ -218,6 +221,9 @@ func TestBuildTypeSpecExposesSourceTraits(t *testing.T) {
 				}
 				if spec.Traits.Connection.HostInputURLParser != source.HostInputURLParserPostgres {
 					t.Fatalf("expected Postgres URL parser %q, got %q", source.HostInputURLParserPostgres, spec.Traits.Connection.HostInputURLParser)
+				}
+				if !spec.Traits.Connection.SupportsCustomCAContent {
+					t.Fatalf("expected Postgres custom CA support to remain enabled")
 				}
 				if !spec.Traits.Query.SupportsAnalyze {
 					t.Fatalf("expected Postgres analyze support")

@@ -28,26 +28,6 @@ import { Icons } from "../components/icons";
 import { getEdition } from "./edition";
 import { getRegisteredSourceTypeOverrides } from "./source-registry";
 
-export const DatabaseType = {
-    Postgres: "Postgres",
-    CockroachDb: "CockroachDB",
-    MySql: "MySQL",
-    MariaDb: "MariaDB",
-    Sqlite3: "Sqlite3",
-    DuckDb: "DuckDB",
-    MongoDb: "MongoDB",
-    Redis: "Redis",
-    Memcached: "Memcached",
-    ElasticSearch: "ElasticSearch",
-    ClickHouse: "ClickHouse",
-    QuestDb: "QuestDB",
-    OpenSearch: "OpenSearch",
-    Valkey: "Valkey",
-    DocumentDb: "DocumentDB",
-} as const;
-
-export type DatabaseType = typeof DatabaseType[keyof typeof DatabaseType];
-
 /**
  * Type category for grouping database types in the UI.
  */
@@ -101,6 +81,7 @@ export interface SourceConnectionTraitsDescriptor {
     transport: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['connection']['transport'];
     hostInputMode: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['connection']['hostInputMode'];
     hostInputUrlParser: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['connection']['hostInputUrlParser'];
+    supportsCustomCAContent: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['connection']['supportsCustomCAContent'];
 }
 
 /**

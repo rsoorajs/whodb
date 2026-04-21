@@ -797,9 +797,10 @@ func networkTraitsWithProfileLabel(
 ) source.TypeTraits {
 	return source.TypeTraits{
 		Connection: source.ConnectionTraits{
-			Transport:          source.ConnectionTransportNetwork,
-			HostInputMode:      hostInputMode,
-			HostInputURLParser: urlParser,
+			Transport:               source.ConnectionTransportNetwork,
+			HostInputMode:           hostInputMode,
+			HostInputURLParser:      urlParser,
+			SupportsCustomCAContent: true,
 		},
 		Presentation: source.PresentationTraits{
 			ProfileLabelStrategy: profileLabelStrategy,
@@ -821,9 +822,10 @@ func sampledNetworkTraits(
 func fileTraits(profileLabelStrategy source.ProfileLabelStrategy) source.TypeTraits {
 	return source.TypeTraits{
 		Connection: source.ConnectionTraits{
-			Transport:          source.ConnectionTransportFile,
-			HostInputMode:      source.HostInputModeNone,
-			HostInputURLParser: source.HostInputURLParserNone,
+			Transport:               source.ConnectionTransportFile,
+			HostInputMode:           source.HostInputModeNone,
+			HostInputURLParser:      source.HostInputURLParserNone,
+			SupportsCustomCAContent: true,
 		},
 		Presentation: source.PresentationTraits{
 			ProfileLabelStrategy: profileLabelStrategy,

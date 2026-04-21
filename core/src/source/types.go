@@ -296,9 +296,10 @@ const (
 
 // ConnectionTraits describes UI-facing connection behavior for a source type.
 type ConnectionTraits struct {
-	Transport          ConnectionTransport
-	HostInputMode      HostInputMode
-	HostInputURLParser HostInputURLParser
+	Transport               ConnectionTransport
+	HostInputMode           HostInputMode
+	HostInputURLParser      HostInputURLParser
+	SupportsCustomCAContent bool
 }
 
 // PresentationTraits describes UI-facing presentation behavior for a source type.
