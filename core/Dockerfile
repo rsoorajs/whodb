@@ -88,10 +88,12 @@ RUN CGO_CFLAGS="-Os -ffunction-sections -fdata-sections -fno-asynchronous-unwind
 RUN chmod +x /core && \
     upx --best --lzma /core
 
-RUN chmod +x /usr/local/lib/libduckdb.so && \
+RUN mkdir -p /runtime-libs && \
+    chmod +x /usr/local/lib/libduckdb.so && \
     if [ "$TARGETARCH" = "amd64" ]; then \
         upx --best --lzma /usr/local/lib/libduckdb.so; \
-    fi
+    fi && \
+    cp /usr/local/lib/libduckdb.so /runtime-libs/
 
 # Pre-download BAML native library for the target architecture (musl for Alpine)
 # Extract BAML version from go.mod to stay in sync
@@ -112,16 +114,16 @@ RUN BAML_VERSION=$(grep 'github.com/boundaryml/baml ' go.mod | awk '{print $2}' 
     if [ "$TARGETARCH" = "amd64" ]; then \
         upx --best --lzma /baml-lib/libbaml_cffi.so; \
     fi && \
+    cp /baml-lib/libbaml_cffi.so /runtime-libs/ && \
     echo "Downloaded BAML musl library for ${BAML_ARCH}"
 
 FROM alpine:3.23
 RUN apk add --no-cache ca-certificates libgcc libstdc++
 WORKDIR /app
 COPY --from=backend-stage /core /core
-COPY --from=backend-stage /usr/local/lib/libduckdb.so /usr/local/lib/libduckdb.so
-# Copy BAML musl library and set path via env var
+COPY --from=backend-stage /runtime-libs/ /usr/local/lib/
+# Copy runtime native libraries and set BAML path via env var.
 # (BAML Go client's isMusl() is not implemented, so we must use BAML_LIBRARY_PATH)
-COPY --from=backend-stage /baml-lib/libbaml_cffi.so /usr/local/lib/libbaml_cffi.so
 ENV BAML_LIBRARY_PATH=/usr/local/lib/libbaml_cffi.so
 
 CMD ["/core"]
