@@ -52,7 +52,7 @@ desktop-common/         # Shared desktop code
 .github/workflows/      # CI/CD pipelines (release, build, deploy)
 ```
 
-Additional docs: `.claude/docs/cli.md` (CLI), `.claude/docs/desktop.md` (desktop), `.claude/docs/ci-cd.md` (GitHub Actions), `.claude/docs/testing.md` (testing).
+Additional docs: `.claude/docs/cli.md` (CLI), `.claude/docs/desktop.md` (desktop), `.claude/docs/ci-cd.md` (GitHub Actions), `.claude/docs/testing.md` (testing). For adding new data sources, follow `DATA_SOURCE_GUIDE.md` (EE-specific additions in `ee/DATA_SOURCE_GUIDE_EE.md`).
 
 ## Testing
 
