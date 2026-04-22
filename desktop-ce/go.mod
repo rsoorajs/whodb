@@ -14,7 +14,7 @@ require (
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	cloud.google.com/go/longrunning v0.9.0 // indirect
-	cloud.google.com/go/memcache v1.13.0 // indirect
+	cloud.google.com/go/memcache v1.14.0 // indirect
 	cloud.google.com/go/redis v1.21.0 // indirect
 	filippo.io/edwards25519 v1.2.0 // indirect
 	git.sr.ht/~jackmordaunt/go-toast/v2 v2.0.3 // indirect
@@ -51,7 +51,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.30.15 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.19 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.10 // indirect
-	github.com/aws/smithy-go v1.24.3 // indirect
+	github.com/aws/smithy-go v1.25.0 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/boundaryml/baml v0.220.0 // indirect
 	github.com/brianvoe/gofakeit/v7 v7.14.1 // indirect
@@ -68,7 +68,7 @@ require (
 	github.com/duckdb/duckdb-go-bindings/lib/windows-amd64 v0.10502.0 // indirect
 	github.com/duckdb/duckdb-go/v2 v2.10502.0 // indirect
 	github.com/elastic/elastic-transport-go/v8 v8.10.0 // indirect
-	github.com/elastic/go-elasticsearch/v8 v8.19.3 // indirect
+	github.com/elastic/go-elasticsearch/v8 v8.19.4 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-chi/chi/v5 v5.2.5 // indirect
 	github.com/go-chi/cors v1.2.2 // indirect
@@ -141,7 +141,7 @@ require (
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	github.com/zalando/go-keyring v0.2.8 // indirect
 	github.com/zeebo/xxh3 v1.1.0 // indirect
-	go.mongodb.org/mongo-driver/v2 v2.5.0 // indirect
+	go.mongodb.org/mongo-driver/v2 v2.5.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.67.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.67.0 // indirect
