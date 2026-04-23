@@ -151,6 +151,18 @@ const chatTransform = createTransform(
   { whitelist: ['houdini'] }
 );
 
+const aiModelsPersistTransform = createTransform(
+  (inboundState: any) => {
+    if (!inboundState?.modelTypes) return inboundState;
+    return {
+      ...inboundState,
+      modelTypes: inboundState.modelTypes.filter((m: any) => !m.isPlatformProvider),
+    };
+  },
+  (outboundState: any) => outboundState,
+  { whitelist: ['aiModels'] }
+);
+
 const ceReducerMap = {
   auth: persistReducer({ key: "auth", storage, }, authReducers),
   database: persistReducer({ key: "database", storage, }, databaseReducers),
@@ -160,7 +172,7 @@ const ceReducerMap = {
     storage,
     transforms: [chatTransform]
   }, houdiniReducers),
-  aiModels: persistReducer({ key: "aiModels", storage }, aiModelsReducers),
+  aiModels: persistReducer({ key: "aiModels", storage, transforms: [aiModelsPersistTransform] }, aiModelsReducers),
   scratchpad: persistReducer({
     key: "scratchpad",
     storage,

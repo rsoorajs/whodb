@@ -78,7 +78,6 @@ import {
 } from '../../components/gcp';
 import {ConnectionPrefillData, isAwsHostname, isAzureHostname, isGcpHostname} from '../../utils/cloud-connection-prefill';
 import {SSL_KEYS, SSLConfig} from '../../components/ssl-config';
-import {ServerError} from '@apollo/client/errors';
 import { clearGraphqlStore } from '@/config/graphql-client';
 import {
     buildRecordInputs,
@@ -306,7 +305,7 @@ export const LoginForm: FC<LoginFormProps> = ({
         const isNetworkError = lowerCaseMessage.includes('network') ||
             lowerCaseMessage.includes('fetch') ||
             lowerCaseMessage.includes('econnrefused') ||
-            ServerError.is(loginError);
+            (loginError instanceof Error && 'statusCode' in loginError);
 
         if (isNetworkError) {
             dispatch(HealthActions.setHealthStatus({

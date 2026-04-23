@@ -24,10 +24,16 @@ import { useSourceContract } from "../../hooks/useSourceContract";
 import { InternalPage } from "../../components/page";
 import { useAppSelector } from "../../store/hooks";
 import { availableInternalModelTypes } from "../../store/ai-models";
+import { hasComponent } from "../../config/component-registry";
 
 export const NavigateToDefault: FC = () => {
     const current = useAppSelector(state => state.auth.current);
     const { supportsChat } = useSourceContract(current?.Type);
+
+    if (hasComponent('sql-agent')) {
+        return <Navigate to={InternalRoutes.Chat.path} />
+    }
+
     const defaultModelType = availableInternalModelTypes[0];
     const aiModelsQueryOptions = current && supportsChat && defaultModelType
         ? {

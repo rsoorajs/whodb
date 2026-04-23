@@ -19,3 +19,4 @@ core/tmp
 cli/build
 cli/.gocache
 cli/whodb-cli
+.whodb/

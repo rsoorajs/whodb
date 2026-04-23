@@ -26,6 +26,7 @@ export type RegisteredRoute = {
 };
 
 const registrations: RegisteredRoute[] = [];
+const publicRegistrations: RegisteredRoute[] = [];
 
 /**
  * Registers an additional route to be included in the app router.
@@ -39,6 +40,15 @@ export function registerRoute(name: string, path: string, factory: RouteFactory)
     registrations.push({ name, path, lazyComponent: lazy(factory) });
 }
 
+/** Registers a public route (no auth required). */
+export function registerPublicRoute(name: string, path: string, factory: RouteFactory): void {
+    publicRegistrations.push({ name, path, lazyComponent: lazy(factory) });
+}
+
 export function getRegisteredRoutes(): RegisteredRoute[] {
     return registrations;
+}
+
+export function getRegisteredPublicRoutes(): RegisteredRoute[] {
+    return publicRegistrations;
 }
