@@ -6,7 +6,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/clidey/whodb/main/cli/install/install.sh | bash
 #
 # Or with specific version:
-#   curl -fsSL https://raw.githubusercontent.com/clidey/whodb/main/cli/install/install.sh | bash -s v0.62.0
+#   curl -fsSL https://raw.githubusercontent.com/clidey/whodb/main/cli/install/install.sh | bash -s 0.106.0
 #
 # Copyright 2025 Clidey, Inc.
 # Licensed under the Apache License, Version 2.0
@@ -174,18 +174,17 @@ main() {
             *)      shell_config="your shell config" ;;
         esac
 
-        if [ "$SHELL" = "*/fish" ]; then
-            echo "  fish_add_path ${INSTALL_DIR}"
-        else
-            echo "  export PATH=\"${INSTALL_DIR}:\$PATH\""
-        fi
+        case "$SHELL" in
+            */fish)
+                echo "  fish_add_path ${INSTALL_DIR}"
+                ;;
+            *)
+                echo "  export PATH=\"${INSTALL_DIR}:\$PATH\""
+                ;;
+        esac
         echo ""
         echo "Then restart your shell or run:"
-        if [ "$SHELL" = "*/fish" ]; then
-            echo "  source ${shell_config}"
-        else
-            echo "  source ${shell_config}"
-        fi
+        echo "  source ${shell_config}"
         echo ""
     fi
 
@@ -195,7 +194,7 @@ main() {
     echo "  ${BINARY_NAME} mcp      # Run as MCP server"
     echo "  ${BINARY_NAME} --help   # Show help"
     echo ""
-    echo "Documentation: https://docs.whodb.com/cli"
+    echo "Documentation: https://github.com/clidey/whodb/tree/main/cli#readme"
 }
 
 # Run main function
