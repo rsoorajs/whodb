@@ -204,7 +204,7 @@ export const Sidebar: FC = () => {
         supportsDatabaseSwitching,
         usesDatabaseInsteadOfSchema,
     } = useSourceContract(current?.Type);
-    const databaseQueryOptions = current != null && supportsDatabaseSwitching
+    const databaseQueryOptions = current != null && supportsDatabaseSwitching && current.Type
         ? {
             variables: {
                 sourceType: current.Type,
@@ -438,8 +438,8 @@ export const Sidebar: FC = () => {
             return;
         }
         if (!current) return;
-        if (supportsDatabaseSwitching) {
-            getDatabases();
+        if (supportsDatabaseSwitching && current.Type) {
+            getDatabases({ sourceType: current.Type });
         }
         if (supportsSchema) {
             getSchemas();

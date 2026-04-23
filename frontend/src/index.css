@@ -226,3 +226,20 @@ body.disable-animations *::after {
 [data-testid="ai-provider"] ~ div [data-testid="empty-state"] h1 {
   font-size: 18px;
 }
+
+[data-sonner-toast] {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+[data-sonner-toast][data-styled='true'] {
+  --normal-bg: var(--popover) !important;
+  background-color: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+  border-color: var(--border) !important;
+}
+
+.dark [data-sonner-toast][data-styled='true'] {
+  --normal-bg: oklch(20.5% 0 0) !important;
+  background-color: oklch(20.5% 0 0) !important;
+}

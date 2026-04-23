@@ -43,7 +43,8 @@ const (
 	AuthKey_Source      AuthKey = "SourceCredentials"
 )
 
-const maxRequestBodySize = 1024 * 1024 // Limit request body size to 1MB
+const maxRequestBodySize = 1024 * 1024       // Limit request body size to 1MB
+const maxUploadBodySize = 250 * 1024 * 1024 // Limit multipart upload body size to 250MB
 
 func GetCredentials(ctx context.Context) *engine.Credentials {
 	credentials := ctx.Value(AuthKey_Credentials)
@@ -99,22 +100,30 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodySize)
-		body, err := readRequestBody(r)
-		if err != nil {
-			if err.Error() == "http: request body too large" {
-				http.Error(w, "Request body too large", http.StatusRequestEntityTooLarge)
-			} else {
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			}
-			return
-		}
+		isMultipart := strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/")
 
-		// this is to ensure that it can be re-read by the GraphQL layer
-		r.Body = io.NopCloser(bytes.NewBuffer(body))
-		if isAllowed(r, body) {
-			next.ServeHTTP(w, r)
-			return
+		if isMultipart {
+			// Multipart uploads (file uploads) use a higher body limit.
+			// Skip body buffering — auth relies on the Authorization header.
+			r.Body = http.MaxBytesReader(w, r.Body, maxUploadBodySize)
+		} else {
+			r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodySize)
+			body, err := readRequestBody(r)
+			if err != nil {
+				if err.Error() == "http: request body too large" {
+					http.Error(w, "Request body too large", http.StatusRequestEntityTooLarge)
+				} else {
+					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				}
+				return
+			}
+
+			// this is to ensure that it can be re-read by the GraphQL layer
+			r.Body = io.NopCloser(bytes.NewBuffer(body))
+			if isAllowed(r, body) {
+				next.ServeHTTP(w, r)
+				return
+			}
 		}
 
 		if authBypassFn != nil && authBypassFn(r) {
@@ -276,6 +285,7 @@ func isAllowed(r *http.Request, body []byte) bool {
 	case "LoginSource",
 		"LoginWithSourceProfile",
 		"SourceProfiles",
+		"GetHealth",
 		"UpdateSettings", "SettingsConfig", "GetVersion",
 		"GetAWSProviders", "GetCloudProviders", "GetCloudProvider",
 		"GetDiscoveredConnections", "GetProviderConnections", "SourceTypes",
