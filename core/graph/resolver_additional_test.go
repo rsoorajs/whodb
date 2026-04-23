@@ -27,9 +27,9 @@ import (
 	"github.com/clidey/whodb/core/internal/testutil"
 	"github.com/clidey/whodb/core/src"
 	"github.com/clidey/whodb/core/src/common/ssl"
-	"github.com/clidey/whodb/core/src/dbcatalog"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 	"github.com/clidey/whodb/core/src/types"
 )
 
@@ -403,8 +403,12 @@ func TestMutationImportSQLValidatesSourcesAndExecutesScripts(t *testing.T) {
 }
 
 func TestCatalogHasStableDefaultPortForPostgres(t *testing.T) {
-	port, ok := dbcatalog.DefaultPort(string(engine.DatabaseType_Postgres))
-	if !ok || port != 5432 {
-		t.Fatalf("expected postgres default port 5432, got %d (ok=%t)", port, ok)
+	spec, ok := sourcecatalog.Find(string(engine.DatabaseType_Postgres))
+	if !ok {
+		t.Fatal("expected Postgres source type to be registered")
+	}
+	portField, ok := spec.ConnectionFieldByKey("Port")
+	if !ok || portField.DefaultValue != "5432" {
+		t.Fatalf("expected postgres default port 5432, got %#v (ok=%t)", portField, ok)
 	}
 }

@@ -35,6 +35,8 @@ import (
 	"github.com/clidey/whodb/core/src/plugins/mysql"
 	"github.com/clidey/whodb/core/src/plugins/postgres"
 	"github.com/clidey/whodb/core/src/plugins/redis"
+	"github.com/clidey/whodb/core/src/source"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 type target struct {
@@ -214,6 +216,37 @@ func initTargets() {
 			enabled:          true,
 			readyStorageUnit: "orders:recent",
 		},
+	}
+}
+
+func sessionMetadataForTarget(target target) *source.TypeSessionMetadata {
+	ids := []string{}
+	if target.config != nil && target.config.Credentials != nil {
+		ids = append(ids, target.config.Credentials.Type)
+	}
+	if target.plugin != nil {
+		ids = append(ids, string(target.plugin.Type))
+	}
+
+	metadata, ok := sourcecatalog.ResolveSessionMetadata(ids...)
+	if !ok {
+		return nil
+	}
+	return metadata
+}
+
+func engineTypeDefinition(td source.TypeDefinition) engine.TypeDefinition {
+	return engine.TypeDefinition{
+		ID:               td.ID,
+		Label:            td.Label,
+		HasLength:        td.HasLength,
+		HasPrecision:     td.HasPrecision,
+		DefaultLength:    td.DefaultLength,
+		DefaultPrecision: td.DefaultPrecision,
+		Category:         engine.TypeCategory(td.Category),
+		InsertFunc:       td.InsertFunc,
+		TableModel:       td.TableModel,
+		DDLSuffix:        td.DDLSuffix,
 	}
 }
 

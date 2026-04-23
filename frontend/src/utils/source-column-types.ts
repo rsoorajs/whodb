@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-import { DatabaseType, TypeDefinition } from '../config/source-types';
+import { TypeDefinition } from '../config/source-types';
 import { getSourceSessionMetadataState } from './source-session-metadata-cache';
 
 /**
  * Get column type definitions for a source from the backend-driven Apollo store.
  *
- * @param sourceType The source type (can be any registered type)
+ * @param sourceType The source type identifier
  * @returns Array of TypeDefinition objects for the source
  */
-export function getSourceColumnTypeDefinitions(sourceType: DatabaseType | string): TypeDefinition[] {
+export function getSourceColumnTypeDefinitions(sourceType: string): TypeDefinition[] {
     const metadataState = getSourceSessionMetadataState();
 
     if (
@@ -52,10 +52,10 @@ export function getSourceColumnTypeDefinitions(sourceType: DatabaseType | string
 /**
  * Get the type-alias map for a source from the backend-driven Apollo store.
  *
- * @param sourceType The source type (can be any registered type)
+ * @param sourceType The source type identifier
  * @returns Record mapping aliases to canonical type names
  */
-export function getSourceColumnTypeAliasMap(sourceType: DatabaseType | string): Record<string, string> {
+export function getSourceColumnTypeAliasMap(sourceType: string): Record<string, string> {
     const metadataState = getSourceSessionMetadataState();
 
     if (
@@ -80,7 +80,7 @@ export function getSourceColumnTypeAliasMap(sourceType: DatabaseType | string): 
  * @param sourceType The source type
  * @returns The canonical type name (without length specifier)
  */
-export function normalizeColumnTypeName(typeName: string, sourceType: DatabaseType | string): string {
+export function normalizeColumnTypeName(typeName: string, sourceType: string): string {
     const baseType = typeName.replace(/\(.*\)$/, '').trim().toUpperCase();
     const aliasMap = getSourceColumnTypeAliasMap(sourceType);
 
@@ -93,7 +93,7 @@ export function normalizeColumnTypeName(typeName: string, sourceType: DatabaseTy
  * @param sourceType The source type
  * @returns The TypeDefinition or undefined if not found
  */
-export function findColumnTypeDefinition(typeId: string, sourceType: DatabaseType | string): TypeDefinition | undefined {
+export function findColumnTypeDefinition(typeId: string, sourceType: string): TypeDefinition | undefined {
     const typeDefs = getSourceColumnTypeDefinitions(sourceType);
     const normalizedType = normalizeColumnTypeName(typeId, sourceType);
 

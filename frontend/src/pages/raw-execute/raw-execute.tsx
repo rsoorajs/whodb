@@ -89,8 +89,8 @@ import { copyToClipboard } from "../../services/clipboard";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ScratchpadActions } from "../../store/scratchpad";
 import { featureFlags } from "../../config/features";
-import { DatabaseType } from "../../config/source-types";
 import { isDesktopApp } from "../../utils/external-links";
+import { useSourceContract } from "../../hooks/useSourceContract";
 import { IPluginProps, QueryView } from "./query-view";
 
 /** Raw-execute extensions — set via registerRawExecuteExtensions(). */
@@ -322,6 +322,7 @@ const RawExecuteCell: FC<IRawExecuteCellProps> = ({ cellId, onAdd, onDelete, sho
         }));
     });
     const current = useAppSelector(state => state.auth.current);
+    const { supportsAnalyze } = useSourceContract(current?.Type);
     const handleExecute = useRef<(code: string) => Promise<any>>(() => Promise.resolve());
     const [historyOpen, setHistoryOpen] = useState(false);
     const [error, setError] = useState<Error | null>(null);
@@ -575,15 +576,8 @@ const RawExecuteCell: FC<IRawExecuteCellProps> = ({ cellId, onAdd, onDelete, sho
     }, [rows]);
 
     const isAnalyzeAvailable = useMemo(() => {
-        if (!featureFlags.analyzeView) {
-            return false;
-        }
-        switch(current?.Type) {
-            case DatabaseType.Postgres:
-                return !!allActionOptions.Analyze;
-        }
-        return false;
-    }, [current?.Type, allActionOptions]);
+        return featureFlags.analyzeView && supportsAnalyze && !!allActionOptions.Analyze;
+    }, [allActionOptions, supportsAnalyze]);
 
     // Merge icons from all sources
     const mergedActionOptionIcons = useMemo(() => {

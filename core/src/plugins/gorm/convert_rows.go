@@ -28,6 +28,34 @@ import (
 	"gorm.io/gorm"
 )
 
+// ColumnCodec provides custom scanner allocation and value formatting for a raw SQL column type.
+type ColumnCodec interface {
+	Scanner() any
+	Format(scanner any) (string, error)
+}
+
+// ColumnCodecFuncs adapts two small functions into a ColumnCodec.
+type ColumnCodecFuncs struct {
+	NewScanner  func() any
+	FormatValue func(scanner any) (string, error)
+}
+
+// Scanner allocates a scan target for the codec.
+func (c ColumnCodecFuncs) Scanner() any {
+	if c.NewScanner == nil {
+		return nil
+	}
+	return c.NewScanner()
+}
+
+// Format renders a scanned value for UI display.
+func (c ColumnCodecFuncs) Format(scanner any) (string, error) {
+	if c.FormatValue == nil {
+		return "", nil
+	}
+	return c.FormatValue(scanner)
+}
+
 // ConvertRawToRows converts raw SQL rows into the engine's GetRowsResult format.
 // Handles column metadata extraction (type, length, precision) and per-row value formatting
 // including binary, geometry, time, and plugin-specific custom types.
@@ -134,19 +162,7 @@ func (p *GormPlugin) scanRawRow(rows *sql.Rows, columns []string, typeMap map[st
 			typeName = colType.DatabaseTypeName()
 		}
 
-		if p.GormPluginFunctions.ShouldHandleColumnType(typeName) {
-			columnPointers[i] = p.GormPluginFunctions.GetColumnScanner(typeName)
-			continue
-		}
-
-		switch typeName {
-		case "VARBINARY", "BINARY", "IMAGE", "BYTEA", "BLOB", "HIERARCHYID",
-			"GEOMETRY", "POINT", "LINESTRING", "POLYGON", "GEOGRAPHY",
-			"MULTIPOINT", "MULTILINESTRING", "MULTIPOLYGON":
-			columnPointers[i] = new(sql.RawBytes)
-		default:
-			columnPointers[i] = new(sql.NullString)
-		}
+		columnPointers[i] = CreateRawColumnScanner(p.GormPluginFunctions, typeName)
 	}
 
 	if err := rows.Scan(columnPointers...); err != nil {
@@ -161,52 +177,71 @@ func (p *GormPlugin) scanRawRow(rows *sql.Rows, columns []string, typeMap map[st
 			typeName = colType.DatabaseTypeName()
 		}
 
-		if p.GormPluginFunctions.ShouldHandleColumnType(typeName) {
-			value, err := p.GormPluginFunctions.FormatColumnValue(typeName, colPtr)
-			if err != nil {
-				row[i] = "ERROR: " + err.Error()
-			} else {
-				row[i] = value
-			}
+		value, err := FormatScannedRawColumnValue(p.GormPluginFunctions, typeName, colPtr)
+		if err != nil {
+			row[i] = "ERROR: " + err.Error()
 			continue
 		}
-
-		switch typeName {
-		case "VARBINARY", "BINARY", "IMAGE", "BYTEA", "BLOB":
-			rawBytes := colPtr.(*sql.RawBytes)
-			if rawBytes == nil || len(*rawBytes) == 0 {
-				row[i] = ""
-			} else {
-				row[i] = "0x" + hex.EncodeToString(*rawBytes)
-			}
-		case "GEOMETRY", "POINT", "LINESTRING", "POLYGON", "GEOGRAPHY",
-			"MULTIPOINT", "MULTILINESTRING", "MULTIPOLYGON":
-			rawBytes := colPtr.(*sql.RawBytes)
-			if rawBytes == nil || len(*rawBytes) == 0 {
-				row[i] = ""
-			} else if formatted := p.GormPluginFunctions.FormatGeometryValue(*rawBytes, typeName); formatted != "" {
-				row[i] = formatted
-			} else {
-				row[i] = "0x" + hex.EncodeToString(*rawBytes)
-			}
-		case "TIME":
-			val := colPtr.(*sql.NullString)
-			if val.Valid {
-				row[i] = formatTimeOnly(val.String)
-			} else {
-				row[i] = ""
-			}
-		default:
-			val := colPtr.(*sql.NullString)
-			if val.Valid {
-				row[i] = val.String
-			} else {
-				row[i] = ""
-			}
-		}
+		row[i] = value
 	}
 
 	return row, nil
+}
+
+// CreateRawColumnScanner returns the scan target for a raw SQL column type.
+func CreateRawColumnScanner(plugin GormPluginFunctions, columnType string) any {
+	if codec := plugin.GetColumnCodec(columnType); codec != nil {
+		return codec.Scanner()
+	}
+
+	switch columnType {
+	case "VARBINARY", "BINARY", "IMAGE", "BYTEA", "BLOB", "HIERARCHYID":
+		return new(sql.RawBytes)
+	default:
+		if plugin.IsGeometryType(columnType) {
+			return new(sql.RawBytes)
+		}
+		return new(sql.NullString)
+	}
+}
+
+// FormatScannedRawColumnValue formats a scanned raw SQL column value for display.
+func FormatScannedRawColumnValue(plugin GormPluginFunctions, columnType string, scanner any) (string, error) {
+	if codec := plugin.GetColumnCodec(columnType); codec != nil {
+		return codec.Format(scanner)
+	}
+
+	switch columnType {
+	case "VARBINARY", "BINARY", "IMAGE", "BYTEA", "BLOB":
+		rawBytes := scanner.(*sql.RawBytes)
+		if rawBytes == nil || len(*rawBytes) == 0 {
+			return "", nil
+		}
+		return "0x" + hex.EncodeToString(*rawBytes), nil
+	case "TIME":
+		val := scanner.(*sql.NullString)
+		if !val.Valid {
+			return "", nil
+		}
+		return formatTimeOnly(val.String), nil
+	default:
+		if plugin.IsGeometryType(columnType) {
+			rawBytes := scanner.(*sql.RawBytes)
+			if rawBytes == nil || len(*rawBytes) == 0 {
+				return "", nil
+			}
+			if formatted := plugin.FormatGeometryValue(*rawBytes, columnType); formatted != "" {
+				return formatted, nil
+			}
+			return "0x" + hex.EncodeToString(*rawBytes), nil
+		}
+
+		val := scanner.(*sql.NullString)
+		if !val.Valid {
+			return "", nil
+		}
+		return val.String, nil
+	}
 }
 
 // FindMissingDataType resolves unknown column types by querying system catalogs.
@@ -231,19 +266,9 @@ func (p *GormPlugin) GetRowsOrderBy(db *gorm.DB, schema string, storageUnit stri
 	return ""
 }
 
-// ShouldHandleColumnType returns false by default.
-func (p *GormPlugin) ShouldHandleColumnType(columnType string) bool {
-	return false
-}
-
-// GetColumnScanner returns nil by default.
-func (p *GormPlugin) GetColumnScanner(columnType string) any {
+// GetColumnCodec returns nil by default.
+func (p *GormPlugin) GetColumnCodec(columnType string) ColumnCodec {
 	return nil
-}
-
-// FormatColumnValue returns empty string by default.
-func (p *GormPlugin) FormatColumnValue(columnType string, scanner any) (string, error) {
-	return "", nil
 }
 
 // GetCustomColumnTypeName returns empty string by default.

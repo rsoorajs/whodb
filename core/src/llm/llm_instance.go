@@ -15,13 +15,17 @@
 package llm
 
 import (
-	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/source"
 )
 
-// Instance returns an LLMClient configured from the given plugin config.
-func Instance(config *engine.PluginConfig) *LLMClient {
+// ClientForModel returns an LLMClient configured from the given external model.
+func ClientForModel(model *source.ExternalModel) *LLMClient {
+	if model == nil {
+		return &LLMClient{}
+	}
+
 	return &LLMClient{
-		Type:   LLMType(config.ExternalModel.Type),
-		APIKey: config.ExternalModel.Token,
+		Type:   LLMType(model.Type),
+		APIKey: model.Token,
 	}
 }

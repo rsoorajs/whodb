@@ -4,7 +4,7 @@ go 1.26.1
 
 require (
 	cloud.google.com/go/alloydb v1.24.0
-	cloud.google.com/go/memcache v1.13.0
+	cloud.google.com/go/memcache v1.14.0
 	cloud.google.com/go/redis v1.21.0
 	github.com/99designs/gqlgen v0.17.89
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.0
@@ -23,13 +23,13 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/opensearch v1.64.0
 	github.com/aws/aws-sdk-go-v2/service/rds v1.117.1
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.10
-	github.com/aws/smithy-go v1.24.3
+	github.com/aws/smithy-go v1.25.0
 	github.com/boundaryml/baml v0.220.0
 	github.com/brianvoe/gofakeit/v7 v7.14.1
 	github.com/deckarep/golang-set/v2 v2.8.0
 	github.com/dromara/carbon/v2 v2.6.16
 	github.com/duckdb/duckdb-go/v2 v2.10502.0
-	github.com/elastic/go-elasticsearch/v8 v8.19.3
+	github.com/elastic/go-elasticsearch/v8 v8.19.4
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-chi/cors v1.2.2
 	github.com/go-redis/redis/v8 v8.11.5
@@ -44,7 +44,7 @@ require (
 	github.com/vektah/gqlparser/v2 v2.5.32
 	github.com/xuri/excelize/v2 v2.10.1
 	github.com/zalando/go-keyring v0.2.8
-	go.mongodb.org/mongo-driver/v2 v2.5.0
+	go.mongodb.org/mongo-driver/v2 v2.5.1
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sync v0.20.0
 	google.golang.org/api v0.276.0

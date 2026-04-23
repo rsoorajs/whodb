@@ -49,6 +49,7 @@ import {
     GetStorageUnitsQuery,
     GetStorageUnitsDocument,
     RecordInput,
+    SourceSchemaFidelity,
     SourceAction,
 } from '@graphql';
 import {
@@ -81,7 +82,7 @@ import {Tip} from '../../components/tip';
 import {SettingsActions} from '../../store/settings';
 import {useTranslation} from '../../hooks/use-translation';
 import {buildSourceParentObjectRef, buildSourceParentRef} from '../../utils/source-refs';
-import { DatabaseType, findSourceObjectType, type SourceTypeItem } from '../../config/source-types';
+import { findSourceObjectType, type SourceTypeItem } from '../../config/source-types';
 
 type SourceBrowserObject = GetStorageUnitsQuery['StorageUnit'][number];
 
@@ -116,7 +117,7 @@ const StorageUnitCard: FC<{
     const navigate = useNavigate();
     const { t } = useTranslation('pages/storage-unit');
     const current = useAppSelector(state => state.auth.current);
-    const { item, connector } = useSourceContract(current?.Type);
+    const { item, schemaFidelity } = useSourceContract(current?.Type);
     const [columns, setColumns] = useState<any[] | undefined>(undefined);
     const [columnsLoading, setColumnsLoading] = useState(false);
     const [fetchColumnsBatch] = useLazyQuery(GetColumnsBatchDocument);
@@ -209,7 +210,7 @@ const StorageUnitCard: FC<{
                 <TableCellsIcon className="w-5 h-5" />
                 {unit.Name}
             </SheetTitle>
-            {(connector === DatabaseType.MongoDb || connector === DatabaseType.ElasticSearch) && (
+            {schemaFidelity === SourceSchemaFidelity.Sampled && (
                 <div className="mb-2" data-testid="sampled-schema-warning">
                     <div className="flex items-center gap-xs text-sm">
                         <InformationCircleIcon className="w-4 h-4" />
@@ -597,7 +598,7 @@ export const StorageUnitPage: FC = () => {
                                             <Input value={field.Key} onChange={e => handleFieldValueChange("Key", index, e.target.value)} placeholder={t('fieldNamePlaceholder')}/>
                                             <Label>{t('fieldTypeLabel')}</Label>
                                             <TypeSelector
-                                                databaseType={current?.Type}
+                                                sourceType={current?.Type}
                                                 value={field.Value}
                                                 onChange={value => handleFieldValueChange("Value", index, value)}
                                                 placeholder={t('fieldTypePlaceholder')}
@@ -778,7 +779,10 @@ export const StorageUnitPage: FC = () => {
     </InternalPage>
 }
 
-type StorageUnitGraphCardData = GetGraphQuery['Graph'][number]['Unit'] & { columns?: any[] };
+type StorageUnitGraphCardData = GetGraphQuery['Graph'][number]['Unit'] & {
+    columns?: any[];
+    columnsLoading?: boolean;
+};
 
 export const StorageUnitGraphCard: FC<IGraphCardProps<StorageUnitGraphCardData>> = ({ data }) => {
     const navigate = useNavigate();
@@ -799,6 +803,7 @@ export const StorageUnitGraphCard: FC<IGraphCardProps<StorageUnitGraphCardData>>
     // Columns contains field definitions with FK/PK info for handles
     const metadataItems = data?.Attributes || [];
     const columnItems = data?.columns || [];
+    const columnsLoading = data?.columnsLoading || false;
 
     if (data == null) {
         return (<Card icon={<ArrowPathRoundedSquareIcon className="w-4 h-4" />}>
@@ -827,9 +832,16 @@ export const StorageUnitGraphCard: FC<IGraphCardProps<StorageUnitGraphCardData>>
                                     );
                                 })
                             }
+                            {
+                                columnsLoading && (
+                                    <div className="py-4">
+                                        <Loading hideText={true} />
+                                    </div>
+                                )
+                            }
                             {/* Show columns with FK/PK handles */}
                             {
-                                columnItems.map((col: any, index: number) => {
+                                !columnsLoading && columnItems.map((col: any, index: number) => {
                                     const name = col.Name;
                                     const value = col.Type?.toLowerCase();
                                     const isFKColumn = col.IsForeignKey || false;

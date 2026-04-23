@@ -46,9 +46,9 @@ func TestAuthMiddlewarePrefersAuthorizationHeader(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 
-	var got *engine.Credentials
+	var got *source.Credentials
 	handler := AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		got = GetCredentials(r.Context())
+		got = GetSourceCredentials(r.Context())
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -56,7 +56,7 @@ func TestAuthMiddlewarePrefersAuthorizationHeader(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected request to pass, got status %d", rr.Code)
 	}
-	if got == nil || got.Username != "alice" || got.Database != "app" {
+	if got == nil || got.Values["Username"] != "alice" || got.Values["Database"] != "app" {
 		t.Fatalf("expected credentials from Authorization header, got %+v", got)
 	}
 }
@@ -103,9 +103,9 @@ func TestAuthMiddlewareFallsBackToCookieWhenHeaderMissing(t *testing.T) {
 	req.AddCookie(&http.Cookie{Name: string(AuthKey_Token), Value: token})
 	rr := httptest.NewRecorder()
 
-	var got *engine.Credentials
+	var got *source.Credentials
 	handler := AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		got = GetCredentials(r.Context())
+		got = GetSourceCredentials(r.Context())
 		w.WriteHeader(http.StatusOK)
 	}))
 	handler.ServeHTTP(rr, req)
@@ -113,7 +113,7 @@ func TestAuthMiddlewareFallsBackToCookieWhenHeaderMissing(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected request to pass, got status %d", rr.Code)
 	}
-	if got == nil || got.Username != "alice" {
+	if got == nil || got.Values["Username"] != "alice" {
 		t.Fatalf("expected credentials from cookie, got %+v", got)
 	}
 }
@@ -196,9 +196,9 @@ func TestAuthMiddlewareEnforcesAPIGatewayTokenValidation(t *testing.T) {
 		req.Header.Set("Authorization", "Bearer "+token)
 		rr := httptest.NewRecorder()
 
-		var got *engine.Credentials
+		var got *source.Credentials
 		AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			got = GetCredentials(r.Context())
+			got = GetSourceCredentials(r.Context())
 			w.WriteHeader(http.StatusOK)
 		})).ServeHTTP(rr, req)
 		if rr.Code != http.StatusOK {
@@ -238,16 +238,16 @@ func TestAuthMiddlewareResolvesIDOnlyCredentialsFromProfiles(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 
-	var got *engine.Credentials
+	var got *source.Credentials
 	AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		got = GetCredentials(r.Context())
+		got = GetSourceCredentials(r.Context())
 		w.WriteHeader(http.StatusOK)
 	})).ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", rr.Code)
 	}
-	if got == nil || got.Type != "Postgres" || got.Username != "alice" || got.Database != "override" {
+	if got == nil || got.SourceType != "Postgres" || got.Values["Username"] != "alice" || got.Values["Database"] != "override" {
 		t.Fatalf("expected resolved credentials with overridden database, got %+v", got)
 	}
 }
@@ -285,16 +285,16 @@ func TestAuthMiddlewareResolvesIDOnlyCredentialsFromKeyring(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 
-	var got *engine.Credentials
+	var got *source.Credentials
 	AuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		got = GetCredentials(r.Context())
+		got = GetSourceCredentials(r.Context())
 		w.WriteHeader(http.StatusOK)
 	})).ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", rr.Code)
 	}
-	if got == nil || got.Type != "Postgres" || got.Username != "alice" || got.Database != "override" {
+	if got == nil || got.SourceType != "Postgres" || got.Values["Username"] != "alice" || got.Values["Database"] != "override" {
 		t.Fatalf("expected resolved credentials with overridden database, got %+v", got)
 	}
 }

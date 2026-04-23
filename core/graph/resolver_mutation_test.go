@@ -27,6 +27,8 @@ import (
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/mockdata"
+	"github.com/clidey/whodb/core/src/source"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 func TestAddRowSuccess(t *testing.T) {
@@ -131,23 +133,20 @@ func TestQuerySourceSessionMetadataMapsFields(t *testing.T) {
 	query := resolver.Query()
 
 	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
-	mock.GetDatabaseMetadataFunc = func() *engine.DatabaseMetadata {
-		return &engine.DatabaseMetadata{
-			DatabaseType: "Postgres",
-			TypeDefinitions: []engine.TypeDefinition{{
-				ID:               "text",
-				Label:            "Text",
-				HasLength:        true,
-				HasPrecision:     false,
-				DefaultLength:    intPtr(255),
-				DefaultPrecision: nil,
-				Category:         engine.TypeCategoryText,
-			}},
-			Operators: []string{"=", "LIKE"},
-			AliasMap:  map[string]string{"varchar": "text"},
-		}
-	}
 	setEngineMock(t, mock)
+	setSourceSessionMetadata(t, "Postgres", source.TypeSessionMetadata{
+		TypeDefinitions: []source.TypeDefinition{{
+			ID:               "text",
+			Label:            "Text",
+			HasLength:        true,
+			HasPrecision:     false,
+			DefaultLength:    intPtr(255),
+			DefaultPrecision: nil,
+			Category:         source.TypeCategoryText,
+		}},
+		Operators: []string{"=", "LIKE"},
+		AliasMap:  map[string]string{"varchar": "text"},
+	})
 
 	ctx := testSourceContext("Postgres", map[string]string{"Database": "app"})
 	result, err := query.SourceSessionMetadata(ctx)
@@ -227,6 +226,18 @@ func setEngineMock(t *testing.T, mock *testutil.PluginMock) {
 	src.MainEngine = &engine.Engine{}
 	src.MainEngine.RegistryPlugin(mock.AsPlugin())
 	t.Cleanup(func() { src.MainEngine = orig })
+}
+
+func setSourceSessionMetadata(t *testing.T, id string, metadata source.TypeSessionMetadata) {
+	t.Helper()
+
+	original, ok := sourcecatalog.ResolveSessionMetadata(id)
+	sourcecatalog.RegisterSessionMetadata(id, metadata)
+	t.Cleanup(func() {
+		if ok && original != nil {
+			sourcecatalog.RegisterSessionMetadata(id, *original)
+		}
+	})
 }
 
 func intPtr(i int) *int { return &i }

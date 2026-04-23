@@ -24,11 +24,11 @@ import {
     getSourceColumnTypeDefinitions,
     parseTypeSpec,
 } from '../utils/source-column-types';
-import { DatabaseType, TypeDefinition } from '../config/source-types';
+import { TypeDefinition } from '../config/source-types';
 
 export interface TypeSelectorProps {
-    /** The database type to get type definitions from */
-    databaseType: DatabaseType | string | undefined;
+    /** The source type identifier used to load backend-owned type definitions. */
+    sourceType: string | undefined;
     /** Current value (full type spec like "VARCHAR(255)") */
     value: string;
     /** Called when the type changes */
@@ -42,13 +42,13 @@ export interface TypeSelectorProps {
 }
 
 /**
- * TypeSelector component for selecting database types with optional length/precision inputs.
+ * TypeSelector component for selecting source-owned column types with optional length/precision inputs.
  *
- * Shows a dropdown of canonical types from the database config, and conditionally displays
- * length or precision/scale inputs based on the selected type's definition.
+ * Shows a dropdown of canonical types from backend source metadata, and conditionally
+ * displays length or precision/scale inputs based on the selected type's definition.
  */
 export function TypeSelector({
-    databaseType,
+    sourceType,
     value,
     onChange,
     placeholder,
@@ -67,14 +67,14 @@ export function TypeSelector({
     const [scale, setScale] = useState<number | undefined>(parsed.scale);
 
     const typeDefinitions = useMemo(() => {
-        if (!databaseType) return [];
-        return getSourceColumnTypeDefinitions(databaseType);
-    }, [databaseType]);
+        if (!sourceType) return [];
+        return getSourceColumnTypeDefinitions(sourceType);
+    }, [sourceType]);
 
     const currentTypeDef = useMemo((): TypeDefinition | undefined => {
-        if (!databaseType || !baseType) return undefined;
-        return findColumnTypeDefinition(baseType, databaseType);
-    }, [databaseType, baseType]);
+        if (!sourceType || !baseType) return undefined;
+        return findColumnTypeDefinition(baseType, sourceType);
+    }, [sourceType, baseType]);
 
     // Create dropdown options from type definitions
     const typeOptions = useMemo(() => {
@@ -100,7 +100,7 @@ export function TypeSelector({
         newPrecision?: number,
         newScale?: number,
     ) => {
-        const typeDef = databaseType ? findColumnTypeDefinition(newBaseType, databaseType) : undefined;
+        const typeDef = sourceType ? findColumnTypeDefinition(newBaseType, sourceType) : undefined;
 
         let finalValue: string;
         if (typeDef?.hasPrecision) {
@@ -112,13 +112,13 @@ export function TypeSelector({
         }
 
         onChange(finalValue);
-    }, [databaseType, onChange]);
+    }, [sourceType, onChange]);
 
     // Handle base type change
     const handleTypeChange = useCallback((newType: string) => {
         setBaseType(newType);
 
-        const typeDef = databaseType ? findColumnTypeDefinition(newType, databaseType) : undefined;
+        const typeDef = sourceType ? findColumnTypeDefinition(newType, sourceType) : undefined;
 
         let newLength: number | undefined;
         let newPrecision: number | undefined;
@@ -142,7 +142,7 @@ export function TypeSelector({
         }
 
         emitValue(newType, newLength, newPrecision, newScale);
-    }, [databaseType, emitValue]);
+    }, [sourceType, emitValue]);
 
     // Handle length change
     const handleLengthChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {

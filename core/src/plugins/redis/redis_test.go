@@ -22,6 +22,8 @@ import (
 	"github.com/clidey/whodb/core/src/common/ssl"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/query"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
+	_ "github.com/clidey/whodb/core/src/sources/database"
 )
 
 func redisAtomicWhere(key, operator, value string) *query.WhereCondition {
@@ -110,15 +112,12 @@ func TestRedisMetadataFormattingAndSSLStatus(t *testing.T) {
 		t.Fatalf("expected values to be stringified, got %q", got)
 	}
 
-	metadata := plugin.GetDatabaseMetadata()
-	if metadata == nil || metadata.DatabaseType != engine.DatabaseType_Redis {
+	metadata, ok := sourcecatalog.ResolveSessionMetadata(string(engine.DatabaseType_Redis))
+	if !ok || metadata == nil {
 		t.Fatalf("expected redis metadata, got %#v", metadata)
 	}
 	if len(metadata.Operators) == 0 {
 		t.Fatal("expected redis operators to be exposed")
-	}
-	if !metadata.Capabilities.SupportsDatabaseSwitch {
-		t.Fatal("expected redis to support database switching metadata")
 	}
 
 	status, err := plugin.GetSSLStatus(&engine.PluginConfig{

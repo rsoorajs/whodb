@@ -154,7 +154,7 @@ var typeConverters = []typeConverter{
 		convert:   convertFloat,
 	},
 	{
-		types: boolTypes,
+		types:     boolTypes,
 		nullValue: func() any { return sql.NullBool{Valid: false} },
 		convert:   convertBool,
 	},
@@ -340,14 +340,34 @@ func convertDateTime(p *GormPlugin, value, baseType, _ string, isNullable bool) 
 	return datetime, nil
 }
 
+// DecodeHexLiteral decodes a 0x-prefixed hex string and reports whether a hex prefix was present.
+func DecodeHexLiteral(value string) ([]byte, bool, error) {
+	if !strings.HasPrefix(value, "0x") && !strings.HasPrefix(value, "0X") {
+		return nil, false, nil
+	}
+
+	data, err := hex.DecodeString(value[2:])
+	return data, true, err
+}
+
+// NullableStringValue returns either a raw string or sql.NullString for nullable text-like values.
+func NullableStringValue(value string, isNullable bool) any {
+	if isNullable && (value == "" || strings.EqualFold(value, "NULL")) {
+		return sql.NullString{Valid: false}
+	}
+	if isNullable {
+		return sql.NullString{String: value, Valid: true}
+	}
+	return value
+}
+
 func convertBinary(_ *GormPlugin, value, _, _ string, isNullable bool) (any, error) {
 	var blobData []byte
-	if strings.HasPrefix(value, "0x") || strings.HasPrefix(value, "0X") {
-		var err error
-		blobData, err = hex.DecodeString(value[2:])
+	if decoded, hasHexPrefix, err := DecodeHexLiteral(value); hasHexPrefix {
 		if err != nil {
 			return nil, fmt.Errorf("invalid hex binary format: %v", err)
 		}
+		blobData = decoded
 	} else {
 		blobData = []byte(value)
 	}

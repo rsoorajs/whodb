@@ -21,7 +21,7 @@ import (
 
 	"github.com/clidey/whodb/cli/internal/config"
 	connresolver "github.com/clidey/whodb/cli/internal/connections"
-	"github.com/clidey/whodb/core/src/dbcatalog"
+	"github.com/clidey/whodb/cli/internal/sourcetypes"
 	"github.com/spf13/cobra"
 )
 
@@ -41,10 +41,11 @@ func completeConnectionNames(cmd *cobra.Command, args []string, toComplete strin
 
 // completeDatabaseTypes returns known database type identifiers and their synonyms.
 func completeDatabaseTypes(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	ids := dbcatalog.IDs()
-	types := make([]string, 0, len(ids)+len(dbTypeSynonyms))
+	ids := sourcetypes.IDs()
+	synonyms := sourcetypes.Synonyms()
+	types := make([]string, 0, len(ids)+len(synonyms))
 	types = append(types, ids...)
-	for synonym := range dbTypeSynonyms {
+	for _, synonym := range synonyms {
 		types = append(types, synonym)
 	}
 	return types, cobra.ShellCompDirectiveNoFileComp
@@ -94,22 +95,22 @@ func completeMCPSecurityLevels(cmd *cobra.Command, args []string, toComplete str
 	return []string{"strict", "standard", "minimal"}, cobra.ShellCompDirectiveNoFileComp
 }
 
-// completeSSLModes returns catalog-backed SSL mode values for the selected
+// completeSSLModes returns source-backed SSL mode values for the selected
 // database type. If no type is selected yet, it returns the union of all known
 // SSL modes.
 func completeSSLModes(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	dbType, _ := cmd.Flags().GetString("type")
-	if entry, ok := lookupDatabaseType(dbType); ok {
-		modes := make([]string, 0, len(entry.SSLModes))
-		for _, mode := range entry.SSLModes {
+	if spec, ok := lookupDatabaseType(dbType); ok {
+		modes := make([]string, 0, len(spec.SSLModes))
+		for _, mode := range spec.SSLModes {
 			modes = append(modes, string(mode.Value))
 		}
 		return modes, cobra.ShellCompDirectiveNoFileComp
 	}
 
 	modeSet := map[string]struct{}{}
-	for _, entry := range dbcatalog.All() {
-		for _, mode := range entry.SSLModes {
+	for _, id := range sourcetypes.IDs() {
+		for _, mode := range sourcetypes.SSLModes(id) {
 			modeSet[string(mode.Value)] = struct{}{}
 		}
 	}

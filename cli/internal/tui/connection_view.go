@@ -17,6 +17,7 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strconv"
@@ -29,17 +30,19 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	cloudruntime "github.com/clidey/whodb/cli/internal/cloud"
 	"github.com/clidey/whodb/cli/internal/config"
 	"github.com/clidey/whodb/cli/internal/connectionopts"
 	dbmgr "github.com/clidey/whodb/cli/internal/database"
 	"github.com/clidey/whodb/cli/internal/docker"
+	"github.com/clidey/whodb/cli/internal/sourcetypes"
 	"github.com/clidey/whodb/cli/pkg/styles"
-	"github.com/clidey/whodb/core/src/dbcatalog"
 )
 
 type connectionItem struct {
-	conn   config.Connection
-	source string
+	conn        config.Connection
+	source      string
+	description string
 }
 
 func (i connectionItem) Title() string { return i.conn.Name }
@@ -47,12 +50,22 @@ func (i connectionItem) Title() string { return i.conn.Name }
 // ConnectionSourceDocker identifies a connection detected from a running Docker container.
 const ConnectionSourceDocker = "docker"
 
+// ConnectionSourceCloud identifies a connection discovered from a cloud
+// provider.
+const ConnectionSourceCloud = "cloud"
+
 func (i connectionItem) Description() string {
+	if i.description != "" {
+		return i.description
+	}
+
 	desc := fmt.Sprintf("%s@%s", i.conn.Type, i.conn.Host)
 	if i.source == dbmgr.ConnectionSourceEnv {
 		desc += " (env)"
 	} else if i.source == ConnectionSourceDocker {
 		desc += " (docker)"
+	} else if i.source == ConnectionSourceCloud {
+		desc += " (cloud)"
 	}
 	return desc
 }
@@ -170,9 +183,17 @@ type ConnectionView struct {
 	width        int
 	height       int
 	// Background ping status for each connection
-	pingResults map[string]connectionPingResult
-	dockerItems []connectionItem
-	pingQueue   []config.Connection
+	pingResults   map[string]connectionPingResult
+	dockerItems   []connectionItem
+	cloudItems    []connectionItem
+	pingQueue     []config.Connection
+	advanced      map[string]string
+	selectorCache map[string]wrappedSelectableOptionsCacheEntry
+}
+
+type wrappedSelectableOptionsCacheEntry struct {
+	rendered  string
+	lineCount int
 }
 
 // NewConnectionView creates a connection view initialized with saved connections
@@ -208,7 +229,7 @@ func NewConnectionView(parent *MainModel) *ConnectionView {
 	inputs := make([]textinput.Model, 15)
 	inputs[fieldName] = newInput("My Connection", 50)
 	inputs[fieldHost] = newInput("localhost", 100)
-	inputs[fieldPort] = newInput("5432", 5)
+	inputs[fieldPort] = newInput("", 5)
 	inputs[fieldUsername] = newInput("postgres", 50)
 
 	inputs[fieldPassword] = newInput("password", 100)
@@ -243,9 +264,9 @@ func NewConnectionView(parent *MainModel) *ConnectionView {
 	prompt.EchoMode = textinput.EchoPassword
 	prompt.EchoCharacter = '•'
 
-	dbTypes := dbcatalog.IDs()
+	dbTypes := sourcetypes.IDs()
 
-	return &ConnectionView{
+	view := &ConnectionView{
 		parent:           parent,
 		list:             l,
 		mode:             mode,
@@ -259,7 +280,10 @@ func NewConnectionView(parent *MainModel) *ConnectionView {
 		awaitingPassword: false,
 		passwordPrompt:   prompt,
 		pingResults:      pingResults,
+		selectorCache:    make(map[string]wrappedSelectableOptionsCacheEntry),
 	}
+	view.updatePortPlaceholder()
+	return view
 }
 
 func (v *ConnectionView) Update(msg tea.Msg) (*ConnectionView, tea.Cmd) {
@@ -271,7 +295,7 @@ func (v *ConnectionView) Update(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 
 // Init returns a command to start background ping checks for all connections.
 func (v *ConnectionView) Init() tea.Cmd {
-	cmds := []tea.Cmd{v.loadDockerConnections()}
+	cmds := []tea.Cmd{v.loadDockerConnections(), v.loadCloudConnections()}
 	if v.mode == "list" && len(v.list.Items()) > 0 {
 		cmds = append(cmds, v.pingAllConnections())
 	}
@@ -286,7 +310,7 @@ func (v *ConnectionView) pingAllConnections() tea.Cmd {
 		if !ok {
 			continue
 		}
-		if ci.conn.SSHHost != "" || ci.source == ConnectionSourceDocker {
+		if ci.conn.SSHHost != "" || ci.source == ConnectionSourceDocker || ci.source == ConnectionSourceCloud {
 			continue
 		}
 		v.pingQueue = append(v.pingQueue, ci.conn)
@@ -298,6 +322,11 @@ func (v *ConnectionView) updateList(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 	switch msg := msg.(type) {
 	case dockerConnectionsLoadedMsg:
 		v.dockerItems = msg.items
+		v.setListItems(v.selectedConnectionName())
+		return v, nil
+
+	case cloudConnectionsLoadedMsg:
+		v.cloudItems = msg.items
 		v.setListItems(v.selectedConnectionName())
 		return v, nil
 
@@ -360,7 +389,7 @@ func (v *ConnectionView) updateList(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 		case key.Matches(msg, Keys.ConnectionList.Connect):
 			if item, ok := v.list.SelectedItem().(connectionItem); ok {
 				// Docker containers: open form pre-filled so user can add credentials
-				if item.source == ConnectionSourceDocker {
+				if item.source == ConnectionSourceDocker || item.source == ConnectionSourceCloud {
 					v.mode = "form"
 					v.resetForm()
 					v.prefillFromConnection(item.conn)
@@ -392,10 +421,12 @@ func (v *ConnectionView) updateList(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 
 		case key.Matches(msg, Keys.ConnectionList.DeleteConn):
 			if item, ok := v.list.SelectedItem().(connectionItem); ok {
+				if item.source != dbmgr.ConnectionSourceSaved {
+					return v, nil
+				}
 				v.parent.config.RemoveConnection(item.conn.Name)
-				v.parent.config.Save()
 				v.refreshList()
-				return v, tea.Batch(v.pingAllConnections(), v.loadDockerConnections())
+				return v, tea.Batch(v.parent.requestConfigSave(), v.pingAllConnections(), v.loadDockerConnections(), v.loadCloudConnections())
 			}
 
 		case key.Matches(msg, Keys.ConnectionList.QuitEsc):
@@ -435,6 +466,15 @@ func (v *ConnectionView) updateForm(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 	if dm, ok := msg.(dockerConnectionsLoadedMsg); ok {
 		v.dockerItems = dm.items
 		if v.mode == "form" && len(v.list.Items()) == 0 && len(dm.items) > 0 && !v.formHasUserInput() {
+			v.mode = "list"
+			v.setListItems("")
+			return v, v.pingAllConnections()
+		}
+		return v, nil
+	}
+	if cm, ok := msg.(cloudConnectionsLoadedMsg); ok {
+		v.cloudItems = cm.items
+		if v.mode == "form" && len(v.list.Items()) == 0 && len(cm.items) > 0 && !v.formHasUserInput() {
 			v.mode = "list"
 			v.setListItems("")
 			return v, v.pingAllConnections()
@@ -512,7 +552,7 @@ func (v *ConnectionView) updateForm(msg tea.Msg) (*ConnectionView, tea.Cmd) {
 				v.mode = "list"
 				v.connError = nil
 				v.refreshList()
-				return v, tea.Batch(v.pingAllConnections(), v.loadDockerConnections())
+				return v, tea.Batch(v.pingAllConnections(), v.loadDockerConnections(), v.loadCloudConnections())
 			}
 			return v, tea.Quit
 
@@ -706,7 +746,7 @@ func (v *ConnectionView) renderForm() string {
 		body.WriteString("  Database Type:")
 	}
 	body.WriteString("\n  ")
-	dbTypeOptions, _ := renderWrappedSelectableOptions(v.dbTypes, v.dbTypeIndex, v.focusIndex == focusDBType, v.selectorWrapWidth())
+	dbTypeOptions, _ := v.renderWrappedSelectableOptions(v.dbTypes, v.dbTypeIndex, v.focusIndex == focusDBType, v.selectorWrapWidth())
 	body.WriteString(dbTypeOptions)
 	body.WriteString("\n\n")
 
@@ -784,7 +824,7 @@ func (v *ConnectionView) renderForm() string {
 			body.WriteString("  SSL Mode:")
 		}
 		body.WriteString("\n  ")
-		sslModeOptions, _ := renderWrappedSelectableOptions(sslModes, v.sslModeIndex, v.focusIndex == focusSSLMode, v.selectorWrapWidth())
+		sslModeOptions, _ := v.renderWrappedSelectableOptions(sslModes, v.sslModeIndex, v.focusIndex == focusSSLMode, v.selectorWrapWidth())
 		body.WriteString(sslModeOptions)
 		body.WriteString("\n\n")
 
@@ -938,6 +978,40 @@ func renderWrappedSelectableOptions(options []string, selectedIndex int, focused
 	return strings.Join(lines, "\n  "), len(lines)
 }
 
+func (v *ConnectionView) renderWrappedSelectableOptions(options []string, selectedIndex int, focused bool, maxWidth int) (string, int) {
+	key := v.selectorCacheKey(options, selectedIndex, focused, maxWidth)
+	if cached, ok := v.selectorCache[key]; ok {
+		return cached.rendered, cached.lineCount
+	}
+
+	rendered, lineCount := renderWrappedSelectableOptions(options, selectedIndex, focused, maxWidth)
+	v.selectorCache[key] = wrappedSelectableOptionsCacheEntry{
+		rendered:  rendered,
+		lineCount: lineCount,
+	}
+	return rendered, lineCount
+}
+
+func (v *ConnectionView) selectorCacheKey(options []string, selectedIndex int, focused bool, maxWidth int) string {
+	focusedKey := "0"
+	if focused {
+		focusedKey = "1"
+	}
+
+	themeName := ""
+	if theme := styles.GetTheme(); theme != nil {
+		themeName = theme.Name
+	}
+
+	return strings.Join([]string{
+		themeName,
+		strconv.Itoa(maxWidth),
+		strconv.Itoa(selectedIndex),
+		focusedKey,
+		strings.Join(options, "\x1f"),
+	}, "\x00")
+}
+
 func renderSelectableOption(option string, selected bool, focused bool) string {
 	if selected {
 		if focused {
@@ -965,7 +1039,7 @@ func (v *ConnectionView) selectorWrapWidth() int {
 }
 
 func (v *ConnectionView) dbTypeSectionHeight() int {
-	_, lineCount := renderWrappedSelectableOptions(v.dbTypes, v.dbTypeIndex, v.focusIndex == focusDBType, v.selectorWrapWidth())
+	_, lineCount := v.renderWrappedSelectableOptions(v.dbTypes, v.dbTypeIndex, v.focusIndex == focusDBType, v.selectorWrapWidth())
 	if lineCount == 0 {
 		lineCount = 1
 	}
@@ -978,7 +1052,7 @@ func (v *ConnectionView) sslModeSectionHeight() int {
 		return 0
 	}
 
-	_, lineCount := renderWrappedSelectableOptions(sslModes, v.sslModeIndex, v.focusIndex == focusSSLMode, v.selectorWrapWidth())
+	_, lineCount := v.renderWrappedSelectableOptions(sslModes, v.sslModeIndex, v.focusIndex == focusSSLMode, v.selectorWrapWidth())
 	if lineCount == 0 {
 		lineCount = 1
 	}
@@ -988,6 +1062,7 @@ func (v *ConnectionView) sslModeSectionHeight() int {
 func (v *ConnectionView) refreshList() {
 	selectedName := v.selectedConnectionName()
 	v.dockerItems = nil
+	v.cloudItems = nil
 	v.setListItems(selectedName)
 	// Reset ping results so they get refreshed
 	for k := range v.pingResults {
@@ -1017,6 +1092,22 @@ func (v *ConnectionView) loadDockerConnections() tea.Cmd {
 	}
 }
 
+func (v *ConnectionView) loadCloudConnections() tea.Cmd {
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		connections, err := cloudruntime.ListConnections(ctx, "")
+		if err != nil && len(connections) == 0 {
+			return cloudConnectionsLoadedMsg{}
+		}
+
+		return cloudConnectionsLoadedMsg{
+			items: discoveredConnectionItems(connections),
+		}
+	}
+}
+
 func (v *ConnectionView) selectedConnectionName() string {
 	item, ok := v.list.SelectedItem().(connectionItem)
 	if !ok {
@@ -1028,6 +1119,7 @@ func (v *ConnectionView) selectedConnectionName() string {
 func (v *ConnectionView) setListItems(selectedName string) {
 	items := baseConnectionItems(v.parent.dbManager.ListConnectionsWithSource())
 	items = append(items, v.dockerItems...)
+	items = append(items, v.cloudItems...)
 
 	listItems := make([]list.Item, len(items))
 	selectedIndex := 0
@@ -1072,6 +1164,36 @@ func detectedConnectionItems(containers []docker.DetectedContainer) []connection
 				Port: c.Port,
 			},
 			source: ConnectionSourceDocker,
+		})
+	}
+	return items
+}
+
+func discoveredConnectionItems(connections []cloudruntime.ConnectionSummary) []connectionItem {
+	items := make([]connectionItem, 0, len(connections))
+	for _, summary := range connections {
+		conn, err := cloudruntime.BuildPrefillConnection(summary)
+		if err != nil {
+			continue
+		}
+
+		desc := summary.SourceType
+		if conn.Host != "" {
+			desc = fmt.Sprintf("%s@%s", summary.SourceType, conn.Host)
+		}
+		desc += " (cloud"
+		if summary.ProviderType != "" {
+			desc += "/" + summary.ProviderType
+		}
+		if summary.Region != "" {
+			desc += " • " + summary.Region
+		}
+		desc += ")"
+
+		items = append(items, connectionItem{
+			conn:        conn,
+			source:      ConnectionSourceCloud,
+			description: desc,
 		})
 	}
 	return items
@@ -1222,6 +1344,7 @@ func (v *ConnectionView) resetForm() {
 		v.inputs[i].SetValue("")
 		v.inputs[i].Blur()
 	}
+	v.advanced = nil
 	v.focusIndex = focusDBType
 	v.dbTypeIndex = 0
 	v.sshEnabled = false
@@ -1259,6 +1382,7 @@ func (v *ConnectionView) prefillFromConnection(conn config.Connection) {
 	if conn.Schema != "" {
 		v.inputs[fieldSchema].SetValue(conn.Schema)
 	}
+	v.advanced = cloneAdvanced(conn.Advanced)
 
 	// Prefill SSH fields if present
 	if conn.SSHHost != "" {
@@ -1285,9 +1409,32 @@ func (v *ConnectionView) prefillFromConnection(conn config.Connection) {
 		v.inputs[fieldSSLServer].SetValue(sslSettings.ServerName)
 	}
 
-	// Focus on the first empty required field (usually username or database)
-	v.focusIndex = fieldUsername
-	v.inputs[fieldUsername].Focus()
+	v.focusIndex = focusConnect
+	for _, idx := range v.getFocusOrder() {
+		if idx == focusDBType {
+			continue
+		}
+		if idx >= 0 && idx < len(v.inputs) && strings.TrimSpace(v.inputs[idx].Value()) == "" {
+			v.focusIndex = idx
+			break
+		}
+	}
+	if v.focusIndex >= 0 && v.focusIndex < len(v.inputs) {
+		v.inputs[v.focusIndex].Focus()
+	}
+	v.scrollToFocused()
+}
+
+func cloneAdvanced(values map[string]string) map[string]string {
+	if len(values) == 0 {
+		return nil
+	}
+
+	cloned := make(map[string]string, len(values))
+	for key, value := range values {
+		cloned[key] = value
+	}
+	return cloned
 }
 
 func (v *ConnectionView) updatePortPlaceholder() {
@@ -1300,9 +1447,9 @@ func (v *ConnectionView) updatePortPlaceholder() {
 }
 
 func (v *ConnectionView) getDefaultPort(dbType string) int {
-	port, ok := dbcatalog.DefaultPort(dbType)
+	port, ok := sourcetypes.DefaultPort(dbType)
 	if !ok {
-		return 5432
+		return 0
 	}
 	return port
 }
@@ -1310,17 +1457,17 @@ func (v *ConnectionView) getDefaultPort(dbType string) int {
 // isNetworkDatabase returns true for database types that connect over a network,
 // i.e. those where SSH tunneling is applicable.
 func isNetworkDatabase(dbType string) bool {
-	return dbcatalog.IsNetworkDatabase(dbType)
+	return sourcetypes.IsNetworkTransport(dbType)
+}
+
+func isFileBasedFormDatabase(dbType string) bool {
+	return sourcetypes.IsFileTransport(dbType)
 }
 
 func (v *ConnectionView) sslModes() []string {
-	entry, ok := dbcatalog.Find(v.dbTypes[v.dbTypeIndex])
-	if !ok {
-		return nil
-	}
-
-	modes := make([]string, 0, len(entry.SSLModes))
-	for _, mode := range entry.SSLModes {
+	modeInfos := sourcetypes.SSLModes(v.dbTypes[v.dbTypeIndex])
+	modes := make([]string, 0, len(modeInfos))
+	for _, mode := range modeInfos {
 		modes = append(modes, string(mode.Value))
 	}
 	return modes
@@ -1345,33 +1492,32 @@ func (v *ConnectionView) sslFieldsVisible() bool {
 // getVisibleFields returns the input field indices visible for the given database type.
 // SSH fields are not included here; they are managed separately via the SSH toggle.
 func getVisibleFields(dbType string) []int {
-	entry, ok := dbcatalog.Find(dbType)
+	spec, ok := sourcetypes.Find(dbType)
 	if !ok {
 		return []int{fieldName, fieldHost, fieldPort, fieldUsername, fieldPassword, fieldDatabase}
 	}
 
 	fields := []int{fieldName}
-	if entry.Fields.Hostname {
+	if _, ok := spec.ConnectionFieldByKey("Hostname"); ok {
 		fields = append(fields, fieldHost, fieldPort)
 	}
-	if entry.Fields.Username {
+	if _, ok := spec.ConnectionFieldByKey("Username"); ok {
 		fields = append(fields, fieldUsername)
 	}
-	if entry.Fields.Password {
+	if _, ok := spec.ConnectionFieldByKey("Password"); ok {
 		fields = append(fields, fieldPassword)
 	}
-	if entry.Fields.Database {
+	if _, ok := spec.ConnectionFieldByKey("Database"); ok {
 		fields = append(fields, fieldDatabase)
 	}
-	if entry.Fields.SearchPath {
+	if _, ok := spec.ConnectionFieldByKey("Search Path"); ok {
 		fields = append(fields, fieldSchema)
 	}
 	return fields
 }
 
 func passwordRequired(dbType string) bool {
-	entry, ok := dbcatalog.Find(dbType)
-	return ok && entry.RequiredFields.Password
+	return sourcetypes.ConnectionFieldRequired(dbType, "Password")
 }
 
 func (v *ConnectionView) isFieldVisible(index int) bool {
@@ -1403,6 +1549,7 @@ func (v *ConnectionView) isFocusableVisible(index int) bool {
 func (v *ConnectionView) onDbTypeChanged() {
 	v.updatePortPlaceholder()
 	v.visibleFields = getVisibleFields(v.dbTypes[v.dbTypeIndex])
+	v.advanced = nil
 	sslModes := v.sslModes()
 	v.sslModeIndex = 0
 	for i, mode := range sslModes {
@@ -1413,7 +1560,7 @@ func (v *ConnectionView) onDbTypeChanged() {
 	}
 
 	// Update database placeholder for file-based databases
-	if !isNetworkDatabase(v.dbTypes[v.dbTypeIndex]) {
+	if isFileBasedFormDatabase(v.dbTypes[v.dbTypeIndex]) {
 		v.inputs[fieldDatabase].Placeholder = "/path/to/database.db"
 	} else {
 		v.inputs[fieldDatabase].Placeholder = "mydb"
@@ -1439,15 +1586,16 @@ func (v *ConnectionView) connect() tea.Cmd {
 	// Capture all form values before the closure to avoid data races
 	name := v.inputs[fieldName].Value()
 	dbType := v.dbTypes[v.dbTypeIndex]
+	baseAdvanced := cloneAdvanced(v.advanced)
 
 	host := ""
 	if v.isFieldVisible(fieldHost) {
 		host = v.inputs[fieldHost].Value()
 	}
 	if host == "" {
-		if database := v.inputs[fieldDatabase].Value(); !isNetworkDatabase(dbType) && database != "" {
+		if database := v.inputs[fieldDatabase].Value(); isFileBasedFormDatabase(dbType) && database != "" {
 			host = database
-		} else {
+		} else if sourcetypes.ConnectionFieldRequired(dbType, "Hostname") {
 			host = "localhost"
 		}
 	}
@@ -1466,8 +1614,8 @@ func (v *ConnectionView) connect() tea.Cmd {
 			}
 			port = portNum
 		}
-	} else {
-		port = v.getDefaultPort(dbType)
+	} else if defaultPort, ok := sourcetypes.DefaultPort(dbType); ok {
+		port = defaultPort
 	}
 
 	username := ""
@@ -1504,7 +1652,7 @@ func (v *ConnectionView) connect() tea.Cmd {
 		strings.TrimSpace(v.inputs[fieldSSLServer].Value()) != "" {
 		sslMode = v.currentSSLMode()
 	}
-	advanced, err := connectionopts.ApplySSLSettings(dbType, conn.Advanced, connectionopts.SSLSettings{
+	advanced, err := connectionopts.ApplySSLSettings(dbType, baseAdvanced, connectionopts.SSLSettings{
 		Mode:           sslMode,
 		CAFile:         v.inputs[fieldSSLCAFile].Value(),
 		ClientCertFile: v.inputs[fieldSSLCertFile].Value(),

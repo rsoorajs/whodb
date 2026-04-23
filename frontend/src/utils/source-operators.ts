@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-import { DatabaseType } from '../config/source-types';
 import { getSourceSessionMetadataState } from './source-session-metadata-cache';
 
 /**
  * Get valid operators for a source type from the backend-driven Apollo store.
  *
- * @param sourceType The source type (can be any registered type)
+ * @param sourceType The source type identifier
  * @returns Array of valid operators for the source
  */
-export function getSourceOperators(sourceType: DatabaseType | string): string[] {
+export function getSourceOperators(sourceType: string): string[] {
     const metadataState = getSourceSessionMetadataState();
 
     if (

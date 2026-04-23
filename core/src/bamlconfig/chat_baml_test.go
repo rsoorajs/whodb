@@ -3,32 +3,33 @@
 package bamlconfig
 
 import (
+	"context"
 	"errors"
 	"testing"
 
 	"github.com/clidey/whodb/core/baml_client/types"
-	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/source"
 )
 
-type rawExecuteStub struct {
+type queryExecutorStub struct {
 	queries []string
-	result  *engine.GetRowsResult
+	result  *source.RowsResult
 	err     error
 }
 
-func (s *rawExecuteStub) RawExecute(_ *engine.PluginConfig, query string, _ ...any) (*engine.GetRowsResult, error) {
+func (s *queryExecutorStub) RunQuery(_ context.Context, query string, _ ...any) (*source.RowsResult, error) {
 	s.queries = append(s.queries, query)
 	return s.result, s.err
 }
 
-func TestProcessBAMLResponse(t *testing.T) {
+func TestProcessChatResponse(t *testing.T) {
 	t.Run("non sql messages pass through unchanged", func(t *testing.T) {
 		resp := &types.ChatResponse{
 			Type: types.ChatMessageTypeMESSAGE,
 			Text: "hello",
 		}
 
-		message := ProcessBAMLResponse(resp, &engine.PluginConfig{}, &rawExecuteStub{})
+		message := ProcessChatResponse(context.Background(), resp, &queryExecutorStub{})
 
 		if message.Type != "message" {
 			t.Fatalf("expected message type, got %q", message.Type)
@@ -43,14 +44,14 @@ func TestProcessBAMLResponse(t *testing.T) {
 
 	t.Run("mutations require confirmation without executing sql", func(t *testing.T) {
 		op := types.OperationTypeINSERT
-		stub := &rawExecuteStub{}
+		stub := &queryExecutorStub{}
 		resp := &types.ChatResponse{
 			Type:      types.ChatMessageTypeSQL,
 			Operation: &op,
 			Text:      "INSERT INTO users VALUES (1)",
 		}
 
-		message := ProcessBAMLResponse(resp, &engine.PluginConfig{}, stub)
+		message := ProcessChatResponse(context.Background(), resp, stub)
 
 		if message.Type != "sql:insert" {
 			t.Fatalf("expected sql:insert type, got %q", message.Type)
@@ -65,18 +66,18 @@ func TestProcessBAMLResponse(t *testing.T) {
 
 	t.Run("read queries execute and attach results", func(t *testing.T) {
 		op := types.OperationTypeGET
-		expected := &engine.GetRowsResult{
-			Columns: []engine.Column{{Name: "id", Type: "int"}},
+		expected := &source.RowsResult{
+			Columns: []source.Column{{Name: "id", Type: "int"}},
 			Rows:    [][]string{{"1"}},
 		}
-		stub := &rawExecuteStub{result: expected}
+		stub := &queryExecutorStub{result: expected}
 		resp := &types.ChatResponse{
 			Type:      types.ChatMessageTypeSQL,
 			Operation: &op,
 			Text:      "SELECT id FROM users",
 		}
 
-		message := ProcessBAMLResponse(resp, &engine.PluginConfig{}, stub)
+		message := ProcessChatResponse(context.Background(), resp, stub)
 
 		if message.Type != "sql:get" {
 			t.Fatalf("expected sql:get type, got %q", message.Type)
@@ -91,14 +92,14 @@ func TestProcessBAMLResponse(t *testing.T) {
 
 	t.Run("read query errors become error messages", func(t *testing.T) {
 		op := types.OperationTypeGET
-		stub := &rawExecuteStub{err: errors.New("query failed")}
+		stub := &queryExecutorStub{err: errors.New("query failed")}
 		resp := &types.ChatResponse{
 			Type:      types.ChatMessageTypeSQL,
 			Operation: &op,
 			Text:      "SELECT id FROM users",
 		}
 
-		message := ProcessBAMLResponse(resp, &engine.PluginConfig{}, stub)
+		message := ProcessChatResponse(context.Background(), resp, stub)
 
 		if message.Type != "error" {
 			t.Fatalf("expected error type, got %q", message.Type)
@@ -143,7 +144,7 @@ func TestGetBAMLProviderAndOptions(t *testing.T) {
 		bamlConfigResolver = originalResolver
 	})
 
-	model := &engine.ExternalModel{
+	model := &source.ExternalModel{
 		Type:     "Custom",
 		Token:    "secret",
 		Model:    "test-model",
@@ -189,7 +190,7 @@ func TestSetupAIClientAndCreateDynamicBAMLClient(t *testing.T) {
 		t.Fatalf("expected no call options for nil model, got %d", len(got))
 	}
 
-	if got := SetupAIClient(&engine.ExternalModel{Type: "OpenAI"}); len(got) != 0 {
+	if got := SetupAIClient(&source.ExternalModel{Type: "OpenAI"}); len(got) != 0 {
 		t.Fatalf("expected no call options for model without model id, got %d", len(got))
 	}
 
@@ -201,7 +202,7 @@ func TestSetupAIClientAndCreateDynamicBAMLClient(t *testing.T) {
 		}, nil
 	})
 
-	model := &engine.ExternalModel{
+	model := &source.ExternalModel{
 		Type:     "OpenAI",
 		Token:    "secret",
 		Model:    "gpt-test",

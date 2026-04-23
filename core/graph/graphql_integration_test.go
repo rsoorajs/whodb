@@ -57,9 +57,7 @@ func TestGraphQLAddRowMutation(t *testing.T) {
 	payload, _ := json.Marshal(body)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewReader(payload))
-	ctx := context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres", Database: "app"})
-	ctx = context.WithValue(ctx, auth.AuthKey_Source, &source.Credentials{SourceType: "Postgres", Values: map[string]string{"Database": "app"}})
-	req = req.WithContext(ctx)
+	req = req.WithContext(testSourceContext("Postgres", map[string]string{"Database": "app"}))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	srv.ServeHTTP(w, req)
@@ -83,7 +81,6 @@ func TestGraphQLAddRowMutation(t *testing.T) {
 
 func TestGraphQLSourceSessionMetadataQueryReturnsDefaultsWhenNotProvided(t *testing.T) {
 	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
-	mock.GetDatabaseMetadataFunc = func() *engine.DatabaseMetadata { return nil }
 	setEngineMock(t, mock)
 
 	srv := handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: &Resolver{}}))
@@ -112,7 +109,7 @@ func TestGraphQLSourceSessionMetadataQueryReturnsDefaultsWhenNotProvided(t *test
 		t.Fatalf("failed to parse response: %v", err)
 	}
 	if resp.Data.SourceSessionMetadata == nil {
-		t.Fatalf("expected default metadata when plugin returns nil")
+		t.Fatalf("expected source metadata to be returned")
 	}
 	if resp.Data.SourceSessionMetadata.SourceType != "Postgres" {
 		t.Fatalf("expected source type metadata, got %+v", resp.Data.SourceSessionMetadata)
@@ -152,9 +149,7 @@ func TestGraphQLRowQueryWithSortAndWhere(t *testing.T) {
 	payload, _ := json.Marshal(body)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewReader(payload))
-	ctx := context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres", Database: "app"})
-	ctx = context.WithValue(ctx, auth.AuthKey_Source, &source.Credentials{SourceType: "Postgres", Values: map[string]string{"Database": "app"}})
-	req = req.WithContext(ctx)
+	req = req.WithContext(testSourceContext("Postgres", map[string]string{"Database": "app"}))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	srv.ServeHTTP(w, req)

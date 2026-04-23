@@ -16,14 +16,22 @@ FROM node:25.6.0-alpine3.23 AS build-stage
 RUN npm i -g pnpm@10.29.3
 WORKDIR /app
 COPY ./frontend/package.json ./frontend/pnpm-lock.yaml ./
+ARG USE_PREBUILT_FRONTEND=false
 # Skip test framework browser downloads - not needed for production builds
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-RUN pnpm install
+RUN if [ "${USE_PREBUILT_FRONTEND}" != "true" ]; then pnpm install; fi
 COPY ./frontend/ ./
 
 ARG VERSION=dev
 ENV VITE_APP_VERSION=${VERSION}
-RUN pnpm run build
+ENV WHODB_BUILD_SOURCEMAP=false
+RUN if [ "${USE_PREBUILT_FRONTEND}" = "true" ]; then \
+        test -d build && test -f build/index.html && test -f build/.whodb-edition && grep -qx 'ce' build/.whodb-edition; \
+    else \
+        pnpm run build:ce; \
+    fi && \
+    test -f build/.whodb-edition && grep -qx 'ce' build/.whodb-edition && \
+    rm -f build/.whodb-edition
 ARG TARGETARCH
 ARG PLATFORM=docker
 
@@ -35,7 +43,8 @@ RUN apk add --no-cache \
 	git \
 	ca-certificates \
 	curl \
-	binutils
+	binutils \
+	upx
 
 # Download official musl-compiled DuckDB shared library.
 # Native musl build — no glibc stubs or compatibility hacks needed.
@@ -54,7 +63,7 @@ RUN ENCODED=$(grep 'github.com/duckdb/duckdb-go/v2 ' /tmp/go.mod | awk '{print $
         "https://github.com/duckdb/duckdb/releases/download/${DUCKDB_VERSION}/libduckdb-${DUCKDB_ARCH}-musl.zip" && \
     unzip -j /tmp/libduckdb-musl.zip libduckdb.so -d /usr/local/lib/ && \
     unzip -j /tmp/libduckdb-musl.zip duckdb.h -d /usr/local/include/ && \
-    strip --strip-debug /usr/local/lib/libduckdb.so && \
+    strip --strip-unneeded /usr/local/lib/libduckdb.so && \
     rm /tmp/libduckdb-musl.zip
 
 WORKDIR /app
@@ -76,6 +85,16 @@ RUN CGO_CFLAGS="-Os -ffunction-sections -fdata-sections -fno-asynchronous-unwind
 	-ldflags="-s -w -X github.com/clidey/whodb/core/src/env.ApplicationVersion=${VERSION} -X github.com/clidey/whodb/core/src/env.ApplicationEnvironment=${PLATFORM}-${TARGETARCH}" \
 	-o /core ./cmd/whodb
 
+RUN chmod +x /core && \
+    upx --best --lzma /core
+
+RUN mkdir -p /runtime-libs && \
+    chmod +x /usr/local/lib/libduckdb.so && \
+    if [ "$TARGETARCH" = "amd64" ]; then \
+        upx --best --lzma /usr/local/lib/libduckdb.so; \
+    fi && \
+    cp /usr/local/lib/libduckdb.so /runtime-libs/
+
 # Pre-download BAML native library for the target architecture (musl for Alpine)
 # Extract BAML version from go.mod to stay in sync
 ARG TARGETARCH
@@ -90,16 +109,21 @@ RUN BAML_VERSION=$(grep 'github.com/boundaryml/baml ' go.mod | awk '{print $2}' 
     mkdir -p /baml-lib && \
     curl -L -o /baml-lib/libbaml_cffi.so \
         https://github.com/boundaryml/baml/releases/download/${BAML_VERSION}/libbaml_cffi-${BAML_ARCH}-unknown-linux-musl.so && \
+    chmod +x /baml-lib/libbaml_cffi.so && \
+    strip --strip-unneeded /baml-lib/libbaml_cffi.so && \
+    if [ "$TARGETARCH" = "amd64" ]; then \
+        upx --best --lzma /baml-lib/libbaml_cffi.so; \
+    fi && \
+    cp /baml-lib/libbaml_cffi.so /runtime-libs/ && \
     echo "Downloaded BAML musl library for ${BAML_ARCH}"
 
 FROM alpine:3.23
 RUN apk add --no-cache ca-certificates libgcc libstdc++
 WORKDIR /app
 COPY --from=backend-stage /core /core
-COPY --from=backend-stage /usr/local/lib/libduckdb.so /usr/local/lib/libduckdb.so
-# Copy BAML musl library and set path via env var
+COPY --from=backend-stage /runtime-libs/ /usr/local/lib/
+# Copy runtime native libraries and set BAML path via env var.
 # (BAML Go client's isMusl() is not implemented, so we must use BAML_LIBRARY_PATH)
-COPY --from=backend-stage /baml-lib/libbaml_cffi.so /usr/local/lib/libbaml_cffi.so
 ENV BAML_LIBRARY_PATH=/usr/local/lib/libbaml_cffi.so
 
 CMD ["/core"]

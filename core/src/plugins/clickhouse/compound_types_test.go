@@ -94,7 +94,7 @@ func TestGormExprCompoundTypes(t *testing.T) {
 		t.Errorf("Expected enum 'active', got %q", readEnum)
 	}
 
-	// Test FormatColumnValue produces ClickHouse literal syntax
+	// Test the column codec produces ClickHouse literal syntax
 	plugin := &ClickHousePlugin{}
 	var scannedMap, scannedTuple, scannedArray any
 	row := db.Raw("SELECT col_map, col_tuple, col_array FROM test_db.test_compound_types WHERE id = 1").Row()
@@ -102,9 +102,9 @@ func TestGormExprCompoundTypes(t *testing.T) {
 		t.Fatalf("Failed to scan compound types: %v", err)
 	}
 
-	fmtMap, _ := plugin.FormatColumnValue("Map(String, Int32)", &scannedMap)
-	fmtTuple, _ := plugin.FormatColumnValue("Tuple(String, Int32, Float64)", &scannedTuple)
-	fmtArray, _ := plugin.FormatColumnValue("Array(Int32)", &scannedArray)
+	fmtMap, _ := plugin.GetColumnCodec("Map(String, Int32)").Format(&scannedMap)
+	fmtTuple, _ := plugin.GetColumnCodec("Tuple(String, Int32, Float64)").Format(&scannedTuple)
+	fmtArray, _ := plugin.GetColumnCodec("Array(Int32)").Format(&scannedArray)
 
 	t.Logf("Map   display: %s", fmtMap)
 	t.Logf("Tuple display: %s", fmtTuple)

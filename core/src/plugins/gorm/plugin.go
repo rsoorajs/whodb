@@ -22,6 +22,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/engine"
@@ -66,6 +67,8 @@ type GormPluginFunctions interface {
 	ConvertStringValue(value, columnType string, isNullable bool) (any, error)
 	ConvertRawToRows(raw *sql.Rows) (*engine.GetRowsResult, error)
 	ConvertRecordValuesToMap(values []engine.Record) (map[string]any, error)
+	FormatValue(val any) string
+	FormatTimeForExport(value time.Time) string
 
 	// CreateSQLBuilder creates a SQL builder instance - can be overridden by specific plugins
 	CreateSQLBuilder(db *gorm.DB) SQLBuilderInterface
@@ -90,16 +93,9 @@ type GormPluginFunctions interface {
 	// GetRowsOrderBy returns the ORDER BY clause for pagination queries
 	GetRowsOrderBy(db *gorm.DB, schema string, storageUnit string) string
 
-	// ShouldHandleColumnType returns true if the plugin wants to handle a specific column type
-	ShouldHandleColumnType(columnType string) bool
-
-	// GetColumnScanner returns a scanner for a specific column type
-	// This is called when ShouldHandleColumnType returns true
-	GetColumnScanner(columnType string) any
-
-	// FormatColumnValue formats a scanned value for a specific column type
-	// This is called when ShouldHandleColumnType returns true
-	FormatColumnValue(columnType string, scanner any) (string, error)
+	// GetColumnCodec returns a codec for plugin-specific scanned column handling.
+	// Return nil to use the shared default scanner/formatter path.
+	GetColumnCodec(columnType string) ColumnCodec
 
 	// GetCustomColumnTypeName returns a custom column type name for display
 	// Return empty string to use the default type name
@@ -229,6 +225,15 @@ func (p *GormPlugin) GetAllSchemas(config *engine.PluginConfig) ([]string, error
 }
 
 func (p *GormPlugin) GetRows(config *engine.PluginConfig, req *engine.GetRowsRequest) (*engine.GetRowsResult, error) {
+	log.WithFields(map[string]any{
+		"databaseType": config.Credentials.Type,
+		"schema":       req.Schema,
+		"storageUnit":  req.StorageUnit,
+		"pageSize":     req.PageSize,
+		"pageOffset":   req.PageOffset,
+		"hasWhere":     req.Where != nil,
+		"sortCount":    len(req.Sort),
+	}).Debug("GORM row fetch requested")
 	return plugins.WithConnection(config, p.DB, func(db *gorm.DB) (*engine.GetRowsResult, error) {
 		// Use generic implementation; database-specific behavior should be handled in each plugin
 		return p.getGenericRows(db, req.Schema, req.StorageUnit, req.Where, req.Sort, req.PageSize, req.PageOffset)
@@ -319,6 +324,16 @@ func (p *GormPlugin) getGenericRows(db *gorm.DB, schema, storageUnit string, whe
 
 	builder := p.GormPluginFunctions.CreateSQLBuilder(db)
 	fullTable := builder.BuildFullTableName(schema, storageUnit)
+	log.WithFields(map[string]any{
+		"dialect":     db.Dialector.Name(),
+		"schema":      schema,
+		"storageUnit": storageUnit,
+		"fullTable":   fullTable,
+		"pageSize":    pageSize,
+		"pageOffset":  pageOffset,
+		"hasWhere":    where != nil,
+		"sortCount":   len(sort),
+	}).Debug("GORM generic row fetch starting")
 
 	// Parallel count query improves performance for large tables
 	var totalCount int64
@@ -382,6 +397,12 @@ func (p *GormPlugin) getGenericRows(db *gorm.DB, schema, storageUnit string, whe
 		log.WithError(err).Error(fmt.Sprintf("Failed to convert raw rows for table %s.%s", schema, storageUnit))
 		return nil, err
 	}
+	log.WithFields(map[string]any{
+		"schema":      schema,
+		"storageUnit": storageUnit,
+		"rowCount":    len(result.Rows),
+		"columnCount": len(result.Columns),
+	}).Debug("GORM generic row fetch converted rows")
 
 	// Fix any missing column type metadata
 	for i, col := range result.Columns {
@@ -397,6 +418,13 @@ func (p *GormPlugin) getGenericRows(db *gorm.DB, schema, storageUnit string, whe
 	} else {
 		result.TotalCount = totalCount
 	}
+	log.WithFields(map[string]any{
+		"schema":      schema,
+		"storageUnit": storageUnit,
+		"rowCount":    len(result.Rows),
+		"columnCount": len(result.Columns),
+		"totalCount":  result.TotalCount,
+	}).Debug("GORM generic row fetch completed")
 
 	return result, nil
 }
@@ -699,11 +727,5 @@ func (p *GormPlugin) BuildSkipConflictClause(pkColumns []string) clause.OnConfli
 // MarkGeneratedColumns is a no-op base implementation.
 // Database plugins should override this to detect auto-increment and computed columns.
 func (p *GormPlugin) MarkGeneratedColumns(config *engine.PluginConfig, schema string, storageUnit string, columns []engine.Column) error {
-	return nil
-}
-
-// GetDatabaseMetadata returns nil by default.
-// Database plugins should override this to provide metadata for frontend configuration.
-func (p *GormPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
 	return nil
 }

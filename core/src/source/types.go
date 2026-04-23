@@ -122,6 +122,8 @@ const (
 	ActionInsertData Action = "InsertData"
 	// ActionUpdateData indicates rows/documents can be updated.
 	ActionUpdateData Action = "UpdateData"
+	// ActionDeleteData indicates rows/documents can be deleted.
+	ActionDeleteData Action = "DeleteData"
 	// ActionImportData indicates import is supported.
 	ActionImportData Action = "ImportData"
 	// ActionGenerateMockData indicates mock data generation is supported.
@@ -220,6 +222,111 @@ type ConnectionField struct {
 	AdvancedKey     string
 }
 
+// ConnectionTransport identifies how a source is reached.
+type ConnectionTransport string
+
+const (
+	// ConnectionTransportNetwork is used for networked sources.
+	ConnectionTransportNetwork ConnectionTransport = "Network"
+	// ConnectionTransportFile is used for local file-backed sources.
+	ConnectionTransportFile ConnectionTransport = "File"
+	// ConnectionTransportBridge is used for bridge/sidecar-backed sources.
+	ConnectionTransportBridge ConnectionTransport = "Bridge"
+)
+
+// HostInputMode identifies how the hostname field should be presented.
+type HostInputMode string
+
+const (
+	// HostInputModeNone indicates the source does not expose a hostname field.
+	HostInputModeNone HostInputMode = "None"
+	// HostInputModeHostname indicates the source expects a plain hostname.
+	HostInputModeHostname HostInputMode = "Hostname"
+	// HostInputModeHostnameOrURL indicates the source accepts a hostname or URL.
+	HostInputModeHostnameOrURL HostInputMode = "HostnameOrURL"
+)
+
+// HostInputURLParser identifies how hostname URLs should be parsed.
+type HostInputURLParser string
+
+const (
+	// HostInputURLParserNone indicates no URL parsing is available.
+	HostInputURLParserNone HostInputURLParser = "None"
+	// HostInputURLParserPostgres parses postgres:// and postgresql:// URLs.
+	HostInputURLParserPostgres HostInputURLParser = "Postgres"
+	// HostInputURLParserMongoSRV parses mongodb+srv:// URLs.
+	HostInputURLParserMongoSRV HostInputURLParser = "MongoSRV"
+)
+
+// ProfileLabelStrategy identifies how saved profiles should be labeled in the UI.
+type ProfileLabelStrategy string
+
+const (
+	// ProfileLabelStrategyDefault uses the generic hostname/username/database fallback.
+	ProfileLabelStrategyDefault ProfileLabelStrategy = "Default"
+	// ProfileLabelStrategyHostname prefers the hostname as the primary label.
+	ProfileLabelStrategyHostname ProfileLabelStrategy = "Hostname"
+	// ProfileLabelStrategyDatabase prefers the database/file path as the primary label.
+	ProfileLabelStrategyDatabase ProfileLabelStrategy = "Database"
+)
+
+// SchemaFidelity identifies whether schema information is exact or sampled.
+type SchemaFidelity string
+
+const (
+	// SchemaFidelityExact indicates metadata is resolved exactly from the source.
+	SchemaFidelityExact SchemaFidelity = "Exact"
+	// SchemaFidelitySampled indicates metadata is inferred from sampled data.
+	SchemaFidelitySampled SchemaFidelity = "Sampled"
+)
+
+// QueryExplainMode identifies how query-plan inspection should be invoked.
+type QueryExplainMode string
+
+const (
+	// QueryExplainModeNone indicates the source does not declare explain support.
+	QueryExplainModeNone QueryExplainMode = "None"
+	// QueryExplainModeExplain indicates standard EXPLAIN support.
+	QueryExplainModeExplain QueryExplainMode = "Explain"
+	// QueryExplainModeExplainAnalyze indicates EXPLAIN ANALYZE support.
+	QueryExplainModeExplainAnalyze QueryExplainMode = "ExplainAnalyze"
+	// QueryExplainModeExplainPipeline indicates EXPLAIN PIPELINE support.
+	QueryExplainModeExplainPipeline QueryExplainMode = "ExplainPipeline"
+)
+
+// ConnectionTraits describes UI-facing connection behavior for a source type.
+type ConnectionTraits struct {
+	Transport               ConnectionTransport
+	HostInputMode           HostInputMode
+	HostInputURLParser      HostInputURLParser
+	SupportsCustomCAContent bool
+}
+
+// PresentationTraits describes UI-facing presentation behavior for a source type.
+type PresentationTraits struct {
+	ProfileLabelStrategy ProfileLabelStrategy
+	SchemaFidelity       SchemaFidelity
+}
+
+// QueryTraits describes query-surface behavior for a source type.
+type QueryTraits struct {
+	SupportsAnalyze bool
+	ExplainMode     QueryExplainMode
+}
+
+// MockDataTraits describes mock-data behavior for a source type.
+type MockDataTraits struct {
+	SupportsRelationalDependencies bool
+}
+
+// TypeTraits describes non-CRUD source behavior consumed by frontend and CLI.
+type TypeTraits struct {
+	Connection   ConnectionTraits
+	Presentation PresentationTraits
+	Query        QueryTraits
+	MockData     MockDataTraits
+}
+
 // Contract describes the type-level support surface for a source type.
 type Contract struct {
 	Model             Model
@@ -235,6 +342,16 @@ type Contract struct {
 func (c Contract) SupportsSurface(surface Surface) bool {
 	for _, candidate := range c.Surfaces {
 		if candidate == surface {
+			return true
+		}
+	}
+	return false
+}
+
+// SupportsAction reports whether any declared object kind supports the action.
+func (c Contract) SupportsAction(action Action) bool {
+	for _, objectType := range c.ObjectTypes {
+		if objectType.SupportsAction(action) {
 			return true
 		}
 	}
@@ -261,6 +378,16 @@ type ObjectType struct {
 	PluralLabel   string
 }
 
+// SupportsAction reports whether the object type exposes the action.
+func (o ObjectType) SupportsAction(action Action) bool {
+	for _, candidate := range o.Actions {
+		if candidate == action {
+			return true
+		}
+	}
+	return false
+}
+
 // TypeSpec describes a connectable source type.
 type TypeSpec struct {
 	ID               string
@@ -268,8 +395,10 @@ type TypeSpec struct {
 	DriverID         string
 	Connector        string
 	Category         Category
+	Traits           TypeTraits
 	ConnectionFields []ConnectionField
 	Contract         Contract
+	DiscoveryPrefill DiscoveryPrefill
 	IsAWSManaged     bool
 	SSLModes         []SSLModeInfo
 }

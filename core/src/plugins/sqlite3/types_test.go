@@ -4,28 +4,25 @@ import (
 	"testing"
 
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 func TestNormalizeType(t *testing.T) {
-	if got := NormalizeType("int"); got != "INTEGER" {
+	plugin := NewSqlite3Plugin().PluginFunctions.(*Sqlite3Plugin)
+
+	if got := plugin.NormalizeType("int"); got != "INTEGER" {
 		t.Fatalf("expected INTEGER, got %q", got)
 	}
 
-	if got := NormalizeType("varchar(100)"); got != "TEXT(100)" {
+	if got := plugin.NormalizeType("varchar(100)"); got != "TEXT(100)" {
 		t.Fatalf("expected TEXT(100), got %q", got)
 	}
 }
 
-func TestGetDatabaseMetadataIncludesAliasMap(t *testing.T) {
-	p := &Sqlite3Plugin{}
-	p.Type = engine.DatabaseType_Sqlite3
-
-	meta := p.GetDatabaseMetadata()
-	if meta == nil {
+func TestSourceSessionMetadataIncludesAliasMap(t *testing.T) {
+	meta, ok := sourcecatalog.ResolveSessionMetadata(string(engine.DatabaseType_Sqlite3))
+	if !ok || meta == nil {
 		t.Fatalf("expected metadata, got nil")
-	}
-	if meta.DatabaseType != engine.DatabaseType_Sqlite3 {
-		t.Fatalf("expected DatabaseType %q, got %q", engine.DatabaseType_Sqlite3, meta.DatabaseType)
 	}
 	if meta.AliasMap["INT"] != "INTEGER" {
 		t.Fatalf("expected INT alias to be INTEGER, got %q", meta.AliasMap["INT"])

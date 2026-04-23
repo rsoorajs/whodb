@@ -18,7 +18,6 @@ package graph
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -28,9 +27,7 @@ import (
 	"errors"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/clidey/whodb/core/internal/testutil"
-	"github.com/clidey/whodb/core/src/auth"
 	"github.com/clidey/whodb/core/src/engine"
-	"github.com/clidey/whodb/core/src/source"
 )
 
 func TestSourceObjectsQuerySuccess(t *testing.T) {
@@ -41,9 +38,7 @@ func TestSourceObjectsQuerySuccess(t *testing.T) {
 	srv := handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: &Resolver{}}))
 	body, _ := json.Marshal(map[string]any{"query": `query { SourceObjects(parent:{Kind:Database, Path:["app"]}, kinds:[Schema]){ Name } }`})
 	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewBuffer(body))
-	ctx := context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres", Database: "app"})
-	ctx = context.WithValue(ctx, auth.AuthKey_Source, &source.Credentials{SourceType: "Postgres", Values: map[string]string{"Database": "app"}})
-	req = req.WithContext(ctx)
+	req = req.WithContext(testSourceContext("Postgres", map[string]string{"Database": "app"}))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	srv.ServeHTTP(w, req)
@@ -83,9 +78,7 @@ func TestSourceObjectQuerySuccess(t *testing.T) {
 	srv := handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: &Resolver{}}))
 	body, _ := json.Marshal(map[string]any{"query": `query { SourceObjects(parent:{Kind:Schema, Path:["app","public"]}){ Name } }`})
 	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewBuffer(body))
-	ctx := context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres", Database: "app"})
-	ctx = context.WithValue(ctx, auth.AuthKey_Source, &source.Credentials{SourceType: "Postgres", Values: map[string]string{"Database": "app"}})
-	req = req.WithContext(ctx)
+	req = req.WithContext(testSourceContext("Postgres", map[string]string{"Database": "app"}))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	srv.ServeHTTP(w, req)
@@ -105,9 +98,7 @@ func TestRunSourceQueryError(t *testing.T) {
 	srv := handler.NewDefaultServer(NewExecutableSchema(Config{Resolvers: &Resolver{}}))
 	body, _ := json.Marshal(map[string]any{"query": `query { RunSourceQuery(query:"select 1"){ Rows } }`})
 	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewBuffer(body))
-	ctx := context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres"})
-	ctx = context.WithValue(ctx, auth.AuthKey_Source, &source.Credentials{SourceType: "Postgres"})
-	req = req.WithContext(ctx)
+	req = req.WithContext(testSourceContext("Postgres", nil))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	srv.ServeHTTP(w, req)
@@ -124,7 +115,7 @@ func TestAIModelQueryMissingAPIKey(t *testing.T) {
 
 	body, _ := json.Marshal(map[string]any{"query": `query { AIModel(modelType:"OpenAI", token:"") }`})
 	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewBuffer(body))
-	req = req.WithContext(context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres"}))
+	req = req.WithContext(testSourceContext("Postgres", nil))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	srv.ServeHTTP(w, req)
@@ -146,9 +137,7 @@ func TestAIChatQueryError(t *testing.T) {
 		"query": `query { AIChat(modelType:"Test", ref:{Kind:Schema, Path:["app","public"]}, input:{PreviousConversation:"", Query:"hi", Model:"m"}){ Text } }`,
 	})
 	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewBuffer(body))
-	ctx := context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres", Database: "app"})
-	ctx = context.WithValue(ctx, auth.AuthKey_Source, &source.Credentials{SourceType: "Postgres", Values: map[string]string{"Database": "app"}})
-	req = req.WithContext(ctx)
+	req = req.WithContext(testSourceContext("Postgres", map[string]string{"Database": "app"}))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	srv.ServeHTTP(w, req)

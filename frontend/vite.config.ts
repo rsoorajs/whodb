@@ -14,13 +14,30 @@
  * limitations under the License.
  */
 
+import fs from 'fs';
 import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import type { Plugin, ResolvedConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite'
 import yamlPlugin from './plugins/vite-plugin-yaml';
 
 const baseHrefPlaceholder = '__WHODB_BASE_HREF__';
+const frontendEditionMarkerFile = '.whodb-edition';
+
+const resolveBuildSourcemap = (): boolean | 'hidden' | 'inline' => {
+  switch (process.env.WHODB_BUILD_SOURCEMAP) {
+    case 'true':
+      return true;
+    case 'false':
+      return false;
+    case 'hidden':
+    case 'inline':
+      return process.env.WHODB_BUILD_SOURCEMAP;
+    default:
+      return process.env.NODE_ENV === 'production' ? 'hidden' : true;
+  }
+};
 
 // Resolve app meta (title, description) at build time
 const htmlMetaPlugin = () => {
@@ -33,6 +50,25 @@ const htmlMetaPlugin = () => {
         .replace('%VITE_APP_TITLE%', title)
         .replace('%VITE_APP_DESCRIPTION%', description);
     }
+  };
+};
+
+const frontendEditionPlugin = (edition: string): Plugin => {
+  let resolvedConfig: ResolvedConfig | null = null;
+
+  return {
+    name: 'frontend-edition',
+    apply: 'build',
+    configResolved(config) {
+      resolvedConfig = config;
+    },
+    closeBundle() {
+      if (resolvedConfig == null) {
+        return;
+      }
+      const outDir = path.resolve(resolvedConfig.root, resolvedConfig.build.outDir);
+      fs.writeFileSync(path.join(outDir, frontendEditionMarkerFile), `${edition}\n`);
+    },
   };
 };
 
@@ -77,6 +113,7 @@ export default defineConfig(async ({command}) => {
           }
         },
         htmlMetaPlugin(),
+        frontendEditionPlugin('ce'),
         istanbulPlugin
       ].filter(Boolean),
 
@@ -99,7 +136,7 @@ export default defineConfig(async ({command}) => {
     base: command === 'build' ? './' : '/',
     build: {
       outDir: 'build',
-      sourcemap: process.env.NODE_ENV === 'production' ? 'hidden' : true,
+      sourcemap: resolveBuildSourcemap(),
       chunkSizeWarningLimit: 1000,
     },
     define: {

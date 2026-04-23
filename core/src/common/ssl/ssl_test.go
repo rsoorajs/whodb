@@ -20,7 +20,80 @@ import (
 	"testing"
 
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/source"
 )
+
+func init() {
+	registerSSLModesTestType(engine.DatabaseType_Postgres, []SSLModeInfo{
+		ModeInfoDisabled,
+		ModeInfoRequired,
+		ModeInfoVerifyCA,
+		ModeInfoVerifyIdentity,
+	}, map[SSLMode][]string{
+		SSLModeDisabled:       {"disable"},
+		SSLModeRequired:       {"require"},
+		SSLModeVerifyIdentity: {"verify-full"},
+	})
+	registerSSLModesTestType(engine.DatabaseType_MySQL, []SSLModeInfo{
+		ModeInfoDisabled,
+		ModeInfoPreferred,
+		ModeInfoRequired,
+		ModeInfoVerifyCA,
+		ModeInfoVerifyIdentity,
+	}, map[SSLMode][]string{
+		SSLModeDisabled:       {"DISABLED"},
+		SSLModePreferred:      {"PREFERRED"},
+		SSLModeRequired:       {"REQUIRED"},
+		SSLModeVerifyCA:       {"VERIFY_CA"},
+		SSLModeVerifyIdentity: {"VERIFY_IDENTITY"},
+	})
+	registerSSLModesTestType(engine.DatabaseType_MariaDB, []SSLModeInfo{
+		ModeInfoDisabled,
+		ModeInfoPreferred,
+		ModeInfoRequired,
+		ModeInfoVerifyCA,
+		ModeInfoVerifyIdentity,
+	}, map[SSLMode][]string{
+		SSLModeDisabled:       {"DISABLED"},
+		SSLModePreferred:      {"PREFERRED"},
+		SSLModeRequired:       {"REQUIRED"},
+		SSLModeVerifyCA:       {"VERIFY_CA"},
+		SSLModeVerifyIdentity: {"VERIFY_IDENTITY"},
+	})
+	registerSSLModesTestType(engine.DatabaseType_ClickHouse, []SSLModeInfo{
+		ModeInfoDisabled,
+		ModeInfoEnabled,
+		ModeInfoInsecure,
+	}, nil)
+	registerSSLModesTestType(engine.DatabaseType_MongoDB, []SSLModeInfo{
+		ModeInfoDisabled,
+		ModeInfoEnabled,
+		ModeInfoInsecure,
+	}, nil)
+	registerSSLModesTestType(engine.DatabaseType_Redis, []SSLModeInfo{
+		ModeInfoDisabled,
+		ModeInfoEnabled,
+		ModeInfoInsecure,
+	}, nil)
+	registerSSLModesTestType(engine.DatabaseType_ElasticSearch, []SSLModeInfo{
+		ModeInfoDisabled,
+		ModeInfoEnabled,
+		ModeInfoInsecure,
+	}, nil)
+}
+
+func registerSSLModesTestType(id engine.DatabaseType, modes []SSLModeInfo, aliases map[SSLMode][]string) {
+	specModes := make([]source.SSLModeInfo, 0, len(modes))
+	for _, mode := range modes {
+		specModes = append(specModes, source.SSLModeInfo{
+			Value:       string(mode.Value),
+			Label:       mode.Label,
+			Description: mode.Description,
+			Aliases:     aliases[mode.Value],
+		})
+	}
+	source.RegisterType(source.TypeSpec{ID: string(id), SSLModes: specModes})
+}
 
 // Test helper functions - moved from ssl.go as they're only used in tests
 
@@ -295,41 +368,28 @@ func TestSSLConfigRequiresHostnameVerification(t *testing.T) {
 	}
 }
 
-func TestRegisterDatabaseSSLModes(t *testing.T) {
-	// Use a fake database type for testing
+func TestGetSSLModesReadsRegisteredSourceTypes(t *testing.T) {
 	fakeDBType := engine.DatabaseType("TestDB")
-
-	// Verify it doesn't exist initially
-	if modes := GetSSLModes(fakeDBType); modes != nil {
-		t.Fatalf("GetSSLModes(%s) should return nil before registration", fakeDBType)
-	}
-
-	// Register modes
-	testModes := []SSLModeInfo{
+	registerSSLModesTestType(fakeDBType, []SSLModeInfo{
 		{Value: SSLModeDisabled, Label: "Off", Description: "No encryption"},
 		{Value: SSLModeEnabled, Label: "On", Description: "Full encryption"},
-	}
-	RegisterDatabaseSSLModes(fakeDBType, testModes)
+	}, map[SSLMode][]string{
+		SSLModeEnabled: {"ON"},
+	})
 
-	// Verify registration worked
 	modes := GetSSLModes(fakeDBType)
-	if modes == nil {
-		t.Fatalf("GetSSLModes(%s) returned nil after registration", fakeDBType)
-	}
 	if len(modes) != 2 {
-		t.Errorf("GetSSLModes(%s) returned %d modes, want 2", fakeDBType, len(modes))
+		t.Fatalf("GetSSLModes(%s) returned %d modes, want 2", fakeDBType, len(modes))
 	}
-
-	// Verify mode values
 	if modes[0].Value != SSLModeDisabled {
 		t.Errorf("First mode value = %s, want %s", modes[0].Value, SSLModeDisabled)
 	}
 	if modes[1].Value != SSLModeEnabled {
 		t.Errorf("Second mode value = %s, want %s", modes[1].Value, SSLModeEnabled)
 	}
-
-	// Cleanup
-	delete(additionalSSLModes, fakeDBType)
+	if NormalizeSSLMode(fakeDBType, "ON") != SSLModeEnabled {
+		t.Errorf("NormalizeSSLMode(%s, %q) = %q, want %q", fakeDBType, "ON", NormalizeSSLMode(fakeDBType, "ON"), SSLModeEnabled)
+	}
 }
 
 func TestNormalizeSSLMode(t *testing.T) {

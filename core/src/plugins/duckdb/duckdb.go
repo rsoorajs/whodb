@@ -24,23 +24,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/plugins"
 	gorm_plugin "github.com/clidey/whodb/core/src/plugins/gorm"
+	sourcecatalogspecs "github.com/clidey/whodb/core/src/sourcecatalog/specs"
 	duckdbDriver "github.com/duckdb/duckdb-go/v2"
 	"gorm.io/gorm"
 )
 
-var supportedOperators = map[string]string{
-	"=": "=", ">=": ">=", ">": ">", "<=": "<=", "<": "<", "<>": "<>", "!=": "!=",
-	"BETWEEN": "BETWEEN", "NOT BETWEEN": "NOT BETWEEN",
-	"LIKE": "LIKE", "NOT LIKE": "NOT LIKE",
-	"ILIKE": "ILIKE", "NOT ILIKE": "NOT ILIKE",
-	"IN": "IN", "NOT IN": "NOT IN", "IS NULL": "IS NULL", "IS NOT NULL": "IS NOT NULL",
-	"AND": "AND", "OR": "OR", "NOT": "NOT",
-}
+var supportedOperators = sourcecatalogspecs.DuckDBSupportedOperators
 
 // DuckDBPlugin implements the WhoDB plugin for DuckDB.
 type DuckDBPlugin struct {
@@ -143,55 +138,47 @@ func (p *DuckDBPlugin) ConvertRawToRows(rows *sql.Rows) (*engine.GetRowsResult, 
 	return result, nil
 }
 
-// ShouldHandleColumnType returns true for all types. The go-duckdb driver returns
-// native Go types (int8, int32, float32, duckdb.Decimal, duckdb.Interval, etc.)
-// that are not in the database/sql driver.Value set, so sql.NullString.Scan() fails
-// for most of them. We use a generic interface{} scanner for everything.
-func (p *DuckDBPlugin) ShouldHandleColumnType(columnType string) bool {
-	return true
-}
+// GetColumnCodec returns a generic codec for DuckDB row scanning.
+func (p *DuckDBPlugin) GetColumnCodec(columnType string) gorm_plugin.ColumnCodec {
+	return gorm_plugin.ColumnCodecFuncs{
+		NewScanner: func() any { return new(any) },
+		FormatValue: func(scanner any) (string, error) {
+			ptr, ok := scanner.(*any)
+			if !ok || ptr == nil || *ptr == nil {
+				return "", nil
+			}
+			val := *ptr
 
-// GetColumnScanner returns a generic scanner for DuckDB types.
-func (p *DuckDBPlugin) GetColumnScanner(columnType string) any {
-	return new(any)
-}
-
-// FormatColumnValue converts a scanned DuckDB value to its string representation.
-func (p *DuckDBPlugin) FormatColumnValue(columnType string, scanner any) (string, error) {
-	ptr, ok := scanner.(*any)
-	if !ok || ptr == nil || *ptr == nil {
-		return "", nil
-	}
-	val := *ptr
-
-	switch v := val.(type) {
-	case []byte:
-		if len(v) == 16 && strings.ToUpper(columnType) == "UUID" {
-			return fmt.Sprintf("%x-%x-%x-%x-%x", v[0:4], v[4:6], v[6:8], v[8:10], v[10:16]), nil
-		}
-		return "0x" + fmt.Sprintf("%X", v), nil
-	case time.Time:
-		if v.IsZero() {
-			return "", nil
-		}
-		upper := strings.ToUpper(columnType)
-		if upper == "DATE" {
-			return v.Format("2006-01-02"), nil
-		}
-		if upper == "TIME" || upper == "TIME WITH TIME ZONE" {
-			return v.Format("15:04:05"), nil
-		}
-		return v.Format("2006-01-02 15:04:05"), nil
-	case duckdbDriver.Interval:
-		return formatInterval(v), nil
-	case map[string]any, []any:
-		b, err := json.Marshal(v)
-		if err != nil {
-			return fmt.Sprintf("%v", v), nil
-		}
-		return string(b), nil
-	default:
-		return fmt.Sprintf("%v", v), nil
+			switch v := val.(type) {
+			case []byte:
+				if len(v) == 16 && strings.ToUpper(columnType) == "UUID" {
+					return fmt.Sprintf("%x-%x-%x-%x-%x", v[0:4], v[4:6], v[6:8], v[8:10], v[10:16]), nil
+				}
+				return "0x" + fmt.Sprintf("%X", v), nil
+			case time.Time:
+				if v.IsZero() {
+					return "", nil
+				}
+				upper := strings.ToUpper(columnType)
+				if upper == "DATE" {
+					return v.Format("2006-01-02"), nil
+				}
+				if upper == "TIME" || upper == "TIME WITH TIME ZONE" {
+					return v.Format("15:04:05"), nil
+				}
+				return v.Format("2006-01-02 15:04:05"), nil
+			case duckdbDriver.Interval:
+				return formatInterval(v), nil
+			case map[string]any, []any:
+				b, err := json.Marshal(v)
+				if err != nil {
+					return fmt.Sprintf("%v", v), nil
+				}
+				return string(b), nil
+			default:
+				return fmt.Sprintf("%v", v), nil
+			}
+		},
 	}
 }
 
@@ -262,7 +249,7 @@ func (p *DuckDBPlugin) GetForeignKeyRelationships(config *engine.PluginConfig, s
 }
 
 func (p *DuckDBPlugin) NormalizeType(typeName string) string {
-	return NormalizeType(typeName)
+	return common.NormalizeTypeWithMap(typeName, sourcecatalogspecs.DuckDBAliasMap)
 }
 
 // GetLastInsertID returns 0 for DuckDB — DuckDB has no session-scoped lastval().

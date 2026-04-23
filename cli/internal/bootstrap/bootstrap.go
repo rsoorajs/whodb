@@ -35,6 +35,8 @@ import (
 	_ "github.com/clidey/whodb/core/src/plugins/postgres"
 	_ "github.com/clidey/whodb/core/src/plugins/redis"
 	_ "github.com/clidey/whodb/core/src/plugins/sqlite3"
+	_ "github.com/clidey/whodb/core/src/source/adapters"
+	_ "github.com/clidey/whodb/core/src/sources/database"
 )
 
 var ensureOnce sync.Once

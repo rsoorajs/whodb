@@ -73,14 +73,14 @@ type ConnectionInput struct {
 
 func (p *GormPlugin) ParseConnectionConfig(config *engine.PluginConfig) (*ConnectionInput, error) {
 	//common
-	defaultPort, ok := plugins.GetDefaultPort(p.Type)
-	if !ok {
-		return nil, fmt.Errorf("unsupported database type: %v", p.Type)
-	}
-	port, err := strconv.Atoi(common.GetRecordValueOrDefault(config.Credentials.Advanced, portKey, defaultPort))
-	if err != nil {
-		log.WithError(err).Error(fmt.Sprintf("Failed to parse port for database type %s", p.Type))
-		return nil, err
+	port := 0
+	if rawPort := common.GetRecordValueOrDefault(config.Credentials.Advanced, portKey, ""); rawPort != "" {
+		parsedPort, err := strconv.Atoi(rawPort)
+		if err != nil {
+			log.WithError(err).Error(fmt.Sprintf("Failed to parse port for database type %s", p.Type))
+			return nil, err
+		}
+		port = parsedPort
 	}
 
 	//mysql/mariadb specific

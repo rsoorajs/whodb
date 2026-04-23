@@ -31,12 +31,13 @@ import (
 // the public source-first catalog.
 type FamilySpec struct {
 	Category       source.Category
+	Traits         source.TypeTraits
 	Model          source.Model
+	Surfaces       []source.Surface
 	RootActions    []source.Action
 	BrowsePath     []source.ObjectKind
 	DefaultObject  source.ObjectKind
 	GraphScopeKind *source.ObjectKind
-	GraphSupported bool
 	ObjectTypes    []source.ObjectType
 }
 
@@ -56,9 +57,11 @@ const (
 	connectorCockroachDB   = "CockroachDB"
 	connectorMySQL         = "MySQL"
 	connectorMariaDB       = "MariaDB"
+	connectorTiDB          = "TiDB"
 	connectorClickHouse    = "ClickHouse"
 	connectorSqlite3       = "Sqlite3"
 	connectorDuckDB        = "DuckDB"
+	connectorQuestDB       = "QuestDB"
 	connectorMongoDB       = "MongoDB"
 	connectorRedis         = "Redis"
 	connectorMemcached     = "Memcached"
@@ -73,11 +76,12 @@ var (
 var familySpecs = map[string]FamilySpec{
 	connectorPostgres: {
 		Category:       source.CategoryDatabase,
+		Traits:         networkTraits(source.HostInputModeHostnameOrURL, source.HostInputURLParserPostgres),
 		Model:          source.ModelRelational,
+		Surfaces:       []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
 		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindSchema, objectKindTable},
 		DefaultObject:  objectKindTable,
 		GraphScopeKind: ptr(objectKindSchema),
-		GraphSupported: true,
 		ObjectTypes: []source.ObjectType{
 			metadataObjectType(objectKindDatabase, "Database", "Databases", true),
 			metadataObjectType(objectKindSchema, "Schema", "Schemas", true),
@@ -87,11 +91,12 @@ var familySpecs = map[string]FamilySpec{
 	},
 	connectorCockroachDB: {
 		Category:       source.CategoryDatabase,
+		Traits:         networkTraits(source.HostInputModeHostname, source.HostInputURLParserNone),
 		Model:          source.ModelRelational,
+		Surfaces:       []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
 		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindSchema, objectKindTable},
 		DefaultObject:  objectKindTable,
 		GraphScopeKind: ptr(objectKindSchema),
-		GraphSupported: true,
 		ObjectTypes: []source.ObjectType{
 			metadataObjectType(objectKindDatabase, "Database", "Databases", true),
 			metadataObjectType(objectKindSchema, "Schema", "Schemas", true),
@@ -101,11 +106,12 @@ var familySpecs = map[string]FamilySpec{
 	},
 	connectorMySQL: {
 		Category:       source.CategoryDatabase,
+		Traits:         networkTraits(source.HostInputModeHostname, source.HostInputURLParserNone),
 		Model:          source.ModelRelational,
+		Surfaces:       []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
 		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindTable},
 		DefaultObject:  objectKindTable,
 		GraphScopeKind: ptr(objectKindDatabase),
-		GraphSupported: true,
 		ObjectTypes: []source.ObjectType{
 			metadataObjectType(objectKindDatabase, "Database", "Databases", true),
 			tabularObjectType(objectKindTable, "Table", "Tables"),
@@ -114,11 +120,26 @@ var familySpecs = map[string]FamilySpec{
 	},
 	connectorMariaDB: {
 		Category:       source.CategoryDatabase,
+		Traits:         networkTraits(source.HostInputModeHostname, source.HostInputURLParserNone),
 		Model:          source.ModelRelational,
+		Surfaces:       []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
 		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindTable},
 		DefaultObject:  objectKindTable,
 		GraphScopeKind: ptr(objectKindDatabase),
-		GraphSupported: true,
+		ObjectTypes: []source.ObjectType{
+			metadataObjectType(objectKindDatabase, "Database", "Databases", true),
+			tabularObjectType(objectKindTable, "Table", "Tables"),
+			tabularReadOnlyObjectType(objectKindView, "View", "Views"),
+		},
+	},
+	connectorTiDB: {
+		Category:       source.CategoryDatabase,
+		Traits:         networkTraits(source.HostInputModeHostname, source.HostInputURLParserNone),
+		Model:          source.ModelRelational,
+		Surfaces:       []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
+		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindTable},
+		DefaultObject:  objectKindTable,
+		GraphScopeKind: ptr(objectKindDatabase),
 		ObjectTypes: []source.ObjectType{
 			metadataObjectType(objectKindDatabase, "Database", "Databases", true),
 			tabularObjectType(objectKindTable, "Table", "Tables"),
@@ -127,11 +148,12 @@ var familySpecs = map[string]FamilySpec{
 	},
 	connectorClickHouse: {
 		Category:       source.CategoryDatabase,
+		Traits:         networkTraits(source.HostInputModeHostname, source.HostInputURLParserNone),
 		Model:          source.ModelRelational,
+		Surfaces:       []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
 		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindTable},
 		DefaultObject:  objectKindTable,
 		GraphScopeKind: ptr(objectKindDatabase),
-		GraphSupported: true,
 		ObjectTypes: []source.ObjectType{
 			metadataObjectType(objectKindDatabase, "Database", "Databases", true),
 			tabularObjectType(objectKindTable, "Table", "Tables"),
@@ -139,7 +161,9 @@ var familySpecs = map[string]FamilySpec{
 	},
 	connectorSqlite3: {
 		Category:      source.CategoryDatabase,
+		Traits:        fileTraits(source.ProfileLabelStrategyDatabase),
 		Model:         source.ModelRelational,
+		Surfaces:      []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
 		RootActions:   []source.Action{source.ActionBrowse, source.ActionCreateChild},
 		BrowsePath:    []source.ObjectKind{objectKindTable},
 		DefaultObject: objectKindTable,
@@ -148,31 +172,51 @@ var familySpecs = map[string]FamilySpec{
 		},
 	},
 	connectorDuckDB: {
+		Category:       source.CategoryDatabase,
+		Traits:         fileTraits(source.ProfileLabelStrategyDatabase),
+		Model:          source.ModelRelational,
+		Surfaces:       []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
+		RootActions:    []source.Action{source.ActionBrowse, source.ActionCreateChild},
+		BrowsePath:     []source.ObjectKind{objectKindSchema, objectKindTable},
+		DefaultObject:  objectKindTable,
+		GraphScopeKind: ptr(objectKindSchema),
+		ObjectTypes: []source.ObjectType{
+			metadataObjectType(objectKindSchema, "Schema", "Schemas", true),
+			tabularObjectType(objectKindTable, "Table", "Tables"),
+			tabularReadOnlyObjectType(objectKindView, "View", "Views"),
+		},
+	},
+	connectorQuestDB: {
 		Category:      source.CategoryDatabase,
+		Traits:        networkTraits(source.HostInputModeHostname, source.HostInputURLParserNone),
 		Model:         source.ModelRelational,
+		Surfaces:      []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat},
 		RootActions:   []source.Action{source.ActionBrowse, source.ActionCreateChild},
 		BrowsePath:    []source.ObjectKind{objectKindTable},
 		DefaultObject: objectKindTable,
 		ObjectTypes: []source.ObjectType{
-			tabularObjectType(objectKindTable, "Table", "Tables"),
+			questDBObjectType(objectKindTable, "Table", "Tables"),
 		},
 	},
 	connectorMongoDB: {
 		Category:       source.CategoryDatabase,
+		Traits:         sampledNetworkTraits(source.HostInputModeHostnameOrURL, source.HostInputURLParserMongoSRV, source.ProfileLabelStrategyDefault),
 		Model:          source.ModelDocument,
+		Surfaces:       []source.Surface{source.SurfaceBrowser, source.SurfaceGraph},
 		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindColl},
 		DefaultObject:  objectKindColl,
 		GraphScopeKind: ptr(objectKindDatabase),
-		GraphSupported: true,
 		ObjectTypes: []source.ObjectType{
 			metadataObjectType(objectKindDatabase, "Database", "Databases", true),
-			documentObjectType(objectKindColl, "Collection", "Collections"),
+			documentObjectType(objectKindColl, "Collection", "Collections", source.ActionGenerateMockData),
 			metadataObjectType(objectKindIndex, "Index", "Indexes", false),
 		},
 	},
 	connectorRedis: {
 		Category:      source.CategoryCache,
+		Traits:        networkTraitsWithProfileLabel(source.HostInputModeHostname, source.HostInputURLParserNone, source.ProfileLabelStrategyHostname),
 		Model:         source.ModelKeyValue,
+		Surfaces:      []source.Surface{source.SurfaceBrowser},
 		BrowsePath:    []source.ObjectKind{objectKindDatabase, objectKindKey},
 		DefaultObject: objectKindKey,
 		ObjectTypes: []source.ObjectType{
@@ -182,20 +226,23 @@ var familySpecs = map[string]FamilySpec{
 	},
 	connectorMemcached: {
 		Category:      source.CategoryCache,
+		Traits:        networkTraits(source.HostInputModeHostname, source.HostInputURLParserNone),
 		Model:         source.ModelKeyValue,
+		Surfaces:      []source.Surface{source.SurfaceBrowser},
 		BrowsePath:    []source.ObjectKind{objectKindItem},
 		DefaultObject: objectKindItem,
 		ObjectTypes: []source.ObjectType{
-			keyValueReadOnlyObjectType(objectKindItem, "Item", "Items"),
+			keyValueExistingMutableObjectType(objectKindItem, "Item", "Items"),
 		},
 	},
 	connectorElasticSearch: {
 		Category:       source.CategorySearch,
+		Traits:         sampledNetworkTraits(source.HostInputModeHostname, source.HostInputURLParserNone, source.ProfileLabelStrategyDefault),
 		Model:          source.ModelSearch,
+		Surfaces:       []source.Surface{source.SurfaceBrowser, source.SurfaceGraph},
 		BrowsePath:     []source.ObjectKind{objectKindIndex},
 		DefaultObject:  objectKindIndex,
 		GraphScopeKind: ptr(objectKindIndex),
-		GraphSupported: true,
 		ObjectTypes: []source.ObjectType{
 			documentObjectType(objectKindIndex, "Index", "Indices"),
 		},
@@ -204,6 +251,9 @@ var familySpecs = map[string]FamilySpec{
 
 var extraFieldOrder = []string{
 	"Port",
+	"Region",
+	"Auth Method",
+	"Profile Name",
 	"Parse Time",
 	"Loc",
 	"Allow clear text passwords",
@@ -235,6 +285,17 @@ func Find(id string) (source.TypeSpec, bool) {
 	return source.FindType(id)
 }
 
+// UsesDatabaseInsteadOfSchema reports whether the source type scopes browsing
+// and graph operations by database/catalog rather than schema.
+func UsesDatabaseInsteadOfSchema(id string) bool {
+	spec, ok := Find(id)
+	if !ok {
+		return false
+	}
+
+	return usesDatabaseInsteadOfSchema(spec)
+}
+
 // FieldVisibility declares which standard connection fields are shown for one
 // source-backed database type.
 type FieldVisibility struct {
@@ -257,15 +318,14 @@ type FieldRequirements struct {
 // DatabaseEntry contains the database-specific metadata needed to expose a
 // database family member through the source catalog.
 type DatabaseEntry struct {
-	ID                 string
-	Label              string
-	Connector          string
-	Extra              map[string]string
-	Fields             FieldVisibility
-	RequiredFields     FieldRequirements
-	SupportsScratchpad bool
-	IsAWSManaged       bool
-	SSLModes           []source.SSLModeInfo
+	ID             string
+	Label          string
+	Connector      string
+	Extra          map[string]string
+	Fields         FieldVisibility
+	RequiredFields FieldRequirements
+	IsAWSManaged   bool
+	SSLModes       []source.SSLModeInfo
 }
 
 // RegisterFamilySpec registers a source-family mapping for a connector/plugin
@@ -280,14 +340,17 @@ func RegisterFamilySpec(connector string, spec FamilySpec) {
 // BuildTypeSpec converts one database-backed source registration into a public
 // source type specification.
 func BuildTypeSpec(entry DatabaseEntry) (source.TypeSpec, bool) {
-	family, ok := familySpecFor(entry.Connector)
+	family, ok := familySpecFor(entry.ID)
+	if !ok {
+		family, ok = familySpecFor(entry.Connector)
+	}
 	if !ok {
 		return source.TypeSpec{}, false
 	}
 
 	contract := source.Contract{
 		Model:             family.Model,
-		Surfaces:          buildSurfaces(entry, family),
+		Surfaces:          buildSurfaces(family),
 		RootActions:       buildRootActions(family),
 		BrowsePath:        slices.Clone(family.BrowsePath),
 		DefaultObjectKind: family.DefaultObject,
@@ -295,14 +358,18 @@ func BuildTypeSpec(entry DatabaseEntry) (source.TypeSpec, bool) {
 		ObjectTypes:       cloneObjectTypes(family.ObjectTypes),
 	}
 
+	traits := buildTypeTraits(entry, family)
+
 	return source.TypeSpec{
 		ID:               entry.ID,
 		Label:            entry.Label,
 		DriverID:         "database",
 		Connector:        entry.Connector,
 		Category:         family.Category,
-		ConnectionFields: buildConnectionFields(entry),
+		Traits:           traits,
+		ConnectionFields: buildConnectionFields(entry, traits),
 		Contract:         contract,
+		DiscoveryPrefill: buildDiscoveryPrefill(entry),
 		IsAWSManaged:     entry.IsAWSManaged,
 		SSLModes:         cloneSourceSSLModes(entry.SSLModes),
 	}, true
@@ -313,6 +380,15 @@ func buildRootActions(family FamilySpec) []source.Action {
 		return slices.Clone(family.RootActions)
 	}
 	return []source.Action{source.ActionBrowse}
+}
+
+func usesDatabaseInsteadOfSchema(spec source.TypeSpec) bool {
+	if spec.Contract.GraphScopeKind != nil && *spec.Contract.GraphScopeKind == source.ObjectKindDatabase {
+		return true
+	}
+
+	return !slices.Contains(spec.Contract.BrowsePath, source.ObjectKindSchema) &&
+		slices.Contains(spec.Contract.BrowsePath, source.ObjectKindDatabase)
 }
 
 func familySpecFor(connector string) (FamilySpec, bool) {
@@ -330,18 +406,82 @@ func familySpecFor(connector string) (FamilySpec, bool) {
 	return cloneFamilySpec(spec), true
 }
 
-func buildSurfaces(entry DatabaseEntry, family FamilySpec) []source.Surface {
-	surfaces := []source.Surface{source.SurfaceBrowser}
-	if entry.SupportsScratchpad {
-		surfaces = append(surfaces, source.SurfaceQuery, source.SurfaceChat)
+func buildSurfaces(family FamilySpec) []source.Surface {
+	if len(family.Surfaces) == 0 {
+		return []source.Surface{source.SurfaceBrowser}
 	}
-	if family.GraphSupported {
-		surfaces = append(surfaces, source.SurfaceGraph)
+
+	ordered := []source.Surface{
+		source.SurfaceBrowser,
+		source.SurfaceQuery,
+		source.SurfaceChat,
+		source.SurfaceGraph,
+	}
+
+	surfaces := make([]source.Surface, 0, len(ordered))
+	for _, surface := range ordered {
+		if slices.Contains(family.Surfaces, surface) {
+			surfaces = append(surfaces, surface)
+		}
+	}
+	if !slices.Contains(surfaces, source.SurfaceBrowser) {
+		surfaces = append([]source.Surface{source.SurfaceBrowser}, surfaces...)
 	}
 	return surfaces
 }
 
-func buildConnectionFields(entry DatabaseEntry) []source.ConnectionField {
+func buildTypeTraits(entry DatabaseEntry, family FamilySpec) source.TypeTraits {
+	traits := family.Traits
+	if traits.Connection.Transport == "" {
+		traits.Connection.Transport = source.ConnectionTransportNetwork
+	}
+	if traits.Connection.HostInputMode == "" {
+		if entry.Fields.Hostname {
+			traits.Connection.HostInputMode = source.HostInputModeHostname
+		} else {
+			traits.Connection.HostInputMode = source.HostInputModeNone
+		}
+	}
+	if traits.Connection.HostInputURLParser == "" {
+		traits.Connection.HostInputURLParser = source.HostInputURLParserNone
+	}
+	if traits.Presentation.ProfileLabelStrategy == "" {
+		traits.Presentation.ProfileLabelStrategy = source.ProfileLabelStrategyDefault
+	}
+	if traits.Presentation.SchemaFidelity == "" {
+		traits.Presentation.SchemaFidelity = source.SchemaFidelityExact
+	}
+	if traits.Query.ExplainMode == "" {
+		switch entry.Connector {
+		case connectorPostgres, connectorCockroachDB, connectorQuestDB:
+			traits.Query.ExplainMode = source.QueryExplainModeExplain
+		case connectorMySQL, connectorMariaDB, connectorTiDB, connectorSqlite3, connectorDuckDB:
+			traits.Query.ExplainMode = source.QueryExplainModeExplain
+		case connectorClickHouse:
+			traits.Query.ExplainMode = source.QueryExplainModeExplainPipeline
+		}
+	}
+	if entry.ID == connectorPostgres {
+		traits.Query.SupportsAnalyze = true
+		traits.Query.ExplainMode = source.QueryExplainModeExplainAnalyze
+	}
+	if traits.Query.ExplainMode == source.QueryExplainModeExplainAnalyze {
+		traits.Query.SupportsAnalyze = true
+	}
+	supportsMockData := false
+	for _, objectType := range family.ObjectTypes {
+		if slices.Contains(objectType.Actions, source.ActionGenerateMockData) {
+			supportsMockData = true
+			break
+		}
+	}
+	if supportsMockData && entry.Connector != connectorClickHouse {
+		traits.MockData.SupportsRelationalDependencies = true
+	}
+	return traits
+}
+
+func buildConnectionFields(entry DatabaseEntry, traits source.TypeTraits) []source.ConnectionField {
 	fields := make([]source.ConnectionField, 0, len(entry.Extra)+5)
 
 	if entry.Fields.Hostname {
@@ -381,7 +521,7 @@ func buildConnectionFields(entry DatabaseEntry) []source.ConnectionField {
 	}
 
 	if entry.Fields.Database {
-		fileBased := !entry.Fields.Hostname
+		fileBased := traits.Connection.Transport == source.ConnectionTransportFile
 		kind := source.ConnectionFieldKindText
 		placeholderKey := "enterDatabase"
 		supportsOptions := false
@@ -432,6 +572,14 @@ func buildConnectionFields(entry DatabaseEntry) []source.ConnectionField {
 	}
 
 	return fields
+}
+
+func buildDiscoveryPrefill(entry DatabaseEntry) source.DiscoveryPrefill {
+	prefill, ok := ResolveDiscoveryPrefill(entry.ID, entry.Connector)
+	if !ok {
+		return source.DiscoveryPrefill{}
+	}
+	return prefill
 }
 
 func orderedExtraKeys(extra map[string]string) []string {
@@ -498,6 +646,7 @@ func tabularObjectType(kind source.ObjectKind, singular string, plural string) s
 			source.ActionViewRows,
 			source.ActionInsertData,
 			source.ActionUpdateData,
+			source.ActionDeleteData,
 			source.ActionImportData,
 			source.ActionGenerateMockData,
 		},
@@ -522,16 +671,40 @@ func tabularReadOnlyObjectType(kind source.ObjectKind, singular string, plural s
 	}
 }
 
-func documentObjectType(kind source.ObjectKind, singular string, plural string) source.ObjectType {
+func questDBObjectType(kind source.ObjectKind, singular string, plural string) source.ObjectType {
 	return source.ObjectType{
 		Kind:      kind,
-		DataShape: source.DataShapeDocument,
+		DataShape: source.DataShapeTabular,
 		Actions: []source.Action{
 			source.ActionInspect,
 			source.ActionViewRows,
 			source.ActionInsertData,
-			source.ActionUpdateData,
 		},
+		Views:         []source.View{source.ViewGrid, source.ViewMetadata},
+		SingularLabel: singular,
+		PluralLabel:   plural,
+	}
+}
+
+func documentObjectType(kind source.ObjectKind, singular string, plural string, extraActions ...source.Action) source.ObjectType {
+	actions := []source.Action{
+		source.ActionInspect,
+		source.ActionViewRows,
+		source.ActionInsertData,
+		source.ActionUpdateData,
+		source.ActionDeleteData,
+	}
+
+	for _, action := range extraActions {
+		if !slices.Contains(actions, action) {
+			actions = append(actions, action)
+		}
+	}
+
+	return source.ObjectType{
+		Kind:          kind,
+		DataShape:     source.DataShapeDocument,
+		Actions:       actions,
 		Views:         []source.View{source.ViewGrid, source.ViewJSON, source.ViewMetadata},
 		SingularLabel: singular,
 		PluralLabel:   plural,
@@ -547,6 +720,7 @@ func keyValueObjectType(kind source.ObjectKind, singular string, plural string) 
 			source.ActionViewRows,
 			source.ActionInsertData,
 			source.ActionUpdateData,
+			source.ActionDeleteData,
 		},
 		Views:         []source.View{source.ViewGrid, source.ViewMetadata},
 		SingularLabel: singular,
@@ -554,13 +728,15 @@ func keyValueObjectType(kind source.ObjectKind, singular string, plural string) 
 	}
 }
 
-func keyValueReadOnlyObjectType(kind source.ObjectKind, singular string, plural string) source.ObjectType {
+func keyValueExistingMutableObjectType(kind source.ObjectKind, singular string, plural string) source.ObjectType {
 	return source.ObjectType{
 		Kind:      kind,
 		DataShape: source.DataShapeContent,
 		Actions: []source.Action{
 			source.ActionInspect,
 			source.ActionViewRows,
+			source.ActionUpdateData,
+			source.ActionDeleteData,
 		},
 		Views:         []source.View{source.ViewGrid, source.ViewMetadata},
 		SingularLabel: singular,
@@ -571,7 +747,12 @@ func keyValueReadOnlyObjectType(kind source.ObjectKind, singular string, plural 
 func cloneSourceSSLModes(modes []source.SSLModeInfo) []source.SSLModeInfo {
 	cloned := make([]source.SSLModeInfo, 0, len(modes))
 	for _, mode := range modes {
-		cloned = append(cloned, mode)
+		cloned = append(cloned, source.SSLModeInfo{
+			Value:       mode.Value,
+			Label:       mode.Label,
+			Description: mode.Description,
+			Aliases:     slices.Clone(mode.Aliases),
+		})
 	}
 	return cloned
 }
@@ -594,13 +775,62 @@ func cloneObjectTypes(objectTypes []source.ObjectType) []source.ObjectType {
 func cloneFamilySpec(spec FamilySpec) FamilySpec {
 	return FamilySpec{
 		Category:       spec.Category,
+		Traits:         spec.Traits,
 		Model:          spec.Model,
+		Surfaces:       slices.Clone(spec.Surfaces),
 		RootActions:    slices.Clone(spec.RootActions),
 		BrowsePath:     slices.Clone(spec.BrowsePath),
 		DefaultObject:  spec.DefaultObject,
 		GraphScopeKind: spec.GraphScopeKind,
-		GraphSupported: spec.GraphSupported,
 		ObjectTypes:    cloneObjectTypes(spec.ObjectTypes),
+	}
+}
+
+func networkTraits(hostInputMode source.HostInputMode, urlParser source.HostInputURLParser) source.TypeTraits {
+	return networkTraitsWithProfileLabel(hostInputMode, urlParser, source.ProfileLabelStrategyDefault)
+}
+
+func networkTraitsWithProfileLabel(
+	hostInputMode source.HostInputMode,
+	urlParser source.HostInputURLParser,
+	profileLabelStrategy source.ProfileLabelStrategy,
+) source.TypeTraits {
+	return source.TypeTraits{
+		Connection: source.ConnectionTraits{
+			Transport:               source.ConnectionTransportNetwork,
+			HostInputMode:           hostInputMode,
+			HostInputURLParser:      urlParser,
+			SupportsCustomCAContent: true,
+		},
+		Presentation: source.PresentationTraits{
+			ProfileLabelStrategy: profileLabelStrategy,
+			SchemaFidelity:       source.SchemaFidelityExact,
+		},
+	}
+}
+
+func sampledNetworkTraits(
+	hostInputMode source.HostInputMode,
+	urlParser source.HostInputURLParser,
+	profileLabelStrategy source.ProfileLabelStrategy,
+) source.TypeTraits {
+	traits := networkTraitsWithProfileLabel(hostInputMode, urlParser, profileLabelStrategy)
+	traits.Presentation.SchemaFidelity = source.SchemaFidelitySampled
+	return traits
+}
+
+func fileTraits(profileLabelStrategy source.ProfileLabelStrategy) source.TypeTraits {
+	return source.TypeTraits{
+		Connection: source.ConnectionTraits{
+			Transport:               source.ConnectionTransportFile,
+			HostInputMode:           source.HostInputModeNone,
+			HostInputURLParser:      source.HostInputURLParserNone,
+			SupportsCustomCAContent: true,
+		},
+		Presentation: source.PresentationTraits{
+			ProfileLabelStrategy: profileLabelStrategy,
+			SchemaFidelity:       source.SchemaFidelityExact,
+		},
 	}
 }
 

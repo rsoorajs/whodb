@@ -1,19 +1,3 @@
-/*
- * Copyright 2026 Clidey, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package graph
 
 // This file will be automatically regenerated based on the schema, any resolver
@@ -856,14 +840,19 @@ func (r *mutationResolver) RefreshAzureProvider(ctx context.Context, id string) 
 }
 
 // GenerateAzureADToken is the resolver for the GenerateAzureADToken field.
-func (r *mutationResolver) GenerateAzureADToken(ctx context.Context, providerID string, databaseType string) (string, error) {
+func (r *mutationResolver) GenerateAzureADToken(ctx context.Context, providerID string, sourceType string) (string, error) {
 	if !env.IsAzureProviderEnabled {
 		return "", azure.ErrAzureProviderDisabled
 	}
 
-	scope, err := azure.ScopeForDatabaseType(databaseType)
-	if err != nil {
-		return "", err
+	spec, ok := sourcecatalog.Find(sourceType)
+	if !ok {
+		return "", fmt.Errorf("unsupported source type: %s", sourceType)
+	}
+
+	scope, ok := sourcecatalog.ResolveAzureADScope(spec.ID, spec.Connector)
+	if !ok {
+		return "", fmt.Errorf("Azure AD authentication is not supported for source type: %s", sourceType)
 	}
 
 	registry := providers.GetDefaultRegistry()
@@ -1248,10 +1237,7 @@ func (r *queryResolver) AIProviders(ctx context.Context) ([]*model.AIProvider, e
 
 // AIModel is the resolver for the AIModel field.
 func (r *queryResolver) AIModel(ctx context.Context, providerID *string, modelType string, token *string) ([]string, error) {
-	config := &engine.PluginConfig{}
-
-	// Initialize ExternalModel to prevent nil pointer dereference
-	config.ExternalModel = &engine.ExternalModel{
+	externalModel := &engine.ExternalModel{
 		Type: modelType,
 	}
 
@@ -1261,7 +1247,7 @@ func (r *queryResolver) AIModel(ctx context.Context, providerID *string, modelTy
 		found := false
 		for _, provider := range chatProviders {
 			if provider.ProviderId == *providerID {
-				config.ExternalModel.Token = provider.APIKey
+				externalModel.Token = provider.APIKey
 				found = true
 
 				// For generic providers, return models from config instead of querying registry
@@ -1278,12 +1264,12 @@ func (r *queryResolver) AIModel(ctx context.Context, providerID *string, modelTy
 		// If provider not found in environment but token is provided, use the token
 		// This handles user-added providers that aren't in environment
 		if !found && token != nil {
-			config.ExternalModel.Token = *token
+			externalModel.Token = *token
 		}
 	} else if token != nil {
-		config.ExternalModel.Token = *token
+		externalModel.Token = *token
 	}
-	models, err := llm.Instance(config).GetSupportedModels()
+	models, err := llm.ClientForModel(externalModel).GetSupportedModels()
 	if err != nil {
 		log.WithFields(log.Fields{
 			"operation":   "GetSupportedModels",

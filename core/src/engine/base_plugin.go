@@ -132,10 +132,6 @@ func (b *BasePlugin) WithTransaction(_ *PluginConfig, operation func(tx any) err
 	return operation(nil)
 }
 
-func (b *BasePlugin) GetDatabaseMetadata() *DatabaseMetadata {
-	return nil
-}
-
 func (b *BasePlugin) GetSSLStatus(_ *PluginConfig) (*SSLStatus, error) {
 	return nil, nil
 }

@@ -27,32 +27,21 @@ import (
 	"sync"
 
 	"github.com/clidey/whodb/core/src"
-	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/source"
-	"github.com/clidey/whodb/core/src/source/adapters"
 	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 type AuthKey string
 
 const (
-	AuthKey_Token       AuthKey = "Token"
-	AuthKey_Credentials AuthKey = "Credentials"
-	AuthKey_Source      AuthKey = "SourceCredentials"
+	AuthKey_Token  AuthKey = "Token"
+	AuthKey_Source AuthKey = "SourceCredentials"
 )
 
 const maxRequestBodySize = 1024 * 1024       // Limit request body size to 1MB
 const maxUploadBodySize = 250 * 1024 * 1024 // Limit multipart upload body size to 250MB
-
-func GetCredentials(ctx context.Context) *engine.Credentials {
-	credentials := ctx.Value(AuthKey_Credentials)
-	if credentials == nil {
-		return nil
-	}
-	return credentials.(*engine.Credentials)
-}
 
 // GetSourceCredentials returns the source-first credentials from the current request context.
 func GetSourceCredentials(ctx context.Context) *source.Credentials {
@@ -216,16 +205,13 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			onceInline.Do(func() { log.Info("Auth: credentials supplied inline") })
 		}
 
-		spec, ok := sourcecatalog.Find(credentials.SourceType)
-		if !ok {
+		if _, ok := sourcecatalog.Find(credentials.SourceType); !ok {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		engineCredentials := adapters.EngineCredentials(spec, credentials)
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, AuthKey_Source, credentials)
-		ctx = context.WithValue(ctx, AuthKey_Credentials, engineCredentials)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -278,7 +264,12 @@ func isAllowed(r *http.Request, body []byte) bool {
 
 	if query.OperationName == "SourceFieldOptions" {
 		sourceType, _ := query.Variables["sourceType"].(string)
-		return sourceType == string(engine.DatabaseType_Sqlite3) || sourceType == string(engine.DatabaseType_DuckDB)
+		spec, ok := sourcecatalog.Find(sourceType)
+		if !ok {
+			return false
+		}
+		field, ok := spec.ConnectionFieldByKey("Database")
+		return ok && field.SupportsOptions
 	}
 
 	switch query.OperationName {

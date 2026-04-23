@@ -24,18 +24,26 @@ import (
 	baml "github.com/boundaryml/baml/engine/language_client_go/pkg"
 	"github.com/clidey/whodb/core/baml_client"
 	"github.com/clidey/whodb/core/baml_client/types"
-	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/source"
 )
 
-// RawExecutePlugin defines the interface for executing raw queries.
-type RawExecutePlugin interface {
-	RawExecute(config *engine.PluginConfig, query string, params ...any) (*engine.GetRowsResult, error)
+// ChatQueryExecutor executes read queries produced by the chat planner.
+type ChatQueryExecutor interface {
+	RunQuery(ctx context.Context, query string, params ...any) (*source.RowsResult, error)
+}
+
+// ChatQueryExecutorFunc adapts a function to ChatQueryExecutor.
+type ChatQueryExecutorFunc func(ctx context.Context, query string, params ...any) (*source.RowsResult, error)
+
+// RunQuery executes the wrapped function.
+func (fn ChatQueryExecutorFunc) RunQuery(ctx context.Context, query string, params ...any) (*source.RowsResult, error) {
+	return fn(ctx, query, params...)
 }
 
 // ExecuteChatQuery is the single non-streaming chat execution path.
-// It calls the BAML prompt, executes read queries via plugin.RawExecute(),
+// It calls the BAML prompt, executes read queries via the supplied executor,
 // and gates mutations for user confirmation.
-// Used by both plugin Chat() implementations and the HTTP non-streaming fallback.
+// Used by plugin chat implementations that build SQL context locally.
 func ExecuteChatQuery(
 	ctx context.Context,
 	databaseType string,
@@ -43,9 +51,9 @@ func ExecuteChatQuery(
 	tableDetails string,
 	previousConversation string,
 	userQuery string,
-	config *engine.PluginConfig,
-	plugin RawExecutePlugin,
-) ([]*engine.ChatMessage, error) {
+	model *source.ExternalModel,
+	executor ChatQueryExecutor,
+) ([]*source.ChatMessage, error) {
 
 	dbContext := types.DatabaseContext{
 		Database_type:         databaseType,
@@ -54,24 +62,24 @@ func ExecuteChatQuery(
 		Previous_conversation: previousConversation,
 	}
 
-	callOpts := SetupAIClient(config.ExternalModel)
+	callOpts := SetupAIClient(model)
 	responses, err := baml_client.GenerateSQLQuery(ctx, dbContext, userQuery, callOpts...)
 	if err != nil {
 		return nil, err
 	}
 
-	var chatMessages []*engine.ChatMessage
+	var chatMessages []*source.ChatMessage
 	for _, bamlResp := range responses {
-		chatMessages = append(chatMessages, ProcessBAMLResponse(&bamlResp, config, plugin))
+		chatMessages = append(chatMessages, ProcessChatResponse(ctx, &bamlResp, executor))
 	}
 	return chatMessages, nil
 }
 
-// ProcessBAMLResponse converts a single BAML ChatResponse into an engine.ChatMessage.
+// ProcessChatResponse converts a single BAML ChatResponse into a source chat
+// message.
 // Read queries are executed immediately; mutations are gated for user confirmation.
-// Used by both the non-streaming path (ExecuteChatQuery) and the streaming final-chunk handler.
-func ProcessBAMLResponse(bamlResp *types.ChatResponse, config *engine.PluginConfig, plugin RawExecutePlugin) *engine.ChatMessage {
-	message := &engine.ChatMessage{
+func ProcessChatResponse(ctx context.Context, bamlResp *types.ChatResponse, executor ChatQueryExecutor) *source.ChatMessage {
+	message := &source.ChatMessage{
 		Type: ConvertBAMLTypeToWhoDB(bamlResp.Type),
 		Text: bamlResp.Text,
 	}
@@ -93,7 +101,7 @@ func ProcessBAMLResponse(bamlResp *types.ChatResponse, config *engine.PluginConf
 		return message
 	}
 
-	result, err := plugin.RawExecute(config, bamlResp.Text)
+	result, err := executor.RunQuery(ctx, bamlResp.Text)
 	if err != nil {
 		message.Type = "error"
 		message.Text = err.Error()
@@ -159,7 +167,7 @@ func RegisterBAMLConfigResolver(resolver BAMLConfigResolver) {
 }
 
 // SetupAIClient creates the BAML client options for the given external model.
-func SetupAIClient(externalModel *engine.ExternalModel) []baml_client.CallOptionFunc {
+func SetupAIClient(externalModel *source.ExternalModel) []baml_client.CallOptionFunc {
 	var callOpts []baml_client.CallOptionFunc
 	if externalModel == nil {
 		return callOpts
@@ -178,7 +186,7 @@ func SetupAIClient(externalModel *engine.ExternalModel) []baml_client.CallOption
 // CreateDynamicBAMLClient creates a BAML ClientRegistry with a dynamically configured client
 // based on the user's selected provider, model, API key, and endpoint.
 // We register as "DefaultClient" to override the BAML function's explicit client reference.
-func CreateDynamicBAMLClient(externalModel *engine.ExternalModel) *baml.ClientRegistry {
+func CreateDynamicBAMLClient(externalModel *source.ExternalModel) *baml.ClientRegistry {
 	if externalModel == nil {
 		return nil
 	}
@@ -196,7 +204,7 @@ func CreateDynamicBAMLClient(externalModel *engine.ExternalModel) *baml.ClientRe
 
 // getBAMLProviderAndOptions maps WhoDB ExternalModel to BAML provider string and options.
 // Delegates to the provider registry when available, falling back to openai-generic for unknown types.
-func getBAMLProviderAndOptions(m *engine.ExternalModel) (string, map[string]any) {
+func getBAMLProviderAndOptions(m *source.ExternalModel) (string, map[string]any) {
 	if bamlConfigResolver != nil {
 		provider, opts, err := bamlConfigResolver(m.Type, m.Token, m.Endpoint, m.Model)
 		if err == nil {

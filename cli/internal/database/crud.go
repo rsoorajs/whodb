@@ -18,12 +18,14 @@ package database
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/source"
 )
 
 // AddRowFromJSON inserts a new row/document into a writable storage unit using
@@ -47,9 +49,14 @@ func (m *Manager) AddRowFromJSON(schema, storageUnit string, payload string) err
 		return fmt.Errorf("row payload must contain at least one field")
 	}
 
-	plugin, config, err := m.currentPlugin()
+	spec, session, err := m.currentSourceSession(context.Background())
 	if err != nil {
 		return err
+	}
+
+	manager, ok := session.(source.ObjectManager)
+	if !ok {
+		return fmt.Errorf("inserting data is not supported for %s", spec.Label)
 	}
 
 	columns, err := m.GetColumns(schema, storageUnit)
@@ -62,7 +69,12 @@ func (m *Manager) AddRowFromJSON(schema, storageUnit string, payload string) err
 		return err
 	}
 
-	_, err = plugin.AddRow(config, schema, storageUnit, records)
+	ref, err := m.storageUnitRef(spec, schema, storageUnit)
+	if err != nil {
+		return err
+	}
+
+	_, err = manager.AddRow(context.Background(), ref, records)
 	if err != nil {
 		return err
 	}
@@ -88,12 +100,22 @@ func (m *Manager) DeleteRow(schema, storageUnit string, values map[string]string
 		return fmt.Errorf("delete requires at least one row value")
 	}
 
-	plugin, config, err := m.currentPlugin()
+	spec, session, err := m.currentSourceSession(context.Background())
 	if err != nil {
 		return err
 	}
 
-	_, err = plugin.DeleteRow(config, schema, storageUnit, values)
+	manager, ok := session.(source.ObjectManager)
+	if !ok {
+		return fmt.Errorf("deleting data is not supported for %s", spec.Label)
+	}
+
+	ref, err := m.storageUnitRef(spec, schema, storageUnit)
+	if err != nil {
+		return err
+	}
+
+	_, err = manager.DeleteRow(context.Background(), ref, values)
 	if err != nil {
 		return err
 	}
@@ -119,9 +141,14 @@ func (m *Manager) UpdateRow(schema, storageUnit string, originalValues, updatedV
 		return fmt.Errorf("update requires original row values")
 	}
 
-	plugin, config, err := m.currentPlugin()
+	spec, session, err := m.currentSourceSession(context.Background())
 	if err != nil {
 		return err
+	}
+
+	manager, ok := session.(source.ObjectManager)
+	if !ok {
+		return fmt.Errorf("updating data is not supported for %s", spec.Label)
 	}
 
 	columns, err := m.GetColumns(schema, storageUnit)
@@ -173,7 +200,12 @@ func (m *Manager) UpdateRow(schema, storageUnit string, originalValues, updatedV
 		}
 	}
 
-	_, err = plugin.UpdateStorageUnit(config, schema, storageUnit, values, updatedColumns)
+	ref, err := m.storageUnitRef(spec, schema, storageUnit)
+	if err != nil {
+		return err
+	}
+
+	_, err = manager.UpdateObject(context.Background(), ref, values, updatedColumns)
 	if err != nil {
 		return err
 	}
