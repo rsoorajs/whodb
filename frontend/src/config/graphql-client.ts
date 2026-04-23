@@ -15,9 +15,8 @@
  */
 
 import {ApolloClient, InMemoryCache} from '@apollo/client';
-import {ServerError} from '@apollo/client/errors';
-import {SetContextLink} from '@apollo/client/link/context';
-import {ErrorLink} from '@apollo/client/link/error';
+import {setContext} from '@apollo/client/link/context';
+import {onError} from '@apollo/client/link/error';
 import {HttpLink} from '@apollo/client/link/http';
 import {toast} from '@clidey/ux';
 import {print} from 'graphql';
@@ -44,6 +43,17 @@ const uri = withBasePath("/api/query");
 const loginWithSourceProfileQuery = print(LoginWithSourceProfileDocument);
 const loginMutationQuery = print(LoginSourceDocument);
 
+/**
+ * Optional hook for extensions (e.g. EE) to intercept 401 errors before the
+ * default CE auto-login path runs. Return `true` if the extension handled it.
+ */
+let onUnauthorizedHandler: (() => Promise<boolean>) | null = null;
+
+/** Registers an extension handler for 401 responses. */
+export const registerOnUnauthorized = (fn: () => Promise<boolean>): void => {
+    onUnauthorizedHandler = fn;
+};
+
 type GraphQLClientTranslationKey = 'sessionExpired' | 'autoLoginSuccess' | 'autoLoginFailed';
 type TranslatorFn = (key: GraphQLClientTranslationKey) => string;
 
@@ -68,7 +78,7 @@ const httpLink = new HttpLink({
 });
 
 // Add Authorization header in desktop/webview environments where cookies are not supported.
-const authLink = new SetContextLink((prevContext) => {
+const authLink = setContext((_, prevContext) => {
     return {
         headers: addAuthHeader(prevContext.headers),
     };
@@ -87,24 +97,35 @@ const authLink = new SetContextLink((prevContext) => {
  *
  * This ensures seamless user experience when sessions expire.
  */
-const errorLink = new ErrorLink(({error}) => {
-    if (ServerError.is(error) && error.statusCode === 401) {
-        // @ts-ignore
-        const authState = reduxStore.getState().auth;
-        const currentProfile = authState.current;
-
-        if (currentProfile) {
-            void handleAutoLogin(currentProfile);
-        } else {
-            // Don't redirect if already on login page to avoid infinite loop
-            if (!window.location.pathname.startsWith(withBasePath('/login'))) {
-                redirectToLoginWithMessage('sessionExpired');
-            }
+const errorLink = onError(({networkError}) => {
+    if (networkError && 'statusCode' in networkError && networkError.statusCode === 401) {
+        if (onUnauthorizedHandler) {
+            void onUnauthorizedHandler().then(handled => {
+                if (!handled) {
+                    fallbackAutoLogin();
+                }
+            });
+            return;
         }
-    } else {
-        console.error('Network error:', error);
+        fallbackAutoLogin();
+    } else if (networkError) {
+        console.error('Network error:', networkError);
     }
 });
+
+function fallbackAutoLogin() {
+    // @ts-ignore
+    const authState = reduxStore.getState().auth;
+    const currentProfile = authState.current;
+
+    if (currentProfile) {
+        void handleAutoLogin(currentProfile);
+    } else {
+        if (!window.location.pathname.startsWith(withBasePath('/login'))) {
+            redirectToLoginWithMessage('sessionExpired');
+        }
+    }
+}
 
 /**
  * Handles automatic login using the current profile.
