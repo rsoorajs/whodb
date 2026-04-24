@@ -39,6 +39,36 @@ plugin layer:
 
 If the change is purely plugin-internal, you may only need steps 1, 4, and 5.
 
+## Alias Databases vs Wrapper Plugins
+
+Database catalog aliases are only for cases where the runtime behavior is
+genuinely identical and only the product metadata changes (label, default port,
+TLS defaults, managed-service flags, source traits, etc.).
+
+Connection defaults such as ports belong in the shared database/source catalog
+metadata (`dbcatalog` `Extra["Port"]`, which flows into
+`SourceType.ConnectionFields`), not in per-plugin registries.
+
+If an alias needs even one runtime override, promote it to a thin first-class
+plugin wrapper instead of adding alias-specific branches in shared code. Common
+promotion triggers:
+
+- different introspection SQL or system catalog support
+- different namespace or schema handling
+- different auth/DSN behavior
+- different mutation semantics
+- different graph or metadata queries
+
+Examples in the repo:
+- `CockroachDB` is a PostgreSQL-derived wrapper plugin because it needs catalog
+  query overrides
+- `MariaDB` and `TiDB` are MySQL-derived wrapper plugin types
+- `QuestDB` is treated as a PostgreSQL-derived wrapper because it is schema-less
+  in our product model and cannot use the default PostgreSQL table-info query
+
+Do not solve alias incompatibilities with `if dbType == ...` checks in shared
+code.
+
 ## Request Context and Cancellation
 
 Every request-scoped plugin operation must use the context carried by `*engine.PluginConfig`. Do not use `context.Background()` for query execution, metadata fetches, SDK calls, or health checks that are part of a user request.
@@ -67,8 +97,12 @@ func queryWithContext(session *gocql.Session, config *engine.PluginConfig, stmt 
 SQL-based plugins follow this structure (see `core/src/plugins/postgres/` as reference):
 - `db.go` - Connection creation (implements DB method)
 - `postgres.go` (or `mysql.go`, etc.) - Plugin struct, NewXxxPlugin(), database-specific queries
-- `types.go` - Type definitions, alias map, and session metadata hook implementation
+- `types.go` - Type definitions and alias map wrappers used by the plugin runtime
 - `constraints.go` - Column constraint detection (optional override)
+
+Source-owned editor/query metadata now lives in side-effect-free specs under
+`core/src/sourcecatalog/specs/`. Plugins may read those specs, but they should
+not register session metadata themselves.
 
 GormPlugin base class (`core/src/plugins/gorm/`) provides:
 - `plugin.go` - 40+ default method implementations
@@ -92,14 +126,15 @@ GetSchemaTableQuery() string          // Query for columns in a table
 FormTableName(schema, table) string   // Default: "schema.table" (override for different behavior, e.g. SQLite ignores schema)
 GetPlaceholder(index int) string      // $1 for Postgres, ? for MySQL
 DB(config) (*gorm.DB, error)          // Connection with driver-specific config
-GetDatabaseMetadata() *DatabaseMetadata // Session metadata (operators, types, aliases)
 GetLastInsertID(db *gorm.DB) (int64, error) // Default: returns 0 (override for MySQL, Postgres, SQLite)
 ```
 
 ## Session Metadata (types.go)
 
-Each SQL plugin must provide session metadata for editor/query-builder UI via
-`GetDatabaseMetadata()`. This is the source of truth for:
+Each SQL plugin family must provide session metadata for editor/query-builder UI
+through the source-owned specs in `core/src/sourcecatalog/specs/`. The shared
+`core/src/sourcecatalog/metadata.go` file registers those specs centrally. This
+metadata is the source of truth for:
 - Valid operators (=, >=, LIKE, etc.)
 - Type definitions (VARCHAR, INTEGER, etc.) with UI hints (hasLength, hasPrecision)
 - Alias maps (INT → INTEGER, BOOL → BOOLEAN)
@@ -108,41 +143,39 @@ This metadata is exposed through the source-first GraphQL
 `SourceSessionMetadata` query after login. **No fallbacks** - if the backend
 doesn't provide it, the UI type selectors and query helpers will be broken.
 
-Feature gating is no longer owned by `GetDatabaseMetadata()`. Public behavior
+Do not call `sourcecatalog.RegisterSessionMetadata(...)` from plugin `init()`
+functions anymore. Keep plugin `init()` limited to runtime plugin registration
+(`engine.RegisterPlugin(...)`). If a plugin needs to reuse the same alias map or
+type definitions for runtime normalization, import them from
+`core/src/sourcecatalog/specs/`.
+
+Feature gating is not owned by session metadata. Public behavior
 such as chat/query/graph surfaces and source object actions/views comes from the
 source catalog contract in `core/src/sourcecatalog/catalog.go`.
+
+Frontend and CLI connection/presentation behavior also comes from the source
+model now. Use `SourceType.Traits` for things like file-vs-network transport,
+host input parsing, profile labeling, schema fidelity, and query UI options.
+Do not reintroduce `DatabaseType` branches for those decisions.
 
 ### types.go Structure
 
 ```go
 package postgres
 
-import "github.com/clidey/whodb/core/src/engine"
+import (
+    "github.com/clidey/whodb/core/src/common"
+    sourcecatalogspecs "github.com/clidey/whodb/core/src/sourcecatalog/specs"
+)
 
 // AliasMap maps type aliases to canonical names (UPPERCASE keys and values)
-var AliasMap = map[string]string{
-    "INT":  "INTEGER",
-    "BOOL": "BOOLEAN",
-}
+var AliasMap = sourcecatalogspecs.PostgresAliasMap
 
 // TypeDefinitions - canonical types shown in UI type selector
-var TypeDefinitions = []engine.TypeDefinition{
-    {ID: "INTEGER", Label: "integer", Category: engine.TypeCategoryNumeric},
-    {ID: "VARCHAR", Label: "varchar", HasLength: true, DefaultLength: engine.IntPtr(255), Category: engine.TypeCategoryText},
-    // ... more types
-}
+var TypeDefinitions = sourcecatalogspecs.PostgresTypeDefinitions
 
-func (p *PostgresPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
-    operators := make([]string, 0, len(supportedOperators))
-    for op := range supportedOperators {
-        operators = append(operators, op)
-    }
-    return &engine.DatabaseMetadata{
-        DatabaseType:    engine.DatabaseType_Postgres, // internal plugin metadata
-        TypeDefinitions: TypeDefinitions,
-        Operators:       operators,
-        AliasMap:        AliasMap,
-    }
+func NormalizeType(typeName string) string {
+    return common.NormalizeTypeWithMap(typeName, AliasMap)
 }
 ```
 

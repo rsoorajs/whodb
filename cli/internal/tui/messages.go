@@ -119,6 +119,12 @@ type dockerConnectionsLoadedMsg struct {
 	items []connectionItem
 }
 
+// cloudConnectionsLoadedMsg is sent when background cloud discovery completes
+// for the connection list.
+type cloudConnectionsLoadedMsg struct {
+	items []connectionItem
+}
+
 // escTimeoutTickMsg is sent to tick the ESC quit confirmation timer
 type escTimeoutTickMsg struct{}
 

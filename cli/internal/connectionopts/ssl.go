@@ -22,8 +22,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/clidey/whodb/cli/internal/sourcetypes"
 	coressl "github.com/clidey/whodb/core/src/common/ssl"
-	"github.com/clidey/whodb/core/src/dbcatalog"
+	"github.com/clidey/whodb/core/src/source"
 )
 
 // SSLSettings captures the CLI-friendly SSL inputs before they are converted to
@@ -36,11 +37,10 @@ type SSLSettings struct {
 	ServerName     string
 }
 
-// HasSSLSupport reports whether the selected database type exposes SSL modes in
-// the shared database catalog.
+// HasSSLSupport reports whether the selected source type exposes SSL modes in
+// the shared source catalog.
 func HasSSLSupport(dbType string) bool {
-	entry, ok := dbcatalog.Find(dbType)
-	return ok && len(entry.SSLModes) > 0
+	return len(sourcetypes.SSLModes(dbType)) > 0
 }
 
 // SSLSettingsFromAdvanced extracts the stored SSL mode and server name from an
@@ -56,12 +56,12 @@ func SSLSettingsFromAdvanced(advanced map[string]string) SSLSettings {
 // connection keys, reading certificate files client-side and storing PEM
 // contents directly.
 func ApplySSLSettings(dbType string, advanced map[string]string, settings SSLSettings) (map[string]string, error) {
-	entry, ok := dbcatalog.Find(dbType)
+	spec, ok := sourcetypes.Find(dbType)
 	if !ok {
 		return nil, fmt.Errorf("unsupported database type %q", dbType)
 	}
 
-	canonicalMode, modeSet, err := resolveSSLMode(entry, settings.Mode)
+	canonicalMode, modeSet, err := resolveSSLMode(spec.SSLModes, settings.Mode)
 	if err != nil {
 		return nil, err
 	}
@@ -71,8 +71,8 @@ func ApplySSLSettings(dbType string, advanced map[string]string, settings SSLSet
 		return cloneAdvanced(advanced), nil
 	}
 
-	if len(entry.SSLModes) == 0 {
-		return nil, fmt.Errorf("%s does not support SSL options", entry.ID)
+	if len(spec.SSLModes) == 0 {
+		return nil, fmt.Errorf("%s does not support SSL options", spec.ID)
 	}
 	if !modeSet {
 		return nil, fmt.Errorf("--ssl-mode is required when SSL options are set")
@@ -117,23 +117,29 @@ func ApplySSLSettings(dbType string, advanced map[string]string, settings SSLSet
 	return normalizeAdvanced(next), nil
 }
 
-func resolveSSLMode(entry dbcatalog.ConnectableDatabase, raw string) (string, bool, error) {
+func resolveSSLMode(modes []source.SSLModeInfo, raw string) (string, bool, error) {
 	trimmed := strings.TrimSpace(raw)
 	if trimmed == "" {
 		return "", false, nil
 	}
 
-	canonical := string(coressl.NormalizeSSLMode(entry.PluginType, trimmed))
-	if !coressl.ValidateSSLMode(entry.PluginType, coressl.SSLMode(canonical)) {
-		return "", false, fmt.Errorf("invalid SSL mode %q for %s (valid: %s)", raw, entry.ID, strings.Join(sslModeValues(entry), ", "))
+	for _, mode := range modes {
+		if strings.EqualFold(trimmed, mode.Value) {
+			return mode.Value, true, nil
+		}
+		for _, alias := range mode.Aliases {
+			if strings.EqualFold(trimmed, alias) {
+				return mode.Value, true, nil
+			}
+		}
 	}
 
-	return canonical, true, nil
+	return "", false, fmt.Errorf("invalid SSL mode %q (valid: %s)", raw, strings.Join(sslModeValues(modes), ", "))
 }
 
-func sslModeValues(entry dbcatalog.ConnectableDatabase) []string {
-	values := make([]string, 0, len(entry.SSLModes))
-	for _, mode := range entry.SSLModes {
+func sslModeValues(modes []source.SSLModeInfo) []string {
+	values := make([]string, 0, len(modes))
+	for _, mode := range modes {
 		values = append(values, string(mode.Value))
 	}
 	slices.Sort(values)

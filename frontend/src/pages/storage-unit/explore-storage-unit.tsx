@@ -94,7 +94,7 @@ import {whereConditionToSql} from "../../utils/where-condition-to-sql";
 import {isDestructiveQuery} from "../../utils/query-utils";
 import {useContainerWidth} from "../../hooks/use-container-width";
 import {getComponent} from "../../config/component-registry";
-import { DatabaseType, findSourceObjectType } from "../../config/source-types";
+import { findSourceObjectType } from "../../config/source-types";
 import {buildSourceObjectRef, buildSourceParentObjectRef} from "../../utils/source-refs";
 
 type SourceBrowserObject = GetStorageUnitsQuery['StorageUnit'][number];
@@ -104,18 +104,6 @@ type ExploreSourceState = {
     parentRef?: SourceObjectRefInput;
     trail?: SourceBrowserObject[];
 };
-
-// Extension query utilities — set via registerQueryUtils()
-let generateInitialQuery: ((databaseType: string | undefined, schema: string | undefined, tableName: string | undefined) => string) | undefined;
-
-/** Register extension query utilities. */
-export function registerQueryUtils(fns: {
-    generateInitialQuery?: (databaseType: string | undefined, schema: string | undefined, tableName: string | undefined) => string;
-}) {
-    if (fns.generateInitialQuery) {
-        generateInitialQuery = fns.generateInitialQuery;
-    }
-}
 
 type EESearchBarProps = {
     columns: string[];
@@ -163,8 +151,12 @@ export const ExploreStorageUnit: FC = () => {
     }
 
     const currentObjectType = useMemo(() => findSourceObjectType(item, unit?.Kind), [item, unit?.Kind]);
+    const currentObjectActions = unit?.Actions ?? currentObjectType?.Actions ?? [];
     const isTabularObject = currentObjectType?.DataShape === DataShape.Tabular || currentObjectType?.DataShape === DataShape.Document;
     const isContentObject = currentObjectType?.DataShape === DataShape.Content || unit?.Actions?.includes(SourceAction.ViewContent) === true;
+    const allowsInsertData = currentObjectActions.includes(SourceAction.InsertData);
+    const allowsUpdateData = currentObjectActions.includes(SourceAction.UpdateData);
+    const allowsDeleteData = currentObjectActions.includes(SourceAction.DeleteData);
     const currentParentRef = useMemo(() => {
         if (locationState?.parentRef) {
             return locationState.parentRef;
@@ -292,42 +284,26 @@ export const ExploreStorageUnit: FC = () => {
     }, [sourceContent?.MIMEType, sourceContent?.Text]);
 
     const initialScratchpadQuery = useMemo(() => {
-        if (generateInitialQuery && current?.Type) {
-            return generateInitialQuery(current?.Type, schema, unitName);
-        }
         const qualified = schema ? `${schema}.${unitName}` : unitName;
         return `SELECT * FROM ${qualified} LIMIT 5`;
-    }, [schema, unitName, current?.Type, generateInitialQuery]);
+    }, [schema, unitName]);
 
     const scratchpadQueryWithConditions = useMemo(() => {
-        if (generateInitialQuery && current?.Type) {
-            const baseQuery = generateInitialQuery(current?.Type, schema, unitName);
-            const whereClause = whereConditionToSql(whereCondition);
-
-            if (!whereClause) {
-                return baseQuery;
-            }
-
-            // Insert WHERE clause before LIMIT if present
-            const limitMatch = baseQuery.match(/\s+LIMIT\s+\d+/i);
-            if (limitMatch) {
-                const beforeLimit = baseQuery.substring(0, limitMatch.index);
-                const limitPart = baseQuery.substring(limitMatch.index!);
-                return `${beforeLimit} WHERE ${whereClause}${limitPart}`;
-            }
-
-            return `${baseQuery} WHERE ${whereClause}`;
-        }
-
-        const qualified = schema ? `${schema}.${unitName}` : unitName;
         const whereClause = whereConditionToSql(whereCondition);
 
         if (!whereClause) {
-            return `SELECT * FROM ${qualified} LIMIT 5`;
+            return initialScratchpadQuery;
         }
 
-        return `SELECT * FROM ${qualified} WHERE ${whereClause} LIMIT 5`;
-    }, [schema, unitName, current?.Type, generateInitialQuery, whereCondition]);
+        const limitMatch = initialScratchpadQuery.match(/\s+LIMIT\s+\d+/i);
+        if (limitMatch) {
+            const beforeLimit = initialScratchpadQuery.substring(0, limitMatch.index);
+            const limitPart = initialScratchpadQuery.substring(limitMatch.index!);
+            return `${beforeLimit} WHERE ${whereClause}${limitPart}`;
+        }
+
+        return `${initialScratchpadQuery} WHERE ${whereClause}`;
+    }, [initialScratchpadQuery, whereCondition]);
 
     const [code, setCode] = useState(initialScratchpadQuery);
 
@@ -1006,7 +982,7 @@ export const ExploreStorageUnit: FC = () => {
                                 )}
                             </div>
                         </div>
-                        {current?.Type !== DatabaseType.Redis && (
+                        {isTabularObject && (
                             whereConditionMode === 'sheet' ? (
                                 <ExploreStorageUnitWhereConditionSheet 
                                     defaultWhere={whereCondition} 
@@ -1140,13 +1116,15 @@ export const ExploreStorageUnit: FC = () => {
                         isValidForeignKey={isValidForeignKey}
                         onEntitySearch={handleEntitySearch}
                         databaseType={current?.Type}
+                        allowRowUpdate={allowsUpdateData}
+                        allowRowDelete={allowsDeleteData}
                         // Mock data control - disabled for views/materialized views
                         isMockDataGenerationAllowed={isMockDataGenerationAllowed}
                         // Import control - enabled for explore view
                         allowImport={true}
                         enableKeyboardShortcuts={true}
                     >
-                        {current?.Type !== DatabaseType.Memcached && <div className="flex gap-2">
+                        {allowsInsertData && <div className="flex gap-2">
                             <Button onClick={handleOpenAddSheet} disabled={adding} data-testid="add-row-button">
                                 <PlusCircleIcon className="w-4 h-4" /> {t('addRowButton')}
                             </Button>

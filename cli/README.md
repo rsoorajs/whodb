@@ -14,6 +14,8 @@ An interactive, production-ready command-line interface for WhoDB with a Claude 
 - **Column Selection** - Choose which columns are visible in results
 - **Export Capabilities** - Export to CSV and Excel formats
 - **Schema Diff** - Compare schema metadata across environments in the CLI and TUI
+- **Cloud Discovery** - Inspect configured cloud providers and discovered cloud-managed resources from the CLI
+- **Discovered Connect** - Prefill connect/save flows directly from discovered cloud resources
 - **ERD Graph Output** - Inspect backend graph metadata from the CLI or TUI
 - **Explain Plans** - Run database-native `EXPLAIN` from the CLI or TUI
 - **Backend Query Suggestions** - Shared onboarding suggestions in the CLI and TUI editor
@@ -155,6 +157,19 @@ whodb-cli connect \
   --database mydb \
   --ssl-mode verify-ca \
   --ssl-ca ./ca.pem
+```
+
+#### Discovered Cloud Resource
+
+```bash
+# Open the TUI form prefilled from discovery
+whodb-cli connect --discovered aws-prod-us-west-2/prod-db
+
+# One-shot connect when you already know the missing credentials
+whodb-cli connect \
+  --discovered aws-prod-us-west-2/prod-db \
+  --user postgres \
+  --database app
 ```
 
 #### MySQL
@@ -407,6 +422,32 @@ whodb-cli connections remove prod --format json
 Flags (applies to all subcommands):
 - `--format, -f`: Output format: `auto`, `table`, `plain`, `json`, `csv`
 - `--quiet, -q`: Suppress informational messages
+
+### cloud
+
+Inspect configured cloud providers and discovered resources.
+
+Cloud provider support follows the shared provider flags:
+- `WHODB_ENABLE_AWS_PROVIDER=true`
+- `WHODB_ENABLE_AZURE_PROVIDER=true`
+- `WHODB_ENABLE_GCP_PROVIDER=true`
+
+```bash
+# List configured providers
+whodb-cli cloud providers list
+
+# Test or refresh providers
+whodb-cli cloud providers test aws-prod-us-west-2
+whodb-cli cloud providers refresh --all
+
+# List discovered resources
+whodb-cli cloud connections list
+whodb-cli cloud connections list --provider aws-prod-us-west-2
+
+# Use a discovered resource in the normal connect/save flows
+whodb-cli connect --discovered aws-prod-us-west-2/prod-db
+whodb-cli connections add --from-discovered aws-prod-us-west-2/prod-db --user alice --database app
+```
 
 ### diff
 

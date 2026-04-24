@@ -37,9 +37,10 @@ import (
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/log"
-	"github.com/clidey/whodb/core/src/plugins"
 	"github.com/clidey/whodb/core/src/router"
 	"github.com/clidey/whodb/core/src/settings"
+	"github.com/clidey/whodb/core/src/source"
+	_ "github.com/clidey/whodb/core/src/source/adapters"
 )
 
 const defaultPort = "8080"
@@ -236,7 +237,9 @@ func Run(config AppConfig, staticFiles embed.FS) {
 
 	go func() {
 		defer wg.Done()
-		plugins.CloseAllConnections(ctx)
+		if err := source.Shutdown(ctx); err != nil {
+			log.Errorf("source shutdown error: %v", err)
+		}
 	}()
 
 	wg.Wait()

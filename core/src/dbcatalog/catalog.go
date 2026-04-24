@@ -22,9 +22,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/clidey/whodb/core/src/common/ssl"
 	"github.com/clidey/whodb/core/src/engine"
-	"github.com/clidey/whodb/core/src/plugins"
+	"github.com/clidey/whodb/core/src/source"
 )
 
 // FieldVisibility declares which standard connection form fields are shown for
@@ -49,21 +48,14 @@ type FieldRequirements struct {
 // ConnectableDatabase describes a database type that WhoDB can connect to from
 // the shared login and connection flows.
 type ConnectableDatabase struct {
-	ID                          engine.DatabaseType
-	Label                       string
-	PluginType                  engine.DatabaseType
-	Extra                       map[string]string
-	Fields                      FieldVisibility
-	RequiredFields              FieldRequirements
-	SupportsModifiers           bool
-	SupportsScratchpad          bool
-	SupportsSchema              bool
-	SupportsDatabaseSwitching   bool
-	UsesSchemaForGraph          bool
-	UsesDatabaseInsteadOfSchema bool
-	SupportsMockData            bool
-	IsAWSManaged                bool
-	SSLModes                    []ssl.SSLModeInfo
+	ID             engine.DatabaseType
+	Label          string
+	PluginType     engine.DatabaseType
+	Extra          map[string]string
+	Fields         FieldVisibility
+	RequiredFields FieldRequirements
+	IsAWSManaged   bool
+	SSLModes       []source.SSLModeInfo
 }
 
 var catalog = []ConnectableDatabase{
@@ -79,14 +71,8 @@ var catalog = []ConnectableDatabase{
 			Database:   true,
 			SearchPath: true,
 		},
-		RequiredFields:            FieldRequirements{Hostname: true, Username: true, Password: true, Database: true},
-		SupportsModifiers:         true,
-		SupportsScratchpad:        true,
-		SupportsSchema:            true,
-		SupportsDatabaseSwitching: true,
-		UsesSchemaForGraph:        true,
-		SupportsMockData:          true,
-		SSLModes:                  sslModesFor(engine.DatabaseType_Postgres),
+		RequiredFields: FieldRequirements{Hostname: true, Username: true, Password: true, Database: true},
+		SSLModes:       sslModesFor(engine.DatabaseType_Postgres),
 	},
 	{
 		ID:         engine.DatabaseType_MySQL,
@@ -104,15 +90,8 @@ var catalog = []ConnectableDatabase{
 			Password: true,
 			Database: true,
 		},
-		RequiredFields:              FieldRequirements{Hostname: true, Username: true, Password: true, Database: true},
-		SupportsModifiers:           true,
-		SupportsScratchpad:          true,
-		SupportsSchema:              false,
-		SupportsDatabaseSwitching:   true,
-		UsesSchemaForGraph:          false,
-		UsesDatabaseInsteadOfSchema: true,
-		SupportsMockData:            true,
-		SSLModes:                    sslModesFor(engine.DatabaseType_MySQL),
+		RequiredFields: FieldRequirements{Hostname: true, Username: true, Password: true, Database: true},
+		SSLModes:       sslModesFor(engine.DatabaseType_MySQL),
 	},
 	{
 		ID:         engine.DatabaseType_MariaDB,
@@ -130,15 +109,8 @@ var catalog = []ConnectableDatabase{
 			Password: true,
 			Database: true,
 		},
-		RequiredFields:              FieldRequirements{Hostname: true, Username: true, Password: true, Database: true},
-		SupportsModifiers:           true,
-		SupportsScratchpad:          true,
-		SupportsSchema:              false,
-		SupportsDatabaseSwitching:   true,
-		UsesSchemaForGraph:          false,
-		UsesDatabaseInsteadOfSchema: true,
-		SupportsMockData:            true,
-		SSLModes:                    sslModesFor(engine.DatabaseType_MariaDB),
+		RequiredFields: FieldRequirements{Hostname: true, Username: true, Password: true, Database: true},
+		SSLModes:       sslModesFor(engine.DatabaseType_MariaDB),
 	},
 	{
 		ID:         engine.DatabaseType_CockroachDB,
@@ -152,14 +124,8 @@ var catalog = []ConnectableDatabase{
 			Database:   true,
 			SearchPath: true,
 		},
-		RequiredFields:            FieldRequirements{Hostname: true, Username: true, Password: true, Database: true},
-		SupportsModifiers:         true,
-		SupportsScratchpad:        true,
-		SupportsSchema:            true,
-		SupportsDatabaseSwitching: true,
-		UsesSchemaForGraph:        true,
-		SupportsMockData:          true,
-		SSLModes:                  sslModesFor(engine.DatabaseType_CockroachDB),
+		RequiredFields: FieldRequirements{Hostname: true, Username: true, Password: true, Database: true},
+		SSLModes:       sslModesFor(engine.DatabaseType_CockroachDB),
 	},
 	{
 		ID:         engine.DatabaseType_Sqlite3,
@@ -169,13 +135,7 @@ var catalog = []ConnectableDatabase{
 		Fields: FieldVisibility{
 			Database: true,
 		},
-		RequiredFields:            FieldRequirements{Database: true},
-		SupportsModifiers:         true,
-		SupportsScratchpad:        true,
-		SupportsSchema:            false,
-		SupportsDatabaseSwitching: false,
-		UsesSchemaForGraph:        true,
-		SupportsMockData:          true,
+		RequiredFields: FieldRequirements{Database: true},
 	},
 	{
 		ID:         engine.DatabaseType_MongoDB,
@@ -192,15 +152,8 @@ var catalog = []ConnectableDatabase{
 			Password: true,
 			Database: true,
 		},
-		RequiredFields:              FieldRequirements{Hostname: true},
-		SupportsModifiers:           false,
-		SupportsScratchpad:          false,
-		SupportsSchema:              false,
-		SupportsDatabaseSwitching:   true,
-		UsesSchemaForGraph:          false,
-		UsesDatabaseInsteadOfSchema: true,
-		SupportsMockData:            true,
-		SSLModes:                    sslModesFor(engine.DatabaseType_MongoDB),
+		RequiredFields: FieldRequirements{Hostname: true},
+		SSLModes:       sslModesFor(engine.DatabaseType_MongoDB),
 	},
 	{
 		ID:         engine.DatabaseType_Redis,
@@ -212,15 +165,8 @@ var catalog = []ConnectableDatabase{
 			Username: true,
 			Password: true,
 		},
-		RequiredFields:              FieldRequirements{Hostname: true},
-		SupportsModifiers:           false,
-		SupportsScratchpad:          false,
-		SupportsSchema:              false,
-		SupportsDatabaseSwitching:   true,
-		UsesSchemaForGraph:          false,
-		UsesDatabaseInsteadOfSchema: true,
-		SupportsMockData:            false,
-		SSLModes:                    sslModesFor(engine.DatabaseType_Redis),
+		RequiredFields: FieldRequirements{Hostname: true},
+		SSLModes:       sslModesFor(engine.DatabaseType_Redis),
 	},
 	{
 		ID:         engine.DatabaseType_ElasticSearch,
@@ -232,13 +178,8 @@ var catalog = []ConnectableDatabase{
 			Username: true,
 			Password: true,
 		},
-		RequiredFields:            FieldRequirements{Hostname: true},
-		SupportsScratchpad:        false,
-		SupportsSchema:            false,
-		SupportsDatabaseSwitching: false,
-		UsesSchemaForGraph:        false,
-		SupportsMockData:          false,
-		SSLModes:                  sslModesFor(engine.DatabaseType_ElasticSearch),
+		RequiredFields: FieldRequirements{Hostname: true},
+		SSLModes:       sslModesFor(engine.DatabaseType_ElasticSearch),
 	},
 	{
 		ID:         engine.DatabaseType_ClickHouse,
@@ -256,15 +197,8 @@ var catalog = []ConnectableDatabase{
 			Password: true,
 			Database: true,
 		},
-		RequiredFields:              FieldRequirements{Hostname: true, Username: true, Password: true, Database: true},
-		SupportsModifiers:           true,
-		SupportsScratchpad:          true,
-		SupportsSchema:              false,
-		SupportsDatabaseSwitching:   true,
-		UsesSchemaForGraph:          false,
-		UsesDatabaseInsteadOfSchema: true,
-		SupportsMockData:            true,
-		SSLModes:                    sslModesFor(engine.DatabaseType_ClickHouse),
+		RequiredFields: FieldRequirements{Hostname: true, Username: true, Password: true, Database: true},
+		SSLModes:       sslModesFor(engine.DatabaseType_ClickHouse),
 	},
 	{
 		ID:         engine.DatabaseType_DuckDB,
@@ -274,13 +208,7 @@ var catalog = []ConnectableDatabase{
 		Fields: FieldVisibility{
 			Database: true,
 		},
-		RequiredFields:            FieldRequirements{Database: true},
-		SupportsModifiers:         true,
-		SupportsScratchpad:        true,
-		SupportsSchema:            true,
-		SupportsDatabaseSwitching: false,
-		UsesSchemaForGraph:        true,
-		SupportsMockData:          true,
+		RequiredFields: FieldRequirements{Database: true},
 	},
 	{
 		ID:         engine.DatabaseType_Memcached,
@@ -292,13 +220,8 @@ var catalog = []ConnectableDatabase{
 			Username: true,
 			Password: true,
 		},
-		RequiredFields:            FieldRequirements{Hostname: true},
-		SupportsScratchpad:        false,
-		SupportsSchema:            false,
-		SupportsDatabaseSwitching: false,
-		UsesSchemaForGraph:        false,
-		SupportsMockData:          false,
-		SSLModes:                  sslModesFor(engine.DatabaseType_Memcached),
+		RequiredFields: FieldRequirements{Hostname: true},
+		SSLModes:       sslModesFor(engine.DatabaseType_Memcached),
 	},
 	{
 		ID:         engine.DatabaseType_TiDB,
@@ -316,15 +239,8 @@ var catalog = []ConnectableDatabase{
 			Password: true,
 			Database: true,
 		},
-		RequiredFields:              FieldRequirements{Hostname: true, Username: true, Password: true, Database: true},
-		SupportsModifiers:           true,
-		SupportsScratchpad:          true,
-		SupportsSchema:              false,
-		SupportsDatabaseSwitching:   true,
-		UsesSchemaForGraph:          false,
-		UsesDatabaseInsteadOfSchema: true,
-		SupportsMockData:            true,
-		SSLModes:                    sslModesFor(engine.DatabaseType_TiDB),
+		RequiredFields: FieldRequirements{Hostname: true, Username: true, Password: true, Database: true},
+		SSLModes:       sslModesFor(engine.DatabaseType_TiDB),
 	},
 	{
 		ID:         engine.DatabaseType_Valkey,
@@ -336,14 +252,8 @@ var catalog = []ConnectableDatabase{
 			Username: true,
 			Password: true,
 		},
-		RequiredFields:              FieldRequirements{Hostname: true},
-		SupportsScratchpad:          false,
-		SupportsSchema:              false,
-		SupportsDatabaseSwitching:   true,
-		UsesSchemaForGraph:          false,
-		UsesDatabaseInsteadOfSchema: true,
-		SupportsMockData:            false,
-		SSLModes:                    sslModesFor(engine.DatabaseType_Redis),
+		RequiredFields: FieldRequirements{Hostname: true},
+		SSLModes:       sslModesFor(engine.DatabaseType_Redis),
 	},
 	{
 		ID:         engine.DatabaseType_Dragonfly,
@@ -355,14 +265,8 @@ var catalog = []ConnectableDatabase{
 			Username: true,
 			Password: true,
 		},
-		RequiredFields:              FieldRequirements{Hostname: true},
-		SupportsScratchpad:          false,
-		SupportsSchema:              false,
-		SupportsDatabaseSwitching:   true,
-		UsesSchemaForGraph:          false,
-		UsesDatabaseInsteadOfSchema: true,
-		SupportsMockData:            false,
-		SSLModes:                    sslModesFor(engine.DatabaseType_Redis),
+		RequiredFields: FieldRequirements{Hostname: true},
+		SSLModes:       sslModesFor(engine.DatabaseType_Redis),
 	},
 	{
 		ID:         engine.DatabaseType_OpenSearch,
@@ -374,13 +278,8 @@ var catalog = []ConnectableDatabase{
 			Username: true,
 			Password: true,
 		},
-		RequiredFields:            FieldRequirements{Hostname: true},
-		SupportsScratchpad:        false,
-		SupportsSchema:            false,
-		SupportsDatabaseSwitching: false,
-		UsesSchemaForGraph:        false,
-		SupportsMockData:          false,
-		SSLModes:                  sslModesFor(engine.DatabaseType_ElasticSearch),
+		RequiredFields: FieldRequirements{Hostname: true},
+		SSLModes:       sslModesFor(engine.DatabaseType_ElasticSearch),
 	},
 	{
 		ID:         engine.DatabaseType_YugabyteDB,
@@ -394,19 +293,13 @@ var catalog = []ConnectableDatabase{
 			Database:   true,
 			SearchPath: true,
 		},
-		RequiredFields:            FieldRequirements{Hostname: true, Username: true, Password: true, Database: true},
-		SupportsModifiers:         true,
-		SupportsScratchpad:        true,
-		SupportsSchema:            true,
-		SupportsDatabaseSwitching: true,
-		UsesSchemaForGraph:        true,
-		SupportsMockData:          true,
-		SSLModes:                  sslModesFor(engine.DatabaseType_Postgres),
+		RequiredFields: FieldRequirements{Hostname: true, Username: true, Password: true, Database: true},
+		SSLModes:       sslModesFor(engine.DatabaseType_Postgres),
 	},
 	{
 		ID:         engine.DatabaseType_QuestDB,
 		Label:      "QuestDB",
-		PluginType: engine.DatabaseType_Postgres,
+		PluginType: engine.DatabaseType_QuestDB,
 		Extra:      map[string]string{"Port": "8812"},
 		Fields: FieldVisibility{
 			Hostname: true,
@@ -414,14 +307,8 @@ var catalog = []ConnectableDatabase{
 			Password: true,
 			Database: true,
 		},
-		RequiredFields:            FieldRequirements{Hostname: true, Username: true, Password: true, Database: true},
-		SupportsModifiers:         true,
-		SupportsScratchpad:        true,
-		SupportsSchema:            false,
-		SupportsDatabaseSwitching: false,
-		UsesSchemaForGraph:        false,
-		SupportsMockData:          true,
-		SSLModes:                  sslModesFor(engine.DatabaseType_Postgres),
+		RequiredFields: FieldRequirements{Hostname: true, Username: true, Password: true, Database: true},
+		SSLModes:       sslModesFor(engine.DatabaseType_Postgres),
 	},
 	{
 		ID:         engine.DatabaseType_FerretDB,
@@ -438,14 +325,8 @@ var catalog = []ConnectableDatabase{
 			Password: true,
 			Database: true,
 		},
-		RequiredFields:              FieldRequirements{Hostname: true},
-		SupportsScratchpad:          false,
-		SupportsSchema:              false,
-		SupportsDatabaseSwitching:   true,
-		UsesSchemaForGraph:          false,
-		UsesDatabaseInsteadOfSchema: true,
-		SupportsMockData:            true,
-		SSLModes:                    sslModesFor(engine.DatabaseType_MongoDB),
+		RequiredFields: FieldRequirements{Hostname: true},
+		SSLModes:       sslModesFor(engine.DatabaseType_MongoDB),
 	},
 	{
 		ID:         engine.DatabaseType_ElastiCache,
@@ -460,15 +341,9 @@ var catalog = []ConnectableDatabase{
 			Username: true,
 			Password: true,
 		},
-		RequiredFields:              FieldRequirements{Hostname: true},
-		SupportsScratchpad:          false,
-		SupportsSchema:              false,
-		SupportsDatabaseSwitching:   true,
-		UsesSchemaForGraph:          false,
-		UsesDatabaseInsteadOfSchema: true,
-		SupportsMockData:            false,
-		IsAWSManaged:                true,
-		SSLModes:                    sslModesFor(engine.DatabaseType_Redis),
+		RequiredFields: FieldRequirements{Hostname: true},
+		IsAWSManaged:   true,
+		SSLModes:       sslModesFor(engine.DatabaseType_Redis),
 	},
 	{
 		ID:         engine.DatabaseType_DocumentDB,
@@ -481,15 +356,9 @@ var catalog = []ConnectableDatabase{
 			Password: true,
 			Database: true,
 		},
-		RequiredFields:              FieldRequirements{Hostname: true},
-		SupportsScratchpad:          false,
-		SupportsSchema:              false,
-		SupportsDatabaseSwitching:   true,
-		UsesSchemaForGraph:          false,
-		UsesDatabaseInsteadOfSchema: true,
-		SupportsMockData:            true,
-		IsAWSManaged:                true,
-		SSLModes:                    sslModesFor(engine.DatabaseType_MongoDB),
+		RequiredFields: FieldRequirements{Hostname: true},
+		IsAWSManaged:   true,
+		SSLModes:       sslModesFor(engine.DatabaseType_MongoDB),
 	},
 }
 
@@ -556,16 +425,7 @@ func DefaultPort(id string) (int, bool) {
 		return 0, false
 	}
 
-	if port, ok := parsePort(entry.Extra["Port"]); ok {
-		return port, true
-	}
-
-	defaultPort, ok := plugins.GetDefaultPort(entry.PluginType)
-	if !ok {
-		return 0, false
-	}
-
-	return parsePort(defaultPort)
+	return parsePort(entry.Extra["Port"])
 }
 
 // IsNetworkDatabase reports whether the database connects via a hostname.
@@ -583,17 +443,9 @@ func cloneEntry(entry ConnectableDatabase) ConnectableDatabase {
 		}
 	}
 	if entry.SSLModes != nil {
-		cloned.SSLModes = append([]ssl.SSLModeInfo(nil), entry.SSLModes...)
+		cloned.SSLModes = append([]source.SSLModeInfo(nil), entry.SSLModes...)
 	}
 	return cloned
-}
-
-func sslModesFor(dbType engine.DatabaseType) []ssl.SSLModeInfo {
-	modes := ssl.GetSSLModes(dbType)
-	if len(modes) == 0 {
-		return nil
-	}
-	return append([]ssl.SSLModeInfo(nil), modes...)
 }
 
 func parsePort(raw string) (int, bool) {

@@ -43,12 +43,16 @@ This document covers SSL/TLS support in WhoDB, including architecture, configura
 
 | File | Purpose |
 |------|---------|
-| `core/src/plugins/ssl/ssl.go` | Mode definitions, validation, aliasing, registry |
+| `core/src/common/ssl/ssl.go` | Mode constants plus source-backed validation and alias normalization |
 | `core/src/plugins/ssl/tls.go` | `BuildTLSConfig()`, certificate loading |
+| `core/src/dbcatalog/catalog.go` | CE source-type SSL mode declarations |
+| `ee/core/src/dbcatalog/register.go` | EE source-type SSL mode declarations |
 | `core/src/plugins/gorm/db.go` | `parseSSLConfig()` for Gorm-based plugins |
 | `core/src/engine/plugin.go` | `SSLStatus` type, `GetSSLStatus()` interface |
-| `frontend/src/config/database-types.ts` | SSL modes per database (static, duplicated from backend) |
+| `frontend/src/graphql/source-types.graphql` | GraphQL query for source-declared SSL modes |
+| `frontend/src/config/source-types.ts` | Typed frontend source catalog including SSL modes |
 | `frontend/src/components/ssl-config.tsx` | SSL configuration UI component |
+| `cli/internal/sourcetypes/sourcetypes.go` | CLI access to source-declared SSL modes |
 
 ## SSL Modes
 
@@ -94,18 +98,7 @@ Different databases use different native terminology. WhoDB normalizes these:
 "VERIFY_IDENTITY" → "verify-identity"
 ```
 
-Aliases are defined in `ssl.go`:
-
-```go
-var sslModeAliases = map[engine.DatabaseType]map[string]SSLMode{
-    engine.DatabaseType_Postgres: {
-        "disable":     SSLModeDisabled,
-        "require":     SSLModeRequired,
-        "verify-full": SSLModeVerifyIdentity,
-    },
-    // ...
-}
-```
+Aliases are declared on the source type itself via `source.SSLModeInfo.Aliases`.
 
 ## Certificate Loading
 
@@ -125,59 +118,23 @@ type CertificateInput struct {
 
 ## Adding SSL to a New Database Plugin
 
-### Step 1: Register SSL Modes
+### Step 1: Declare SSL Modes on the Source Entry
 
-**For CE databases** - Add to `databaseSSLModes` in `core/src/plugins/ssl/ssl.go`:
+Add `SSLModes` to the source entry in `core/src/dbcatalog/catalog.go` or
+`ee/core/src/dbcatalog/register.go`:
 
 ```go
-var databaseSSLModes = map[engine.DatabaseType][]SSLModeInfo{
-    // ... existing entries ...
-    engine.DatabaseType_NewDB: {
-        {SSLModeDisabled, "Disabled", "No SSL/TLS encryption"},
-        {SSLModeEnabled, "Enabled", "Enable TLS with certificate verification"},
-        {SSLModeInsecure, "Insecure", "Enable TLS, skip certificate verification"},
-        // Add verify-ca, verify-identity if the database supports them
-    },
+SSLModes: []source.SSLModeInfo{
+    {Value: "disabled", Label: "Disabled", Description: "No SSL/TLS encryption", Aliases: []string{"disable"}},
+    {Value: "enabled", Label: "Enabled", Description: "Enable TLS with certificate verification"},
+    {Value: "insecure", Label: "Insecure", Description: "Enable TLS, skip certificate verification"},
 }
 ```
 
-Register in the plugin package init():
+If the source is an alias, prefer inheriting the base source's SSL modes unless
+the wire protocol really differs.
 
-```go
-func registerEESSLModes() {
-    ssl.RegisterDatabaseSSLModes(ee_engine.DatabaseType_NewDB, []ssl.SSLModeInfo{
-        {ssl.SSLModeDisabled, "Disabled", "No SSL/TLS encryption"},
-        {ssl.SSLModeEnabled, "Enabled", "Enable TLS with certificate verification"},
-        {ssl.SSLModeInsecure, "Insecure", "Enable TLS, skip certificate verification"},
-    })
-}
-```
-
-### Step 2: Register Aliases (if needed)
-
-Only needed if the database has well-known native mode names that users might use:
-
-**For CE** - Add to `sslModeAliases` in `ssl.go`:
-
-```go
-var sslModeAliases = map[engine.DatabaseType]map[string]SSLMode{
-    // ... existing entries ...
-    engine.DatabaseType_NewDB: {
-        "native-off":    SSLModeDisabled,
-        "native-on":     SSLModeEnabled,
-    },
-}
-```
-
-Register in init():
-
-```go
-ssl.RegisterSSLModeAliases(ee_engine.DatabaseType_NewDB, map[string]ssl.SSLMode{
-    "native-off": ssl.SSLModeDisabled,
-})
-```
-
-### Step 3: Parse SSL Config
+### Step 2: Parse SSL Config
 
 **Option A: Gorm-based plugin** (extends `GormPlugin`)
 
@@ -243,7 +200,7 @@ func parseSSLConfig(advanced []engine.Record, hostname string, isProfile bool) *
 }
 ```
 
-### Step 4: Build and Apply TLS Config
+### Step 3: Build and Apply TLS Config
 
 In your `DB()` function:
 
@@ -271,7 +228,7 @@ func (p *NewDBPlugin) DB(config *engine.PluginConfig) (*gorm.DB, error) {
 }
 ```
 
-### Step 5: Implement GetSSLStatus
+### Step 4: Implement GetSSLStatus
 
 Create `plugins/newdb/ssl_status.go`:
 
@@ -359,9 +316,8 @@ SHOW SESSION STATUS LIKE 'Ssl_cipher';
 
 ## Checklist for New Database SSL Support
 
-- [ ] SSL modes registered in backend (`ssl.go` or `RegisterDatabaseSSLModes`)
-- [ ] SSL modes added to frontend (`database-types.ts` sslModes array)
-- [ ] Aliases registered if database has native mode names (both backend and frontend)
+- [ ] SSL modes declared on the source/catalog entry (`dbcatalog` or EE register)
+- [ ] Aliases declared on `source.SSLModeInfo.Aliases` when the wire protocol has native names
 - [ ] `parseSSLConfig()` implemented or using GormPlugin base
 - [ ] `ssl.BuildTLSConfig()` called in DB connection
 - [ ] TLS config applied to database driver correctly
@@ -374,24 +330,17 @@ SHOW SESSION STATUS LIKE 'Ssl_cipher';
 ## Frontend Integration
 
 The `SSLConfig` component (`frontend/src/components/ssl-config.tsx`) automatically:
-- Receives SSL modes via props from `database-types.ts`
+- Receives SSL modes via props from the source catalog (`SourceTypes`)
 - Handles mode aliasing (shows correct selection for aliased values)
 - Shows/hides certificate inputs based on mode requirements
 - Supports file picker and paste modes for certificates
 
-### Intentional Duplication
+### Source-Owned Contract
 
-**SSL modes are duplicated between frontend and backend.** This is intentional:
+SSL modes are no longer duplicated in a frontend-only registry. The source
+catalog is the single authority:
 
-- **Backend** (`core/src/plugins/ssl/ssl.go`): Source of truth for validation during connection
-- **Frontend** (`frontend/src/config/database-types.ts`): Display data for the login form dropdown
-
-**Why duplicate?** SSL modes are defined by database protocols and rarely change. Duplicating them:
-- Eliminates a network request on every login page load
-- Avoids authentication complexity (modes needed before user logs in)
-- Removes loading states and race conditions
-- Simplifies the frontend component
-
-**When adding a new database**, update both:
-1. Backend: `ssl.go` mode registry (for validation)
-2. Frontend: `database-types.ts` sslModes array (for display)
+- backend validation reads source-declared SSL modes through `NormalizeSSLMode`,
+  `ValidateSSLMode`, and `ParseSSLConfig`
+- frontend reads the same modes from `SourceTypes`
+- CLI reads the same modes through `cli/internal/sourcetypes`

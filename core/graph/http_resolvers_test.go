@@ -18,7 +18,6 @@ package graph
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -29,7 +28,6 @@ import (
 	"testing"
 
 	"github.com/clidey/whodb/core/internal/testutil"
-	"github.com/clidey/whodb/core/src/auth"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/go-chi/chi/v5"
@@ -90,7 +88,7 @@ func TestRESTHandlersHandleErrors(t *testing.T) {
 	SetupHTTPServer(router)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/databases?sourceType=Postgres", nil)
-	req = req.WithContext(context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres"}))
+	req = req.WithContext(testSourceContext("Postgres", nil))
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -138,7 +136,7 @@ func TestRESTHandlersAIModelsAndChat(t *testing.T) {
 
 	// AI models
 	modelReq := httptest.NewRequest(http.MethodGet, "/api/ai-models?modelType=Ollama&token=", nil)
-	modelReq = modelReq.WithContext(context.WithValue(modelReq.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres"}))
+	modelReq = modelReq.WithContext(testSourceContext("Postgres", nil))
 	modelRec := httptest.NewRecorder()
 	router.ServeHTTP(modelRec, modelReq)
 	if modelRec.Code != http.StatusOK {
@@ -169,7 +167,7 @@ func TestRESTRawExecutePropagatesErrors(t *testing.T) {
 
 	body := `{"query":"select 1"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/raw-execute", bytes.NewBufferString(body))
-	req = req.WithContext(context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"}))
+	req = req.WithContext(testSourceContext("Test", nil))
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
@@ -188,7 +186,7 @@ func TestRESTHandlersEnforceAuthForProtectedRoutes(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "/api/databases?sourceType=Postgres", nil)
 	// Provide empty credentials to avoid panic but simulate unauthorized flow
-	req = req.WithContext(context.WithValue(req.Context(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres"}))
+	req = req.WithContext(testSourceContext("Postgres", nil))
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 	if rec.Code != http.StatusInternalServerError {

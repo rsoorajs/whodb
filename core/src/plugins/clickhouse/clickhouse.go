@@ -34,20 +34,14 @@ import (
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/plugins"
 	gorm_plugin "github.com/clidey/whodb/core/src/plugins/gorm"
+	sourcecatalogspecs "github.com/clidey/whodb/core/src/sourcecatalog/specs"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
 
 var (
-	supportedOperators = map[string]string{
-		"=": "=", ">=": ">=", ">": ">", "<=": "<=", "<": "<", "!=": "!=", "<>": "<>", "==": "==",
-		"LIKE": "LIKE", "NOT LIKE": "NOT LIKE", "ILIKE": "ILIKE",
-		"IN": "IN", "NOT IN": "NOT IN", "GLOBAL IN": "GLOBAL IN", "GLOBAL NOT IN": "GLOBAL NOT IN",
-		"BETWEEN": "BETWEEN", "NOT BETWEEN": "NOT BETWEEN",
-		"IS NULL": "IS NULL", "IS NOT NULL": "IS NOT NULL",
-		"AND": "AND", "OR": "OR", "NOT": "NOT",
-	}
+	supportedOperators = sourcecatalogspecs.ClickHouseSupportedOperators
 )
 
 type ClickHousePlugin struct {
@@ -335,11 +329,10 @@ func (p *ClickHousePlugin) executeRawSQL(config *engine.PluginConfig, query stri
 	})
 }
 
-// ShouldHandleColumnType returns true for ClickHouse special types
-func (p *ClickHousePlugin) ShouldHandleColumnType(typeName string) bool {
+// GetColumnCodec returns a codec for ClickHouse special types.
+func (p *ClickHousePlugin) GetColumnCodec(typeName string) gorm_plugin.ColumnCodec {
 	upper := strings.ToUpper(typeName)
-	// Handle all ClickHouse array and special types
-	return strings.HasPrefix(upper, "NULLABLE(") ||
+	handled := strings.HasPrefix(upper, "NULLABLE(") ||
 		strings.HasPrefix(upper, "LOWCARDINALITY(") ||
 		strings.HasPrefix(upper, "ARRAY(") ||
 		strings.HasPrefix(upper, "TUPLE(") ||
@@ -362,123 +355,122 @@ func (p *ClickHousePlugin) ShouldHandleColumnType(typeName string) bool {
 		upper == "RING" ||
 		upper == "POLYGON" ||
 		upper == "MULTIPOLYGON"
-}
-
-// GetColumnScanner returns appropriate scanner for ClickHouse column types
-func (p *ClickHousePlugin) GetColumnScanner(typeName string) any {
-	upper := strings.ToUpper(typeName)
-	if strings.HasPrefix(upper, "INT128") || strings.HasPrefix(upper, "INT256") || strings.HasPrefix(upper, "UINT128") || strings.HasPrefix(upper, "UINT256") {
-		return new(big.Int)
+	if !handled {
+		return nil
 	}
-	// For special ClickHouse types, use any to handle any type
-	var value any
-	return &value
-}
 
-// FormatColumnValue formats the value for display
-func (p *ClickHousePlugin) FormatColumnValue(typeName string, value any) (string, error) {
-	// Handle the any pointer we created in GetColumnScanner
-	if ptr, ok := value.(*any); ok && ptr != nil {
-		actualValue := *ptr
-		if actualValue == nil {
-			return "", nil
-		}
-
-		upperType := strings.ToUpper(typeName)
-
-		// Handle different ClickHouse types
-		switch v := actualValue.(type) {
-		case *big.Int:
-			if v == nil {
-				return "", nil
+	return gorm_plugin.ColumnCodecFuncs{
+		NewScanner: func() any {
+			if strings.HasPrefix(upper, "INT128") || strings.HasPrefix(upper, "INT256") || strings.HasPrefix(upper, "UINT128") || strings.HasPrefix(upper, "UINT256") {
+				return new(big.Int)
 			}
-			return v.String(), nil
-		case []string:
-			// Array of strings
-			quoted := make([]string, len(v))
-			for i, s := range v {
-				quoted[i] = "'" + s + "'"
-			}
-			return "[" + strings.Join(quoted, ", ") + "]", nil
-		case []any:
-			// Tuple or mixed array
-			if strings.HasPrefix(upperType, "TUPLE") {
-				return formatTuple(v), nil
-			}
-			return formatSlice(v), nil
-		case map[string]any:
-			return formatMap(v), nil
-		case net.IP:
-			// IPv4 or IPv6 address
-			return v.String(), nil
-		case *net.IP:
-			// Pointer to IP address
-			if v != nil {
-				return v.String(), nil
-			}
-			return "", nil
-		case uuid.UUID:
-			// UUID type
-			return v.String(), nil
-		case time.Time:
-			// DateTime, DateTime64, Date, Date32
-			if strings.Contains(upperType, "DATE") && !strings.Contains(upperType, "DATETIME") {
-				// Date types - show only date part
-				return v.Format("2006-01-02"), nil
-			}
-			// DateTime types - show full timestamp
-			if strings.Contains(upperType, "DATETIME64") {
-				// High precision datetime
-				return v.Format("2006-01-02 15:04:05.999999999"), nil
-			}
-			return v.Format("2006-01-02 15:04:05"), nil
-		case decimal.Decimal:
-			// Decimal32, Decimal64, Decimal128, Decimal256
-			return v.String(), nil
-		case []byte:
-			// FixedString or binary data
-			if strings.HasPrefix(upperType, "FIXEDSTRING") {
-				// Trim null bytes for FixedString
-				trimmed := strings.TrimRight(string(v), "\x00")
-				return trimmed, nil
-			}
-			// Other binary data
-			return fmt.Sprintf("0x%x", v), nil
-		case string:
-			if strings.HasPrefix(upperType, "FIXEDSTRING") {
-				return strings.TrimRight(v, "\x00"), nil
-			}
-			return v, nil
-		default:
-			// Handle typed maps/slices from the driver (e.g., map[string]int32, []int32)
-			// using reflection so the display matches ClickHouse literal syntax
-			rv := reflect.ValueOf(actualValue)
-			if rv.Kind() == reflect.Map {
-				return formatReflectMap(rv, upperType), nil
-			}
-			if rv.Kind() == reflect.Slice {
-				if strings.HasPrefix(upperType, "TUPLE") {
-					return formatReflectTuple(rv), nil
+			var value any
+			return &value
+		},
+		FormatValue: func(value any) (string, error) {
+			if ptr, ok := value.(*any); ok && ptr != nil {
+				actualValue := *ptr
+				if actualValue == nil {
+					return "", nil
 				}
-				return formatReflectSlice(rv, upperType), nil
-			}
-			if stringer, ok := actualValue.(fmt.Stringer); ok {
-				return stringer.String(), nil
-			}
-			if marshaled, err := json.Marshal(actualValue); err == nil && json.Valid(marshaled) {
-				return string(marshaled), nil
-			}
-			return fmt.Sprintf("%v", actualValue), nil
-		}
-	}
 
-	// Fallback to string representation
-	return fmt.Sprintf("%v", value), nil
+				upperType := upper
+
+				// Handle different ClickHouse types
+				switch v := actualValue.(type) {
+				case *big.Int:
+					if v == nil {
+						return "", nil
+					}
+					return v.String(), nil
+				case []string:
+					// Array of strings
+					quoted := make([]string, len(v))
+					for i, s := range v {
+						quoted[i] = "'" + s + "'"
+					}
+					return "[" + strings.Join(quoted, ", ") + "]", nil
+				case []any:
+					// Tuple or mixed array
+					if strings.HasPrefix(upperType, "TUPLE") {
+						return formatTuple(v), nil
+					}
+					return formatSlice(v), nil
+				case map[string]any:
+					return formatMap(v), nil
+				case net.IP:
+					// IPv4 or IPv6 address
+					return v.String(), nil
+				case *net.IP:
+					// Pointer to IP address
+					if v != nil {
+						return v.String(), nil
+					}
+					return "", nil
+				case uuid.UUID:
+					// UUID type
+					return v.String(), nil
+				case time.Time:
+					// DateTime, DateTime64, Date, Date32
+					if strings.Contains(upperType, "DATE") && !strings.Contains(upperType, "DATETIME") {
+						// Date types - show only date part
+						return v.Format("2006-01-02"), nil
+					}
+					// DateTime types - show full timestamp
+					if strings.Contains(upperType, "DATETIME64") {
+						// High precision datetime
+						return v.Format("2006-01-02 15:04:05.999999999"), nil
+					}
+					return v.Format("2006-01-02 15:04:05"), nil
+				case decimal.Decimal:
+					// Decimal32, Decimal64, Decimal128, Decimal256
+					return v.String(), nil
+				case []byte:
+					// FixedString or binary data
+					if strings.HasPrefix(upperType, "FIXEDSTRING") {
+						// Trim null bytes for FixedString
+						trimmed := strings.TrimRight(string(v), "\x00")
+						return trimmed, nil
+					}
+					// Other binary data
+					return fmt.Sprintf("0x%x", v), nil
+				case string:
+					if strings.HasPrefix(upperType, "FIXEDSTRING") {
+						return strings.TrimRight(v, "\x00"), nil
+					}
+					return v, nil
+				default:
+					// Handle typed maps/slices from the driver (e.g., map[string]int32, []int32)
+					// using reflection so the display matches ClickHouse literal syntax
+					rv := reflect.ValueOf(actualValue)
+					if rv.Kind() == reflect.Map {
+						return formatReflectMap(rv, upperType), nil
+					}
+					if rv.Kind() == reflect.Slice {
+						if strings.HasPrefix(upperType, "TUPLE") {
+							return formatReflectTuple(rv), nil
+						}
+						return formatReflectSlice(rv, upperType), nil
+					}
+					if stringer, ok := actualValue.(fmt.Stringer); ok {
+						return stringer.String(), nil
+					}
+					if marshaled, err := json.Marshal(actualValue); err == nil && json.Valid(marshaled) {
+						return string(marshaled), nil
+					}
+					return fmt.Sprintf("%v", actualValue), nil
+				}
+			}
+
+			// Fallback to string representation
+			return fmt.Sprintf("%v", value), nil
+		},
+	}
 }
 
 // NormalizeType converts ClickHouse type aliases to their canonical form.
 func (p *ClickHousePlugin) NormalizeType(typeName string) string {
-	return NormalizeType(typeName)
+	return common.NormalizeTypeWithMap(typeName, sourcecatalogspecs.ClickHouseAliasMap)
 }
 
 // GetColumnTypes overrides the base implementation because GORM ClickHouse's

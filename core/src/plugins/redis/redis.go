@@ -24,29 +24,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/clidey/whodb/core/src/query"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
+	"github.com/clidey/whodb/core/src/query"
 	"github.com/go-redis/redis/v8"
 )
 
 type RedisPlugin struct {
 	engine.BasePlugin
-}
-
-var redisOperators = map[string]string{
-	"=":           "=",
-	"!=":          "!=",
-	"<>":          "!=",
-	">":           ">",
-	">=":          ">=",
-	"<":           "<",
-	"<=":          "<=",
-	"CONTAINS":    "CONTAINS",
-	"STARTS WITH": "STARTS WITH",
-	"ENDS WITH":   "ENDS WITH",
-	"IN":          "IN",
-	"NOT IN":      "NOT IN",
 }
 
 func (p *RedisPlugin) IsAvailable(ctx context.Context, config *engine.PluginConfig) bool {
@@ -583,25 +568,6 @@ func (p *RedisPlugin) FormatValue(val any) string {
 		return ""
 	}
 	return fmt.Sprintf("%v", val)
-}
-
-// GetDatabaseMetadata returns Redis metadata for frontend configuration.
-// Redis is a key-value store without traditional type definitions or operators.
-func (p *RedisPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
-	ops := make([]string, 0, len(redisOperators))
-	for op := range redisOperators {
-		ops = append(ops, op)
-	}
-	sort.Strings(ops)
-	return &engine.DatabaseMetadata{
-		DatabaseType:    engine.DatabaseType_Redis,
-		TypeDefinitions: []engine.TypeDefinition{},
-		Operators:       ops,
-		AliasMap:        map[string]string{},
-		Capabilities: engine.Capabilities{
-			SupportsDatabaseSwitch: true,
-		},
-	}
 }
 
 func init() {

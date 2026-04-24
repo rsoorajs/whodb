@@ -17,71 +17,38 @@
 package cmd
 
 import (
-	"strings"
-
-	"github.com/clidey/whodb/core/src/dbcatalog"
-	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/cli/internal/sourcetypes"
+	"github.com/clidey/whodb/core/src/source"
 )
 
-var dbTypeSynonyms = map[string]string{
-	"postgresql": "Postgres",
-	"sqlite":     "Sqlite3",
-	"cockroach":  "CockroachDB",
-	"yugabyte":   "YugabyteDB",
-	"quest":      "QuestDB",
-	"elastic":    "ElasticSearch",
-}
-
-func lookupDatabaseType(input string) (dbcatalog.ConnectableDatabase, bool) {
-	if strings.TrimSpace(input) == "" {
-		return dbcatalog.ConnectableDatabase{}, false
-	}
-
-	normalizedInput := normalizeDBTypeKey(input)
-	if alias, ok := dbTypeSynonyms[normalizedInput]; ok {
-		return dbcatalog.Find(alias)
-	}
-
-	for _, id := range dbcatalog.IDs() {
-		if normalizeDBTypeKey(id) == normalizedInput {
-			return dbcatalog.Find(id)
-		}
-	}
-
-	return dbcatalog.ConnectableDatabase{}, false
+func lookupDatabaseType(input string) (source.TypeSpec, bool) {
+	return sourcetypes.Find(input)
 }
 
 func normalizeDBType(dbType string) string {
-	entry, ok := lookupDatabaseType(dbType)
-	if !ok {
-		return strings.TrimSpace(dbType)
-	}
-	return string(entry.ID)
+	return sourcetypes.Normalize(dbType)
 }
 
 func getDefaultPort(dbType string) int {
-	port, ok := dbcatalog.DefaultPort(normalizeDBType(dbType))
+	port, ok := sourcetypes.DefaultPort(dbType)
 	if !ok {
-		return 5432
+		return 0
 	}
 	return port
 }
 
 func isFileBasedDatabaseType(dbType string) bool {
-	entry, ok := lookupDatabaseType(dbType)
+	spec, ok := lookupSourceTypeSpec(dbType)
 	if !ok {
 		return false
 	}
-
-	switch entry.PluginType {
-	case engine.DatabaseType_Sqlite3, engine.DatabaseType_DuckDB:
-		return true
-	default:
-		return false
-	}
+	return spec.Traits.Connection.Transport == source.ConnectionTransportFile
 }
 
-func normalizeDBTypeKey(value string) string {
-	replacer := strings.NewReplacer(" ", "", "-", "", "_", "")
-	return replacer.Replace(strings.ToLower(strings.TrimSpace(value)))
+func lookupSourceTypeSpec(input string) (source.TypeSpec, bool) {
+	return sourcetypes.Find(input)
+}
+
+func isConnectionFieldRequired(dbType string, key string) bool {
+	return sourcetypes.ConnectionFieldRequired(dbType, key)
 }

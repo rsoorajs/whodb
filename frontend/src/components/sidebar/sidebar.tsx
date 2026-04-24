@@ -51,6 +51,7 @@ import {
     GetSchemaDocument,
     GetSslStatusDocument,
     GetUpdateInfoDocument,
+    SourceProfileLabelStrategy,
     SourceFieldOptionsDocument,
 } from '@graphql';
 import {useTranslation} from '@/hooks/use-translation';
@@ -67,9 +68,10 @@ import {DatabaseActions} from "../../store/database";
 import {useAppSelector} from "../../store/hooks";
 import {featureFlags} from "../../config/features";
 import {getComponent} from "../../config/component-registry";
-import { DatabaseType } from "../../config/source-types";
+import { findSourceTypeItem, type SourceTypeItem } from "../../config/source-types";
 import {isAwsHostname} from "../../utils/cloud-connection-prefill";
 import {useSourceContract} from "../../hooks/useSourceContract";
+import {useSourceTypeItems} from "../../hooks/useSourceCatalog";
 import {
     ArrowLeftStartOnRectangleIcon,
     ChevronDownIcon,
@@ -87,10 +89,12 @@ import {DatabaseIconWithBadge, isAwsConnection} from "../aws";
 import {useProfileSwitch} from "@/hooks/use-profile-switch";
 import {buildSourceSchemaQuery} from "@/utils/source-refs";
 
-function getProfileLabel(profile: LocalLoginProfile) {
+function getProfileLabel(profile: LocalLoginProfile, item: SourceTypeItem | undefined) {
     if (profile.Saved) return profile.Id;
-    if (profile.Type === DatabaseType.Redis && profile.Hostname) return profile.Hostname;
-    if ((profile.Type === DatabaseType.Sqlite3 || profile.Type === DatabaseType.DuckDb) && profile.Database) {
+    if (item?.traits?.presentation.profileLabelStrategy === SourceProfileLabelStrategy.Hostname && profile.Hostname) {
+        return profile.Hostname;
+    }
+    if (item?.traits?.presentation.profileLabelStrategy === SourceProfileLabelStrategy.Database && profile.Database) {
         return profile.Database;
     }
     if (profile.Hostname && profile.Username) {
@@ -195,7 +199,6 @@ export const Sidebar: FC = () => {
     const sslStatus = useAppSelector(state => state.auth.sslStatus);
     const {
         item,
-        isNoSQL,
         storageUnitLabel,
         supportsChat,
         supportsGraph,
@@ -204,7 +207,7 @@ export const Sidebar: FC = () => {
         supportsDatabaseSwitching,
         usesDatabaseInsteadOfSchema,
     } = useSourceContract(current?.Type);
-    const databaseQueryOptions = current != null && supportsDatabaseSwitching
+    const databaseQueryOptions = current != null && supportsDatabaseSwitching && current.Type
         ? {
             variables: {
                 sourceType: current.Type,
@@ -226,15 +229,19 @@ export const Sidebar: FC = () => {
         return availableSchemas?.Schema?.map(schemaObject => schemaObject.Name) ?? [];
     }, [availableSchemas?.Schema]);
 
-    // Default schema selection: prefer Search Path from login config, fall back to first schema
+    // Default schema selection: prefer Search Path, then profile database for schema-scoped
+    // sources, then fall back to the first available schema.
     useEffect(() => {
         if (current == null || schema !== "" || availableSchemaNames.length === 0) return;
         const searchPath = current.Advanced?.find(a => a.Key === "Search Path")?.Value;
+        const profileDatabase = (!supportsDatabaseSwitching && current.Database && availableSchemaNames.includes(current.Database))
+            ? current.Database
+            : undefined;
         const defaultSchema = (searchPath && availableSchemaNames.includes(searchPath))
             ? searchPath
-            : availableSchemaNames[0] ?? "";
+            : (profileDatabase ?? availableSchemaNames[0] ?? "");
         dispatch(DatabaseActions.setSchema(defaultSchema));
-    }, [availableSchemaNames, current, dispatch, schema]);
+    }, [availableSchemaNames, current, dispatch, schema, supportsDatabaseSwitching]);
     const { data: updateInfo } = useQuery(GetUpdateInfoDocument);
     const { data: sslStatusData, refetch: refetchSslStatus } = useQuery(GetSslStatusDocument, sslStatusQueryOptions);
     useEffect(() => {
@@ -251,13 +258,14 @@ export const Sidebar: FC = () => {
     const { switchProfile } = useProfileSwitch({
         errorMessage: t('errorSigningIn'),
     });
+    const { items: sourceTypeItems } = useSourceTypeItems();
 
     // Profile select logic - filter out AWS profiles when cloud providers disabled
     const profileOptions = useMemo(() => profiles
         .filter(profile => cloudProvidersEnabled || !isAwsHostname(profile.Hostname))
         .map(profile => ({
             value: profile.Id,
-            label: getProfileLabel(profile),
+            label: getProfileLabel(profile, findSourceTypeItem(sourceTypeItems, profile.Type)),
             icon: (
                 <DatabaseIconWithBadge
                     icon={getProfileIcon(profile)}
@@ -269,7 +277,7 @@ export const Sidebar: FC = () => {
                 />
             ),
             profile,
-        })), [profiles, current?.Id, sslStatus, cloudProvidersEnabled]);
+        })), [profiles, current?.Id, sslStatus, cloudProvidersEnabled, sourceTypeItems]);
 
     const currentProfileOption = useMemo(() => {
         if (!current) return undefined;
@@ -315,7 +323,12 @@ export const Sidebar: FC = () => {
         if (value === "") {
             return;
         }
-        if (pathname !== InternalRoutes.Graph.path && pathname !== InternalRoutes.Dashboard.StorageUnit.path) {
+        if (pathname === InternalRoutes.Dashboard.StorageUnit.path) {
+            navigate(InternalRoutes.Dashboard.StorageUnit.path, {
+                replace: true,
+                state: {},
+            });
+        } else if (pathname !== InternalRoutes.Graph.path) {
             navigate(InternalRoutes.Dashboard.StorageUnit.path);
         }
         dispatch(DatabaseActions.setSchema(value));
@@ -438,8 +451,8 @@ export const Sidebar: FC = () => {
             return;
         }
         if (!current) return;
-        if (supportsDatabaseSwitching) {
-            getDatabases();
+        if (supportsDatabaseSwitching && current.Type) {
+            getDatabases({ sourceType: current.Type });
         }
         if (supportsSchema) {
             getSchemas();
@@ -593,14 +606,17 @@ export const Sidebar: FC = () => {
                                             )}
                                         </div>
                                     )}
-                                    {current != null && !isNoSQL && (
-                                        <NavItem icon={<SparklesIcon className="w-4 h-4" />} label={t('chat')} path={InternalRoutes.Chat.path} pathname={pathname} open={open} tooltip={t('chat')} />
-                                    )}
-                                    <NavItem icon={<TableCellsIcon className="w-4 h-4" />} label={storageUnitLabel} path={InternalRoutes.Dashboard.StorageUnit.path} pathname={pathname} open={open} tooltip={storageUnitLabel} />
-                                    <NavItem icon={<RectangleGroupIcon className="w-4 h-4" />} label={t('graph')} path={InternalRoutes.Graph.path} pathname={pathname} open={open} tooltip={t('graph')} />
-                                    {supportsScratchpad && (
-                                        <NavItem icon={<CommandLineIcon className="w-4 h-4" />} label={t('scratchpad')} path={InternalRoutes.RawExecute.path} pathname={pathname} open={open} tooltip={t('scratchpad')} />
-                                    )}
+                                    {sidebarRoutes.map(route => (
+                                        <NavItem
+                                            key={route.path}
+                                            icon={route.icon}
+                                            label={route.title}
+                                            path={route.path}
+                                            pathname={pathname}
+                                            open={open}
+                                            tooltip={route.title}
+                                        />
+                                    ))}
 
                                     <SidebarSeparator className={cn("my-4", { "mx-0": !open })} />
 
@@ -691,20 +707,23 @@ export const Sidebar: FC = () => {
                         <DialogDescription>{t('switchProfileDescription')}</DialogDescription>
                     </DialogHeader>
                     <div className="flex flex-col gap-1 mt-2">
-                        {profiles.filter(p => p.Id !== logoutProfileId).map(profile => (
-                            <button
-                                key={profile.Id}
-                                className="flex items-center gap-3 p-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-left w-full"
-                                onClick={() => handleDialogProfileSwitch(profile)}
-                            >
-                                <DatabaseIconWithBadge
-                                    icon={getProfileIcon(profile)}
-                                    showCloudBadge={isAwsConnection(profile.Id)}
-                                    size="sm"
-                                />
-                                <span className="text-sm font-medium truncate">{getProfileLabel(profile)}</span>
-                            </button>
-                        ))}
+                        {profiles.filter(p => p.Id !== logoutProfileId).map(profile => {
+                            const sourceTypeItem = findSourceTypeItem(sourceTypeItems, profile.Type);
+                            return (
+                                <button
+                                    key={profile.Id}
+                                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-left w-full"
+                                    onClick={() => handleDialogProfileSwitch(profile)}
+                                >
+                                    <DatabaseIconWithBadge
+                                        icon={getProfileIcon(profile)}
+                                        showCloudBadge={isAwsConnection(profile.Id)}
+                                        size="sm"
+                                    />
+                                    <span className="text-sm font-medium truncate">{getProfileLabel(profile, sourceTypeItem)}</span>
+                                </button>
+                            );
+                        })}
                         <button
                             className="flex items-center gap-3 p-3 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors text-left w-full text-green-500"
                             onClick={handleDialogAddProfile}

@@ -23,8 +23,6 @@ import (
 
 	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src/auth"
-	"github.com/clidey/whodb/core/src/common/ssl"
-	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/source"
 	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
@@ -203,10 +201,9 @@ func sourceTypeToModel(spec source.TypeSpec) *model.SourceType {
 
 	sslModes := make([]*model.SourceSSLMode, 0, len(spec.SSLModes))
 	for _, sslMode := range spec.SSLModes {
-		aliases := ssl.GetSSLModeAliases(engine.DatabaseType(spec.Connector), ssl.SSLMode(sslMode.Value))
 		sslModes = append(sslModes, &model.SourceSSLMode{
 			Value:   sslMode.Value,
-			Aliases: aliases,
+			Aliases: slices.Clone(sslMode.Aliases),
 		})
 	}
 
@@ -215,10 +212,60 @@ func sourceTypeToModel(spec source.TypeSpec) *model.SourceType {
 		Label:            spec.Label,
 		Connector:        spec.Connector,
 		Category:         model.SourceCategory(spec.Category),
+		Traits:           sourceTraitsToModel(spec.Traits),
 		ConnectionFields: fields,
 		Contract:         sourceContractToModel(spec.Contract),
+		DiscoveryPrefill: sourceDiscoveryPrefillToModel(spec.DiscoveryPrefill),
 		IsAWSManaged:     spec.IsAWSManaged,
 		SSLModes:         sslModes,
+	}
+}
+
+func sourceDiscoveryPrefillToModel(prefill source.DiscoveryPrefill) *model.SourceDiscoveryPrefill {
+	advancedDefaults := make([]*model.SourceDiscoveryAdvancedDefault, 0, len(prefill.AdvancedDefaults))
+	for _, item := range prefill.AdvancedDefaults {
+		conditions := make([]*model.SourceDiscoveryMetadataCondition, 0, len(item.Conditions))
+		for _, condition := range item.Conditions {
+			conditions = append(conditions, &model.SourceDiscoveryMetadataCondition{
+				Key:   condition.Key,
+				Value: condition.Value,
+			})
+		}
+
+		advancedDefaults = append(advancedDefaults, &model.SourceDiscoveryAdvancedDefault{
+			Key:           item.Key,
+			Value:         item.Value,
+			MetadataKey:   item.MetadataKey,
+			DefaultValue:  item.DefaultValue,
+			ProviderTypes: slices.Clone(item.ProviderTypes),
+			Conditions:    conditions,
+		})
+	}
+
+	return &model.SourceDiscoveryPrefill{
+		AdvancedDefaults: advancedDefaults,
+	}
+}
+
+func sourceTraitsToModel(traits source.TypeTraits) *model.SourceTraits {
+	return &model.SourceTraits{
+		Connection: &model.SourceConnectionTraits{
+			Transport:               model.SourceConnectionTransport(traits.Connection.Transport),
+			HostInputMode:           model.SourceHostInputMode(traits.Connection.HostInputMode),
+			HostInputURLParser:      model.SourceHostInputURLParser(traits.Connection.HostInputURLParser),
+			SupportsCustomCAContent: traits.Connection.SupportsCustomCAContent,
+		},
+		Presentation: &model.SourcePresentationTraits{
+			ProfileLabelStrategy: model.SourceProfileLabelStrategy(traits.Presentation.ProfileLabelStrategy),
+			SchemaFidelity:       model.SourceSchemaFidelity(traits.Presentation.SchemaFidelity),
+		},
+		Query: &model.SourceQueryTraits{
+			SupportsAnalyze: traits.Query.SupportsAnalyze,
+			ExplainMode:     model.SourceQueryExplainMode(traits.Query.ExplainMode),
+		},
+		MockData: &model.SourceMockDataTraits{
+			SupportsRelationalDependencies: traits.MockData.SupportsRelationalDependencies,
+		},
 	}
 }
 

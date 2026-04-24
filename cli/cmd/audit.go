@@ -99,12 +99,12 @@ Checks performed:
 		if auditType != "" && !typeKnown {
 			return fmt.Errorf("unsupported database type %q", auditType)
 		}
-		if auditType != "" && typeKnown && resolvedType.RequiredFields.Database && auditDatabase == "" && auditConnection == "" {
+		if auditType != "" && typeKnown && isConnectionFieldRequired(string(resolvedType.ID), "Database") && auditDatabase == "" && auditConnection == "" {
 			return fmt.Errorf("--database is required for %s", resolvedType.Label)
 		}
 
 		var conn *dbmgr.Connection
-		if typeKnown && (auditDatabase != "" || !resolvedType.RequiredFields.Database) {
+		if typeKnown && (auditDatabase != "" || !isConnectionFieldRequired(string(resolvedType.ID), "Database")) {
 			// Inline connection from flags
 			h := auditHost
 			if h == "" {

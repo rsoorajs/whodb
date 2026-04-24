@@ -21,21 +21,17 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/plugins"
 	gorm_plugin "github.com/clidey/whodb/core/src/plugins/gorm"
+	sourcecatalogspecs "github.com/clidey/whodb/core/src/sourcecatalog/specs"
 	"gorm.io/gorm"
 )
 
 var (
-	supportedOperators = map[string]string{
-		"=": "=", ">=": ">=", ">": ">", "<=": "<=", "<": "<", "<>": "<>",
-		"!=": "!=", "BETWEEN": "BETWEEN", "NOT BETWEEN": "NOT BETWEEN",
-		"LIKE": "LIKE", "NOT LIKE": "NOT LIKE", "ILIKE": "ILIKE", "NOT ILIKE": "NOT ILIKE",
-		"IN": "IN", "NOT IN": "NOT IN",
-		"IS NULL": "IS NULL", "IS NOT NULL": "IS NOT NULL", "AND": "AND", "OR": "OR", "NOT": "NOT",
-	}
+	supportedOperators = sourcecatalogspecs.PostgreSQLSupportedOperators
 )
 
 type PostgresPlugin struct {
@@ -146,7 +142,7 @@ func (p *PostgresPlugin) GetForeignKeyRelationships(config *engine.PluginConfig,
 
 // NormalizeType converts PostgreSQL type aliases to their canonical form.
 func (p *PostgresPlugin) NormalizeType(typeName string) string {
-	return NormalizeType(typeName)
+	return common.NormalizeTypeWithMap(typeName, sourcecatalogspecs.PostgresAliasMap)
 }
 
 // MarkGeneratedColumns detects PostgreSQL generated columns (GENERATED ALWAYS AS)

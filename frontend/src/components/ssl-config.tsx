@@ -38,12 +38,9 @@ const MODES_REQUIRING_CA = ['verify-ca', 'verify-identity', 'enabled'];
 // Modes that require client certificate for mutual TLS (optional for most)
 const MODES_SUPPORTING_CLIENT_CERT = ['verify-ca', 'verify-identity', 'enabled'];
 
-// Databases that only support system CAs (driver limitation - can't inject custom CA content)
-const SYSTEM_CA_ONLY_DATABASES = ['MSSQL', 'Oracle'];
-
 export interface SSLConfigProps {
-  /** Database type (used for system CA detection) */
-  databaseType: string;
+  /** Whether the selected source supports uploading custom CA material. */
+  supportsCustomCAContent: boolean;
   /** SSL modes supported by this source type (from source-types.ts) */
   sslModes?: SSLModeOption[];
   /** Current advanced form values */
@@ -68,7 +65,7 @@ function isInsecureConnection(): boolean {
  * - HTTP security warning for private keys
  */
 export const SSLConfig: FC<SSLConfigProps> = ({
-  databaseType,
+  supportsCustomCAContent,
   sslModes,
   advancedForm,
   onAdvancedFormChange,
@@ -115,12 +112,6 @@ export const SSLConfig: FC<SSLConfigProps> = ({
   const supportsClientCert = useMemo(
     () => MODES_SUPPORTING_CLIENT_CERT.includes(currentMode),
     [currentMode]
-  );
-
-  // Check if database supports custom CA certificates (some drivers only support system CAs)
-  const supportsCustomCA = useMemo(
-    () => !SYSTEM_CA_ONLY_DATABASES.includes(databaseType),
-    [databaseType]
   );
 
   // Handle mode change
@@ -199,14 +190,14 @@ export const SSLConfig: FC<SSLConfigProps> = ({
       </div>
 
       {/* System CA Info (for databases that don't support custom CA upload) */}
-      {requiresCA && !supportsCustomCA && (
+      {requiresCA && !supportsCustomCAContent && (
         <div className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
           {t('systemCaOnly')}
         </div>
       )}
 
       {/* CA Certificate Input */}
-      {requiresCA && supportsCustomCA && (
+      {requiresCA && supportsCustomCAContent && (
         <CertificateInput
           label={t('caCertificate')}
           contentValue={advancedForm[SSL_KEYS.CA_CONTENT] || ''}
@@ -218,7 +209,7 @@ export const SSLConfig: FC<SSLConfigProps> = ({
       )}
 
       {/* Client Certificate Input (Optional) */}
-      {supportsClientCert && supportsCustomCA && (
+      {supportsClientCert && supportsCustomCAContent && (
         <>
           <CertificateInput
             label={t('clientCertificate')}

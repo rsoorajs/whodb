@@ -15,7 +15,6 @@
  */
 
 import sampleSize from "lodash/sampleSize";
-import {DatabaseType} from '../config/source-types';
 
 /**
  * Formats a number using locale-aware grouping separators (e.g. 1,000,000 in en-US, 10,00,000 in hi-IN).
@@ -33,90 +32,6 @@ export function formatNumber(value: number, language: string): string {
  */
 export function isNumeric(str: string) {
     return !isNaN(Number(str));
-}
-
-// Extension NoSQL check function — set via registerSourceUtilities()
-let isExtNoSQLSourceType: ((sourceType: string) => boolean) | null = null;
-
-/**
- * Determines if a source type resolves to a NoSQL connector.
- *
- * @param sourceType The displayed source type identifier.
- * @param connector The resolved backend connector id for the source.
- * @returns True for NoSQL connectors and registered extension source types.
- */
-export function isNoSQLSourceType(
-    sourceType: string | undefined,
-    connector: string | undefined
-): boolean {
-    if (sourceType && isExtNoSQLSourceType && isExtNoSQLSourceType(sourceType)) {
-        return true;
-    }
-
-    switch (connector ?? sourceType) {
-        case DatabaseType.MongoDb:
-        case DatabaseType.Redis:
-        case DatabaseType.ElasticSearch:
-        case DatabaseType.Memcached:
-            return true;
-    }
-    return false;
-}
-
-// Extension storage label function — set via registerSourceUtilities()
-let getExtSourceObjectLabel: ((sourceType: string | undefined, singular: boolean) => string | null) | null = null;
-
-/** Register extension utility functions for source-specific UI behavior. */
-export function registerSourceUtilities(fns: {
-    isExtNoSQLSourceType?: (sourceType: string) => boolean;
-    getExtSourceObjectLabel?: (sourceType: string | undefined, singular: boolean) => string | null;
-}) {
-    if (fns.isExtNoSQLSourceType) {
-        isExtNoSQLSourceType = fns.isExtNoSQLSourceType;
-    }
-    if (fns.getExtSourceObjectLabel) {
-        getExtSourceObjectLabel = fns.getExtSourceObjectLabel;
-    }
-}
-
-/**
- * Returns the appropriate object label for a source type.
- *
- * @param sourceType The displayed source type identifier.
- * @param connector The resolved backend connector id for the source.
- * @param singular Whether to return the singular form.
- * @returns The label (for example "Tables", "Collections", or "Indices").
- */
-export function getSourceObjectLabelForType(
-    sourceType: string | undefined,
-    connector: string | undefined,
-    singular: boolean = false
-) {
-    if (getExtSourceObjectLabel) {
-        const extLabel = getExtSourceObjectLabel(sourceType, singular);
-        if (extLabel !== null) {
-            return extLabel;
-        }
-    }
-
-    switch(connector ?? sourceType) {
-        case DatabaseType.ElasticSearch:
-            return singular ? "Index" : "Indices";
-        case DatabaseType.MongoDb:
-            return singular ? "Collection" : "Collections";
-        case DatabaseType.Redis:
-            return singular ? "Key" : "Keys";
-        case DatabaseType.Memcached:
-            return singular ? "Item" : "Items";
-        case DatabaseType.MySql:
-        case DatabaseType.Postgres:
-        case DatabaseType.MariaDb:
-        case DatabaseType.Sqlite3:
-        case DatabaseType.DuckDb:
-        case DatabaseType.ClickHouse:
-            return singular ? "Table" : "Tables";
-    }
-    return singular ? "Storage Unit" : "Storage Units";
 }
 
 /**

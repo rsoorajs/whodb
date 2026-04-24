@@ -24,6 +24,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/clidey/whodb/cli/internal/sourcetypes"
 )
 
 // DetectedContainer represents a running Docker container that hosts a known database.
@@ -166,22 +168,11 @@ func matchImageType(image string) string {
 
 // defaultContainerPort returns the standard internal port for a given database type.
 func defaultContainerPort(dbType string) int {
-	switch dbType {
-	case "Postgres":
-		return 5432
-	case "MySQL", "MariaDB":
-		return 3306
-	case "MongoDB":
-		return 27017
-	case "Redis":
-		return 6379
-	case "ClickHouse":
-		return 9000
-	case "ElasticSearch":
-		return 9200
-	default:
+	port, ok := sourcetypes.DefaultPort(dbType)
+	if !ok {
 		return 0
 	}
+	return port
 }
 
 // extractHostPort parses Docker port mappings like "0.0.0.0:5432->5432/tcp, :::5432->5432/tcp"

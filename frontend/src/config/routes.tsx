@@ -111,14 +111,14 @@ export const InternalRoutes = {
     Chat: {
         name: "Chat",
         path: "/chat",
-        component: (
-            <SourceSurfaceRoute
-                surface="chat"
-                component={SQLAgentPage
-                    ? <Suspense fallback={<LoadingPage />}><SQLAgentPage /></Suspense>
-                    : <LazyRoute component={ChatPage} />}
-            />
-        ),
+        component: SQLAgentPage
+            ? <Suspense fallback={<LoadingPage />}><SQLAgentPage /></Suspense>
+            : (
+                <SourceSurfaceRoute
+                    surface="chat"
+                    component={<LazyRoute component={ChatPage} />}
+                />
+            ),
     },
     Logout: {
         name: "Logout",

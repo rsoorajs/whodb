@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/clidey/whodb/cli/internal/config"
-	"github.com/clidey/whodb/core/src/dbcatalog"
+	"github.com/clidey/whodb/cli/internal/sourcetypes"
 	"github.com/clidey/whodb/core/src/envconfig"
 	"github.com/clidey/whodb/core/src/types"
 )
@@ -134,7 +134,7 @@ func EnvConnections() []config.Connection {
 	typeCounts := make(map[string]int)
 	connections := make([]config.Connection, 0)
 
-	for _, dbType := range dbcatalog.IDs() {
+	for _, dbType := range sourcetypes.IDs() {
 		profiles := envconfig.GetDefaultDatabaseCredentials(dbType)
 		for _, profile := range profiles {
 			typeCounts[dbType]++

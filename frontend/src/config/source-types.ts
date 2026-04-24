@@ -28,26 +28,6 @@ import { Icons } from "../components/icons";
 import { getEdition } from "./edition";
 import { getRegisteredSourceTypeOverrides } from "./source-registry";
 
-export const DatabaseType = {
-    Postgres: "Postgres",
-    CockroachDb: "CockroachDB",
-    MySql: "MySQL",
-    MariaDb: "MariaDB",
-    Sqlite3: "Sqlite3",
-    DuckDb: "DuckDB",
-    MongoDb: "MongoDB",
-    Redis: "Redis",
-    Memcached: "Memcached",
-    ElasticSearch: "ElasticSearch",
-    ClickHouse: "ClickHouse",
-    QuestDb: "QuestDB",
-    OpenSearch: "OpenSearch",
-    Valkey: "Valkey",
-    DocumentDb: "DocumentDB",
-} as const;
-
-export type DatabaseType = typeof DatabaseType[keyof typeof DatabaseType];
-
 /**
  * Type category for grouping database types in the UI.
  */
@@ -92,6 +72,76 @@ export interface SourceContractDescriptor {
     DefaultObjectKind: SourceObjectKind;
     GraphScopeKind?: SourceObjectKind | null;
     ObjectTypes: SourceObjectTypeDescriptor[];
+}
+
+/**
+ * Connection traits exposed by the backend source catalog.
+ */
+export interface SourceConnectionTraitsDescriptor {
+    transport: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['connection']['transport'];
+    hostInputMode: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['connection']['hostInputMode'];
+    hostInputUrlParser: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['connection']['hostInputUrlParser'];
+    supportsCustomCAContent: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['connection']['supportsCustomCAContent'];
+}
+
+/**
+ * Presentation traits exposed by the backend source catalog.
+ */
+export interface SourcePresentationTraitsDescriptor {
+    profileLabelStrategy: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['presentation']['profileLabelStrategy'];
+    schemaFidelity: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['presentation']['schemaFidelity'];
+}
+
+/**
+ * Query-surface traits exposed by the backend source catalog.
+ */
+export interface SourceQueryTraitsDescriptor {
+    supportsAnalyze: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['query']['supportsAnalyze'];
+    explainMode: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['query']['explainMode'];
+}
+
+/**
+ * Mock-data traits exposed by the backend source catalog.
+ */
+export interface SourceMockDataTraitsDescriptor {
+    supportsRelationalDependencies: NonNullable<SourceTypesQuery['SourceTypes'][number]['traits']>['mockData']['supportsRelationalDependencies'];
+}
+
+/**
+ * Backend-owned source traits that do not belong in the CRUD contract.
+ */
+export interface SourceTraitsDescriptor {
+    connection: SourceConnectionTraitsDescriptor;
+    presentation: SourcePresentationTraitsDescriptor;
+    query: SourceQueryTraitsDescriptor;
+    mockData: SourceMockDataTraitsDescriptor;
+}
+
+/**
+ * Discovery-prefill metadata condition exposed by the backend source catalog.
+ */
+export interface SourceDiscoveryMetadataConditionDescriptor {
+    Key: string;
+    Value: string;
+}
+
+/**
+ * Discovery-prefill advanced-field default exposed by the backend source catalog.
+ */
+export interface SourceDiscoveryAdvancedDefaultDescriptor {
+    Key: string;
+    Value: string;
+    MetadataKey: string;
+    DefaultValue: string;
+    ProviderTypes: string[];
+    Conditions: SourceDiscoveryMetadataConditionDescriptor[];
+}
+
+/**
+ * Discovery-prefill metadata exposed by the backend source catalog.
+ */
+export interface SourceDiscoveryPrefillDescriptor {
+    AdvancedDefaults: SourceDiscoveryAdvancedDefaultDescriptor[];
 }
 
 /**
@@ -145,8 +195,10 @@ export interface SourceTypeItem {
     icon: ReactElement;
     extra: Record<string, string>;
     category?: SourceTypesQuery['SourceTypes'][number]['category'];
+    traits?: SourceTraitsDescriptor;
     connectionFields?: SourceConnectionFieldDescriptor[];
     contract?: SourceContractDescriptor;
+    discoveryPrefill?: SourceDiscoveryPrefillDescriptor;
     fields?: {
         hostname?: boolean;
         username?: boolean;
@@ -300,8 +352,10 @@ function decorateSourceType(item: BackendSourceType): SourceTypeItem {
         icon: resolveIcon(item.id, item.connector),
         extra: mapAdvancedDefaults(item.connectionFields),
         category: item.category,
+        traits: item.traits,
         connectionFields: item.connectionFields,
         contract: item.contract,
+        discoveryPrefill: item.discoveryPrefill,
         fields: {
             hostname: hostnameField != null,
             username: usernameField != null,
@@ -357,6 +411,14 @@ function mergeSourceTypeOverride(
         ...item,
         ...override,
         extra: override.extra ? { ...item.extra, ...override.extra } : item.extra,
+        traits: override.traits
+            ? {
+                connection: { ...(item.traits?.connection ?? {}), ...override.traits.connection },
+                presentation: { ...(item.traits?.presentation ?? {}), ...override.traits.presentation },
+                query: { ...(item.traits?.query ?? {}), ...override.traits.query },
+                mockData: { ...(item.traits?.mockData ?? {}), ...override.traits.mockData },
+            }
+            : item.traits,
         fields: override.fields ? { ...item.fields, ...override.fields } : item.fields,
         requiredFields: override.requiredFields ? { ...item.requiredFields, ...override.requiredFields } : item.requiredFields,
     };

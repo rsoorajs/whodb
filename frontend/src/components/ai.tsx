@@ -37,11 +37,12 @@ import {
     SelectValue,
     Sheet,
     SheetContent,
+    Separator,
     SheetFooter,
     toast
 } from "@clidey/ux";
 import { SearchSelect } from "./ux";
-import { FC, ReactElement, useCallback, useEffect, useMemo, useState } from "react";
+import { FC, ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GetAiModelsDocument, GetAiProvidersDocument } from "@graphql";
 import { AIModelsActions, availableExternalModelTypes } from "../store/ai-models";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -49,6 +50,7 @@ import { ensureModelsArray, ensureModelTypesArray } from "../utils/ai-models-hel
 import { ExternalLink } from "../utils/external-links";
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from "../hooks/use-translation";
+import { getAIProviderOverrides } from "../config/ai-provider-registry";
 import {
     ArrowPathIcon,
     ArrowTopRightOnSquareIcon,
@@ -143,96 +145,110 @@ export const useAI = () => {
         handleAIModelTypeChange(item);
     }, [handleAIModelTypeChange]);
 
-    useEffect(() => {
-        // Clear environment-defined providers from Redux state on mount to ensure fresh data
-        // Keep only user-added providers (those with tokens)
-        // Use modelTypes from Redux hook to ensure persistence has rehydrated
-        const userAddedProviders = modelTypes.filter(model =>
+    const stateRef = useRef({ modelType, currentModel, modelTypes });
+    stateRef.current = { modelType, currentModel, modelTypes };
+
+    const loadProviders = useCallback(async () => {
+        const { modelType: currentType, currentModel: savedModel, modelTypes: currentModelTypes } = stateRef.current;
+        const overrides = getAIProviderOverrides();
+        const isPlatformMode = overrides?.isActive() ?? false;
+
+        const userAddedProviders = isPlatformMode
+            ? []
+            : currentModelTypes.filter(model => model.token != null && model.token !== "");
+
+        const [envResult, platformProviders] = await Promise.all([
+            getAiProviders().catch(() => ({ data: undefined, error: undefined })),
+            isPlatformMode && overrides ? overrides.loadProviders() : Promise.resolve([]),
+        ]);
+
+        const aiProviders = envResult.data?.AIProviders || [];
+
+        const initialModelTypes = userAddedProviders.filter(model =>
             model.token != null && model.token !== ""
         );
 
-        void getAiProviders()
-            .then(({ data, error }) => {
-                if (error) {
-                    throw error;
-                }
+        const newProviders = aiProviders.filter(provider =>
+            !initialModelTypes.some(model => model.id === provider.ProviderId)
+        );
 
-                const aiProviders = data?.AIProviders || [];
+        const finalModelTypes = [
+            ...newProviders.map(provider => ({
+                id: provider.ProviderId,
+                modelType: provider.Type,
+                name: provider.Name,
+                isEnvironmentDefined: provider.IsEnvironmentDefined,
+                isGeneric: provider.IsGeneric,
+            })),
+            ...platformProviders,
+            ...initialModelTypes,
+        ];
 
-                // Only keep user-added providers that still have tokens
-                const initialModelTypes = userAddedProviders.filter(model => {
-                    // Keep user-added providers (with tokens)
-                    return model.token != null && model.token !== "";
+        const waitingForPlatform = currentType?.isPlatformProvider && !isPlatformMode;
+
+        if (currentType && !finalModelTypes.some(model => model.id === currentType.id) && !waitingForPlatform) {
+            dispatch(AIModelsActions.setCurrentModelType({ id: "" }));
+            dispatch(AIModelsActions.setModels([]));
+            dispatch(AIModelsActions.setCurrentModel(undefined));
+        }
+
+        dispatch(AIModelsActions.setModelTypes(finalModelTypes));
+
+        if (waitingForPlatform) {
+            return;
+        }
+
+        const selectedProvider = currentType && finalModelTypes.some(m => m.id === currentType.id)
+            ? currentType
+            : null;
+
+        if (!selectedProvider && finalModelTypes.length > 0) {
+            const firstProvider = finalModelTypes[0];
+            dispatch(AIModelsActions.setCurrentModelType({ id: firstProvider.id }));
+
+            void fetchAIModels({
+                    providerId: firstProvider.id,
+                    modelType: firstProvider.modelType ?? "",
+                    token: firstProvider.token ?? "",
+                })
+                .then((aiModels) => {
+                    dispatch(AIModelsActions.setModels(aiModels));
+                    if (aiModels.length > 0) {
+                        dispatch(AIModelsActions.setCurrentModel(aiModels[0]));
+                    }
+                })
+                .catch(() => {
+                    handleAIModelsError();
                 });
-
-                // Filter out providers that already exist in modelTypes
-                const newProviders = aiProviders.filter(provider =>
-                    !initialModelTypes.some(model => model.id === provider.ProviderId)
-                );
-
-                const finalModelTypes = [
-                    ...newProviders.map(provider => ({
-                        id: provider.ProviderId,
-                        modelType: provider.Type,
-                        name: provider.Name,
-                        isEnvironmentDefined: provider.IsEnvironmentDefined,
-                        isGeneric: provider.IsGeneric,
-                    })),
-                    ...initialModelTypes
-                ];
-
-                // Check if current model type exists in final model types
-                // Use modelType from Redux hook instead of direct store access
-                if (modelType && !finalModelTypes.some(model => model.id === modelType.id)) {
-                    dispatch(AIModelsActions.setCurrentModelType({ id: "" }));
-                    dispatch(AIModelsActions.setModels([]));
-                    dispatch(AIModelsActions.setCurrentModel(undefined));
-                }
-
-                dispatch(AIModelsActions.setModelTypes(finalModelTypes));
-
-                // Auto-select first provider if none is selected and providers are available
-                if (!modelType && finalModelTypes.length > 0) {
-                    const firstProvider = finalModelTypes[0];
-                    dispatch(AIModelsActions.setCurrentModelType({ id: firstProvider.id }));
-
-                    // Fetch models for the first provider
-                    void fetchAIModels({
-                            providerId: firstProvider.id,
-                            modelType: firstProvider.modelType ?? "",
-                            token: (firstProvider as any).token ?? "",
-                        })
-                        .then((aiModels) => {
-                            dispatch(AIModelsActions.setModels(aiModels));
-                            if (aiModels.length > 0) {
-                                dispatch(AIModelsActions.setCurrentModel(aiModels[0]));
-                            }
-                        })
-                        .catch(() => {
-                            handleAIModelsError();
-                        });
-                } else if (modelType) {
-                    // Only fetch models if there's a current model type
-                    void fetchAIModels({
-                            providerId: modelType.id,
-                            modelType: modelType.modelType ?? "",
-                            token: modelType.token ?? "",
-                        })
-                        .then((aiModels) => {
-                            dispatch(AIModelsActions.setModels(aiModels));
-                            // Auto-select first model if none is selected
-                            if (aiModels.length > 0 && !currentModel) {
-                                dispatch(AIModelsActions.setCurrentModel(aiModels[0]));
-                            }
-                        })
-                        .catch(() => {
-                            handleAIModelsError();
-                        });
-                }
-            })
-            .catch(() => undefined);
+        } else if (selectedProvider) {
+            void fetchAIModels({
+                    providerId: selectedProvider.id,
+                    modelType: selectedProvider.modelType ?? "",
+                    token: selectedProvider.token ?? "",
+                })
+                .then((aiModels) => {
+                    dispatch(AIModelsActions.setModels(aiModels));
+                    if (aiModels.length > 0) {
+                        if (!savedModel || !aiModels.includes(savedModel)) {
+                            dispatch(AIModelsActions.setCurrentModel(aiModels[0]));
+                        }
+                    }
+                })
+                .catch(() => {
+                    handleAIModelsError();
+                });
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    useEffect(() => {
+        void loadProviders();
+
+        const overrides = getAIProviderOverrides();
+        if (overrides?.onActivate) {
+            return overrides.onActivate(() => { void loadProviders(); });
+        }
+    }, [loadProviders]);
 
     const modelTypesDropdownItems = useMemo(() => {
         return modelTypes.filter(modelType => modelType != null && modelType.modelType != null).map(modelType => ({
@@ -327,33 +343,55 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
 
         dispatch(AIModelsActions.setCurrentModel(undefined));
         dispatch(AIModelsActions.setModels([]));
+        const overrides = getAIProviderOverrides();
+        const isPlatformMode = overrides?.isActive() ?? false;
+
         void getAIModels({
             variables: {
                 modelType: externalModelType,
                 token: externalModelToken,
             }
-        }).then(({ data, error }) => {
+        }).then(async ({ data, error }) => {
             if (error) {
                 throw error;
             }
 
             const aiModels = data?.AIModel ?? [];
             dispatch(AIModelsActions.setModels(aiModels));
-                const id = uuidv4();
+
+            let id: string;
+            if (isPlatformMode && overrides) {
+                const result = await overrides.addProvider({
+                    modelType: externalModelType,
+                    name: externalModelName || externalModelType,
+                    token: externalModelToken,
+                });
+                if (!result) throw new Error('Failed to create provider');
+                id = result.id;
+                dispatch(AIModelsActions.addAIModelType({
+                    id,
+                    modelType: externalModelType,
+                    name: externalModelName || externalModelType,
+                    isPlatformProvider: true,
+                }));
+            } else {
+                id = uuidv4();
                 dispatch(AIModelsActions.addAIModelType({
                     id,
                     modelType: externalModelType,
                     name: externalModelName || externalModelType,
                     token: externalModelToken,
                 }));
-                dispatch(AIModelsActions.setCurrentModelType({ id }));
-                setExternalModel(externalModelTypes[0].id);
-                setExternalModelToken("");
-                setExternalModelName("");
-                setAddExternalModel(false);
-                if (aiModels.length > 0) {
-                    dispatch(AIModelsActions.setCurrentModel(aiModels[0]));
-                }
+            }
+
+            dispatch(AIModelsActions.setCurrentModelType({ id }));
+            setExternalModel(externalModelTypes[0].id);
+            setExternalModelToken("");
+            setExternalModelName("");
+            setAddExternalModel(false);
+            if (aiModels.length > 0) {
+                dispatch(AIModelsActions.setCurrentModel(aiModels[0]));
+            }
         }).catch((error: unknown) => {
             handleAIModelsError();
             const errorMessage = error instanceof Error
@@ -371,8 +409,12 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
         onClear?.();
     }, [onClear]);
 
-    const handleDeleteProvider = useCallback((id?: string) => {
+    const handleDeleteProvider = useCallback(async (id?: string) => {
         if (id) {
+            const overrides = getAIProviderOverrides();
+            if (overrides?.isActive()) {
+                await overrides.deleteProvider(id).catch(() => {});
+            }
             dispatch(AIModelsActions.removeAIModelType({ id }));
         }
         dispatch(AIModelsActions.setCurrentModelType({ id: "" }));
@@ -382,7 +424,7 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
 
     return <div className="flex flex-col gap-4" data-testid="ai-provider">
         <Sheet open={addExternalModel} onOpenChange={setAddExternalModel}>
-            <SheetContent className="max-w-md mx-auto w-full px-8 py-10 flex flex-col gap-4">
+            <SheetContent className="max-w-md mx-auto w-full flex flex-col gap-4">
                 <div className="flex flex-col gap-4">
                     <div className="text-lg font-semibold mb-2">{t('addExternalModel')}</div>
                     <div className="flex flex-col gap-2">
@@ -423,7 +465,7 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
                         />
                     </div>
                 </div>
-                <div className="flex items-center gap-sm self-end">
+                <div className="flex items-center gap-sm self-end mt-4">
                     <Button
                         onClick={handleAddExternalModel}
                         data-testid="external-model-cancel"
@@ -485,16 +527,18 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
                     side="right"
                     align="start"
                     extraOptions={
-                        <CommandItem
-                            key="__add__"
-                            value="__add__"
-                            onSelect={handleAddExternalModel}
-                        >
-                            <span className="flex items-center gap-sm text-green-500">
-                                <PlusCircleIcon className="w-4 h-4 stroke-green-500" />
+                        <>
+                            <Separator />
+                            <CommandItem
+                                key="__add__"
+                                value="__add__"
+                                onSelect={handleAddExternalModel}
+                            >
+                                <span className="mr-2 h-4 w-4 shrink-0" />
+                                <PlusCircleIcon className="w-4 h-4" />
                                 {t('addProvider')}
-                            </span>
-                        </CommandItem>
+                            </CommandItem>
+                        </>
                     }
                     rightIcon={<ChevronDownIcon className="w-4 h-4" />}
                     buttonProps={{

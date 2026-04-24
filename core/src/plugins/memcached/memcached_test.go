@@ -23,6 +23,7 @@ import (
 
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/query"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 func TestConvertWhereCondition(t *testing.T) {
@@ -129,9 +130,9 @@ func TestMemcachedMetadataAndHelpers(t *testing.T) {
 		t.Fatalf("expected non-nil value to use fmt string, got %q", got)
 	}
 
-	metadata := plugin.GetDatabaseMetadata()
-	if metadata.DatabaseType != engine.DatabaseType_Memcached {
-		t.Fatalf("expected Memcached metadata type, got %q", metadata.DatabaseType)
+	metadata, ok := sourcecatalog.ResolveSessionMetadata(string(engine.DatabaseType_Memcached))
+	if !ok || metadata == nil {
+		t.Fatalf("expected memcached metadata, got %#v", metadata)
 	}
 	if !sort.StringsAreSorted(metadata.Operators) {
 		t.Fatalf("expected operators to be sorted, got %#v", metadata.Operators)

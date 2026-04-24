@@ -60,7 +60,8 @@ type typeOverride struct {
 
 func TestSQLCanonicalAndAliasRoundTrips(t *testing.T) {
 	for _, target := range targets {
-		if target.plugin.GetDatabaseMetadata() == nil {
+		meta := sessionMetadataForTarget(target)
+		if meta == nil {
 			continue
 		}
 		switch target.plugin.Type {
@@ -91,9 +92,8 @@ func TestSQLCanonicalAndAliasRoundTrips(t *testing.T) {
 				t.Fatalf("expected unsupported type to fail on %s", target.name)
 			}
 
-			meta := target.plugin.GetDatabaseMetadata()
 			for alias := range meta.AliasMap {
-				if err := engine.ValidateColumnType(alias, meta); err != nil {
+				if err := engine.ValidateColumnType(alias, target.config.Credentials.Type, meta); err != nil {
 					t.Fatalf("expected alias %s to validate for %s: %v", alias, target.name, err)
 				}
 			}
@@ -674,7 +674,7 @@ func runSQLTypeCase(t *testing.T, target target, tc typeCase, idx int) {
 }
 
 func sqlCasesForTarget(target target) []typeCase {
-	meta := target.plugin.GetDatabaseMetadata()
+	meta := sessionMetadataForTarget(target)
 	if meta == nil {
 		return nil
 	}
@@ -718,19 +718,19 @@ func sqlCasesForTarget(target target) []typeCase {
 			value:      value,
 			updated:    updated,
 			expect:     expect,
-			category:   td.Category,
+			category:   engine.TypeCategory(td.Category),
 		})
 	}
 
-	return addAliasCases(meta, baseCases)
+	return addAliasCases(meta.AliasMap, baseCases)
 }
 
-func addAliasCases(meta *engine.DatabaseMetadata, baseCases []typeCase) []typeCase {
-	if meta == nil {
+func addAliasCases(aliasMap map[string]string, baseCases []typeCase) []typeCase {
+	if aliasMap == nil {
 		return baseCases
 	}
 
-	cases := make([]typeCase, 0, len(baseCases)+len(meta.AliasMap))
+	cases := make([]typeCase, 0, len(baseCases)+len(aliasMap))
 	cases = append(cases, baseCases...)
 
 	byBase := map[string]typeCase{}
@@ -738,7 +738,7 @@ func addAliasCases(meta *engine.DatabaseMetadata, baseCases []typeCase) []typeCa
 		byBase[common.ParseTypeSpec(tc.columnType).BaseType] = tc
 	}
 
-	for alias, canonical := range meta.AliasMap {
+	for alias, canonical := range aliasMap {
 		base := strings.ToUpper(canonical)
 		tc, ok := byBase[base]
 		if !ok {

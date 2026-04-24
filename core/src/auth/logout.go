@@ -22,18 +22,19 @@ import (
 
 	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src/common"
-	"github.com/clidey/whodb/core/src/engine"
-	"github.com/clidey/whodb/core/src/plugins"
+	"github.com/clidey/whodb/core/src/source"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 func Logout(ctx context.Context) (*model.StatusResponse, error) {
-	if creds := GetCredentials(ctx); creds != nil {
-		// Close any cached database connection for this profile
-		plugins.RemoveConnection(&engine.PluginConfig{Credentials: creds})
+	if creds := GetSourceCredentials(ctx); creds != nil {
+		if spec, ok := sourcecatalog.Find(creds.SourceType); ok {
+			_ = source.Invalidate(ctx, spec, creds)
+		}
 
 		// Best-effort: remove stored credentials from keyring
-		if creds.Id != nil {
-			if err := DeleteCredentials(*creds.Id); err != nil {
+		if creds.ID != nil {
+			if err := DeleteCredentials(*creds.ID); err != nil {
 				warnKeyringUnavailableOnce(err)
 			}
 		}

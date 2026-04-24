@@ -26,12 +26,20 @@ import (
 	"context"
 	"errors"
 
-	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/source"
 )
 
-// RawExecutePlugin defines the interface for executing raw queries.
-type RawExecutePlugin interface {
-	RawExecute(config *engine.PluginConfig, query string, params ...any) (*engine.GetRowsResult, error)
+// ChatQueryExecutor executes read queries produced by the chat planner.
+type ChatQueryExecutor interface {
+	RunQuery(ctx context.Context, query string, params ...any) (*source.RowsResult, error)
+}
+
+// ChatQueryExecutorFunc adapts a function to ChatQueryExecutor.
+type ChatQueryExecutorFunc func(ctx context.Context, query string, params ...any) (*source.RowsResult, error)
+
+// RunQuery executes the wrapped function.
+func (fn ChatQueryExecutorFunc) RunQuery(ctx context.Context, query string, params ...any) (*source.RowsResult, error) {
+	return fn(ctx, query, params...)
 }
 
 // ErrBAMLNotSupported is returned when AI features are used on unsupported platforms
@@ -45,19 +53,19 @@ func ExecuteChatQuery(
 	tableDetails string,
 	previousConversation string,
 	userQuery string,
-	config *engine.PluginConfig,
-	plugin RawExecutePlugin,
-) ([]*engine.ChatMessage, error) {
+	model *source.ExternalModel,
+	executor ChatQueryExecutor,
+) ([]*source.ChatMessage, error) {
 	return nil, ErrBAMLNotSupported
 }
 
 // SetupAIClient returns nil on unsupported platforms
-func SetupAIClient(externalModel *engine.ExternalModel) []any {
+func SetupAIClient(externalModel *source.ExternalModel) []any {
 	return nil
 }
 
 // CreateDynamicBAMLClient returns nil on unsupported platforms
-func CreateDynamicBAMLClient(externalModel *engine.ExternalModel) any {
+func CreateDynamicBAMLClient(externalModel *source.ExternalModel) any {
 	return nil
 }
 

@@ -92,9 +92,10 @@ func TestAddRowFromJSON_RejectsViewTargets(t *testing.T) {
 	}
 
 	mgr.currentConnection = &Connection{
-		Name: "db",
-		Type: "postgres",
-		Host: "localhost",
+		Name:     "db",
+		Type:     "postgres",
+		Host:     "localhost",
+		Database: "app",
 	}
 	mgr.cache.SetTables("public", []engine.StorageUnit{
 		{Name: "order_summary", Attributes: []engine.Record{{Key: "Type", Value: "VIEW"}}},

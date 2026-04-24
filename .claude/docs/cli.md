@@ -20,6 +20,11 @@ cd cli && go build -o whodb-cli .
 ./whodb-cli query "SELECT * FROM users" --connection my-postgres
 ./whodb-cli query --stream --format ndjson "SELECT * FROM audit_log"
 
+# Cloud discovery (when provider support is enabled)
+./whodb-cli cloud providers list
+./whodb-cli cloud connections list
+./whodb-cli connect --discovered aws-prod-us-west-2/prod-db
+
 # Schema diff
 ./whodb-cli diff --from staging --to prod
 
@@ -43,6 +48,8 @@ cli/
     connect.go            # Database connection
     query.go              # Query execution
     diff.go               # Schema diff
+    cloud.go              # Cloud provider inspection and discovery
+    cloud_connect.go      # Shared discovered-resource connect/save helpers
     explain.go            # EXPLAIN output
     erd.go                # Graph output
     import.go             # Shared import pipeline entry
@@ -67,6 +74,7 @@ cli/
       mockdata.go         # Shared mock data wrappers and guards
     config/               # Unified config section + workspace persistence
     connectionopts/       # Shared connection option mapping (SSL, etc.)
+    cloud/                # Shared cloud provider runtime adapter
     baml/                 # BAML setup
   pkg/
     identity/
@@ -117,6 +125,8 @@ Keep CE defaults in `cli/pkg/identity`. Do not add non-CE product-specific value
 - ERD based on backend graph data
 - SSL configuration and SSL status visibility
 - Expanded MCP read tool surface
+- Cloud provider discovery commands backed by the shared provider runtime
+- Discovered-resource connect/save flows built on the shared cloud prefill path
 
 ## Configuration
 

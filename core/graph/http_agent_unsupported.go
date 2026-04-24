@@ -16,19 +16,16 @@
  * limitations under the License.
  */
 
-// http_sql_agent_unsupported.go provides a stub for arm/riscv64 platforms
-// where the SQL Agent is not supported.
-
 package graph
 
 import "net/http"
 
-// sqlAgentStreamHandler returns not-implemented on unsupported platforms.
-func sqlAgentStreamHandler(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "SQL Agent not available on this platform", http.StatusNotImplemented)
+// agentStreamHandler returns not-implemented on unsupported platforms.
+func agentStreamHandler(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Agent not available on this platform", http.StatusNotImplemented)
 }
 
-// sqlAgentPermitHandler returns not-implemented on unsupported platforms.
-func sqlAgentPermitHandler(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "SQL Agent not available on this platform", http.StatusNotImplemented)
+// agentPermitHandler returns not-implemented on unsupported platforms.
+func agentPermitHandler(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Agent not available on this platform", http.StatusNotImplemented)
 }

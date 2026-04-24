@@ -17,10 +17,11 @@
 import {useMutation} from "@apollo/client/react";
 import {Toaster} from "@clidey/ux";
 import {UpdateSettingsDocument} from '@graphql';
-import {useCallback, useEffect} from "react";
+import {Suspense, useCallback, useEffect} from "react";
 import {Route, Routes} from "react-router-dom";
 import {getStoredConsentState, optInUser, optOutUser, resetAnalyticsIdentity} from "./config/posthog";
 import {getRoutes, PrivateRoute, PublicRoutes} from './config/routes';
+import {getRegisteredPublicRoutes} from './config/route-registry';
 import {NavigateToDefault} from "./pages/chat/default-chat-route";
 import {useAppDispatch, useAppSelector} from "./store/hooks";
 import {SettingsActions} from "./store/settings";
@@ -140,6 +141,9 @@ export const App = () => {
             <Route path="/" element={<NavigateToDefault />} />
           </Route>
           <Route path={PublicRoutes.Login.path} element={PublicRoutes.Login.component} />
+          {getRegisteredPublicRoutes().map(route => (
+            <Route key={route.path} path={route.path} element={<Suspense fallback={null}>{<route.lazyComponent />}</Suspense>} />
+          ))}
         </Routes>
       </div>
     </TourProvider>

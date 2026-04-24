@@ -28,9 +28,11 @@ import (
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/importer"
 	"github.com/clidey/whodb/core/src/log"
+	"github.com/clidey/whodb/core/src/plugins"
 	"github.com/clidey/whodb/core/src/query"
 	"github.com/clidey/whodb/core/src/querysuggestions"
 	"github.com/clidey/whodb/core/src/source"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 func init() {
@@ -61,7 +63,23 @@ func (c *DatabaseConnector) Open(_ context.Context, spec source.TypeSpec, creden
 		spec:        spec,
 		plugin:      plugin,
 		credentials: credentials,
+		validated:   map[databaseObjectCacheKey]struct{}{},
+		columns:     map[databaseObjectCacheKey][]source.Column{},
 	}, nil
+}
+
+// Invalidate clears cached plugin connection state for one database-backed
+// source credential set.
+func (c *DatabaseConnector) Invalidate(_ context.Context, spec source.TypeSpec, credentials *source.Credentials) error {
+	plugins.RemoveConnection(engine.NewPluginConfig(EngineCredentials(spec, credentials)))
+	return nil
+}
+
+// Shutdown releases all cached plugin connections owned by the database-backed
+// source driver.
+func (c *DatabaseConnector) Shutdown(ctx context.Context) error {
+	plugins.CloseAllConnections(ctx)
+	return nil
 }
 
 // DatabaseSession adapts one database plugin instance to the source session interfaces.
@@ -69,22 +87,32 @@ type DatabaseSession struct {
 	spec        source.TypeSpec
 	plugin      *engine.Plugin
 	credentials *source.Credentials
+	validated   map[databaseObjectCacheKey]struct{}
+	columns     map[databaseObjectCacheKey][]source.Column
 }
 
-// Metadata returns source session metadata derived from plugin metadata.
-func (s *DatabaseSession) Metadata(_ context.Context) (*source.SessionMetadata, error) {
-	metadata := s.plugin.GetDatabaseMetadata()
-	if metadata == nil {
-		return &source.SessionMetadata{
-			SourceType:     s.spec.ID,
-			QueryLanguages: queryLanguagesForSpec(s.spec),
-			AliasMap:       map[string]string{},
-		}, nil
-	}
+type databaseObjectCacheKey struct {
+	namespace string
+	name      string
+}
 
-	aliasMap := map[string]string{}
-	for key, value := range metadata.AliasMap {
-		aliasMap[key] = value
+type sourceQueryStreamWriterAdapter struct {
+	writer source.QueryStreamWriter
+}
+
+func (w *sourceQueryStreamWriterAdapter) WriteColumns(columns []engine.Column) error {
+	return w.writer.WriteColumns(columns)
+}
+
+func (w *sourceQueryStreamWriterAdapter) WriteRow(row []string) error {
+	return w.writer.WriteRow(row)
+}
+
+// Metadata returns source session metadata derived from the source registry.
+func (s *DatabaseSession) Metadata(_ context.Context) (*source.SessionMetadata, error) {
+	metadata, _ := sourcecatalog.ResolveSessionMetadata(s.spec.ID, s.spec.Connector)
+	if metadata == nil {
+		metadata = &source.TypeSessionMetadata{}
 	}
 
 	return &source.SessionMetadata{
@@ -92,7 +120,7 @@ func (s *DatabaseSession) Metadata(_ context.Context) (*source.SessionMetadata, 
 		QueryLanguages:  queryLanguagesForSpec(s.spec),
 		TypeDefinitions: slices.Clone(metadata.TypeDefinitions),
 		Operators:       slices.Clone(metadata.Operators),
-		AliasMap:        aliasMap,
+		AliasMap:        cloneAliasMap(metadata.AliasMap),
 	}, nil
 }
 
@@ -185,14 +213,38 @@ func (s *DatabaseSession) GetObject(ctx context.Context, ref source.ObjectRef) (
 
 // ReadRows returns rows for a tabular source object.
 func (s *DatabaseSession) ReadRows(ctx context.Context, ref source.ObjectRef, where *query.WhereCondition, sort []*query.SortCondition, pageSize int, pageOffset int) (*source.RowsResult, error) {
-	config := s.pluginConfig(ctx, &ref)
-	namespace := s.namespaceForRef(&ref)
-	name := objectName(ref)
-	if err := s.validateObject(config, namespace, name); err != nil {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionViewRows); err != nil {
 		return nil, err
 	}
 
-	return s.plugin.GetRows(config, &engine.GetRowsRequest{
+	config := s.pluginConfig(ctx, &ref)
+	namespace := s.namespaceForRef(&ref)
+	name := objectName(ref)
+	log.WithFields(map[string]any{
+		"sourceType": s.spec.ID,
+		"connector":  s.spec.Connector,
+		"kind":       ref.Kind,
+		"path":       slices.Clone(ref.Path),
+		"namespace":  namespace,
+		"objectName": name,
+		"pageSize":   pageSize,
+		"pageOffset": pageOffset,
+		"hasWhere":   where != nil,
+		"sortCount":  len(sort),
+	}).Debug("Source row read requested")
+	if err := s.validateObject(config, namespace, name); err != nil {
+		log.WithError(err).WithFields(map[string]any{
+			"sourceType": s.spec.ID,
+			"connector":  s.spec.Connector,
+			"kind":       ref.Kind,
+			"path":       slices.Clone(ref.Path),
+			"namespace":  namespace,
+			"objectName": name,
+		}).Debug("Source row read failed validation")
+		return nil, err
+	}
+
+	rows, err := s.plugin.GetRows(config, &engine.GetRowsRequest{
 		Schema:      namespace,
 		StorageUnit: name,
 		Where:       where,
@@ -200,15 +252,46 @@ func (s *DatabaseSession) ReadRows(ctx context.Context, ref source.ObjectRef, wh
 		PageSize:    pageSize,
 		PageOffset:  pageOffset,
 	})
+	if err != nil {
+		log.WithError(err).WithFields(map[string]any{
+			"sourceType": s.spec.ID,
+			"connector":  s.spec.Connector,
+			"kind":       ref.Kind,
+			"path":       slices.Clone(ref.Path),
+			"namespace":  namespace,
+			"objectName": name,
+		}).Debug("Source row read failed in plugin")
+		return nil, err
+	}
+
+	log.WithFields(map[string]any{
+		"sourceType":  s.spec.ID,
+		"connector":   s.spec.Connector,
+		"kind":        ref.Kind,
+		"path":        slices.Clone(ref.Path),
+		"namespace":   namespace,
+		"objectName":  name,
+		"rowCount":    len(rows.Rows),
+		"columnCount": len(rows.Columns),
+		"totalCount":  rows.TotalCount,
+	}).Debug("Source row read completed")
+	return rows, nil
 }
 
 // Columns returns columns for one source object.
 func (s *DatabaseSession) Columns(ctx context.Context, ref source.ObjectRef) ([]source.Column, error) {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionInspect); err != nil {
+		return nil, err
+	}
+
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
 	if err := s.validateObject(config, namespace, name); err != nil {
 		return nil, err
+	}
+	if cachedColumns, ok := s.cachedColumns(namespace, name); ok {
+		return cachedColumns, nil
 	}
 
 	columns, err := s.plugin.GetColumnsForTable(config, namespace, name)
@@ -218,7 +301,8 @@ func (s *DatabaseSession) Columns(ctx context.Context, ref source.ObjectRef) ([]
 	if err := s.plugin.MarkGeneratedColumns(config, namespace, name, columns); err != nil {
 		log.WithError(err).Warn("Failed to mark generated columns for source object")
 	}
-	return columns, nil
+	s.cacheColumns(namespace, name, columns)
+	return cloneSourceColumns(columns), nil
 }
 
 // ColumnsBatch returns columns for multiple source objects.
@@ -237,14 +321,58 @@ func (s *DatabaseSession) ColumnsBatch(ctx context.Context, refs []source.Object
 	return results, nil
 }
 
+// ColumnConstraints returns per-column constraint metadata for one source
+// object.
+func (s *DatabaseSession) ColumnConstraints(ctx context.Context, ref source.ObjectRef) (map[string]map[string]any, error) {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionInspect); err != nil {
+		return nil, err
+	}
+
+	config := s.pluginConfig(ctx, &ref)
+	namespace := s.namespaceForRef(&ref)
+	name := objectName(ref)
+	if err := s.validateObject(config, namespace, name); err != nil {
+		return nil, err
+	}
+
+	return s.plugin.GetColumnConstraints(config, namespace, name)
+}
+
 // RunQuery executes a query against the source session.
 func (s *DatabaseSession) RunQuery(ctx context.Context, query string, params ...any) (*source.RowsResult, error) {
+	if err := s.ensureSurface(source.SurfaceQuery); err != nil {
+		return nil, err
+	}
+
 	config := s.pluginConfig(ctx, nil)
 	return s.plugin.RawExecute(config, query, params...)
 }
 
+// RunQueryStream executes a query through the active source session's
+// streaming path when supported.
+func (s *DatabaseSession) RunQueryStream(ctx context.Context, query string, writer source.QueryStreamWriter, params ...any) error {
+	if err := s.ensureSurface(source.SurfaceQuery); err != nil {
+		return err
+	}
+	if writer == nil {
+		return fmt.Errorf("stream writer is required")
+	}
+
+	streamer, ok := s.plugin.PluginFunctions.(engine.QueryStreamer)
+	if !ok {
+		return fmt.Errorf("streaming queries are not supported for %s", s.spec.Label)
+	}
+
+	config := s.pluginConfig(ctx, nil)
+	return streamer.StreamRawExecute(config, query, &sourceQueryStreamWriterAdapter{writer: writer}, params...)
+}
+
 // RunScript executes a source-native script against the session.
 func (s *DatabaseSession) RunScript(ctx context.Context, script string, multiStatement bool, params ...any) (*source.RowsResult, error) {
+	if err := s.ensureSurface(source.SurfaceQuery); err != nil {
+		return nil, err
+	}
+
 	config := s.pluginConfig(ctx, nil)
 	config.MultiStatement = multiStatement
 	return s.plugin.RawExecute(config, script, params...)
@@ -252,6 +380,10 @@ func (s *DatabaseSession) RunScript(ctx context.Context, script string, multiSta
 
 // ReadGraph returns graph data for a source scope.
 func (s *DatabaseSession) ReadGraph(ctx context.Context, ref *source.ObjectRef) ([]source.GraphUnit, error) {
+	if err := s.ensureSurface(source.SurfaceGraph); err != nil {
+		return nil, err
+	}
+
 	config := s.pluginConfig(ctx, ref)
 	scope := ""
 	if ref != nil {
@@ -262,6 +394,10 @@ func (s *DatabaseSession) ReadGraph(ctx context.Context, ref *source.ObjectRef) 
 
 // Reply runs AI chat against the source session.
 func (s *DatabaseSession) Reply(ctx context.Context, ref *source.ObjectRef, previousConversation string, query string) ([]*source.ChatMessage, error) {
+	if err := s.ensureSurface(source.SurfaceChat); err != nil {
+		return nil, err
+	}
+
 	config := s.pluginConfig(ctx, ref)
 	scope := ""
 	if ref != nil {
@@ -272,6 +408,10 @@ func (s *DatabaseSession) Reply(ctx context.Context, ref *source.ObjectRef, prev
 
 // ReplyWithModel runs AI chat against the source session with an explicit model.
 func (s *DatabaseSession) ReplyWithModel(ctx context.Context, ref *source.ObjectRef, previousConversation string, query string, model *source.ExternalModel) ([]*source.ChatMessage, error) {
+	if err := s.ensureSurface(source.SurfaceChat); err != nil {
+		return nil, err
+	}
+
 	config := s.pluginConfig(ctx, ref)
 	config.ExternalModel = model
 	scope := ""
@@ -283,13 +423,21 @@ func (s *DatabaseSession) ReplyWithModel(ctx context.Context, ref *source.Object
 
 // CreateObject creates a new source object.
 func (s *DatabaseSession) CreateObject(ctx context.Context, parent *source.ObjectRef, name string, fields []source.Record) (bool, error) {
+	if err := s.ensureCreateChildSupported(parent); err != nil {
+		return false, err
+	}
+
 	config := s.pluginConfig(ctx, parent)
 	namespace := s.namespaceForRef(parent)
 	return s.plugin.AddStorageUnit(config, namespace, name, fields)
 }
 
-// UpdateObject updates an existing source object.
+// UpdateObject updates data within an existing source object.
 func (s *DatabaseSession) UpdateObject(ctx context.Context, ref source.ObjectRef, values map[string]string, updatedColumns []string) (bool, error) {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionUpdateData); err != nil {
+		return false, err
+	}
+
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
@@ -301,6 +449,10 @@ func (s *DatabaseSession) UpdateObject(ctx context.Context, ref source.ObjectRef
 
 // AddRow inserts a row into a source object.
 func (s *DatabaseSession) AddRow(ctx context.Context, ref source.ObjectRef, values []source.Record) (bool, error) {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionInsertData); err != nil {
+		return false, err
+	}
+
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
@@ -310,8 +462,12 @@ func (s *DatabaseSession) AddRow(ctx context.Context, ref source.ObjectRef, valu
 	return s.plugin.AddRow(config, namespace, name, values)
 }
 
-// DeleteRow deletes a row from a source object.
+// DeleteRow deletes row/document data from a source object.
 func (s *DatabaseSession) DeleteRow(ctx context.Context, ref source.ObjectRef, values map[string]string) (bool, error) {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionDeleteData); err != nil {
+		return false, err
+	}
+
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
@@ -330,6 +486,10 @@ func (s *DatabaseSession) IsAvailable(ctx context.Context) bool {
 
 // ExportRows streams tabular rows for one source object.
 func (s *DatabaseSession) ExportRows(ctx context.Context, ref source.ObjectRef, writer func([]string) error, selectedRows []map[string]any) error {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionViewRows); err != nil {
+		return err
+	}
+
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
@@ -338,6 +498,10 @@ func (s *DatabaseSession) ExportRows(ctx context.Context, ref source.ObjectRef, 
 
 // ExportRowsNDJSON streams NDJSON rows for one source object.
 func (s *DatabaseSession) ExportRowsNDJSON(ctx context.Context, ref source.ObjectRef, writer func(string) error, selectedRows []map[string]any) error {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionViewRows); err != nil {
+		return err
+	}
+
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
@@ -359,20 +523,24 @@ func (s *DatabaseSession) SSLStatus(ctx context.Context) (*source.SSLStatus, err
 }
 
 // ImportData imports parsed tabular data into one source object.
-func (s *DatabaseSession) ImportData(ctx context.Context, ref source.ObjectRef, request source.ImportRequest) error {
+func (s *DatabaseSession) ImportData(ctx context.Context, ref source.ObjectRef, request source.ImportRequest) (*source.ImportResult, error) {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionImportData); err != nil {
+		return nil, err
+	}
+
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
 	if err := s.validateObject(config, namespace, name); err != nil {
-		return err
+		return nil, err
 	}
 
 	columns, err := s.Columns(ctx, ref)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = importer.Execute(s.plugin, config, &importer.ExecuteRequest{
+	result, err := importer.Execute(s.plugin, config, &importer.ExecuteRequest{
 		Schema:             namespace,
 		StorageUnit:        name,
 		Mode:               importer.Mode(request.Mode),
@@ -382,11 +550,19 @@ func (s *DatabaseSession) ImportData(ctx context.Context, ref source.ObjectRef, 
 		BatchSize:          request.BatchSize,
 		TargetColumns:      columns,
 	})
-	return err
+	if err != nil {
+		return nil, err
+	}
+
+	return &source.ImportResult{RowsImported: result.RowsImported}, nil
 }
 
 // GenerateMockData creates synthetic data for one source object.
 func (s *DatabaseSession) GenerateMockData(ctx context.Context, ref source.ObjectRef, rowCount int, fkDensityRatio int, overwriteExisting bool) (*source.MockDataGenerationResult, error) {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionGenerateMockData); err != nil {
+		return nil, err
+	}
+
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
@@ -416,6 +592,10 @@ func (s *DatabaseSession) GenerateMockData(ctx context.Context, ref source.Objec
 // AnalyzeMockDataDependencies computes the dependency plan for mock-data
 // generation on one source object.
 func (s *DatabaseSession) AnalyzeMockDataDependencies(ctx context.Context, ref source.ObjectRef, rowCount int, fkDensityRatio int) (*source.MockDataDependencyAnalysis, error) {
+	if err := s.ensureObjectAction(ref.Kind, source.ActionGenerateMockData); err != nil {
+		return nil, err
+	}
+
 	config := s.pluginConfig(ctx, &ref)
 	namespace := s.namespaceForRef(&ref)
 	name := objectName(ref)
@@ -450,10 +630,11 @@ func (s *DatabaseSession) AnalyzeMockDataDependencies(ctx context.Context, ref s
 func (s *DatabaseSession) QuerySuggestions(ctx context.Context, ref *source.ObjectRef) ([]source.QuerySuggestion, error) {
 	config := s.pluginConfig(ctx, ref)
 	scope := s.namespaceForRef(ref)
-	suggestions, err := querysuggestions.FromPlugin(s.plugin, config, scope)
+	units, err := s.plugin.GetStorageUnits(config, scope)
 	if err != nil {
 		return nil, err
 	}
+	suggestions := querysuggestions.FromStorageUnits(units)
 
 	mapped := make([]source.QuerySuggestion, 0, len(suggestions))
 	for _, suggestion := range suggestions {
@@ -629,14 +810,117 @@ func (s *DatabaseSession) kindForUnit(defaultKind source.ObjectKind, unit engine
 }
 
 func (s *DatabaseSession) validateObject(config *engine.PluginConfig, namespace string, name string) error {
+	if s.isValidatedObject(namespace, name) {
+		return nil
+	}
+
+	log.WithFields(map[string]any{
+		"sourceType": s.spec.ID,
+		"connector":  s.spec.Connector,
+		"namespace":  namespace,
+		"objectName": name,
+	}).Debug("Validating source object")
 	exists, err := s.plugin.StorageUnitExists(config, namespace, name)
 	if err != nil {
+		log.WithError(err).WithFields(map[string]any{
+			"sourceType": s.spec.ID,
+			"connector":  s.spec.Connector,
+			"namespace":  namespace,
+			"objectName": name,
+		}).Debug("Source object validation errored")
 		return fmt.Errorf("failed to validate source object: %w", err)
 	}
 	if !exists {
+		log.WithFields(map[string]any{
+			"sourceType": s.spec.ID,
+			"connector":  s.spec.Connector,
+			"namespace":  namespace,
+			"objectName": name,
+		}).Debug("Source object validation reported missing object")
 		return fmt.Errorf("source object %q not found", name)
 	}
+	log.WithFields(map[string]any{
+		"sourceType": s.spec.ID,
+		"connector":  s.spec.Connector,
+		"namespace":  namespace,
+		"objectName": name,
+	}).Debug("Source object validation succeeded")
+	s.rememberValidatedObject(namespace, name)
 	return nil
+}
+
+func (s *DatabaseSession) cacheKey(namespace string, name string) databaseObjectCacheKey {
+	return databaseObjectCacheKey{namespace: namespace, name: name}
+}
+
+func (s *DatabaseSession) isValidatedObject(namespace string, name string) bool {
+	if len(s.validated) == 0 {
+		return false
+	}
+
+	_, ok := s.validated[s.cacheKey(namespace, name)]
+	return ok
+}
+
+func (s *DatabaseSession) rememberValidatedObject(namespace string, name string) {
+	if s.validated == nil {
+		s.validated = map[databaseObjectCacheKey]struct{}{}
+	}
+
+	s.validated[s.cacheKey(namespace, name)] = struct{}{}
+}
+
+func (s *DatabaseSession) cachedColumns(namespace string, name string) ([]source.Column, bool) {
+	if len(s.columns) == 0 {
+		return nil, false
+	}
+
+	columns, ok := s.columns[s.cacheKey(namespace, name)]
+	if !ok {
+		return nil, false
+	}
+
+	return cloneSourceColumns(columns), true
+}
+
+func (s *DatabaseSession) cacheColumns(namespace string, name string, columns []source.Column) {
+	if s.columns == nil {
+		s.columns = map[databaseObjectCacheKey][]source.Column{}
+	}
+
+	s.columns[s.cacheKey(namespace, name)] = cloneSourceColumns(columns)
+	s.rememberValidatedObject(namespace, name)
+}
+
+func (s *DatabaseSession) ensureSurface(surface source.Surface) error {
+	if s.spec.Contract.SupportsSurface(surface) {
+		return nil
+	}
+
+	return fmt.Errorf("%s is not supported for %s", sourceSurfaceDescription(surface), s.spec.Label)
+}
+
+func (s *DatabaseSession) ensureObjectAction(kind source.ObjectKind, action source.Action) error {
+	objectType, ok := s.spec.Contract.ObjectTypeForKind(kind)
+	if !ok {
+		return fmt.Errorf("%s objects are not supported for %s", kind, s.spec.Label)
+	}
+	if objectType.SupportsAction(action) {
+		return nil
+	}
+
+	return fmt.Errorf("%s is not supported for %s objects in %s", sourceActionDescription(action), kind, s.spec.Label)
+}
+
+func (s *DatabaseSession) ensureCreateChildSupported(parent *source.ObjectRef) error {
+	if parent == nil {
+		if slices.Contains(s.spec.Contract.RootActions, source.ActionCreateChild) {
+			return nil
+		}
+		return fmt.Errorf("%s is not supported at the source root for %s", sourceActionDescription(source.ActionCreateChild), s.spec.Label)
+	}
+
+	return s.ensureObjectAction(parent.Kind, source.ActionCreateChild)
 }
 
 func queryLanguagesForSpec(spec source.TypeSpec) []string {
@@ -644,6 +928,68 @@ func queryLanguagesForSpec(spec source.TypeSpec) []string {
 		return []string{"sql"}
 	}
 	return []string{}
+}
+
+func cloneAliasMap(aliasMap map[string]string) map[string]string {
+	if len(aliasMap) == 0 {
+		return map[string]string{}
+	}
+
+	cloned := make(map[string]string, len(aliasMap))
+	for key, value := range aliasMap {
+		cloned[key] = value
+	}
+	return cloned
+}
+
+func sourceSurfaceDescription(surface source.Surface) string {
+	switch surface {
+	case source.SurfaceQuery:
+		return "querying"
+	case source.SurfaceGraph:
+		return "graph views"
+	case source.SurfaceChat:
+		return "chat"
+	case source.SurfaceBrowser:
+		return "browsing"
+	default:
+		return strings.ToLower(string(surface))
+	}
+}
+
+func sourceActionDescription(action source.Action) string {
+	switch action {
+	case source.ActionBrowse:
+		return "browsing"
+	case source.ActionInspect:
+		return "inspecting objects"
+	case source.ActionViewRows:
+		return "viewing rows"
+	case source.ActionViewContent:
+		return "viewing content"
+	case source.ActionViewDefinition:
+		return "viewing definitions"
+	case source.ActionCreateChild:
+		return "creating child objects"
+	case source.ActionDelete:
+		return "deleting objects"
+	case source.ActionInsertData:
+		return "inserting data"
+	case source.ActionUpdateData:
+		return "updating data"
+	case source.ActionDeleteData:
+		return "deleting data"
+	case source.ActionImportData:
+		return "importing data"
+	case source.ActionGenerateMockData:
+		return "generating mock data"
+	case source.ActionExecute:
+		return "executing actions"
+	case source.ActionViewGraph:
+		return "viewing graphs"
+	default:
+		return strings.ToLower(string(action))
+	}
 }
 
 func appendPath(parent *source.ObjectRef, name string) []string {
@@ -681,6 +1027,50 @@ func cloneImportRows(rows [][]string) [][]string {
 		cloned = append(cloned, slices.Clone(row))
 	}
 	return cloned
+}
+
+func cloneSourceColumns(columns []source.Column) []source.Column {
+	if columns == nil {
+		return nil
+	}
+
+	cloned := make([]source.Column, 0, len(columns))
+	for _, column := range columns {
+		cloned = append(cloned, source.Column{
+			Type:             column.Type,
+			Name:             column.Name,
+			IsNullable:       column.IsNullable,
+			IsPrimary:        column.IsPrimary,
+			IsAutoIncrement:  column.IsAutoIncrement,
+			IsComputed:       column.IsComputed,
+			IsForeignKey:     column.IsForeignKey,
+			ReferencedTable:  cloneStringPointer(column.ReferencedTable),
+			ReferencedColumn: cloneStringPointer(column.ReferencedColumn),
+			Length:           cloneIntPointer(column.Length),
+			Precision:        cloneIntPointer(column.Precision),
+			Scale:            cloneIntPointer(column.Scale),
+		})
+	}
+
+	return cloned
+}
+
+func cloneStringPointer(value *string) *string {
+	if value == nil {
+		return nil
+	}
+
+	cloned := *value
+	return &cloned
+}
+
+func cloneIntPointer(value *int) *int {
+	if value == nil {
+		return nil
+	}
+
+	cloned := *value
+	return &cloned
 }
 
 func importerColumnMappings(mappings []source.ImportColumnMapping) []importer.ColumnMapping {

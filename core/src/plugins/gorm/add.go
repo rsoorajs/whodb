@@ -24,6 +24,7 @@ import (
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/plugins"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 	"gorm.io/gorm"
 )
 
@@ -40,9 +41,9 @@ func (p *GormPlugin) AddStorageUnit(config *engine.PluginConfig, schema string, 
 		}
 
 		var columns []engine.Record
-		metadata := p.GetDatabaseMetadata()
+		metadata, _ := sourcecatalog.ResolveSessionMetadata(string(p.Type))
 		for _, fieldType := range fields {
-			if err := engine.ValidateColumnType(fieldType.Value, metadata); err != nil {
+			if err := engine.ValidateColumnType(fieldType.Value, string(p.Type), metadata); err != nil {
 				return false, err
 			}
 

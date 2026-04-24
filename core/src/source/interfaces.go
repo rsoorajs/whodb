@@ -34,6 +34,21 @@ type SourceConnector interface {
 	Open(ctx context.Context, spec TypeSpec, credentials *Credentials) (SourceSession, error)
 }
 
+// SessionInvalidator clears cached runtime state associated with one source
+// type and credential set.
+type SessionInvalidator interface {
+	// Invalidate clears any cached connections or sessions associated with the
+	// provided source type and credentials.
+	Invalidate(ctx context.Context, spec TypeSpec, credentials *Credentials) error
+}
+
+// DriverShutdowner releases any process-wide runtime state owned by one source
+// driver.
+type DriverShutdowner interface {
+	// Shutdown releases all cached state owned by the source driver.
+	Shutdown(ctx context.Context) error
+}
+
 // SourceBrowser lists and resolves browseable objects.
 type SourceBrowser interface {
 	// ListObjects lists objects beneath the provided parent.
@@ -50,6 +65,14 @@ type TabularReader interface {
 	Columns(ctx context.Context, ref ObjectRef) ([]Column, error)
 	// ColumnsBatch returns columns for multiple objects.
 	ColumnsBatch(ctx context.Context, refs []ObjectRef) ([]ObjectColumns, error)
+}
+
+// ColumnConstraintReader loads per-column constraint metadata for one source
+// object.
+type ColumnConstraintReader interface {
+	// ColumnConstraints returns database-specific column constraints such as
+	// uniqueness, defaults, and check values for one object.
+	ColumnConstraints(ctx context.Context, ref ObjectRef) (map[string]map[string]any, error)
 }
 
 // ContentReader reads blob/text content from a source object.
@@ -69,6 +92,22 @@ type AvailabilityChecker interface {
 type QueryRunner interface {
 	// RunQuery executes a query against the active source session.
 	RunQuery(ctx context.Context, query string, params ...any) (*RowsResult, error)
+}
+
+// QueryStreamWriter receives streamed query output row by row.
+type QueryStreamWriter interface {
+	// WriteColumns writes the result columns once before any rows.
+	WriteColumns(columns []Column) error
+	// WriteRow writes one streamed row.
+	WriteRow(row []string) error
+}
+
+// StreamQueryRunner executes source-native queries through a streaming result
+// path when the active source supports it.
+type StreamQueryRunner interface {
+	// RunQueryStream executes a query and streams the result rows through the
+	// supplied writer.
+	RunQueryStream(ctx context.Context, query string, writer QueryStreamWriter, params ...any) error
 }
 
 // ScriptRunner executes source-native scripts that may require special runtime
@@ -103,7 +142,7 @@ type ModelAwareSourceAssistant interface {
 type ObjectManager interface {
 	// CreateObject creates a new object beneath the provided parent.
 	CreateObject(ctx context.Context, parent *ObjectRef, name string, fields []Record) (bool, error)
-	// UpdateObject updates an existing object.
+	// UpdateObject updates data within an existing object.
 	UpdateObject(ctx context.Context, ref ObjectRef, values map[string]string, updatedColumns []string) (bool, error)
 	// AddRow inserts a row/document into an object.
 	AddRow(ctx context.Context, ref ObjectRef, values []Record) (bool, error)
@@ -140,7 +179,7 @@ type SecurityReader interface {
 // DataImporter applies parsed tabular data to a destination source object.
 type DataImporter interface {
 	// ImportData imports parsed rows into the provided object reference.
-	ImportData(ctx context.Context, ref ObjectRef, request ImportRequest) error
+	ImportData(ctx context.Context, ref ObjectRef, request ImportRequest) (*ImportResult, error)
 }
 
 // MockDataManager handles mock-data planning and generation for supported

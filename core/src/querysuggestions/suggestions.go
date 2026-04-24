@@ -15,13 +15,14 @@
  */
 
 // Package querysuggestions builds simple database-aware query suggestions from
-// plugin metadata so GraphQL and the CLI can share the same onboarding prompts.
+// source storage-unit metadata so GraphQL and the CLI can share the same
+// onboarding prompts.
 package querysuggestions
 
 import (
 	"fmt"
 
-	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/source"
 )
 
 const maxSuggestions = 3
@@ -32,19 +33,9 @@ type Suggestion struct {
 	Category    string
 }
 
-// FromPlugin loads storage units through the plugin and converts them into a
-// capped list of onboarding suggestions.
-func FromPlugin(plugin *engine.Plugin, config *engine.PluginConfig, schema string) ([]Suggestion, error) {
-	units, err := plugin.GetStorageUnits(config, schema)
-	if err != nil {
-		return nil, err
-	}
-	return FromStorageUnits(units), nil
-}
-
 // FromStorageUnits converts storage units into deterministic suggestions that
 // mention only tables that actually exist.
-func FromStorageUnits(units []engine.StorageUnit) []Suggestion {
+func FromStorageUnits(units []source.StorageUnit) []Suggestion {
 	if len(units) == 0 {
 		return []Suggestion{}
 	}

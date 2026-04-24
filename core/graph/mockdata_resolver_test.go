@@ -17,8 +17,7 @@ import (
 )
 
 func testMockDataContext() context.Context {
-	ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Postgres", Database: "app"})
-	return context.WithValue(ctx, auth.AuthKey_Source, &source.Credentials{
+	return context.WithValue(context.Background(), auth.AuthKey_Source, &source.Credentials{
 		SourceType: "Postgres",
 		Values: map[string]string{
 			"Database": "app",

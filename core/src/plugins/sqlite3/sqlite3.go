@@ -25,12 +25,14 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/plugins"
 	gorm_plugin "github.com/clidey/whodb/core/src/plugins/gorm"
 	queryast "github.com/clidey/whodb/core/src/query"
+	sourcecatalogspecs "github.com/clidey/whodb/core/src/sourcecatalog/specs"
 	"gorm.io/gorm"
 )
 
@@ -40,13 +42,7 @@ func (p *Sqlite3Plugin) CreateSQLBuilder(db *gorm.DB) gorm_plugin.SQLBuilderInte
 }
 
 var (
-	supportedOperators = map[string]string{
-		"=": "=", ">=": ">=", ">": ">", "<=": "<=", "<": "<", "<>": "<>", "!=": "!=",
-		"BETWEEN": "BETWEEN", "NOT BETWEEN": "NOT BETWEEN",
-		"LIKE": "LIKE", "NOT LIKE": "NOT LIKE", "GLOB": "GLOB",
-		"IN": "IN", "NOT IN": "NOT IN", "IS NULL": "IS NULL", "IS NOT NULL": "IS NOT NULL",
-		"AND": "AND", "OR": "OR", "NOT": "NOT",
-	}
+	supportedOperators = sourcecatalogspecs.SQLiteSupportedOperators
 )
 
 type Sqlite3Plugin struct {
@@ -190,7 +186,7 @@ func (p *Sqlite3Plugin) getColumnsViaPragma(db *gorm.DB, storageUnit string) ([]
 			continue
 		}
 
-		normalizedType := NormalizeType(strings.ToUpper(dataType))
+		normalizedType := p.NormalizeType(strings.ToUpper(dataType))
 		col := engine.Column{
 			Name:       name,
 			Type:       normalizedType,
@@ -843,19 +839,7 @@ func (p *Sqlite3Plugin) streamSQLiteRows(rows *sql.Rows, writer engine.QueryStre
 				typeName = colType.DatabaseTypeName()
 			}
 
-			if p.GormPluginFunctions.ShouldHandleColumnType(typeName) {
-				columnPointers[i] = p.GormPluginFunctions.GetColumnScanner(typeName)
-				continue
-			}
-
-			switch typeName {
-			case "VARBINARY", "BINARY", "IMAGE", "BYTEA", "BLOB", "HIERARCHYID",
-				"GEOMETRY", "POINT", "LINESTRING", "POLYGON", "GEOGRAPHY",
-				"MULTIPOINT", "MULTILINESTRING", "MULTIPOLYGON":
-				columnPointers[i] = new(sql.RawBytes)
-			default:
-				columnPointers[i] = new(sql.NullString)
-			}
+			columnPointers[i] = gorm_plugin.CreateRawColumnScanner(p.GormPluginFunctions, typeName)
 		}
 
 		if err := rows.Scan(columnPointers...); err != nil {
@@ -869,49 +853,12 @@ func (p *Sqlite3Plugin) streamSQLiteRows(rows *sql.Rows, writer engine.QueryStre
 				typeName = colType.DatabaseTypeName()
 			}
 
-			if p.GormPluginFunctions.ShouldHandleColumnType(typeName) {
-				value, err := p.GormPluginFunctions.FormatColumnValue(typeName, colPtr)
-				if err != nil {
-					row[i] = "ERROR: " + err.Error()
-				} else {
-					row[i] = value
-				}
+			value, err := gorm_plugin.FormatScannedRawColumnValue(p.GormPluginFunctions, typeName, colPtr)
+			if err != nil {
+				row[i] = "ERROR: " + err.Error()
 				continue
 			}
-
-			switch typeName {
-			case "VARBINARY", "BINARY", "IMAGE", "BYTEA", "BLOB":
-				rawBytes := colPtr.(*sql.RawBytes)
-				if rawBytes == nil || len(*rawBytes) == 0 {
-					row[i] = ""
-				} else {
-					row[i] = "0x" + hex.EncodeToString(*rawBytes)
-				}
-			case "GEOMETRY", "POINT", "LINESTRING", "POLYGON", "GEOGRAPHY",
-				"MULTIPOINT", "MULTILINESTRING", "MULTIPOLYGON":
-				rawBytes := colPtr.(*sql.RawBytes)
-				if rawBytes == nil || len(*rawBytes) == 0 {
-					row[i] = ""
-				} else if formatted := p.GormPluginFunctions.FormatGeometryValue(*rawBytes, typeName); formatted != "" {
-					row[i] = formatted
-				} else {
-					row[i] = "0x" + hex.EncodeToString(*rawBytes)
-				}
-			case "TIME":
-				val := colPtr.(*sql.NullString)
-				if val.Valid {
-					row[i] = val.String
-				} else {
-					row[i] = ""
-				}
-			default:
-				val := colPtr.(*sql.NullString)
-				if val.Valid {
-					row[i] = val.String
-				} else {
-					row[i] = ""
-				}
-			}
+			row[i] = value
 		}
 
 		if err := writer.WriteRow(row); err != nil {
@@ -1042,7 +989,7 @@ func (p *Sqlite3Plugin) GetForeignKeyRelationships(config *engine.PluginConfig, 
 
 // NormalizeType converts SQLite type aliases to their canonical form.
 func (p *Sqlite3Plugin) NormalizeType(typeName string) string {
-	return NormalizeType(typeName)
+	return common.NormalizeTypeWithMap(typeName, sourcecatalogspecs.SQLiteAliasMap)
 }
 
 // GetMaxBulkInsertParameters returns 999 for SQLite.

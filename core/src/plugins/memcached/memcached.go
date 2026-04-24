@@ -19,34 +19,18 @@ package memcached
 import (
 	"context"
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/clidey/whodb/core/src/query"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
+	"github.com/clidey/whodb/core/src/query"
 )
 
 // MemcachedPlugin implements PluginFunctions for Memcached.
 type MemcachedPlugin struct {
 	engine.BasePlugin
-}
-
-var memcachedOperators = map[string]string{
-	"=":           "=",
-	"!=":          "!=",
-	"<>":          "!=",
-	">":           ">",
-	">=":          ">=",
-	"<":           "<",
-	"<=":          "<=",
-	"CONTAINS":    "CONTAINS",
-	"STARTS WITH": "STARTS WITH",
-	"ENDS WITH":   "ENDS WITH",
-	"IN":          "IN",
-	"NOT IN":      "NOT IN",
 }
 
 // IsAvailable checks if the Memcached server is reachable.
@@ -193,22 +177,6 @@ func (p *MemcachedPlugin) FormatValue(val any) string {
 		return ""
 	}
 	return fmt.Sprintf("%v", val)
-}
-
-// GetDatabaseMetadata returns Memcached metadata for frontend configuration.
-func (p *MemcachedPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
-	ops := make([]string, 0, len(memcachedOperators))
-	for op := range memcachedOperators {
-		ops = append(ops, op)
-	}
-	sort.Strings(ops)
-	return &engine.DatabaseMetadata{
-		DatabaseType:    engine.DatabaseType_Memcached,
-		TypeDefinitions: []engine.TypeDefinition{},
-		Operators:       ops,
-		AliasMap:        map[string]string{},
-		Capabilities:    engine.Capabilities{},
-	}
 }
 
 func init() {

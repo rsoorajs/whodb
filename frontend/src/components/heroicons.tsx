@@ -30,6 +30,7 @@ import {
   BanknotesIcon as BanknotesIconCE,
   BellAlertIcon as BellAlertIconCE,
   BookOpenIcon as BookOpenIconCE,
+  BuildingOffice2Icon as BuildingOffice2IconCE,
   BuildingStorefrontIcon as BuildingStorefrontIconCE,
   CalculatorIcon as CalculatorIconCE,
   CalendarIcon as CalendarIconCE,
@@ -112,6 +113,7 @@ export const ArrowUpCircleIcon = iconOverrides.ArrowUpCircleIcon ?? ArrowUpCircl
 export const BanknotesIcon = iconOverrides.BanknotesIcon ?? BanknotesIconCE;
 export const BellAlertIcon = iconOverrides.BellAlertIcon ?? BellAlertIconCE;
 export const BookOpenIcon = iconOverrides.BookOpenIcon ?? BookOpenIconCE;
+export const BuildingOffice2Icon = iconOverrides.BuildingOffice2Icon ?? BuildingOffice2IconCE;
 export const BuildingStorefrontIcon = iconOverrides.BuildingStorefrontIcon ?? BuildingStorefrontIconCE;
 export const CalculatorIcon = iconOverrides.CalculatorIcon ?? CalculatorIconCE;
 export const CalendarIcon = iconOverrides.CalendarIcon ?? CalendarIconCE;

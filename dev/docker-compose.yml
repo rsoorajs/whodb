@@ -404,8 +404,6 @@ services:
     networks:
       - db
 
-  # StarRocks is EE-only (JDBC bridge) — see ee/dev/docker-compose-starrocks-test.yaml
-
   e2e_yugabytedb:
     image: yugabytedb/yugabyte:latest
     container_name: e2e_yugabytedb

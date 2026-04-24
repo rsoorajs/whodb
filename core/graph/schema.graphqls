@@ -47,6 +47,7 @@ enum SourceAction {
   Delete
   InsertData
   UpdateData
+  DeleteData
   ImportData
   GenerateMockData
   Execute
@@ -80,6 +81,42 @@ enum SourceConnectionFieldKind {
 enum SourceConnectionFieldSection {
   Primary
   Advanced
+}
+
+enum SourceConnectionTransport {
+  Network
+  File
+  Bridge
+}
+
+enum SourceHostInputMode {
+  None
+  Hostname
+  HostnameOrURL
+}
+
+enum SourceHostInputURLParser {
+  None
+  Postgres
+  MongoSRV
+}
+
+enum SourceProfileLabelStrategy {
+  Default
+  Hostname
+  Database
+}
+
+enum SourceSchemaFidelity {
+  Exact
+  Sampled
+}
+
+enum SourceQueryExplainMode {
+  None
+  Explain
+  ExplainAnalyze
+  ExplainPipeline
 }
 
 scalar Upload
@@ -388,13 +425,43 @@ type SourceContract {
   ObjectTypes: [SourceObjectType!]!
 }
 
+type SourceConnectionTraits {
+  Transport: SourceConnectionTransport!
+  HostInputMode: SourceHostInputMode!
+  HostInputURLParser: SourceHostInputURLParser!
+  SupportsCustomCAContent: Boolean!
+}
+
+type SourcePresentationTraits {
+  ProfileLabelStrategy: SourceProfileLabelStrategy!
+  SchemaFidelity: SourceSchemaFidelity!
+}
+
+type SourceQueryTraits {
+  SupportsAnalyze: Boolean!
+  ExplainMode: SourceQueryExplainMode!
+}
+
+type SourceMockDataTraits {
+  SupportsRelationalDependencies: Boolean!
+}
+
+type SourceTraits {
+  Connection: SourceConnectionTraits!
+  Presentation: SourcePresentationTraits!
+  Query: SourceQueryTraits!
+  MockData: SourceMockDataTraits!
+}
+
 type SourceType {
   Id: String!
   Label: String!
   Connector: String!
   Category: SourceCategory!
+  Traits: SourceTraits!
   ConnectionFields: [SourceConnectionField!]!
   Contract: SourceContract!
+  DiscoveryPrefill: SourceDiscoveryPrefill!
   IsAWSManaged: Boolean!
   SSLModes: [SourceSSLMode!]!
 }
@@ -402,6 +469,24 @@ type SourceType {
 type SourceSSLMode {
   value: String!
   aliases: [String!]!
+}
+
+type SourceDiscoveryMetadataCondition {
+  Key: String!
+  Value: String!
+}
+
+type SourceDiscoveryAdvancedDefault {
+  Key: String!
+  Value: String!
+  MetadataKey: String!
+  DefaultValue: String!
+  ProviderTypes: [String!]!
+  Conditions: [SourceDiscoveryMetadataCondition!]!
+}
+
+type SourceDiscoveryPrefill {
+  AdvancedDefaults: [SourceDiscoveryAdvancedDefault!]!
 }
 
 type SourceObjectRef {
@@ -779,7 +864,7 @@ type Mutation {
   TestAzureCredentials(input: AzureProviderInput!): CloudProviderStatus!
   RefreshAzureProvider(id: ID!): AzureProvider!
   # Azure-specific: Generate a short-lived Azure AD token for database authentication
-  GenerateAzureADToken(providerID: ID!, databaseType: String!): String!
+  GenerateAzureADToken(providerID: ID!, sourceType: String!): String!
   # GCP-specific: Generate an OAuth2 access token for Cloud SQL IAM database authentication
   GenerateCloudSQLIAMAuthToken(providerID: ID!, username: String!): String!
 }

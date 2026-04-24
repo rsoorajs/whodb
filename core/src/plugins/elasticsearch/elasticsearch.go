@@ -26,15 +26,6 @@ import (
 	"github.com/clidey/whodb/core/src/log"
 )
 
-var (
-	supportedOperators = map[string]string{
-		"match": "match", "match_phrase": "match_phrase", "match_phrase_prefix": "match_phrase_prefix", "multi_match": "multi_match",
-		"bool": "bool", "term": "term", "terms": "terms", "range": "range", "exists": "exists", "prefix": "prefix", "wildcard": "wildcard",
-		"regexp": "regexp", "fuzzy": "fuzzy", "ids": "ids", "constant_score": "constant_score", "function_score": "function_score",
-		"dis_max": "dis_max", "nested": "nested", "has_child": "has_child", "has_parent": "has_parent",
-	}
-)
-
 type ElasticSearchPlugin struct {
 	engine.BasePlugin
 }
@@ -199,33 +190,6 @@ func (p *ElasticSearchPlugin) FormatValue(val any) string {
 		return ""
 	}
 	return fmt.Sprintf("%v", val)
-}
-
-// GetDatabaseMetadata returns ElasticSearch metadata for frontend configuration.
-// ElasticSearch is a search engine without traditional type definitions.
-func (p *ElasticSearchPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
-	operators := make([]string, 0, len(supportedOperators))
-	for op := range supportedOperators {
-		operators = append(operators, op)
-	}
-	return &engine.DatabaseMetadata{
-		DatabaseType: engine.DatabaseType_ElasticSearch,
-		TypeDefinitions: []engine.TypeDefinition{
-			{ID: "text", Label: "text", Category: engine.TypeCategoryText},
-			{ID: "keyword", Label: "keyword", Category: engine.TypeCategoryText},
-			{ID: "boolean", Label: "boolean", Category: engine.TypeCategoryBoolean},
-			{ID: "long", Label: "long", Category: engine.TypeCategoryNumeric},
-			{ID: "double", Label: "double", Category: engine.TypeCategoryNumeric},
-			{ID: "date", Label: "date", Category: engine.TypeCategoryDatetime},
-			{ID: "object", Label: "object", Category: engine.TypeCategoryOther},
-			{ID: "array", Label: "array", Category: engine.TypeCategoryOther},
-			{ID: "geo_point", Label: "geo_point", Category: engine.TypeCategoryOther},
-			{ID: "nested", Label: "nested", Category: engine.TypeCategoryOther},
-			{ID: "mixed", Label: "mixed", Category: engine.TypeCategoryOther},
-		},
-		Operators: operators,
-		AliasMap:  map[string]string{},
-	}
 }
 
 func init() {

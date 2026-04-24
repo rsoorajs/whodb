@@ -27,17 +27,6 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-var (
-	supportedOperators = map[string]string{
-		"eq": "eq", "ne": "ne", "gt": "gt", "gte": "gte", "lt": "lt", "lte": "lte",
-		"in": "in", "nin": "nin", "and": "and", "or": "or", "not": "not", "nor": "nor",
-		"exists": "exists", "type": "type", "regex": "regex", "expr": "expr", "mod": "mod",
-		"all": "all", "elemMatch": "elemMatch", "size": "size", "bitsAllClear": "bitsAllClear",
-		"bitsAllSet": "bitsAllSet", "bitsAnyClear": "bitsAnyClear", "bitsAnySet": "bitsAnySet",
-		"geoIntersects": "geoIntersects", "geoWithin": "geoWithin", "near": "near", "nearSphere": "nearSphere",
-	}
-)
-
 type MongoDBPlugin struct {
 	engine.BasePlugin
 }
@@ -398,34 +387,6 @@ func (p *MongoDBPlugin) ClearTableData(config *engine.PluginConfig, schema strin
 	}).Info("Cleared MongoDB collection for mock data generation")
 
 	return true, nil
-}
-
-// GetDatabaseMetadata returns MongoDB metadata for frontend configuration.
-// MongoDB is a document database without traditional type definitions.
-func (p *MongoDBPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
-	operators := make([]string, 0, len(supportedOperators))
-	for op := range supportedOperators {
-		operators = append(operators, op)
-	}
-	return &engine.DatabaseMetadata{
-		DatabaseType: engine.DatabaseType_MongoDB,
-		TypeDefinitions: []engine.TypeDefinition{
-			{ID: "string", Label: "string", Category: engine.TypeCategoryText},
-			{ID: "int", Label: "int", Category: engine.TypeCategoryNumeric},
-			{ID: "double", Label: "double", Category: engine.TypeCategoryNumeric},
-			{ID: "bool", Label: "bool", Category: engine.TypeCategoryBoolean},
-			{ID: "date", Label: "date", Category: engine.TypeCategoryDatetime},
-			{ID: "objectId", Label: "objectId", Category: engine.TypeCategoryOther},
-			{ID: "array", Label: "array", Category: engine.TypeCategoryOther},
-			{ID: "object", Label: "object", Category: engine.TypeCategoryOther},
-			{ID: "mixed", Label: "mixed", Category: engine.TypeCategoryOther},
-		},
-		Operators: operators,
-		AliasMap:  map[string]string{},
-		Capabilities: engine.Capabilities{
-			SupportsDatabaseSwitch: true,
-		},
-	}
 }
 
 func init() {

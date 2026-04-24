@@ -310,3 +310,21 @@ func TestGetLoginCredentialsIncludesPortAndAdvancedOptions(t *testing.T) {
 		t.Fatalf("expected Application Name advanced option to be preserved, got %#v", advanced)
 	}
 }
+
+func TestGetLoginCredentialsUsesSourceDefaultPortWhenProfilePortMissing(t *testing.T) {
+	profile := types.DatabaseCredentials{
+		Type:     "Postgres",
+		Hostname: "db.local",
+		Username: "alice",
+		Password: "secret",
+		Database: "app",
+	}
+
+	credentials := GetLoginCredentials(profile)
+	if len(credentials.Advanced) != 1 {
+		t.Fatalf("expected one advanced port entry, got %#v", credentials.Advanced)
+	}
+	if credentials.Advanced[0].Key != "Port" || credentials.Advanced[0].Value != "5432" {
+		t.Fatalf("expected source default port 5432, got %#v", credentials.Advanced[0])
+	}
+}
