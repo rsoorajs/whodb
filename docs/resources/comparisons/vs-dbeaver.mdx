@@ -29,19 +29,15 @@ Fast, intuitive, web-based, multi-database support, perfect for teams
 
 ## Performance Comparison
 
-The first thing you notice when using these tools is performance. DBeaver prioritizes features over speed, while WhoDB prioritizes speed:
+The first thing you notice is the different runtime model. DBeaver is a feature-heavy desktop IDE; WhoDB is a lightweight server and browser UI:
 
 | Metric | WhoDB | DBeaver |
 |--------|-------|---------|
-| **Startup Time** | \<1 second | 10-15 seconds |
-| **First Interaction** | \<200ms | 2-5 seconds |
-| **Memory Usage** | ~50MB | ~500MB+ |
-| **CPU Usage (idle)** | \<1% | 10-15% |
-| **Memory Scaling** | Linear | Exponential |
-| **Large Dataset (100K rows)** | Smooth | Slower |
-| **Query Execution** | Fast | Variable |
-| **UI Responsiveness** | Excellent | Good |
-| **Switching Databases** | Instant | 2-3 seconds |
+| **Runtime** | Go server + React frontend | Java desktop application |
+| **Workflow Focus** | Common database inspection and editing | Full database IDE workflows |
+| **Database Scope** | Current CE source catalog | Very broad driver ecosystem |
+| **Large Result Handling** | Paginated result grids | Desktop grid tooling |
+| **Team Access** | Shared deployment possible | Per-user desktop setup |
 
 **Why the Performance Difference:**
 - WhoDB: Lightweight Go backend + React frontend
@@ -50,9 +46,7 @@ The first thing you notice when using these tools is performance. DBeaver priori
 - DBeaver: Optimized for features and flexibility
 
 **Real-World Impact:**
-Checking 10 tables in different databases takes:
-- WhoDB: ~30 seconds total
-- DBeaver: ~3 minutes (most of it startup/switching time)
+WhoDB keeps common browsing and query tasks simple. DBeaver is the better fit when you need its broader drivers, visual query tooling, and desktop IDE depth.
 
 ## Database Support Comparison
 
@@ -158,15 +152,15 @@ If you need support for 20+ different database types, DBeaver is necessary. WhoD
 | Feature | WhoDB | DBeaver |
 |---------|:----:|:-------:|
 | **Syntax Highlighting** | Yes | Yes |
-| **Auto-Completion** | Yes | Yes |
-| **Query History** | Searchable | Extensive |
-| **Query Bookmarks** | Yes | Yes |
+| **Auto-Completion** | CLI TUI; web CE editor focuses on syntax highlighting | Yes |
+| **Query History** | Per-cell web history; CLI history search | Extensive |
+| **Query Bookmarks** | CLI bookmarks | Yes |
 | **Multi-Query Execution** | Multi-cell | Batch |
 | **Explain Plans** | Database-specific | Advanced |
-| **Result Export** | 4 formats | 10+ formats |
+| **Result Export** | CSV/Excel; JSON Lines for document-style records when supported | 10+ formats |
 | **Execution Statistics** | Yes | Yes |
 | **Visual Query Builder** | No | Yes |
-| **Query Formatting** | Auto-format | Advanced |
+| **Query Formatting** | CLI TUI formatting | Advanced |
 | **Snippets/Templates** | Limited | Extensive |
 </Accordion>
 
@@ -174,13 +168,13 @@ If you need support for 20+ different database types, DBeaver is necessary. WhoD
 | Feature | WhoDB | DBeaver |
 |---------|:----:|:-------:|
 | **Add Records** | Clean dialog | Form or inline |
-| **Edit Records** | Inline/dialog | Multiple modes |
+| **Edit Records** | Edit sheet | Multiple modes |
 | **Delete Records** | Safe | Multiple options |
-| **Bulk Operations** | Select & act | Advanced options |
+| **Bulk Operations** | Selected-row actions where supported | Advanced options |
 | **Filtering** | Visual builder | Multiple options |
-| **Column Filtering** | Real-time | Advanced |
+| **Column Filtering** | WHERE builder | Advanced |
 | **Sorting** | Click columns | Advanced |
-| **Search** | Real-time | Comprehensive |
+| **Search** | Loaded-row search plus WHERE filters | Comprehensive |
 | **Copy/Paste** | Yes | Yes |
 | **Mock Data** | Built-in | Plugin available |
 </Accordion>
@@ -199,23 +193,23 @@ If you need support for 20+ different database types, DBeaver is necessary. WhoD
 <Accordion title="Administration">
 | Feature | WhoDB | DBeaver |
 |---------|:----:|:-------:|
-| **User Management** | Yes | Yes |
-| **Role Management** | Yes | Yes |
-| **Privilege Management** | Yes | Yes |
-| **Database Creation** | Yes | Yes |
-| **Backup/Restore** | Yes | Advanced |
-| **Replication Setup** | Yes | Limited |
-| **Monitoring** | Yes | Yes |
-| **Performance Tools** | Yes | Advanced |
-| **Server Configuration** | Yes | Limited |
+| **User Management** | Use database-native tools | Yes |
+| **Role Management** | Use database-native tools | Yes |
+| **Privilege Management** | Use database-native tools | Yes |
+| **Database Creation** | Use database-native tools; create objects where supported | Yes |
+| **Backup/Restore** | Native database tools recommended | Advanced |
+| **Replication Setup** | Use database-native tools | Limited |
+| **Monitoring** | Health endpoint, logs, and database exporters | Yes |
+| **Performance Tools** | Scratchpad, EXPLAIN, CLI audit | Advanced |
+| **Server Configuration** | Use database-native tools | Limited |
 </Accordion>
 
 <Accordion title="Deployment Options">
 | Feature | WhoDB | DBeaver |
 |---------|:----:|:-------:|
-| **Desktop (Windows)** | No | Yes |
-| **Desktop (Mac)** | No | Yes |
-| **Desktop (Linux)** | No | Yes |
+| **Desktop (Windows)** | Desktop CE app | Yes |
+| **Desktop (Mac)** | Desktop CE app | Yes |
+| **Desktop (Linux)** | Desktop CE app | Yes |
 | **Web-Based** | Yes | No |
 | **Docker** | Yes | No |
 | **Kubernetes** | Yes | No |
@@ -231,8 +225,8 @@ If you need support for 20+ different database types, DBeaver is necessary. WhoD
 **Scenario:** Managing PostgreSQL, MySQL, Oracle, SQL Server, MongoDB, Redis
 
 **WhoDB:**
-- Handles PostgreSQL, MySQL, SQLite, MongoDB, Redis well
-- Would need WhoDB Enterprise for Oracle, SQL Server
+- Handles the current CE catalog documented on the Supported Databases page
+- Use another tool when you need databases outside that catalog
 - Simple consistent interface across databases
 - Fast switching between databases
 
@@ -249,27 +243,27 @@ If you need support for 20+ different database types, DBeaver is necessary. WhoD
 **Scenario:** Developers running queries, inspecting data, writing tests
 
 **WhoDB:**
-- \<1 second startup (huge advantage)
+- Lightweight browser workflow
 - Simple, fast interface
 - Mock data generation for testing
 - Multi-cell notebooks for organization
 - Modern, intuitive UI
 
 **DBeaver:**
-- 10-15 second startup
+- Heavier desktop startup and workspace overhead
 - More features than needed for daily work
 - Steeper learning curve
 - Desktop resource consumption
 - Heavy for simple tasks
 
-**Verdict:** WhoDB wins dramatically for speed and productivity
+**Verdict:** WhoDB is simpler for routine daily work; DBeaver is stronger when you need its full IDE feature set.
 </Accordion>
 
 <Accordion title="Advanced Query Development">
 **Scenario:** Complex queries, query optimization, performance analysis
 
 **WhoDB:**
-- Syntax highlighting and auto-completion
+- Web syntax highlighting, plus CLI TUI autocomplete and formatting
 - Execution statistics
 - Query history
 - Simple, fast execution
@@ -375,8 +369,8 @@ If you need support for 20+ different database types, DBeaver is necessary. WhoD
 - Perfect for Kubernetes
 
 **Resource Profile:**
-- \<50MB memory per instance
-- \<1% CPU idle
+- Lightweight server process
+- Low background overhead compared with full desktop IDEs
 - Scales to multiple instances easily
 - Container-friendly
 - Cloud-native ready
@@ -384,7 +378,7 @@ If you need support for 20+ different database types, DBeaver is necessary. WhoD
 ### DBeaver Architecture
 
 **Feature-Rich Desktop:**
-- Java-based application (~300MB+)
+- Java-based desktop application
 - Runs on Windows, Mac, Linux
 - Requires Java runtime
 - Desktop application (not web)
@@ -393,8 +387,8 @@ If you need support for 20+ different database types, DBeaver is necessary. WhoD
 - Traditional deployment model
 
 **Resource Profile:**
-- ~500MB+ memory per user
-- 10%+ CPU idle
+- Heavier per-user desktop footprint
+- More background overhead than a lightweight browser workflow
 - Scales through more hardware
 - Not container-friendly
 - Traditional server deployment
@@ -403,7 +397,7 @@ If you need support for 20+ different database types, DBeaver is necessary. WhoD
 
 ### WhoDB Onboarding
 
-**Time to Productivity:** 10-15 minutes
+**Time to Productivity:** Short for common browse/query tasks
 
 <Steps>
 <Step title="Familiar Interface">
@@ -413,16 +407,16 @@ Modern SaaS design patterns. If you use Figma, Notion, or modern web apps, you'l
 Everything is discoverable. Sidebar navigation, data grid, query editor, schema graph all have clear purposes.
 </Step>
 <Step title="Instant Execution">
-Write query → hit Enter → see results. No waiting, no configuration.
+Write query → run it from the button or shortcut → see results below the cell.
 </Step>
 <Step title="Productive Immediately">
-Most developers can run their first query in 5 minutes, navigate data in 10 minutes, and be fully productive by 15 minutes.
+Most developers can run a first query and navigate data after a short walkthrough.
 </Step>
 </Steps>
 
 ### DBeaver Onboarding
 
-**Time to Productivity:** 4-8 hours
+**Time to Productivity:** Longer for new users because the product surface is larger
 
 <Steps>
 <Step title="Complex Interface">
@@ -444,18 +438,17 @@ You become more productive over days and weeks as you learn features. Desktop ap
 | Aspect | WhoDB | DBeaver |
 |--------|-------|---------|
 | **Community Edition** | Free, Open Source | Free (feature-limited) |
-| **Enterprise Edition** | Custom pricing | $199/year per user |
-| **Team Edition** | Custom | Custom pricing |
-| **Features Difference** | Significant | Significant |
-| **Per-User Cost** | 0 (CE) / varies (EE) | $199/year standard |
-| **Support** | Community (CE) / Included (EE) | Community or paid support |
+| **Team Edition** | Use CE with your own deployment controls | Custom pricing |
+| **Features Difference** | CE-focused | Significant |
+| **Per-User Cost** | 0 for CE | $199/year standard |
+| **Support** | Community | Community or paid support |
 | **License** | Permissive | Proprietary |
 
 **Cost Analysis:**
 - Single user: WhoDB free vs. DBeaver $199/year
 - Small team (5 people): WhoDB free vs. DBeaver $995/year
 - Large team (50 people): WhoDB free vs. DBeaver $9,950/year
-- Enterprise scale: WhoDB custom vs. DBeaver custom
+- Larger deployments: account for hosting, database access controls, and support needs
 
 ## Real-World Scenarios
 
@@ -483,15 +476,15 @@ You become more productive over days and weeks as you learn features. Desktop ap
 **Situation:** Large enterprise using PostgreSQL, Oracle, SQL Server, Cassandra, Neo4j, Elasticsearch, etc.
 
 **WhoDB Approach:**
-- Can't natively support all
-- Would need multiple tools
-- More complexity
+- Use WhoDB for databases in the CE catalog
+- Keep another tool for databases outside that catalog
+- More operational complexity if one team needs every engine in one client
 
 **DBeaver Approach:**
 - One tool for all databases
 - Comprehensive feature set
 - All databases in one place
-- Enterprise support available
+- Paid support options are available from the vendor
 
 **Result:** DBeaver wins decisively for this use case
 
@@ -578,7 +571,7 @@ Install WhoDB while keeping DBeaver. Use WhoDB for common tasks, DBeaver for spe
 </Step>
 
 <Step title="Assess Team Impact">
-Train team on WhoDB. Measure productivity gains. Typically 20-30% faster for daily work.
+Train the team on WhoDB and measure whether the simpler web workflow helps your daily tasks.
 </Step>
 
 <Step title="Decide on Approach">
@@ -683,7 +676,7 @@ Ready to experience faster, simpler database management?
 
 <CardGroup cols={2}>
 <Card title="Install WhoDB Free" icon="download" href="/installation">
-Get started in under 5 minutes
+Install the current CE build
 </Card>
 <Card title="Live Demo" icon="play" href="https://whodb.com/demo">
 Try without installing
@@ -698,11 +691,11 @@ If you work exclusively with common databases (PostgreSQL, MySQL, SQLite, MongoD
 </Accordion>
 
 <Accordion title="Does WhoDB have all of DBeaver's features?">
-No. DBeaver has more advanced query tools, more export formats, visual query builder, and more database support. WhoDB focuses on the 95% of features most users actually need, making them faster and simpler.
+No. DBeaver has more advanced query tools, more export formats, visual query builder, and broader database support. WhoDB focuses on a smaller set of common workflows with a simpler web interface.
 </Accordion>
 
 <Accordion title="What's the performance difference in real terms?">
-For a developer checking 10 tables: DBeaver takes 3-5 minutes (including startup time), WhoDB takes 30-45 seconds. Over a day's work, WhoDB saves 1-2 hours from startup and switching alone.
+WhoDB usually has less UI overhead for common inspection tasks because it is not a full desktop IDE. DBeaver may be worth the overhead when you use its advanced editor, driver, and administration features.
 </Accordion>
 
 <Accordion title="Can I use WhoDB and DBeaver together?">
@@ -710,7 +703,7 @@ Yes, absolutely. Many teams do exactly this. Use WhoDB for speed with common dat
 </Accordion>
 
 <Accordion title="Is WhoDB as reliable as DBeaver?">
-Both are production-ready and reliable. DBeaver is more mature (longer history). WhoDB is actively developed and used by thousands. Pick based on features needed, not reliability concerns.
+Both can be used safely when deployed with proper database credentials, network controls, and operational practices. DBeaver is more mature and broader; WhoDB is lighter and simpler. Pick based on workflow and feature coverage.
 </Accordion>
 
 <Accordion title="What about offline usage?">

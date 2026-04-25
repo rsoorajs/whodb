@@ -1,9 +1,9 @@
 ---
 title: "Team Setup Guide for WhoDB"
-description: "Deploy WhoDB for your entire team. Docker setup, user management, connection profiles, read-only access, and collaboration best practices."
+description: "Deploy WhoDB for your team with Docker, database credentials, connection profiles, read-only access, and operating practices."
 seo:
   title: "Team Database Management with WhoDB"
-  description: "Set up WhoDB for your team. Deploy with Docker, manage connections, implement read-only access, and enable collaboration on database projects."
+  description: "Set up WhoDB for your team. Deploy with Docker, manage connection profiles, use database-side access control, and document team workflows."
   keywords: "team database tool, WhoDB deployment, database management for teams, Docker database, team collaboration, read-only database access"
 ---
 
@@ -24,8 +24,8 @@ All team members use the same tool regardless of database type
 <Card title="No Installation Per User" icon="server">
 Deploy once, team accesses via browser—no individual setups
 </Card>
-<Card title="Flexible Access Control" icon="lock">
-Grant read-only, editing, or admin access per user
+<Card title="Database-Side Access Control" icon="lock">
+Use separate database users for read-only, editing, and admin workflows
 </Card>
 <Card title="Connection Profiles" icon="link">
 Save multiple database connections for easy team access
@@ -513,11 +513,11 @@ When a team member leaves:
 <Step title="Disable Database Users">
 Immediately disable their database accounts
 </Step>
-<Step title="Audit Recent Queries">
-Review their query history for security
+<Step title="Review Database Logs">
+Review database-native audit logs and infrastructure logs for recent access
 </Step>
-<Step title="Transfer Ownership">
-Assign their saved queries to team lead
+<Step title="Transfer Shared Materials">
+Move any shared SQL files, runbooks, or exported reports to the owning team
 </Step>
 <Step title="Update Access Lists">
 Remove from any permission groups
@@ -716,7 +716,7 @@ Quarterly review of who has access to what
 
 - Dedicated WhoDB instance (Docker)
 - Multiple databases (dev, staging, prod)
-- Role-based access control
+- Database-side role-based access control
 - Regular backups
 - Database-native audit logging
 

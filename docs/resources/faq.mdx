@@ -352,10 +352,10 @@ Yes, WhoDB provides comprehensive data editing capabilities:
 - Select "Delete Row"
 - Confirm deletion
 
-**Inline Editing:**
-- Double-click any cell
-- Edit value directly
-- Press Enter to save
+**Keyboard Editing:**
+- Focus a row
+- Press `Enter` or `Mod + E`
+- Update values in the edit sheet
 
 <Warning>
 All data modifications are immediate and cannot be undone. Always backup before making bulk changes
@@ -369,8 +369,8 @@ WhoDB supports multiple export formats:
 <Step title="Select Data">
 Choose what to export:
 - All data in the table
-- Selected rows only
-- Filtered/searched results
+- Selected rows from the current grid
+- Rows returned by the current filters or query
 </Step>
 <Step title="Choose Format">
 Available formats:
@@ -388,7 +388,7 @@ Click "Export" to download the file
 </Steps>
 
 <Info>
-Large exports may take some time. WhoDB will show a progress indicator for operations over 10,000 rows
+Large exports may take some time. For full backups, restores, or very large migration dumps, use your database's native tooling.
 </Info>
 </Accordion>
 
@@ -397,7 +397,7 @@ The Scratchpad is WhoDB's powerful query interface, similar to Jupyter notebooks
 
 **Features:**
 - Write and execute SQL queries
-- Syntax highlighting and auto-completion
+- Syntax highlighting in the web editor
 - Multiple independent cells
 - Query history tracking
 - Result visualization
@@ -814,7 +814,7 @@ The Community Edition is suitable for most users and projects
 </Info>
 </Accordion>
 
-<Accordion title="What's the difference between CE and EE?">
+<Accordion title="What does this documentation cover?">
 This documentation set focuses on the open-source CE build in this repository. In practice, CE includes the databases and features documented across pages like [Supported Databases](/resources/supported-databases), [Settings](/features/settings), [CLI & MCP](/features/cli-and-mcp), and [Desktop App](/features/desktop-app).
 
 If you are evaluating a separate commercial offering, use the product channel tied to that offering for its exact packaging and support terms.
@@ -966,20 +966,19 @@ Yes, WhoDB is compatible with existing workflows:
 
 **From phpMyAdmin:**
 - Use same MySQL credentials
-- Import existing connection configs
+- Recreate the connection in WhoDB with the same host, port, database, and user
 - Similar interface layout
 - See our [Migration Guide](/guides/migrating-from-phpmyadmin)
 
 **From pgAdmin:**
 - Use same PostgreSQL credentials
-- Import server configurations
+- Recreate the connection in WhoDB with the same host, port, database, and user
 - Query tool is similar to Scratchpad
 - See our [Migration Guide](/guides/migrating-from-pgadmin)
 
 **From DBeaver:**
-- Export connection configs
-- Import into WhoDB
-- Migrate saved queries
+- Recreate the connections you need in WhoDB
+- Copy important SQL into Scratchpad pages, CLI bookmarks, or your repository
 - Use WhoDB as lighter alternative
 
 <Tip>
@@ -1021,11 +1020,11 @@ WhoDB provides several backup options:
 **Export Table Data:**
 1. Navigate to the table
 2. Click "Export"
-3. Choose SQL format
-4. Download INSERT statements
+3. Choose CSV or Excel
+4. Download the file
 
 **Export Schema:**
-- Use Scratchpad to export DDL:
+- Use native database tools to export DDL:
 ```sql
 -- PostgreSQL
 pg_dump --schema-only database_name

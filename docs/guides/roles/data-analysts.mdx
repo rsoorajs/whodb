@@ -123,7 +123,7 @@ Open the Scratchpad view for full SQL development capabilities:
 
 The Scratchpad provides:
 - Full SQL syntax highlighting
-- Query history and saved queries
+- Per-cell query history
 - Result pagination and sorting
 - Multiple query cells for iterative analysis
 </Step>
@@ -388,7 +388,7 @@ Access previous queries instantly:
 
 Your query history lets you:
 - Find previously successful queries
-- Clone and modify queries
+- Load and modify previous SQL in the current editor
 - Track your analysis progression
 - Recreate analysis later
 </Step>
@@ -466,9 +466,9 @@ Choose what to export:
 ![Export Dialog](/images/20-data-view-export-dialog.png)
 
 Options:
-- **All**: Every row in your result set
-- **Selected**: Only rows you've highlighted
-- **Filtered**: Rows matching your current filters
+- **All**: Export from the table or header context menu
+- **Selected**: Select loaded rows first, then export selected rows
+- **Filtered**: Apply WHERE conditions before exporting
 </Step>
 
 <Step title="Choose Your Format">
@@ -726,8 +726,8 @@ When exporting, document date ranges, filters applied, and what NULLs mean.
 <Card title="Use Read-Only Access" icon="lock">
 When possible, connect to read-only replicas to avoid accidental data modification.
 </Card>
-<Card title="Save Query History" icon="history">
-Bookmark important queries for quick reuse and analysis reproducibility.
+<Card title="Use Query History" icon="history">
+Reuse queries from Scratchpad history, and store important query files in your normal documentation or repository.
 </Card>
 <Card title="Iterate Incrementally" icon="cycle">
 Build complex queries step-by-step. Test each piece before adding more complexity.

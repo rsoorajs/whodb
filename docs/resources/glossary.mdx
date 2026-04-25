@@ -108,7 +108,7 @@ A mechanism to restrict which rows are displayed based on specified criteria. Wh
 A column or combination of columns that references a primary key in another table, enforcing referential integrity and establishing relationships between tables.
 
 **Format Query**
-Readable SQL style with consistent indentation and line breaks.
+Readable SQL style with consistent indentation and line breaks. The CLI TUI includes SQL formatting; the current CE web Scratchpad focuses on syntax highlighting and execution.
 
 **Full-Text Search**
 A search capability that indexes and searches all text columns in a table. Available in databases that support full-text search like PostgreSQL with text search extensions.
@@ -398,24 +398,24 @@ A region's standard time offset used in datetime operations. WhoDB respects data
 <Accordion title="WhoDB Features">
 - **Scratchpad**: Query editor interface
 - **Graph View**: Visual schema representation
-- **Schema Explorer**: Hierarchical structure browser
+- **Storage Units**: Source object browser for tables, collections, views, and equivalent objects
+- **Describe**: Storage Unit metadata and column inspection
 - **Chat Feature**: AI-powered query assistant
 - **Mock Data**: Generated test data
 - **Export**: Data download functionality
-- **Batch Operations**: Multiple row modifications
+- **Selected Row Actions**: Operations on selected loaded rows where supported
 - **Keyboard Shortcuts**: Quick action commands
 </Accordion>
 
-<Accordion title="WhoDB Editions">
+<Accordion title="WhoDB Packaging">
 - **Community Edition**: Free, open-source version
-- **Enterprise Edition**: Commercial version with additional databases
-- **Storage Unit**: Connected database instance
+- **Storage Unit**: Source object such as a table, view, collection, key, or similar object exposed by a connector
 - **Connection Profile**: Saved database credentials
 </Accordion>
 
 <Accordion title="WhoDB Operations">
-- **Inline Edit**: Direct cell value modification
-- **Quick Export**: Rapid data download
+- **Edit Row**: Side-sheet row update flow from the data grid
+- **Export**: CSV, Excel, or supported document-row download
 - **Filter**: Restrict visible rows
 - **Search**: Find specific data
 - **Pagination**: Browse large datasets

@@ -105,18 +105,18 @@ Use for:
 Example test: "Does pagination work with 100 rows?"
 </Accordion>
 
-<Accordion title="Large (500-1000+ rows)">
+<Accordion title="Larger datasets">
 Use for:
 - Load testing
 - Performance benchmarking
 - Testing query optimization
 - Realistic staging datasets
 
-Example test: "Does search still work with 10,000 rows?"
+Use repeated mock-data runs, imports, or database-native scripts when you need thousands of rows.
 </Accordion>
 </AccordionGroup>
 
-The UI enforces a 200-row limit for data safety, but you can run multiple generations to accumulate more data.
+The current backend limit is 200 rows per mock-data generation run.
 </Step>
 
 <Step title="Generate and Verify">

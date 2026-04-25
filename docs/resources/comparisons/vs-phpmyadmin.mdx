@@ -29,27 +29,25 @@ Mature, feature-rich for MySQL, widely deployed, older interface
 
 ## Performance and Speed Comparison
 
-One of the most noticeable differences between WhoDB and phpMyAdmin is performance. Let's look at real-world metrics:
+One of the most noticeable differences between WhoDB and phpMyAdmin is the runtime model:
 
 | Metric | WhoDB | phpMyAdmin |
 |--------|-------|-----------|
-| **Startup Time** | \<1 second | 2-3 seconds |
-| **Page Load** | \<200ms | 500-1000ms |
-| **Memory Usage** | ~50MB | ~100MB |
-| **CPU Usage (idle)** | \<1% | 2-5% |
-| **Large Dataset Handling (100K rows)** | Smooth pagination | Slower loading |
-| **Query Execution** | Native Go performance | PHP overhead |
-| **Browser Responsiveness** | Excellent | Good |
+| **Runtime** | Single Go server process | PHP web application |
+| **Deployment** | Binary or Docker container | PHP-capable web server |
+| **Large Table Handling** | Paginated current result set | Traditional page-based table views |
+| **Database Scope** | Broad CE source catalog | MySQL/MariaDB |
+| **Browser Workflow** | Modern React UI | Older multi-page UI |
 
 **Why WhoDB is Faster:**
 - Written in Go, compiled to native code (vs. PHP interpreted)
 - React frontend with virtual scrolling for large datasets
 - Minimal database query overhead
 - Efficient resource utilization
-- WebSocket support for real-time updates
+- Simple request/response UI with lightweight backend checks
 
 **Real-World Example:**
-When viewing a table with 100,000 rows, phpMyAdmin may take 5-10 seconds to render the page with pagination controls. WhoDB displays the same data in under 1 second with smooth, responsive scrolling.
+For large tables, WhoDB keeps the grid paginated and focused on the current result set instead of trying to render the whole table at once.
 
 ## User Interface Comparison
 
@@ -95,26 +93,26 @@ When viewing a table with 100,000 rows, phpMyAdmin may take 5-10 seconds to rend
 | **Multiple Database Support** | Yes (6+) | MySQL/MariaDB only |
 | **Table Management** | Yes | Yes |
 | **Column Management** | Yes | Yes |
-| **Indexes** | Yes | Yes |
+| **Indexes** | Metadata where exposed by the source | Yes |
 | **Views** | Yes | Yes |
-| **Triggers** | Yes | Yes |
-| **Stored Procedures** | Yes | Yes |
-| **User Management** | Yes | Yes |
-| **Permissions** | Yes | Yes |
-| **Backup/Restore** | Yes | Yes |
-| **Database Replication** | Yes | Limited |
+| **Triggers** | Inspect with native SQL/tools | Yes |
+| **Stored Procedures** | Inspect with native SQL/tools | Yes |
+| **User Management** | Use database-native tools | Yes |
+| **Permissions** | Use database-native tools | Yes |
+| **Backup/Restore** | CSV/Excel export; native tools for full dumps | Yes |
+| **Database Replication** | Use database-native tools | Limited |
 </Accordion>
 
 <Accordion title="Data Management">
 | Feature | WhoDB | phpMyAdmin |
 |---------|:----:|:---------:|
 | **Add Records** | Simple dialog | Form interface |
-| **Edit Records** | Inline or dialog | Row-by-row form |
+| **Edit Records** | Edit sheet | Row-by-row form |
 | **Delete Records** | Simple & safe | Multiple options |
-| **Bulk Operations** | Select & act | Limited |
+| **Bulk Operations** | Selected-row actions where supported | Limited |
 | **Sorting** | Click columns | Column controls |
 | **Filtering** | Visual builder | SQL conditions |
-| **Search** | Real-time across all columns | Per-column search |
+| **Search** | Loaded-row search plus WHERE filters | Per-column search |
 | **Data Export** | CSV/Excel, plus JSON Lines for MongoDB-style records when supported | Multiple formats |
 | **Data Import** | Yes | Yes |
 | **Mock Data** | Native generation | No support |
@@ -124,14 +122,14 @@ When viewing a table with 100,000 rows, phpMyAdmin may take 5-10 seconds to rend
 | Feature | WhoDB | phpMyAdmin |
 |---------|:----:|:---------:|
 | **SQL Editor** | Syntax highlighting | Basic editor |
-| **Auto-completion** | Yes | Yes |
-| **Query History** | Searchable & organized | Basic history |
-| **Query Reuse** | One-click clone | Copy/paste |
-| **Query Bookmarks** | Yes | Yes |
+| **Auto-completion** | CLI TUI; web CE editor focuses on syntax highlighting | Yes |
+| **Query History** | Per-cell web history; CLI history search | Basic history |
+| **Query Reuse** | Load from history | Copy/paste |
+| **Query Bookmarks** | CLI bookmarks | Yes |
 | **Multi-query Execution** | Multi-cell support | One at a time |
 | **Result Export** | Direct export | Download required |
 | **Execution Time** | Shown | Shown |
-| **Query Formatting** | Auto-format | Manual |
+| **Query Formatting** | CLI TUI formatting | Manual |
 </Accordion>
 
 <Accordion title="Visualization">
@@ -149,15 +147,15 @@ When viewing a table with 100,000 rows, phpMyAdmin may take 5-10 seconds to rend
 <Accordion title="Administration">
 | Feature | WhoDB | phpMyAdmin |
 |---------|:----:|:---------:|
-| **Database Creation** | Yes | Yes |
-| **Database Deletion** | Yes (with safeguards) | Yes |
-| **User Management** | Yes | Comprehensive |
-| **Privilege Management** | Yes | Very comprehensive |
-| **Replication Setup** | Yes | Yes |
-| **Database Status** | Yes | Yes |
+| **Database Creation** | Create source objects where supported | Yes |
+| **Database Deletion** | Use database-native tools | Yes |
+| **User Management** | Use database-native tools | Comprehensive |
+| **Privilege Management** | Use database-native tools | Very comprehensive |
+| **Replication Setup** | Use database-native tools | Yes |
+| **Database Status** | Use database-native tools and health checks | Yes |
 | **Performance Stats** | Yes | Basic |
-| **Server Variables** | Yes | Yes |
-| **Log Viewer** | Yes | Yes |
+| **Server Variables** | Use database-native tools | Yes |
+| **Log Viewer** | Use container/runtime logs | Yes |
 </Accordion>
 </AccordionGroup>
 
@@ -169,7 +167,7 @@ This is one of WhoDB's standout features that phpMyAdmin completely lacks.
 
 <CardGroup cols={1}>
 <Card title="Built-in Realistic Data Generation">
-- Configure row count (1 to 100,000+)
+- Generate up to 200 rows per run
 - Column-type aware generation (dates, emails, numbers, text, etc.)
 - Realistic data that mimics production patterns
 - Append or replace mode
@@ -202,7 +200,7 @@ phpMyAdmin requires:
 **WhoDB:**
 - Official Docker image
 - Single command deployment
-- Lightweight image (~100MB)
+- Lightweight container deployment
 - Environment variable configuration
 - Perfect for containerized environments
 
@@ -315,10 +313,10 @@ Both tools handle connection security well. WhoDB has a cleaner certificate conf
 | **Database Auth** | Yes | Yes |
 | **HTTP Basic Auth** | Yes | Yes |
 | **Session Management** | Secure | Secure |
-| **LDAP Integration** | EE only | Yes |
-| **OAuth** | EE only | No |
+| **LDAP Integration** | Use reverse proxy or external auth layer | Yes |
+| **OAuth** | Use reverse proxy or external auth layer | No |
 
-phpMyAdmin has more built-in authentication options. WhoDB Enterprise adds LDAP/OAuth.
+phpMyAdmin has more built-in authentication options. For WhoDB CE team deployments, put the app behind your normal authentication layer.
 </Accordion>
 
 <Accordion title="Credential Storage">
@@ -339,12 +337,12 @@ Both options are secure when properly configured.
 <Accordion title="Audit Logging">
 | Feature | WhoDB | phpMyAdmin |
 |---------|:----:|:---------:|
-| **Query Logging** | Yes | Yes |
-| **Change Tracking** | Yes | Limited |
-| **User Action Logging** | Yes | Yes |
-| **Audit Trail Export** | Yes | Limited |
+| **Query Logging** | Use database-native logs and app/container logs | Yes |
+| **Change Tracking** | Use database-native auditing | Limited |
+| **User Action Logging** | Use reverse proxy/app/runtime logs | Yes |
+| **Audit Trail Export** | Use database-native tooling | Limited |
 
-WhoDB has better audit logging for compliance needs.
+For compliance needs, plan audit logging at the database and infrastructure layer.
 </Accordion>
 </AccordionGroup>
 
@@ -460,7 +458,7 @@ Ready to switch? Here's how easy it is:
 
 <Steps>
 <Step title="Install WhoDB">
-Download WhoDB or use Docker. Startup takes less than 5 minutes.
+Download WhoDB or use Docker.
 
 ```bash
 docker run -p 8080:8080 clidey/whodb:latest
@@ -477,7 +475,7 @@ Use the same connection details you used in phpMyAdmin:
 </Step>
 
 <Step title="Explore the New Interface">
-Spend 10-15 minutes learning where things are:
+Walk through the main areas:
 - Data viewing and editing
 - Query editor (Scratchpad)
 - Schema visualization
@@ -495,7 +493,7 @@ All familiar, just cleaner UI.
 </Step>
 
 <Step title="Train Your Team">
-Show team members the new interface. Most need only a 15-minute walkthrough to become productive. Huge time savings compared to phpMyAdmin learning curve.
+Show team members the new interface and map the phpMyAdmin workflows they already use to the matching WhoDB screens.
 </Step>
 
 <Step title="Go Fully WhoDB">
@@ -503,9 +501,7 @@ Once comfortable, switch completely. Run WhoDB alongside phpMyAdmin for a few da
 </Step>
 </Steps>
 
-**Total Migration Time:** 30 minutes to 1 hour
-**Training Time per Developer:** 15-30 minutes
-**Productivity Improvement:** 20-30% faster database operations
+Migration effort depends on how many saved queries, export routines, and MySQL administration tasks you need to keep outside WhoDB.
 
 ## Feature Differences Deep Dive
 
@@ -532,11 +528,11 @@ Once comfortable, switch completely. Run WhoDB alongside phpMyAdmin for a few da
 <Accordion title="Query Interface">
 **WhoDB:**
 - Syntax highlighting
-- Auto-completion
-- Query history with search
-- One-click query reuse
+- Web Scratchpad query history and CLI TUI autocomplete
+- Per-cell query history
+- Query reuse from history entries
 - Multi-cell notebooks
-- Format on command
+- CLI TUI SQL formatting
 
 **phpMyAdmin:**
 - Basic query editor
@@ -551,11 +547,10 @@ Once comfortable, switch completely. Run WhoDB alongside phpMyAdmin for a few da
 
 <Accordion title="Data Modification">
 **WhoDB:**
-- Inline cell editing
-- Add record dialog (clean form)
-- Edit record dialog
-- Bulk select and delete
-- Relationship-aware editing
+- Add Row sheet
+- Edit Row sheet
+- Selected-row delete where the source supports delete
+- Toast feedback and grid refresh
 - Validation feedback
 
 **phpMyAdmin:**
@@ -597,10 +592,8 @@ Once comfortable, switch completely. Run WhoDB alongside phpMyAdmin for a few da
 | **Per-User Cost** | None | None |
 | **Hosting** | Self-hosted | Self-hosted |
 | **Support** | Community | Community |
-| **Enterprise Edition** | Available (custom pricing) | N/A |
-| **Enterprise Support** | Available | N/A |
 
-**Bottom Line:** Both free and open source. Cost difference is near zero unless you need WhoDB Enterprise features.
+**Bottom Line:** Both are free and open source. Choose based on database coverage, workflow, and how much MySQL-specific administration you need in the UI.
 
 ## Real-World Scenarios
 
@@ -687,7 +680,7 @@ Ready to experience the speed and simplicity of modern database management?
 
 <CardGroup cols={2}>
 <Card title="Install WhoDB Free" icon="download" href="/installation">
-Get started in under 5 minutes. No credit card needed.
+Install the current CE build.
 </Card>
 <Card title="Live Demo" icon="play" href="https://whodb.com/demo">
 Try WhoDB without installing anything
@@ -706,11 +699,11 @@ WhoDB requires Go support, which most shared hosting doesn't provide. Shared hos
 </Accordion>
 
 <Accordion title="Is WhoDB as feature-rich as phpMyAdmin?">
-WhoDB has everything phpMyAdmin has for data management, plus mock data generation, better visualization, and modern UX. phpMyAdmin has a few advanced MySQL-specific features WhoDB doesn't, but 95% of users never need them.
+WhoDB covers common data browsing, querying, editing, export, graph, and mock-data workflows with a more modern UI. phpMyAdmin still has MySQL-specific administration screens that WhoDB intentionally does not try to replace.
 </Accordion>
 
 <Accordion title="How long will migration take?">
-Migration is straightforward: install WhoDB (5 min), connect to existing databases (2 min), learn interface (10-15 min). Total: 30 minutes. Team onboarding adds 15-30 minutes per developer.
+Migration is straightforward: install WhoDB, connect to the same databases, and validate your team's daily workflows. Team onboarding depends on how many saved queries, exports, and admin tasks you are moving.
 </Accordion>
 
 <Accordion title="Can I use both tools together?">
@@ -718,14 +711,14 @@ Yes. Many teams run both during transition. WhoDB for daily work, phpMyAdmin for
 </Accordion>
 
 <Accordion title="What about security and compliance?">
-Both tools are secure when properly configured with SSL/TLS. WhoDB Enterprise adds LDAP, OAuth, SSO, and comprehensive audit logging for enterprise compliance needs.
+Both tools can be deployed securely when configured with SSL/TLS, least-privilege database credentials, and the right network controls. For WhoDB CE, use database-native auditing plus proxy/container logs for compliance trails.
 </Accordion>
 </AccordionGroup>
 
 <Tip>
-**Pro Tip:** Start with WhoDB Community Edition (free) today. If you need advanced features, WhoDB Enterprise is available for enterprise deployments with additional database support, SSO, and audit logging.
+**Pro Tip:** Start with WhoDB Community Edition and validate the current CE feature set against your real database workflows.
 </Tip>
 
 ---
 
-**Ready to upgrade your database management?** [Install WhoDB now](/installation) and join thousands of developers who've made the switch.
+**Ready to try the current CE build?** [Install WhoDB now](/installation).

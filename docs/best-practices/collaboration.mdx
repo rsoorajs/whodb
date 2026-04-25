@@ -229,18 +229,18 @@ Expected Results:
 
 ### Using Scratchpad for Team Queries
 
-WhoDB's Scratchpad feature enables live collaborative query development.
+WhoDB's Scratchpad is useful for building and testing queries before sharing them through your normal team channels, such as pull requests, tickets, runbooks, or shared documents.
 
 **Collaborative Query Workflow:**
 
-1. **Initiate**: Create new Scratchpad session and share link
-2. **Iterate**: Team members write and refine queries together
+1. **Initiate**: Create a Scratchpad page for the investigation
+2. **Iterate**: Write and refine queries against a development or staging database
 3. **Test**: Run queries against development database
-4. **Document**: Add comments and parameter explanations
-5. **Review**: Perform peer code review
-6. **Finalize**: Export and store in repository
+4. **Document**: Add comments, expected results, and parameter explanations
+5. **Review**: Move final SQL into a pull request, ticket, or runbook for peer review
+6. **Finalize**: Store the reviewed SQL in your repository or documentation
 
-**Live Collaboration Best Practices:**
+**Team Query Best Practices:**
 
 - Use clear cell names: `user_analysis`, `sales_by_region`, `validation_checks`
 - Add context comments between cells explaining flow
@@ -674,4 +674,4 @@ Share query results and insights seamlessly with the team.
 
 ## Summary
 
-Effective team collaboration transforms database management from a siloed function into a collective capability. By establishing clear workflows, documenting thoroughly, sharing knowledge generously, and building a culture of respect and continuous learning, your database team becomes more resilient, productive, and capable of handling increasingly complex requirements. The time invested in collaboration practices pays dividends through reduced errors, faster problem resolution, and improved institutional knowledge. WhoDB's collaborative features make it easier than ever to build a strong, unified database team.
+Effective team collaboration transforms database management from a siloed function into a shared capability. Use WhoDB for inspection, querying, and repeatable exports, then rely on your normal source control, review, and runbook practices for long-lived team knowledge.
