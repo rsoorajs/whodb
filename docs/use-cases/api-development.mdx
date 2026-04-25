@@ -7,6 +7,10 @@ description: "Use WhoDB to inspect schemas, validate data, and support API workf
 
 WhoDB is useful when you are building or debugging an API layer on top of a database and need fast visibility into schema shape, live data, and query behavior.
 
+<Note>
+This page is about APIs you build on top of your database. WhoDB's web backend is not documented as a supported public API for external integrations.
+</Note>
+
 ## Where It Helps
 
 <CardGroup cols={2}>
@@ -20,7 +24,7 @@ Use Scratchpad to validate the SQL behind new endpoints and compare result shape
 Use the in-app import panel for CSV, Excel, or SQL scripts when you need repeatable local API test data.
 </Card>
 <Card title="Tool Integration" icon="cloud">
-Use the CLI or MCP server in local workflows and AI-assisted tooling.
+Use the CLI, and where appropriate the CLI MCP server, in local workflows and AI-assisted tooling.
 </Card>
 </CardGroup>
 
@@ -40,7 +44,7 @@ Open the table view to confirm nullability, outliers, and the actual values your
 Use the in-app import flow for CSV, Excel, and SQL scripts. Use `whodb-cli import` when you want to load CSV or Excel fixtures from a terminal.
 </Step>
 <Step title="Automate With MCP Or CLI">
-Expose `whodb-cli mcp serve` to local tooling when you want agentic or scripted workflows on top of saved connections.
+Use `whodb-cli` commands, or start `whodb-cli mcp serve` for local tooling that speaks MCP.
 </Step>
 </Steps>
 
