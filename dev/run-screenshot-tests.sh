@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2025 Clidey, Inc.
+# Copyright 2026 Clidey, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -184,7 +184,8 @@ echo "   Test spec: tests/postgres-screenshots.spec.mjs"
 
 cd "$PROJECT_ROOT/frontend/e2e"
 NODE_ENV=test pnpm exec playwright test \
-    --project=standalone \
+    --config=playwright.screenshot.config.mjs \
+    --project=screenshots \
     tests/postgres-screenshots.spec.mjs
 
 PW_EXIT_CODE=$?
