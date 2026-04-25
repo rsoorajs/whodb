@@ -47,6 +47,7 @@ get_docker_services() {
         mysql)       echo "e2e_mysql e2e_mysql_ssl" ;;
         mysql8)      echo "e2e_mysql_842" ;;
         mariadb)     echo "e2e_mariadb e2e_mariadb_ssl" ;;
+        tidb)        echo "e2e_tidb tidb-init" ;;
         sqlite)      echo "" ;;  # No Docker service needed
         duckdb)      echo "" ;;  # No Docker service needed
         mongodb)     echo "e2e_mongo e2e_mongo_ssl" ;;
@@ -58,7 +59,6 @@ get_docker_services() {
         valkey)      echo "e2e_valkey valkey-init" ;;
         dragonfly)   echo "e2e_dragonfly dragonfly-init" ;;
         opensearch)  echo "e2e_opensearch opensearch-init" ;;
-        starrocks)   echo "e2e_starrocks starrocks-init" ;;
         yugabytedb)  echo "e2e_yugabytedb yugabytedb-init" ;;
         questdb)     echo "e2e_questdb questdb-init" ;;
         ferretdb)    echo "e2e_ferretdb_pg e2e_ferretdb ferretdb-init" ;;
@@ -74,6 +74,7 @@ get_db_port() {
         mysql)       echo "3306" ;;
         mysql8)      echo "3308" ;;
         mariadb)     echo "3307" ;;
+        tidb)        echo "4000" ;;
         mongodb)     echo "27017" ;;
         redis)       echo "6379" ;;
         cockroachdb) echo "26257" ;;
@@ -100,7 +101,7 @@ get_db_wait_time() {
         mongodb|clickhouse)             echo "30" ;;  # Light init
         redis|memcached|valkey|dragonfly) echo "20" ;;  # Very fast
         opensearch)                     echo "60" ;;  # Similar to ES
-        starrocks)                      echo "120" ;; # Heavy all-in-one image
+        tidb)                           echo "90" ;;  # MySQL-compatible distributed DB
         yugabytedb)                     echo "90" ;;  # Distributed DB startup
         questdb)                        echo "30" ;;  # Lightweight
         ferretdb)                       echo "30" ;;  # Lightweight (depends on PG)
@@ -346,6 +347,8 @@ if [ "$SKIP_CE_DATABASES" = "false" ]; then
         PID_MYSQL8=$!
         wait_for_port "MariaDB" 3307 90 &
         PID_MARIA=$!
+        wait_for_port "TiDB" 4000 90 &
+        PID_TIDB=$!
         wait_for_port "MongoDB" 27017 30 &
         PID_MONGO=$!
         wait_for_port "CockroachDB" 26257 60 &
@@ -356,8 +359,22 @@ if [ "$SKIP_CE_DATABASES" = "false" ]; then
         PID_REDIS=$!
         wait_for_port "ElasticSearch" 9200 60 &
         PID_ES=$!
+        wait_for_port "Memcached" 11211 20 &
+        PID_MEMCACHED=$!
+        wait_for_port "Valkey" 6382 20 &
+        PID_VALKEY=$!
+        wait_for_port "Dragonfly" 6383 20 &
+        PID_DRAGONFLY=$!
+        wait_for_port "OpenSearch" 9202 60 &
+        PID_OPENSEARCH=$!
+        wait_for_port "YugabyteDB" 5434 90 &
+        PID_YUGABYTEDB=$!
+        wait_for_port "QuestDB" 8812 30 &
+        PID_QUESTDB=$!
+        wait_for_port "FerretDB" 27020 30 &
+        PID_FERRETDB=$!
 
-        ALL_PIDS="$PID_PG $PID_MYSQL $PID_MYSQL8 $PID_MARIA $PID_CRDB $PID_MONGO $PID_CH $PID_REDIS $PID_ES"
+        ALL_PIDS="$PID_PG $PID_MYSQL $PID_MYSQL8 $PID_MARIA $PID_TIDB $PID_CRDB $PID_MONGO $PID_CH $PID_REDIS $PID_ES $PID_MEMCACHED $PID_VALKEY $PID_DRAGONFLY $PID_OPENSEARCH $PID_YUGABYTEDB $PID_QUESTDB $PID_FERRETDB"
 
         # SSL container wait_for_port calls (only when running SSL tests)
         if needs_ssl; then
@@ -378,8 +395,10 @@ if [ "$SKIP_CE_DATABASES" = "false" ]; then
             PID_CH_SSL=$!
             wait_for_port "ElasticSearch-SSL" 9201 90 &
             PID_ES_SSL=$!
+            wait_for_port "Memcached-SSL" 11212 30 &
+            PID_MEMCACHED_SSL=$!
 
-            ALL_PIDS="$ALL_PIDS $PID_PG_SSL $PID_MYSQL_SSL $PID_MARIA_SSL $PID_MONGO_SSL $PID_CRDB_SSL $PID_REDIS_SSL $PID_CH_SSL $PID_ES_SSL"
+            ALL_PIDS="$ALL_PIDS $PID_PG_SSL $PID_MYSQL_SSL $PID_MARIA_SSL $PID_MONGO_SSL $PID_CRDB_SSL $PID_REDIS_SSL $PID_CH_SSL $PID_ES_SSL $PID_MEMCACHED_SSL"
         fi
 
         # Wait for all background processes

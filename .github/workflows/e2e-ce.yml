@@ -57,7 +57,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        database: [postgres, mysql, mysql8, mariadb, sqlite, mongodb, redis, elasticsearch, clickhouse]
+        database:
+          - postgres
+          - mysql
+          - mysql8
+          - mariadb
+          - tidb
+          - sqlite
+          - duckdb
+          - mongodb
+          - redis
+          - elasticsearch
+          - cockroachdb
+          - clickhouse
+          - memcached
+          - valkey
+          - dragonfly
+          - opensearch
+          - yugabytedb
+          - questdb
+          - ferretdb
 
     steps:
       - name: Harden Runner
