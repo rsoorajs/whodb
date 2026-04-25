@@ -108,10 +108,20 @@ jobs:
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: '25.6.0'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install frontend dependencies
         working-directory: frontend
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-playwright-
 
       - name: Install Playwright browsers
         working-directory: frontend
@@ -148,6 +158,15 @@ jobs:
           path: frontend/e2e/logs/
           retention-days: 7
 
+      - name: Upload failure artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: ${{ failure() }}
+        with:
+          name: e2e-failure-artifacts-${{ matrix.database }}
+          path: frontend/e2e/reports/test-results/
+          if-no-files-found: warn
+          retention-days: 14
+
   merge-reports:
     name: Merge Reports
     needs: [e2e]
@@ -176,16 +195,24 @@ jobs:
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: '25.6.0'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
 
       - name: Install frontend dependencies
         working-directory: frontend
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Download all blob reports
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           pattern: blob-report-*
           path: all-blobs
+
+      - name: Download all test logs
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          pattern: e2e-logs-*
+          path: all-logs
 
       - name: Flatten blob reports
         run: |
@@ -211,3 +238,63 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 30
+
+      - name: Write E2E summary
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo "## CE E2E Summary"
+            echo
+            echo "| Database | Result | Slow Files |"
+            echo "| --- | --- | --- |"
+            for dir in all-logs/e2e-logs-*; do
+              [ -d "$dir" ] || continue
+              db=$(basename "$dir" | sed 's/e2e-logs-//')
+              log="$dir/$db.log"
+              if [ ! -f "$log" ]; then
+                log=$(find "$dir" -maxdepth 1 -name '*.log' | head -1)
+              fi
+              if [ -z "$log" ] || [ ! -f "$log" ]; then
+                echo "| \`$db\` | no log uploaded |  |"
+                continue
+              fi
+              result=$(grep -E '[0-9]+ (passed|failed|skipped|flaky)' "$log" | tail -1 | sed 's/^[[:space:]]*//' || true)
+              result=$(echo "$result" | sed 's/|/\\|/g')
+              [ -n "$result" ] || result="no result line found"
+              slow=$(grep 'Slow test file' "$log" | sed 's/^[[:space:]]*Slow test file: //' | awk 'BEGIN { first = 1 } { gsub(/\|/, "\\|"); if (!first) printf "<br>"; printf "%s", $0; first = 0 }' || true)
+              [ -n "$slow" ] || slow="none"
+              echo "| \`$db\` | $result | $slow |"
+            done
+
+            echo
+            echo "### Recent Failures"
+            any_failures=false
+            for dir in all-logs/e2e-logs-*; do
+              [ -d "$dir" ] || continue
+              db=$(basename "$dir" | sed 's/e2e-logs-//')
+              log="$dir/$db.log"
+              if [ ! -f "$log" ]; then
+                log=$(find "$dir" -maxdepth 1 -name '*.log' | head -1)
+              fi
+              [ -n "$log" ] && [ -f "$log" ] || continue
+              if ! grep -Eq '(✘|[0-9]+ failed)' "$log"; then
+                continue
+              fi
+              failures=$(grep -E '(✘|Error:|Timeout|failed)' "$log" | tail -20 || true)
+              if [ -n "$failures" ]; then
+                any_failures=true
+                echo
+                echo "<details><summary>$db</summary>"
+                echo
+                echo '```text'
+                echo "$failures"
+                echo '```'
+                echo
+                echo "</details>"
+              fi
+            done
+            if [ "$any_failures" = "false" ]; then
+              echo
+              echo "No recent failure lines found in uploaded logs."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

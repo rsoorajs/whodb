@@ -1,4 +1,20 @@
 #!/bin/sh
+#
+# Copyright 2026 Clidey, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
 # Memcached E2E test data initialization script
 # Uses raw TCP via nc (netcat) or openssl s_client for TLS connections.
 # Text protocol: set <key> <flags> <exptime> <bytes>\r\n<data>\r\n
@@ -18,14 +34,21 @@ mc_send() {
 }
 
 echo "Waiting for Memcached to be ready at ${MEMCACHED_HOST}:${MEMCACHED_PORT} (TLS=${MEMCACHED_TLS})..."
+ready=false
 for i in $(seq 1 30); do
     if printf "version\r\n" | mc_send 2>/dev/null | grep -q "VERSION"; then
         echo "Memcached is ready!"
+        ready=true
         break
     fi
     echo "Attempt $i: Memcached not ready, waiting..."
     sleep 1
 done
+
+if [ "$ready" != "true" ]; then
+    echo "ERROR: Memcached did not become ready"
+    exit 1
+fi
 
 # Helper function to set a memcached key
 # Usage: mc_set <key> <flags> <exptime> <value>

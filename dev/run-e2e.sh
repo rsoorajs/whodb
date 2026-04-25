@@ -39,7 +39,7 @@
 #   ./run-e2e.sh false all                    # GUI mode (--headed), all databases
 #
 # Architecture:
-#   - Headless mode: Loops through databases sequentially for better isolation/logging
+#   - Headless mode: Runs one Playwright process per selected database
 #   - GUI mode: Single Playwright session with --headed flag
 
 set -e
@@ -118,6 +118,7 @@ echo "   Databases: ${DATABASES[*]}"
 
 # Setup environment (databases + build binary + start backend)
 echo "⚙️ Setting up test environment..."
+export WHODB_SPEC_FILE="$SPEC_FILE"
 bash "$SCRIPT_DIR/setup-e2e.sh" "$SETUP_MODE" "$TARGET_DB"
 
 cd "$PROJECT_ROOT/frontend"
