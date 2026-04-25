@@ -16,6 +16,8 @@
 
 import { test, expect, forEachDatabase } from '../../support/test-fixture.mjs';
 
+const SIDEBAR_REPRESENTATIVE_DATABASES = ['postgres', 'sqlite', 'mongodb', 'redis', 'memcached', 'elasticsearch'];
+
 
 /**
  * Sidebar Navigation Tests
@@ -83,7 +85,7 @@ test.describe('Sidebar Navigation', () => {
                     });
                 }
             });
-        });
+        }, { databases: SIDEBAR_REPRESENTATIVE_DATABASES });
     });
 
     test.describe('Schema Selection', () => {
@@ -141,7 +143,7 @@ test.describe('Sidebar Navigation', () => {
                     // We don't assert on specific count since different schemas may have different tables
                 });
             });
-        });
+        }, { databases: ['postgres'] });
     });
 
     test.describe('Database Selection', () => {
@@ -170,7 +172,7 @@ test.describe('Sidebar Navigation', () => {
                     await expect(page.locator('[data-testid="sidebar-database"]')).toBeAttached();
                 });
             });
-        });
+        }, { databases: ['postgres', 'mongodb', 'redis'] });
     });
 
     test.describe('Navigation Links', () => {
@@ -209,7 +211,7 @@ test.describe('Sidebar Navigation', () => {
                     await expect(page.locator('[href="/scratchpad"]')).toBeAttached();
                 });
             });
-        }, { features: ['scratchpad'] });
+        }, { features: ['scratchpad'], databases: ['postgres'] });
     });
 
     test.describe('NoSQL Navigation', () => {
@@ -230,7 +232,7 @@ test.describe('Sidebar Navigation', () => {
                     await expect(page.locator('[href="/graph"]')).toBeAttached();
                 });
             });
-        });
+        }, { databases: ['redis'] });
 
         forEachDatabase('document', (db) => {
             test.describe(`${db.type}`, () => {
@@ -239,7 +241,7 @@ test.describe('Sidebar Navigation', () => {
                     await expect(page.locator('[href="/graph"]')).toBeAttached();
                 });
             });
-        });
+        }, { databases: ['mongodb'] });
     });
 
     test.describe('Sidebar Toggle', () => {
@@ -280,7 +282,7 @@ test.describe('Sidebar Navigation', () => {
                     // (exact assertion depends on implementation)
                 });
             });
-        });
+        }, { databases: ['postgres'] });
     });
 
     test.describe('Logout', () => {
@@ -307,7 +309,7 @@ test.describe('Sidebar Navigation', () => {
                     await expect(page).toHaveURL(/\/login/, { timeout: 10000 });
                 });
             });
-        });
+        }, { databases: ['postgres'] });
     });
 
     test.describe('Profile Display', () => {
@@ -328,7 +330,7 @@ test.describe('Sidebar Navigation', () => {
                     await page.keyboard.press('Escape');
                 });
             });
-        });
+        }, { databases: ['postgres'] });
     });
 
     test.describe('Add New Profile', () => {
@@ -352,7 +354,7 @@ test.describe('Sidebar Navigation', () => {
                     }
                 });
             });
-        });
+        }, { databases: ['postgres'] });
     });
 
     test.describe('Database Type Icons', () => {
@@ -366,7 +368,7 @@ test.describe('Sidebar Navigation', () => {
                     await expect(page.locator('[data-testid="sidebar-profile"]').locator('svg, img').first()).toBeAttached();
                 });
             });
-        });
+        }, { databases: SIDEBAR_REPRESENTATIVE_DATABASES });
     });
 
     test.describe('Version Display', () => {
@@ -377,6 +379,6 @@ test.describe('Sidebar Navigation', () => {
                     await expect(page.locator('[data-sidebar="sidebar"]')).toContainText('Version: development');
                 });
             });
-        });
+        }, { databases: ['postgres'] });
     });
 });

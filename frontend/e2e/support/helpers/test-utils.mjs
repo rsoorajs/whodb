@@ -35,12 +35,15 @@ export const TIMEOUT = Object.freeze({
     LOGIN:     60_000,
 });
 
+let uniqueIdCounter = 0;
+
 /**
  * Generates a unique test identifier for this test run.
  * Uses timestamp to avoid conflicts within and across test runs.
  */
 export function getUniqueTestId() {
-    return `test_${Date.now()}`;
+    uniqueIdCounter += 1;
+    return `test_${Date.now()}_${uniqueIdCounter}`;
 }
 
 /**

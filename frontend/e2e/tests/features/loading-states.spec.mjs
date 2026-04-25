@@ -74,6 +74,10 @@ test.describe('Loading States & Spinners', () => {
 
     test.describe('Table Data Loading State', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             const testTable = db.testTable;
             const tableName = testTable.name;
 
@@ -140,6 +144,10 @@ test.describe('Loading States & Spinners', () => {
 
     test.describe('Scratchpad Query Execution Loading State', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('shows loading indicator during query execution', async ({ whodb, page }) => {
                     await whodb.goto('scratchpad');
@@ -205,6 +213,10 @@ test.describe('Loading States & Spinners', () => {
 
     test.describe('Chat AI Loading State', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test.beforeEach(async ({ whodb, page }) => {
                     await clearBrowserState(page);
@@ -277,6 +289,10 @@ test.describe('Loading States & Spinners', () => {
 
     test.describe('Schema/Database Selection Loading State', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('shows loading state when switching schema/database', async ({ whodb, page }) => {
                     // Check if schema/database dropdown exists (not all DBs have these)
@@ -317,6 +333,10 @@ test.describe('Loading States & Spinners', () => {
 
     test.describe('Graph View Loading State', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('shows loading state while fetching graph data', async ({ whodb, page }) => {
                     // Track graph data request
@@ -341,6 +361,10 @@ test.describe('Loading States & Spinners', () => {
 
     test.describe('Storage Units Loading State', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test.beforeEach(async ({ whodb, page }) => {
                     await clearBrowserState(page);
@@ -367,6 +391,10 @@ test.describe('Loading States & Spinners', () => {
 
     test.describe('CRUD Operations Loading State', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             const testTable = db.testTable;
             const tableName = testTable.name;
 

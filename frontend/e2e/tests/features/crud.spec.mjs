@@ -19,6 +19,22 @@ import { getTableConfig, hasFeature } from '../../support/database-config.mjs';
 import { createUpdatedDocument, parseDocument } from '../../support/categories/document.mjs';
 import { getUniqueTestId, waitForMutation } from '../../support/helpers/test-utils.mjs';
 
+let uniqueRowIdCounter = 0;
+
+function createUniqueRow(template, testTable, suffix) {
+    const uniqueId = getUniqueTestId();
+    const row = { ...template };
+    if (testTable.idField && row[testTable.idField] !== undefined) {
+        uniqueRowIdCounter += 1;
+        row[testTable.idField] = String(900000 + ((Date.now() % 10000) * 10) + uniqueRowIdCounter);
+    }
+    row[testTable.identifierField] = `${uniqueId}_${suffix}`;
+    if (row.email) {
+        row.email = `${uniqueId}@example.com`;
+    }
+    return row;
+}
+
 test.describe('CRUD Operations', () => {
 
     // SQL Databases - Edit and Add
@@ -32,7 +48,6 @@ test.describe('CRUD Operations', () => {
 
         const tableName = testTable.name;
         const colIndex = testTable.identifierColIndex;
-        const testValues = testTable.testValues;
         const mutationDelay = db.mutationDelay || 0;
 
         // Skip Edit Row tests for databases with async mutations (e.g., ClickHouse)
@@ -47,48 +62,67 @@ test.describe('CRUD Operations', () => {
 
             test('edits a row and saves changes', async ({ whodb, page }) => {
                 await whodb.data(tableName);
-                await whodb.sortBy(0);
 
-                // Edit row with network verification
+                const tableConfig = getTableConfig(db, tableName);
+                const newRowTemplate = tableConfig?.testData?.newRow;
+                if (!newRowTemplate) {
+                    return;
+                }
+
+                const newRowData = createUniqueRow(newRowTemplate, testTable, 'edit');
+                const originalIdentifier = newRowData[testTable.identifierField];
+                const modifiedIdentifier = `${originalIdentifier}_updated`;
+
+                const verifyAdd = waitForMutation(page, 'AddRow');
+                await whodb.addRow(newRowData);
+                await verifyAdd();
+
+                const addedRowIndex = await whodb.waitForRowValue(colIndex + 1, originalIdentifier);
+
                 const verifyUpdate = waitForMutation(page, 'UpdateStorageUnit');
-                await whodb.updateRow(testValues.rowIndex, colIndex, testValues.modified, false);
+                await whodb.updateRow(addedRowIndex, colIndex, modifiedIdentifier, false);
                 await verifyUpdate();
 
-                // Wait for async mutations (e.g., ClickHouse)
                 if (mutationDelay > 0) {
                     await page.waitForTimeout(mutationDelay);
                     await whodb.data(tableName);
-                    await whodb.sortBy(0);
                 }
 
-                // Verify change
-                let { rows } = await whodb.getTableData();
-                expect(rows[testValues.rowIndex][colIndex + 1]).toEqual(testValues.modified);
+                const updatedRowIndex = await whodb.waitForRowValue(colIndex + 1, modifiedIdentifier);
+                const { rows } = await whodb.getTableData();
+                expect(rows[updatedRowIndex][colIndex + 1]).toEqual(modifiedIdentifier);
 
-                // Revert
-                await whodb.updateRow(testValues.rowIndex, colIndex, testValues.original, false);
-
-                // Wait for async mutations
-                if (mutationDelay > 0) {
-                    await page.waitForTimeout(mutationDelay);
-                    await whodb.data(tableName);
-                    await whodb.sortBy(0);
-                }
-
-                ({ rows } = await whodb.getTableData());
-                expect(rows[testValues.rowIndex][colIndex + 1]).toEqual(testValues.original);
+                const verifyDelete = waitForMutation(page, 'DeleteRow');
+                await whodb.deleteRow(updatedRowIndex);
+                await verifyDelete();
             });
 
             test('cancels edit without saving', async ({ whodb, page }) => {
                 await whodb.data(tableName);
-                await whodb.sortBy(0);
 
-                // Edit and cancel
-                await whodb.updateRow(testValues.rowIndex, colIndex, 'temp_value', true);
+                const tableConfig = getTableConfig(db, tableName);
+                const newRowTemplate = tableConfig?.testData?.newRow;
+                if (!newRowTemplate) {
+                    return;
+                }
 
-                // Verify no change
+                const newRowData = createUniqueRow(newRowTemplate, testTable, 'cancel');
+                const identifierValue = newRowData[testTable.identifierField];
+
+                const verifyAdd = waitForMutation(page, 'AddRow');
+                await whodb.addRow(newRowData);
+                await verifyAdd();
+
+                const addedRowIndex = await whodb.waitForRowValue(colIndex + 1, identifierValue);
+
+                await whodb.updateRow(addedRowIndex, colIndex, `${identifierValue}_cancelled`, true);
+
                 const { rows } = await whodb.getTableData();
-                expect(rows[testValues.rowIndex][colIndex + 1]).toEqual(testValues.original);
+                expect(rows[addedRowIndex][colIndex + 1]).toEqual(identifierValue);
+
+                const verifyDelete = waitForMutation(page, 'DeleteRow');
+                await whodb.deleteRow(addedRowIndex);
+                await verifyDelete();
             });
         });
 
@@ -104,13 +138,7 @@ test.describe('CRUD Operations', () => {
                     return;
                 }
 
-                // Create unique row data to avoid conflicts
-                const uniqueId = getUniqueTestId();
-                const newRowData = {...newRowTemplate};
-                newRowData[testTable.identifierField] = `${uniqueId}_user`;
-                if (newRowData.email) {
-                    newRowData.email = `${uniqueId}@example.com`;
-                }
+                const newRowData = createUniqueRow(newRowTemplate, testTable, 'user');
 
                 const verifyAdd = waitForMutation(page, 'AddRow');
                 await whodb.addRow(newRowData);
@@ -140,13 +168,7 @@ test.describe('CRUD Operations', () => {
                     return;
                 }
 
-                // Create unique row data
-                const uniqueId = getUniqueTestId();
-                const newRowData = {...newRowTemplate};
-                newRowData[testTable.identifierField] = `${uniqueId}_delete`;
-                if (newRowData.email) {
-                    newRowData.email = `${uniqueId}@example.com`;
-                }
+                const newRowData = createUniqueRow(newRowTemplate, testTable, 'delete');
 
                 const verifyAdd = waitForMutation(page, 'AddRow');
                 await whodb.addRow(newRowData);
@@ -236,87 +258,80 @@ test.describe('CRUD Operations', () => {
             test('edits a document and saves changes', async ({ whodb, page }) => {
                 await test.step('navigate to table', async () => {
                     await whodb.data(tableName);
-                    await whodb.sortBy(0);
                 });
 
-                await test.step('check and revert leftover data', async () => {
-                    const { rows } = await whodb.getTableData();
-                    const doc = parseDocument(rows[testValues.rowIndex]);
-                    const currentValue = doc[testTable.identifierField];
+                const uniqueId = getUniqueTestId();
+                const newDoc = {
+                    username: `${uniqueId}_edit`,
+                    email: `${uniqueId}@example.com`,
+                    password: 'newpassword'
+                };
 
-                    if (currentValue === testValues.modified) {
-                        const revertDoc = createUpdatedDocument(rows[testValues.rowIndex], {
-                            [testTable.identifierField]: testValues.original
-                        });
-                        await whodb.updateRow(testValues.rowIndex, 1, revertDoc, false);
-                        if (refreshDelay > 0) {
-                            await page.waitForTimeout(refreshDelay);
-                            await whodb.data(tableName);
-                            await whodb.sortBy(0);
-                        }
-                    }
+                await test.step('create isolated document', async () => {
+                    await whodb.addRow(newDoc, true);
+                    await whodb.waitForRowContaining(newDoc.username);
                 });
 
                 await test.step('perform edit with network verification', async () => {
+                    const rowIndex = await whodb.waitForRowContaining(newDoc.username);
                     const { rows } = await whodb.getTableData();
-                    const updatedDoc = createUpdatedDocument(rows[testValues.rowIndex], {
-                        [testTable.identifierField]: testValues.modified
+                    const updatedDoc = createUpdatedDocument(rows[rowIndex], {
+                        [testTable.identifierField]: `${uniqueId}_updated`
                     });
 
                     const verifyUpdate = waitForMutation(page, 'UpdateStorageUnit');
-                    await whodb.updateRow(testValues.rowIndex, 1, updatedDoc, false);
+                    await whodb.updateRow(rowIndex, 1, updatedDoc, false);
                     await verifyUpdate();
 
                     if (refreshDelay > 0) {
                         await page.waitForTimeout(refreshDelay);
                         await whodb.data(tableName);
-                        await whodb.sortBy(0);
                     }
                 });
 
                 await test.step('verify edit', async () => {
+                    const rowIndex = await whodb.waitForRowContaining(`${uniqueId}_updated`);
                     const { rows } = await whodb.getTableData();
-                    const editedDoc = parseDocument(rows[testValues.rowIndex]);
-                    expect(editedDoc[testTable.identifierField]).toEqual(testValues.modified);
+                    const editedDoc = parseDocument(rows[rowIndex]);
+                    expect(editedDoc[testTable.identifierField]).toEqual(`${uniqueId}_updated`);
                 });
 
-                await test.step('revert to original', async () => {
-                    const { rows } = await whodb.getTableData();
-                    const revertedDoc = createUpdatedDocument(rows[testValues.rowIndex], {
-                        [testTable.identifierField]: testValues.original
-                    });
-                    await whodb.updateRow(testValues.rowIndex, 1, revertedDoc, false);
-
-                    if (refreshDelay > 0) {
-                        await page.waitForTimeout(refreshDelay);
-                        await whodb.data(tableName);
-                        await whodb.sortBy(0);
-                    }
-
-                    const { rows: revertedRows } = await whodb.getTableData();
-                    const revertedParsedDoc = parseDocument(revertedRows[testValues.rowIndex]);
-                    expect(revertedParsedDoc[testTable.identifierField]).toEqual(testValues.original);
+                await test.step('delete isolated document', async () => {
+                    const rowIndex = await whodb.waitForRowContaining(`${uniqueId}_updated`);
+                    const verifyDelete = waitForMutation(page, 'DeleteRow');
+                    await whodb.deleteRow(rowIndex);
+                    await verifyDelete();
                 });
             });
 
             test('cancels edit without saving', async ({ whodb, page }) => {
                 await whodb.data(tableName);
-                await whodb.sortBy(0);
 
+                const uniqueId = getUniqueTestId();
+                const newDoc = {
+                    username: `${uniqueId}_cancel`,
+                    email: `${uniqueId}@example.com`,
+                    password: 'newpassword'
+                };
+                await whodb.addRow(newDoc, true);
+                let rowIndex = await whodb.waitForRowContaining(newDoc.username);
                 const { rows } = await whodb.getTableData();
-                const doc = parseDocument(rows[testValues.rowIndex]);
+                const doc = parseDocument(rows[rowIndex]);
                 const currentValue = doc[testTable.identifierField];
 
-                // Store the current value for later verification (might be original or modified from failed test)
-                const updatedDoc = createUpdatedDocument(rows[testValues.rowIndex], {
+                const updatedDoc = createUpdatedDocument(rows[rowIndex], {
                     [testTable.identifierField]: 'temp_value'
                 });
-                await whodb.updateRow(testValues.rowIndex, 1, updatedDoc, true);
+                await whodb.updateRow(rowIndex, 1, updatedDoc, true);
 
-                // Verify the value didn't change (should still be whatever it was before)
+                rowIndex = await whodb.waitForRowContaining(newDoc.username);
                 const { rows: verifyRows } = await whodb.getTableData();
-                const verifyDoc = parseDocument(verifyRows[testValues.rowIndex]);
+                const verifyDoc = parseDocument(verifyRows[rowIndex]);
                 expect(verifyDoc[testTable.identifierField]).toEqual(currentValue);
+
+                const verifyDelete = waitForMutation(page, 'DeleteRow');
+                await whodb.deleteRow(rowIndex);
+                await verifyDelete();
             });
         });
 
@@ -362,7 +377,6 @@ test.describe('CRUD Operations', () => {
 
         const keyName = testTable.name;
         const testValues = testTable.testValues;
-        const rowIndex = testTable.identifierRowIndex || testValues.rowIndex;
 
         test.describe('Edit Hash Field', () => {
             test('edits a hash field value and saves', async ({ whodb, page }) => {
@@ -370,41 +384,61 @@ test.describe('CRUD Operations', () => {
                     await whodb.data(keyName);
                 });
 
-                await test.step('check and revert leftover data', async () => {
-                    const { rows } = await whodb.getTableData();
-                    if (rows[rowIndex][2] === testValues.modified) {
-                        await whodb.updateRow(rowIndex, 1, testValues.original, false);
-                    }
+                const uniqueField = `test_field_${getUniqueTestId()}`;
+
+                await test.step('create isolated hash field', async () => {
+                    const verifyAdd = waitForMutation(page, 'AddRow');
+                    await whodb.addRow({ field: uniqueField, value: testValues.original });
+                    await verifyAdd();
                 });
 
                 await test.step('update field with network verification', async () => {
+                    const { rows } = await whodb.getTableData();
+                    const addedIndex = rows.findIndex(r => r[1] === uniqueField);
+                    expect(addedIndex, `Added field ${uniqueField} should exist`).toBeGreaterThan(-1);
+
                     const verifyUpdate = waitForMutation(page, 'UpdateStorageUnit');
-                    await whodb.updateRow(rowIndex, 1, testValues.modified, false);
+                    await whodb.updateRow(addedIndex, 1, testValues.modified, false);
                     await verifyUpdate();
 
-                    const { rows } = await whodb.getTableData();
-                    expect(rows[rowIndex][2]).toEqual(testValues.modified);
+                    const { rows: updatedRows } = await whodb.getTableData();
+                    const updated = updatedRows.find(r => r[1] === uniqueField);
+                    expect(updated?.[2]).toEqual(testValues.modified);
                 });
 
-                await test.step('revert to original', async () => {
-                    await whodb.updateRow(rowIndex, 1, testValues.original, false);
-
+                await test.step('delete isolated hash field', async () => {
                     const { rows } = await whodb.getTableData();
-                    expect(rows[rowIndex][2]).toEqual(testValues.original);
+                    const updatedIndex = rows.findIndex(r => r[1] === uniqueField);
+                    expect(updatedIndex, `Updated field ${uniqueField} should exist`).toBeGreaterThan(-1);
+
+                    const verifyDelete = waitForMutation(page, 'DeleteRow');
+                    await whodb.deleteRow(updatedIndex);
+                    await verifyDelete();
                 });
             });
 
             test('cancels edit without saving', async ({ whodb, page }) => {
                 await whodb.data(keyName);
 
-                // Store current value for verification (might be original or modified from failed test)
-                const { rows } = await whodb.getTableData();
-                const currentValue = rows[rowIndex][2];
+                const uniqueField = `test_field_${getUniqueTestId()}`;
+                const verifyAdd = waitForMutation(page, 'AddRow');
+                await whodb.addRow({ field: uniqueField, value: testValues.original });
+                await verifyAdd();
 
-                await whodb.updateRow(rowIndex, 1, 'temp_value', true);
+                const { rows } = await whodb.getTableData();
+                const addedIndex = rows.findIndex(r => r[1] === uniqueField);
+                expect(addedIndex, `Added field ${uniqueField} should exist`).toBeGreaterThan(-1);
+                const currentValue = rows[addedIndex][2];
+
+                await whodb.updateRow(addedIndex, 1, 'temp_value', true);
 
                 const { rows: verifyRows } = await whodb.getTableData();
-                expect(verifyRows[rowIndex][2]).toEqual(currentValue);
+                const unchangedIndex = verifyRows.findIndex(r => r[1] === uniqueField);
+                expect(verifyRows[unchangedIndex][2]).toEqual(currentValue);
+
+                const verifyDelete = waitForMutation(page, 'DeleteRow');
+                await whodb.deleteRow(unchangedIndex);
+                await verifyDelete();
             });
         });
 
@@ -415,7 +449,7 @@ test.describe('CRUD Operations', () => {
                 const { rows: before } = await whodb.getTableData();
                 const initialCount = before.length;
 
-                const uniqueField = `test_field_${Date.now()}`;
+                const uniqueField = `test_field_${getUniqueTestId()}`;
                 const verifyAdd = waitForMutation(page, 'AddRow');
                 await whodb.addRow({ field: uniqueField, value: 'test_value' });
                 await verifyAdd();
@@ -436,18 +470,25 @@ test.describe('CRUD Operations', () => {
 
         test.describe('Delete Hash Field', () => {
             test('deletes a hash field', async ({ whodb, page }) => {
-                // Use user:2 for delete test to avoid affecting user:1 used in edit tests
                 await whodb.data('user:2');
 
+                const uniqueField = `test_field_${getUniqueTestId()}`;
+                const verifyAdd = waitForMutation(page, 'AddRow');
+                await whodb.addRow({ field: uniqueField, value: 'delete_value' });
+                await verifyAdd();
+
                 const { rows } = await whodb.getTableData();
-                const initialCount = rows.length;
+                const addedIndex = rows.findIndex(r => r[1] === uniqueField);
+                expect(addedIndex, `Added field ${uniqueField} should exist`).toBeGreaterThan(-1);
+                const countAfterAdd = rows.length;
 
                 const verifyDelete = waitForMutation(page, 'DeleteRow');
-                await whodb.deleteRow(2);
+                await whodb.deleteRow(addedIndex);
                 await verifyDelete();
 
                 const { rows: newRows } = await whodb.getTableData();
-                expect(newRows.length).toEqual(initialCount - 1);
+                expect(newRows.length).toEqual(countAfterAdd - 1);
+                expect(newRows.find(r => r[1] === uniqueField)).toBeUndefined();
             });
         });
     });

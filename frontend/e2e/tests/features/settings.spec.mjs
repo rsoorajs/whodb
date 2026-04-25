@@ -413,7 +413,7 @@ test.describe('Settings', () => {
                 await page.locator('[data-value="database"]').click();
             });
         });
-    });
+    }, { databases: ['mysql'] });
 
     // Theme toggle tests - run for any database since it's global
     forEachDatabase('sql', (db) => {

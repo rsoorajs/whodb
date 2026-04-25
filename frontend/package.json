@@ -51,7 +51,7 @@
     "e2e:ce:headless": "VITE_E2E_TEST=true bash ../dev/run-e2e.sh true all",
     "e2e:ce:headless:debug": "DEBUG=pw:api VITE_E2E_TEST=true bash ../dev/run-e2e.sh true all",
     "# Feature-specific commands - usage: pnpm e2e:feature <feature> (e.g., pnpm e2e:feature graph)": "",
-    "# Features: accessibility, chat, cloud-providers, crud, data-types, data-view, error-handling, explore, export, graph, health-overlays, import, key-types, keyboard-shortcuts, loading-states, login, mock-data, pagination, profiles, query-history, schema-management, scratchpad, search, settings, sidebar, sorting, ssl-config, ssl-modes, storage, tables-list, tour, type-casting, where-conditions": "",
+    "# Features: accessibility, chat, cloud-providers, crud, data-types, data-view, database-contracts, error-handling, explore, export, graph, health-overlays, import, key-types, keyboard-shortcuts, loading-states, login, mock-data, negative-paths, pagination, profiles, query-history, schema-management, scratchpad, search, settings, sidebar, sorting, ssl-config, ssl-modes, storage, tables-list, tour, type-casting, where-conditions": "",
     "e2e:feature": "VITE_E2E_TEST=true bash ../dev/run-e2e.sh false all",
     "e2e:feature:headless": "VITE_E2E_TEST=true bash ../dev/run-e2e.sh true all",
     "# Database-specific commands - usage: pnpm e2e:db [database]": "",
