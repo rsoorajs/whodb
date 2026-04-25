@@ -17,6 +17,10 @@ The provider configuration is located at the top of the Chat interface with two 
 1. **AI Provider**: Select your provider (OpenAI, Anthropic, Ollama, etc.)
 2. **AI Model**: Choose the specific model to use
 
+<Warning>
+Pick a provider and model before starting the query tutorials. The chat box becomes active once both are selected.
+</Warning>
+
 ## Choosing Your AI Provider
 
 Different providers offer different trade-offs between accuracy, speed, cost, and privacy:
@@ -374,7 +378,7 @@ This optimizes both cost and performance.
 
 <Steps>
 <Step title="Access Provider Management">
-On the Chat page, click the **Delete Provider** button.
+On the Chat page, select a manually added provider and click the **Delete Provider** button.
 
 ![Delete Provider Button](/images/115-chat-delete-provider-button.png)
 </Step>
@@ -386,6 +390,10 @@ This removes the API key and disconnects the provider. You'll need to reconfigur
 </Warning>
 </Step>
 </Steps>
+
+<Note>
+Providers configured by environment variables are managed through deployment configuration. Remove or change those providers by updating the deployment environment.
+</Note>
 
 ### Custom Providers via Environment Variables
 

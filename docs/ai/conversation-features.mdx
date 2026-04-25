@@ -11,6 +11,10 @@ WhoDB's AI Chat Assistant is designed for interactive, contextual conversations 
 The AI assistant maintains full context throughout your conversation, allowing natural follow-up questions without repeating information
 </Tip>
 
+<Warning>
+Conversation features require a selected AI model. If the model dropdown is empty, configure a provider before testing chat history, generated SQL, or Move to Scratchpad.
+</Warning>
+
 ## Understanding Conversational Context
 
 Unlike traditional SQL editors where each query is independent, WhoDB's AI assistant maintains conversational context throughout your session. This enables a natural, iterative approach to data exploration and analysis.
@@ -524,7 +528,7 @@ Use the provider dropdown to select the provider you want to remove.
 This ensures you're deleting the correct provider.
 </Step>
 <Step title="Click Delete Provider">
-Click the **Delete Provider** button next to the New Chat button.
+Click the **Delete Provider** button next to the New Chat button. This button is available for manually added providers.
 
 A confirmation dialog will appear.
 </Step>
@@ -541,6 +545,10 @@ The provider is removed from your configuration.
 If this was your only provider, you'll need to add a new one to continue using the AI assistant.
 </Step>
 </Steps>
+
+<Note>
+Environment-defined providers are managed by deployment configuration.
+</Note>
 
 ### Managing Multiple Providers
 

@@ -33,7 +33,7 @@ The current page also exposes:
 - language selection
 
 <Note>
-The backend still enforces the global maximum page size through `WHODB_MAX_PAGE_SIZE`. The settings page controls the default page size within that limit; it does not change the backend cap.
+The backend still enforces the global maximum page size through `WHODB_MAX_PAGE_SIZE`. The settings page controls the default page size within that limit.
 </Note>
 
 ### Cloud Provider Management
@@ -50,13 +50,9 @@ These sections let you add, edit, refresh, and remove providers, and they are th
 Cloud provider integrations are still not production-ready in the current CE build, so they are disabled by default. You can still enable them and try them out in a non-production environment if you want to evaluate the workflow.
 </Note>
 
-## What Is Not Here
+## Related Configuration
 
-The current settings surface does **not** include:
-
-- keyboard shortcut customization
-- connection pool tuning knobs
-- a dark-mode toggle
+Use environment variables for deployment-level configuration such as connection profiles, provider setup, log output, and maximum page size.
 
 ## Related Pages
 

@@ -376,15 +376,11 @@ Choose what to export:
 Available formats:
 - CSV (Comma-separated values)
 - Excel (.xlsx)
-- JSON
-- SQL INSERT statements
+- JSON Lines for records from sources like MongoDB when available
 </Step>
 <Step title="Configure Options">
 Set format-specific options:
 - Delimiter (for CSV)
-- Include headers
-- Date format
-- Encoding
 </Step>
 <Step title="Download">
 Click "Export" to download the file
@@ -416,9 +412,7 @@ The Scratchpad is WhoDB's powerful query interface, similar to Jupyter notebooks
 
 **Keyboard Shortcuts:**
 - `Cmd/Ctrl + Enter`: Execute query
-- `Cmd/Ctrl + N`: New cell
-- `Cmd/Ctrl + D`: Duplicate cell
-- `Cmd/Ctrl + S`: Save query
+- `Cmd/Ctrl + U`: Clear editor
 
 <Tip>
 Use multiple cells to organize related queries and execute them independently
@@ -462,10 +456,10 @@ Yes, WhoDB includes a mock data generator:
 Navigate to the table you want to populate
 </Step>
 <Step title="Open Mock Data Dialog">
-Click "Generate Mock Data" button
+Open the table/header context menu and choose the mock data action, or press `Cmd/Ctrl + Shift + G` while the table has focus.
 </Step>
 <Step title="Configure Options">
-- Number of rows (up to 10,000)
+- Number of rows
 - Mode: Append or Overwrite
 - Auto-generate based on column types
 </Step>

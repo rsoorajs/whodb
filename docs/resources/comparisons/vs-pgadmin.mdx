@@ -105,7 +105,7 @@ A DBA checking 10 tables takes 30 seconds with pgAdmin startup alone. With WhoDB
 - Right-click context menus
 - Keyboard-driven workflow
 - Sidebar with database hierarchy
-- Real-time search functionality
+- Search across currently loaded rows and server-side filtering with WHERE conditions
 - Visual schema graph
 </Card>
 </CardGroup>
@@ -170,7 +170,7 @@ A DBA checking 10 tables takes 30 seconds with pgAdmin startup alone. With WhoDB
 | **Bulk Operations** | Select & act | Multiple options |
 | **Column Filtering** | Visual builder | SQL WHERE builder |
 | **Data Search** | Real-time | Per-column |
-| **Data Export** | CSV, Excel, JSON, SQL | Multiple formats |
+| **Data Export** | CSV/Excel, plus JSON Lines for MongoDB-style records when supported | Multiple formats |
 | **Data Import** | Yes | Yes |
 | **Mock Data** | Native generation | No |
 | **Column Sorting** | Click to sort | Column controls |
@@ -547,7 +547,7 @@ WhoDB Enterprise has better audit logging for compliance.
 - Simple backup/restore interface
 - Database export
 - Table-level backup
-- SQL export
+- Use native PostgreSQL tools for full SQL/custom-format backups
 
 **pgAdmin:**
 - All of above, plus:

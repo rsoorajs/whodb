@@ -33,6 +33,10 @@ Before starting, make sure you have:
 
 <Note>
 If you haven't set up an AI provider yet, see the [Setting Up AI Providers](/ai/setup-providers) guide. For this tutorial, any provider will work fine.
+
+<Warning>
+Do not continue this tutorial until the Chat page has both an active provider and a selected model. If the model dropdown is empty, the chat input remains disabled.
+</Warning>
 </Note>
 
 ## Step 1: Opening the Chat Page
@@ -354,7 +358,7 @@ This clears the conversation history and starts a new session. Use this when:
 - You want a clean slate for a new analysis
 
 <Note>
-Previous chat history is not saved. If you need to reference earlier queries, move important ones to Scratchpad before starting a new chat.
+Move important queries to Scratchpad before starting a new chat if you want to reference them later.
 </Note>
 
 ## Best Practices for AI Queries
@@ -479,7 +483,7 @@ When starting with the AI assistant, these questions are particularly useful:
 
 **Solution**:
 - Ask: "What columns are in the users table?"
-- Check the Explore view for actual column names
+- Use **Describe** on the Storage Unit card to check actual column names
 - Use exact column names from your schema
 </Accordion>
 <Accordion title="AI Says It Can't Help">

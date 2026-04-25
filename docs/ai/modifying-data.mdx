@@ -11,6 +11,10 @@ WhoDB's AI Chat Assistant enables you to modify database records using natural l
 Data modification operations are permanent and affect your actual database. Always review confirmation prompts carefully before proceeding.
 </Warning>
 
+<Note>
+This workflow requires an active AI provider and selected model. If the Chat input is disabled or no model is available, configure the provider before testing data modifications.
+</Note>
+
 ## Understanding AI-Powered Data Modification
 
 The AI Chat Assistant translates your natural language instructions into SQL data modification statements (INSERT, UPDATE, DELETE). Unlike read-only queries, modification operations follow a confirmation workflow to ensure safety.
@@ -590,7 +594,7 @@ Expected result: 0 (if deletion was complete)
 
 ## Rollback Strategies
 
-WhoDB does not provide built-in undo for data modifications. However, you can employ strategies to recover from mistakes.
+Plan recovery before making data modifications. These strategies help you recover from mistakes.
 
 ### Prevention is Best
 

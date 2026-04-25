@@ -134,7 +134,7 @@ The frontend dev server runs on `http://localhost:3000` and proxies API requests
 
 ## Desktop App
 
-The desktop app lives in `desktop-ce/` and uses the same frontend and backend codepaths. See [Desktop App](/features/desktop-app) for the current behavior and [desktop-common/README.md](/Users/ah/Documents/whodb/desktop-common/README.md) for the build workflow used in this repository.
+The desktop app lives in `desktop-ce/` and uses the same frontend and backend codepaths. See [Desktop App](/features/desktop-app) for the current behavior.
 
 ## Common Environment Variables
 
@@ -277,12 +277,20 @@ Those provider-discovery paths are still not production-ready in the current CE 
 PORT=3000 ./whodb
 ```
 
-Or with Docker:
+To publish the default container listener on host port `3000`:
 
 ```bash
 docker run -d \
-  -p 3000:3000 \
+  -p 3000:8080 \
+  clidey/whodb:latest
+```
+
+If you intentionally change the internal listener with `PORT`, map the same internal port:
+
+```bash
+docker run -d \
   -e PORT=3000 \
+  -p 3000:3000 \
   clidey/whodb:latest
 ```
 

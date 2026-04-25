@@ -63,7 +63,7 @@ When viewing a table with 100,000 rows, phpMyAdmin may take 5-10 seconds to rend
 - Right-click context menus for common actions
 - Keyboard shortcuts for power users
 - Sidebar navigation with schema hierarchy
-- Real-time search across tables and columns
+- Search across currently loaded rows and server-side filtering with WHERE conditions
 </Card>
 </CardGroup>
 
@@ -115,7 +115,7 @@ When viewing a table with 100,000 rows, phpMyAdmin may take 5-10 seconds to rend
 | **Sorting** | Click columns | Column controls |
 | **Filtering** | Visual builder | SQL conditions |
 | **Search** | Real-time across all columns | Per-column search |
-| **Data Export** | CSV, Excel, JSON, SQL | Multiple formats |
+| **Data Export** | CSV/Excel, plus JSON Lines for MongoDB-style records when supported | Multiple formats |
 | **Data Import** | Yes | Yes |
 | **Mock Data** | Native generation | No support |
 </Accordion>
@@ -512,7 +512,7 @@ Once comfortable, switch completely. Run WhoDB alongside phpMyAdmin for a few da
 <AccordionGroup>
 <Accordion title="Export/Import Capabilities">
 **WhoDB:**
-- Multiple formats (CSV, Excel, JSON, SQL)
+- Multiple formats (CSV, Excel, and JSON Lines for MongoDB-style records when supported)
 - Column selection before export
 - Filter data before export
 - Custom delimiters
