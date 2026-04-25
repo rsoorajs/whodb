@@ -381,8 +381,8 @@ export const ExploreStorageUnit: FC = () => {
     }, [current, currentPage, currentTableName, currentUnitRef, getStorageUnitRows, isTabularObject, item, pageSize, schema, searchCondition, sortConditions, unitName]);
 
     const handleQuery = useCallback(() => {
-        handleSubmitRequest();
         setCurrentPage(1);
+        handleSubmitRequest(0);
     }, [handleSubmitRequest]);
 
     const handlePageChange = useCallback((page: number) => {
