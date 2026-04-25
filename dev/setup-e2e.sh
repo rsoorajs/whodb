@@ -216,10 +216,16 @@ fi
 # Setup DuckDB (with smart initialization check, uses Docker CLI)
 DUCKDB_DB="$PROJECT_ROOT/core/tmp/e2e_test.duckdb"
 DUCKDB_NEEDS_INIT=true
+DOCKER_HOST_USER="$(id -u):$(id -g)"
 
 if [ -f "$DUCKDB_DB" ]; then
     # Check if database has expected structure
-    if docker run --rm -v "$PROJECT_ROOT/core/tmp:/db" --entrypoint /duckdb duckdb/duckdb /db/e2e_test.duckdb -c "SELECT table_name FROM information_schema.tables WHERE table_schema='main' AND table_name='users';" 2>/dev/null | grep -q users; then
+    if docker run --rm \
+        --user "$DOCKER_HOST_USER" \
+        -v "$PROJECT_ROOT/core/tmp:/db" \
+        --entrypoint /duckdb \
+        duckdb/duckdb /db/e2e_test.duckdb \
+        -c "SELECT table_name FROM information_schema.tables WHERE table_schema='main' AND table_name='users';" 2>/dev/null | grep -q users; then
         echo "✅ DuckDB E2E database already initialized, skipping setup"
         DUCKDB_NEEDS_INIT=false
     else
@@ -234,6 +240,7 @@ if [ "$DUCKDB_NEEDS_INIT" = "true" ]; then
     mkdir -p "$PROJECT_ROOT/core/tmp"
 
     docker run --rm -i \
+        --user "$DOCKER_HOST_USER" \
         -v "$PROJECT_ROOT/core/tmp:/db" \
         --entrypoint /duckdb \
         duckdb/duckdb /db/e2e_test.duckdb < "$SCRIPT_DIR/sample-data/duckdb/data.sql"
