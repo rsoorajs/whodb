@@ -800,7 +800,7 @@ TEST_RESULT=$?
 
 if [ $TEST_RESULT -ne 0 ]; then
   # Capture database state for debugging
-  mysql app_test -e "SELECT * FROM orders WHERE created_at = TODAY;" > test_orders.txt
+  mysql app_test -e "SELECT * FROM orders WHERE DATE(created_at) = CURRENT_DATE;" > test_orders.txt
   mysql app_test -e "SHOW ENGINE INNODB STATUS;" > innodb_status.txt
   echo "Test failed. Database state saved."
 fi

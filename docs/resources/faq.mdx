@@ -988,32 +988,30 @@ WhoDB can run alongside existing tools during your transition period
 </Accordion>
 
 <Accordion title="Can I integrate WhoDB with my CI/CD pipeline?">
-Yes, WhoDB works well in automated environments:
+Yes. Use the web container when you want a temporary inspection UI, and use `whodb-cli` or native database clients for scriptable pipeline steps.
 
-**Docker in CI/CD:**
+**WhoDB web service:**
 ```yaml
 # GitHub Actions example
-- name: Run database tests
+- name: Start WhoDB for inspection
   run: |
-    docker run -d -p 8080:8080 clidey/whodb
-    # Run your tests
+    docker run -d -p 8080:8080 clidey/whodb:latest
+    curl -fsS http://localhost:8080/health
 ```
 
-**Automated Testing:**
-- Spin up WhoDB in test environments
-- Run data validation queries
-- Export test results
-- Generate reports
+**Scriptable checks:**
+```bash
+whodb-cli tables --connection mydb --format json
+whodb-cli query "SELECT COUNT(*) FROM users" --connection mydb --format json
+whodb-cli export --connection mydb --table users --output users.csv
+```
 
-**Database Migrations:**
-- Verify schema changes
-- Test migrations
-- Validate data integrity
+Use native database clients for migrations, full backups, restores, and SQL seed files.
 
 See our [CI/CD Integration Guide](/resources/integrations/ci-cd) for detailed examples.
 
 <Info>
-WhoDB's lightweight design makes it perfect for temporary test environments
+WhoDB is useful in CI when it gives you a quick way to inspect the database state behind a failed test run.
 </Info>
 </Accordion>
 
@@ -1051,21 +1049,20 @@ WhoDB exports are suitable for small to medium datasets. Use database-native too
 </Accordion>
 
 <Accordion title="Can I use WhoDB with monitoring tools?">
-Yes, WhoDB can integrate with monitoring systems:
+Yes. Monitor WhoDB with its health endpoint, container/runtime metrics, database exporters, and logs.
 
-**Prometheus Metrics:**
-```yaml
-# Coming in future releases
-whodb_queries_total
-whodb_connection_errors_total
-whodb_query_duration_seconds
+**Health check:**
+```bash
+curl -fsS http://localhost:8080/health
 ```
 
 **Logging Integration:**
 ```yaml
 environment:
-  - LOG_LEVEL=info
-  - LOG_FORMAT=json
+  - WHODB_LOG_LEVEL=info
+  - WHODB_LOG_FORMAT=json
+  - WHODB_LOG_FILE=default
+  - WHODB_ACCESS_LOG_FILE=default
 ```
 
 **Health Checks:**

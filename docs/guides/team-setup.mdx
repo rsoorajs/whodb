@@ -661,18 +661,17 @@ mysql -u root -p myapp_prod < backup_20240115.sql
 </Accordion>
 </AccordionGroup>
 
-## Advanced: Single Sign-On (SSO) Integration
+## Team Access Management
 
-For larger teams, integrate with your identity provider:
+For larger teams, manage database access through your database roles, network controls, and your team's password manager.
 
-<Note>
-SSO integration is a future feature. For now, use strong, managed passwords with your team's password manager.
-</Note>
+Recommended controls:
 
-**Coming Soon:** WhoDB will support:
-- LDAP/Active Directory
-- OAuth2 (Google, GitHub, etc.)
-- SAML for enterprise
+- Use read-only database users for exploration.
+- Keep write credentials limited to trusted operators.
+- Store shared credentials in your password manager.
+- Restrict WhoDB access to trusted networks.
+- Review saved browser profiles on shared machines.
 - API key authentication
 
 ## Security Checklist for Production Teams
