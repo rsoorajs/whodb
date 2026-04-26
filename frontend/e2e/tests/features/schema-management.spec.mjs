@@ -15,6 +15,7 @@
  */
 
 import { test, expect, forEachDatabase } from '../../support/test-fixture.mjs';
+import { waitForMutation } from '../../support/helpers/test-utils.mjs';
 
 
 /**
@@ -231,11 +232,7 @@ test.describe('Schema Management', () => {
                     await editorLocator.fill('');
                     await editorLocator.fill(dropQuery);
 
-                    // Execute the query
-                    await page.locator('[data-testid="query-cell-button"]').click();
-
-                    // Wait a bit for the query to complete
-                    await page.waitForTimeout(1000);
+                    await whodb.runCode(0);
                 });
 
                 test('successfully creates a new table', async ({ whodb, page }) => {
@@ -281,14 +278,6 @@ test.describe('Schema Management', () => {
                         await options.first().click();
                     }
 
-                    // Set as primary key if supported
-                    const hasPrimaryLabel = await firstField.locator('label').filter({ hasText: /primary/i }).count();
-                    if (hasPrimaryLabel > 0) {
-                        const primaryLabel = firstField.locator('label').filter({ hasText: /primary/i });
-                        const primaryButton = primaryLabel.locator('xpath=preceding-sibling::button[1]');
-                        await primaryButton.click();
-                    }
-
                     // Add second field: name (text/varchar)
                     await page.locator('[data-testid="add-field-button"]').click();
 
@@ -316,14 +305,18 @@ test.describe('Schema Management', () => {
                         await typeOptions.nth(1).click();
                     }
 
+                    const verifyCreate = waitForMutation(page, 'AddStorageUnit');
+
                     // Submit the form
                     await page.locator('[data-testid="submit-button"]').click();
+                    await verifyCreate();
 
-                    // Wait for success toast
-                    await expect(page.getByText(/success/i)).toBeVisible({ timeout: 10000 });
+                    await page.goto(whodb.url('/storage-unit'));
+                    await page.locator('[data-testid="storage-unit-card"]').first().waitFor({ timeout: 15000 });
 
-                    // Wait for form to close
-                    await page.waitForTimeout(1000);
+                    await expect(
+                        page.locator('[data-testid="storage-unit-card"]').filter({ hasText: uniqueTableName })
+                    ).toBeAttached({ timeout: 10000 });
                 });
 
                 test('new table appears in storage unit list after creation', async ({ whodb, page }) => {
@@ -352,11 +345,11 @@ test.describe('Schema Management', () => {
 
                     await page.locator('[role="option"]').first().click();
 
+                    const verifyCreate = waitForMutation(page, 'AddStorageUnit');
+
                     // Submit
                     await page.locator('[data-testid="submit-button"]').click();
-
-                    // Wait for creation to complete (drawer closes or page updates)
-                    await page.waitForTimeout(3000);
+                    await verifyCreate();
 
                     // Refresh the page to ensure table list is updated
                     await page.goto(whodb.url('/storage-unit'));

@@ -459,12 +459,10 @@ test.describe('CRUD Operations', () => {
                 await whodb.addRow({ field: uniqueField, value: 'test_value' });
                 await verifyAdd();
 
-                // Verify field was added
+                const addedIndex = await whodb.waitForRowValue(1, uniqueField);
+
                 const { rows: after } = await whodb.getTableData();
                 expect(after.length).toEqual(initialCount + 1);
-
-                // Clean up - delete the added field
-                const addedIndex = after.findIndex(r => r[1] === uniqueField);
                 expect(addedIndex, `Added field ${uniqueField} should exist`).toBeGreaterThan(-1);
 
                 const verifyDelete = waitForMutation(page, 'DeleteRow');

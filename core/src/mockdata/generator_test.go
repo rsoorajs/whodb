@@ -1141,6 +1141,16 @@ func TestGenerateByTypeRoutesToCorrectGenerator(t *testing.T) {
 				t.Fatalf("expected int, got %T", val)
 			}
 		}},
+		{"HUGEINT", func(t *testing.T, val any) {
+			if _, ok := val.(int); !ok {
+				t.Fatalf("expected int, got %T", val)
+			}
+		}},
+		{"UINTEGER", func(t *testing.T, val any) {
+			if _, ok := val.(uint); !ok {
+				t.Fatalf("expected uint, got %T", val)
+			}
+		}},
 		{"boolean", func(t *testing.T, val any) {
 			if _, ok := val.(bool); !ok {
 				t.Fatalf("expected bool, got %T", val)

@@ -20,6 +20,20 @@ import { clearBrowserState } from '../../support/helpers/animation.mjs';
 
 const PROFILE_REPRESENTATIVE_DATABASES = ['postgres', 'mongodb', 'redis', 'memcached'];
 
+async function expectPersistedProfileType(page, expectedType) {
+    await expect.poll(async () => {
+        return await page.evaluate(() => {
+            const rawAuth = localStorage.getItem('persist:auth');
+            if (!rawAuth) return null;
+
+            const auth = JSON.parse(rawAuth);
+            if (!auth.current) return null;
+
+            return JSON.parse(auth.current).Type;
+        });
+    }, { timeout: 10000 }).toBe(expectedType);
+}
+
 /**
  * Profile Management Tests
  *
@@ -323,17 +337,17 @@ test.describe('Profile Management', () => {
                 });
 
                 test('maintains profile selection when navigating between pages', async ({ whodb, page }) => {
-                    await expect(page.locator('[data-testid="sidebar-profile"]')).toBeAttached();
+                    await expectPersistedProfileType(page, db.type);
 
                     await page.locator('[href="/graph"]').click();
                     await expect(page).toHaveURL(/\/graph/);
 
-                    await expect(page.locator('[data-testid="sidebar-profile"]')).toBeAttached();
+                    await expectPersistedProfileType(page, db.type);
 
                     await page.locator('[href="/storage-unit"]').click();
                     await expect(page).toHaveURL(/\/storage-unit/);
 
-                    await expect(page.locator('[data-testid="sidebar-profile"]')).toBeAttached();
+                    await expectPersistedProfileType(page, db.type);
                 });
             });
         });
