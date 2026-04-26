@@ -22,7 +22,13 @@ REDIS_PORT="${REDIS_PORT:-6379}"
 REDIS_PASSWORD="${REDIS_PASSWORD:-password}"
 
 # Build redis-cli options
-REDIS_CLI="redis-cli -h $REDIS_HOST -p $REDIS_PORT -a $REDIS_PASSWORD"
+if command -v valkey-cli >/dev/null 2>&1; then
+  REDIS_CLIENT="valkey-cli"
+else
+  REDIS_CLIENT="redis-cli"
+fi
+
+REDIS_CLI="$REDIS_CLIENT -h $REDIS_HOST -p $REDIS_PORT -a $REDIS_PASSWORD"
 
 # Add TLS options if certificate is provided
 if [ -n "$REDIS_CACERT" ]; then

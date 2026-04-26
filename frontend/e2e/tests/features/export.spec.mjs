@@ -110,7 +110,7 @@ test.describe('Data Export', () => {
                 await page.locator('button', { hasText: 'Export 1 Selected' }).click();
 
                 await expect(page.locator('[role="dialog"]')).toBeVisible();
-                await expect(page.locator('text=You are about to export 1 selected rows.')).toBeVisible();
+                await expect(page.locator('text=You are about to export 1 selected row.')).toBeVisible();
 
                 // Ensure CSV format is selected
                 await whodb.selectExportFormat('csv');

@@ -25,7 +25,8 @@ USE test_db;
 -- Session-level setting takes effect immediately (unlike SET CLUSTER SETTING which is async).
 SET serial_normalization = 'sql_sequence';
 
-CREATE SCHEMA IF NOT EXISTS test_schema;
+DROP SCHEMA IF EXISTS test_schema CASCADE;
+CREATE SCHEMA test_schema;
 GRANT ALL ON SCHEMA test_schema TO "user";
 
 -- Users Table
@@ -107,6 +108,22 @@ INSERT INTO test_schema.products (name, description, price, stock_quantity) VALU
 ('Smartphone', 'Latest model smartphone', 800.00, 20),
 ('Headphones', 'Noise-canceling headphones', 150.00, 50),
 ('Monitor', '4K UHD Monitor', 400.00, 15);
+
+/*
+ * Copyright 2026 Clidey, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 -- Sample Orders (total_amount set manually since CockroachDB trigger support is limited)
 INSERT INTO test_schema.orders (user_id, total_amount, status) VALUES

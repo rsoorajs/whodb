@@ -17,7 +17,7 @@
 import { test, expect, forEachDatabase, skipIfNoFeature } from '../../support/test-fixture.mjs';
 import { getTableConfig, hasFeature } from '../../support/database-config.mjs';
 import { createUpdatedDocument, parseDocument } from '../../support/categories/document.mjs';
-import { getUniqueTestId, waitForMutation } from '../../support/helpers/test-utils.mjs';
+import { getUniqueTestId, TIMEOUT, waitForMutation } from '../../support/helpers/test-utils.mjs';
 
 let uniqueRowIdCounter = 0;
 
@@ -33,6 +33,23 @@ function createUniqueRow(template, testTable, suffix) {
         row.email = `${uniqueId}@example.com`;
     }
     return row;
+}
+
+async function deleteDocumentRow(whodb, page, rowIndex, refreshDelay = 0) {
+    const verifyDelete = waitForMutation(page, 'DeleteRow');
+    await whodb.deleteRow(rowIndex, { waitForRowCount: false });
+    await verifyDelete();
+    if (refreshDelay > 0) {
+        await page.waitForTimeout(refreshDelay);
+    }
+}
+
+async function expectDocumentAbsent(whodb, tableName, text) {
+    await whodb.data(tableName);
+    await expect(async () => {
+        const { rows } = await whodb.getTableData();
+        expect(rows.some(row => row.join('\n').includes(text))).toBe(false);
+    }).toPass({ timeout: TIMEOUT.SLOW });
 }
 
 test.describe('CRUD Operations', () => {
@@ -298,9 +315,7 @@ test.describe('CRUD Operations', () => {
 
                 await test.step('delete isolated document', async () => {
                     const rowIndex = await whodb.waitForRowContaining(`${uniqueId}_updated`);
-                    const verifyDelete = waitForMutation(page, 'DeleteRow');
-                    await whodb.deleteRow(rowIndex);
-                    await verifyDelete();
+                    await deleteDocumentRow(whodb, page, rowIndex, refreshDelay);
                 });
             });
 
@@ -329,9 +344,7 @@ test.describe('CRUD Operations', () => {
                 const verifyDoc = parseDocument(verifyRows[rowIndex]);
                 expect(verifyDoc[testTable.identifierField]).toEqual(currentValue);
 
-                const verifyDelete = waitForMutation(page, 'DeleteRow');
-                await whodb.deleteRow(rowIndex);
-                await verifyDelete();
+                await deleteDocumentRow(whodb, page, rowIndex, refreshDelay);
             });
         });
 
@@ -352,16 +365,8 @@ test.describe('CRUD Operations', () => {
                 // Wait for row to appear using retry-able assertion
                 const rowIndex = await whodb.waitForRowContaining(uniqueId);
 
-                const { rows } = await whodb.getTableData();
-                const initialCount = rows.length;
-
-                const verifyDelete = waitForMutation(page, 'DeleteRow');
-                await whodb.deleteRow(rowIndex);
-                await verifyDelete();
-
-                // Verify row count decreased
-                const { rows: newRows } = await whodb.getTableData();
-                expect(newRows.length).toEqual(initialCount - 1);
+                await deleteDocumentRow(whodb, page, rowIndex, refreshDelay);
+                await expectDocumentAbsent(whodb, tableName, uniqueId);
             });
         });
     });

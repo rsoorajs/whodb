@@ -228,8 +228,8 @@ test.describe('Sidebar Navigation', () => {
                     await expect(page.locator('[href="/scratchpad"]')).not.toBeAttached();
                 });
 
-                test('still shows graph option', async ({ whodb, page }) => {
-                    await expect(page.locator('[href="/graph"]')).toBeAttached();
+                test('hides graph option for key-value databases without graph support', async ({ whodb, page }) => {
+                    await expect(page.locator('[href="/graph"]')).not.toBeAttached();
                 });
             });
         }, { databases: ['redis'] });
@@ -375,8 +375,8 @@ test.describe('Sidebar Navigation', () => {
         forEachDatabase('sql', (db) => {
             test.describe(`${db.type}`, () => {
                 test('shows WhoDB version in sidebar footer', async ({ whodb, page }) => {
-                    // Version should be displayed somewhere in sidebar
-                    await expect(page.locator('[data-sidebar="sidebar"]')).toContainText('Version: development');
+                    await page.locator('[data-testid="sidebar-version-info"]').hover();
+                    await expect(page.getByRole('tooltip')).toContainText('Version: development');
                 });
             });
         }, { databases: ['postgres'] });

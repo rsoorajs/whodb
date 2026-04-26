@@ -1927,7 +1927,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                     <AlertDialogFooter>
                         <AlertDialogCancel onClick={handleCancelDelete}>{t('cancel')}</AlertDialogCancel>
                         <AlertDialogAction asChild>
-                            <Button variant="destructive" onClick={handleConfirmDelete}>
+                            <Button variant="destructive" onClick={handleConfirmDelete} data-testid="confirm-delete-row-button">
                                 {t('deleteRow', { count: pendingDeleteIndexes?.length ?? 1 })}
                             </Button>
                         </AlertDialogAction>

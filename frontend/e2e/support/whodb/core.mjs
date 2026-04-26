@@ -218,8 +218,21 @@ export const coreMethods = {
      * @param {string} value
      */
     async selectDatabase(value) {
+        const selectedDatabase = String(value);
         await this.page.locator('[data-testid="sidebar-database"]').click();
-        await this.page.locator(`[data-value="${value}"]`).click();
+        await this.page.locator(`[data-value="${selectedDatabase}"]`).click();
+        await expect(this.page.locator('[data-testid="sidebar-database"]')).toContainText(selectedDatabase, { timeout: TIMEOUT.NAVIGATION });
+        await expect.poll(async () => {
+            return await this.page.evaluate(() => {
+                const rawAuth = localStorage.getItem("persist:auth");
+                if (!rawAuth) return null;
+
+                const auth = JSON.parse(rawAuth);
+                if (!auth.current) return null;
+
+                return JSON.parse(auth.current).Database;
+            });
+        }, { timeout: TIMEOUT.NAVIGATION }).toBe(selectedDatabase);
     },
 
     /**

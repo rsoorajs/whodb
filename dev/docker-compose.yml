@@ -708,7 +708,7 @@ services:
         cp /certs/client.root.crt /tmp/certs/ &&
         cp /tmp/client.root.key /tmp/certs/ &&
         COCKROACH_CERTS_DIR=/tmp/certs /init.sh &&
-        cockroach sql --certs-dir=/tmp/certs --host=e2e_cockroachdb_ssl:26257 -e \"ALTER USER test_user WITH PASSWORD 'password';\"
+        cockroach sql --certs-dir=/tmp/certs --host=e2e_cockroachdb_ssl:26257 -e \"ALTER USER \\\"user\\\" WITH PASSWORD 'password';\"
       "
     networks:
       - db

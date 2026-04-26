@@ -18,6 +18,7 @@ package elasticsearch
 
 import (
 	"io"
+	"net/http"
 	"reflect"
 	"strings"
 	"testing"
@@ -206,5 +207,20 @@ func TestElasticSearchHelpers(t *testing.T) {
 	}
 	if string(body) != `{"error":"bad query"}` {
 		t.Fatalf("expected response body to be restored, got %q", string(body))
+	}
+}
+
+func TestOpenSearchProductHeaderInterceptor(t *testing.T) {
+	roundTrip := opensearchProductHeaderInterceptor(func(req *http.Request) (*http.Response, error) {
+		return &http.Response{Header: http.Header{}, Body: io.NopCloser(strings.NewReader("{}"))}, nil
+	})
+
+	res, err := roundTrip(&http.Request{})
+	if err != nil {
+		t.Fatalf("expected interceptor round trip to succeed, got %v", err)
+	}
+	defer res.Body.Close()
+	if got := res.Header.Get("X-Elastic-Product"); got != "Elasticsearch" {
+		t.Fatalf("expected product header to be set for OpenSearch compatibility, got %q", got)
 	}
 }

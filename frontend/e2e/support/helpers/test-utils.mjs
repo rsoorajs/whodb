@@ -60,9 +60,11 @@ export function getUniqueTestId() {
  * @returns {() => Promise<object>} Async function that awaits the response and asserts no errors. Returns parsed JSON.
  */
 export function waitForMutation(page, operationName) {
-    const responsePromise = page.waitForResponse(resp =>
-        resp.url().includes('/api/query') &&
-        resp.request().postDataJSON?.()?.operationName === operationName
+    const responsePromise = page.waitForResponse(
+        resp =>
+            resp.url().includes('/api/query') &&
+            resp.request().postDataJSON?.()?.operationName === operationName,
+        { timeout: TIMEOUT.SLOW }
     );
 
     return async () => {

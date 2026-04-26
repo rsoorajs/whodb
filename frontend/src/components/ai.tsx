@@ -44,7 +44,7 @@ import {
 import { SearchSelect } from "./ux";
 import { FC, ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GetAiModelsDocument, GetAiProvidersDocument } from "@graphql";
-import { AIModelsActions, availableExternalModelTypes } from "../store/ai-models";
+import { AIModelsActions, availableExternalModelTypes, type IAIModelType } from "../store/ai-models";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { ensureModelsArray, ensureModelTypesArray } from "../utils/ai-models-helper";
 import { ExternalLink } from "../utils/external-links";
@@ -172,7 +172,7 @@ export const useAI = () => {
             !initialModelTypes.some(model => model.id === provider.ProviderId)
         );
 
-        const finalModelTypes = [
+        const finalModelTypes: IAIModelType[] = [
             ...newProviders.map(provider => ({
                 id: provider.ProviderId,
                 modelType: provider.Type,
@@ -221,6 +221,7 @@ export const useAI = () => {
                     handleAIModelsError();
                 });
         } else if (selectedProvider) {
+            dispatch(AIModelsActions.setCurrentModelType({ id: selectedProvider.id }));
             void fetchAIModels({
                     providerId: selectedProvider.id,
                     modelType: selectedProvider.modelType ?? "",

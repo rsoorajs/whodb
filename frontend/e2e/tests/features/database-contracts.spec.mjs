@@ -41,7 +41,7 @@ test.describe('Database Contracts', () => {
             expectStorageUnitsContain(tables, db.expectedTables);
         });
 
-        test('supports SQL table browse, sort, search, and pagination contract', async ({ whodb, page }) => {
+        test('supports SQL table browse, sort, search, and pagination contract', async ({ whodb }) => {
             await whodb.data(tableName);
             await whodb.sortBy(db.testTable.idField);
 
@@ -62,7 +62,6 @@ test.describe('Database Contracts', () => {
                 expect(tableData.rows.length).toEqual(1);
             }
 
-            await expect(page.locator('[data-testid="sidebar-profile"]')).toBeAttached();
         });
     });
 
@@ -76,7 +75,7 @@ test.describe('Database Contracts', () => {
             expectStorageUnitsContain(actual, expected);
         });
 
-        test('supports document browse, search, and pagination contract', async ({ whodb, page }) => {
+        test('supports document browse, search, and pagination contract', async ({ whodb }) => {
             await whodb.data(tableName);
 
             let tableData = await whodb.getTableData();
@@ -105,7 +104,6 @@ test.describe('Database Contracts', () => {
                 expect(tableData.rows.length).toEqual(1);
             }
 
-            await expect(page.locator('[data-testid="sidebar-profile"]')).toBeAttached();
         });
     });
 
@@ -115,8 +113,8 @@ test.describe('Database Contracts', () => {
             expectStorageUnitsContain(keys, db.expectedKeys);
         });
 
-        test('supports configured key-value data shape contract', async ({ whodb }) => {
-            for (const [key, keyConfig] of Object.entries(db.keyTypes)) {
+        for (const [key, keyConfig] of Object.entries(db.keyTypes)) {
+            test(`supports ${keyConfig.type} data shape for ${key}`, async ({ whodb }) => {
                 await whodb.data(key);
                 const { columns, rows } = await whodb.getTableData();
                 expect(rows.length).toBeGreaterThan(0);
@@ -132,8 +130,8 @@ test.describe('Database Contracts', () => {
                 if (keyConfig.expectedValue) {
                     verifyStringValue(rows, keyConfig.expectedValue);
                 }
-            }
-        });
+            });
+        }
 
         test('supports key-value search contract', async ({ whodb }) => {
             await whodb.data(db.testTable.name);

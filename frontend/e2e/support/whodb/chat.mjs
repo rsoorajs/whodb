@@ -48,7 +48,7 @@ export const chatMethods = {
     /**
      * Sets up a mock AI provider for chat testing
      */
-    async setupChatMock({ modelType = "Ollama", model = "llama3.1", providerId = "test-provider" } = {}) {
+    async setupChatMock({ modelType = "Ollama", model = "llama3.1", providerId = modelType } = {}) {
         this._chatMockResponses = null;
 
         await this.page.route("**/api/query", async (route) => {

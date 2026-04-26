@@ -62,6 +62,7 @@ const (
 	connectorSqlite3       = "Sqlite3"
 	connectorDuckDB        = "DuckDB"
 	connectorQuestDB       = "QuestDB"
+	connectorYugabyteDB    = "YugabyteDB"
 	connectorMongoDB       = "MongoDB"
 	connectorRedis         = "Redis"
 	connectorMemcached     = "Memcached"
@@ -196,6 +197,21 @@ var familySpecs = map[string]FamilySpec{
 		DefaultObject: objectKindTable,
 		ObjectTypes: []source.ObjectType{
 			questDBObjectType(objectKindTable, "Table", "Tables"),
+		},
+	},
+	connectorYugabyteDB: {
+		Category:       source.CategoryDatabase,
+		Traits:         networkTraits(source.HostInputModeHostnameOrURL, source.HostInputURLParserPostgres),
+		Model:          source.ModelRelational,
+		Surfaces:       []source.Surface{source.SurfaceBrowser, source.SurfaceQuery, source.SurfaceChat, source.SurfaceGraph},
+		BrowsePath:     []source.ObjectKind{objectKindDatabase, objectKindSchema, objectKindTable},
+		DefaultObject:  objectKindTable,
+		GraphScopeKind: ptr(objectKindSchema),
+		ObjectTypes: []source.ObjectType{
+			metadataObjectType(objectKindDatabase, "Database", "Databases", true),
+			metadataObjectType(objectKindSchema, "Schema", "Schemas", true),
+			tabularObjectType(objectKindTable, "Table", "Tables"),
+			tabularReadOnlyObjectType(objectKindView, "View", "Views"),
 		},
 	},
 	connectorMongoDB: {
@@ -453,7 +469,7 @@ func buildTypeTraits(entry DatabaseEntry, family FamilySpec) source.TypeTraits {
 	}
 	if traits.Query.ExplainMode == "" {
 		switch entry.Connector {
-		case connectorPostgres, connectorCockroachDB, connectorQuestDB:
+		case connectorPostgres, connectorCockroachDB, connectorQuestDB, connectorYugabyteDB:
 			traits.Query.ExplainMode = source.QueryExplainModeExplain
 		case connectorMySQL, connectorMariaDB, connectorTiDB, connectorSqlite3, connectorDuckDB:
 			traits.Query.ExplainMode = source.QueryExplainModeExplain

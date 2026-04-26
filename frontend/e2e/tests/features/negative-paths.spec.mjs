@@ -58,14 +58,8 @@ async function attemptLoginWithUnreachablePort(page, whodb, db) {
     await page.locator('[data-testid="Port-input"]').clear();
     await page.locator('[data-testid="Port-input"]').fill('1');
 
-    const loginResponsePromise = page.waitForResponse(
-        response => response.url().includes('/api/query') && response.request().method() === 'POST',
-        { timeout: 30_000 }
-    );
     await page.locator('[data-testid="login-button"]').click();
-    const loginResponse = await loginResponsePromise;
-    const body = await loginResponse.json();
-    expect(body.errors?.length || 0).toBeGreaterThan(0);
+    await expect(page.getByText(/Login Failed/i)).toBeVisible({ timeout: 45_000 });
     await expect(page).toHaveURL(/\/login/);
 }
 

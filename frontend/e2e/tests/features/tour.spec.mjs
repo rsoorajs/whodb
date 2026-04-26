@@ -64,6 +64,14 @@ describeOrSkip('Tour & Onboarding', () => {
         await expect(page.locator('[data-testid="tour-tooltip"]')).toBeVisible({ timeout: 15000 });
     };
 
+    const waitForTourCompletion = async (page) => {
+        await expect(page.locator('[data-testid="tour-tooltip"]')).not.toBeAttached();
+        await expect.poll(
+            () => page.evaluate(() => localStorage.getItem('@clidey/whodb/onboarding-completed')),
+            { timeout: 5000 }
+        ).toEqual('true');
+    };
+
     /**
      * Helper function to get the current tour tooltip
      */
@@ -387,6 +395,7 @@ describeOrSkip('Tour & Onboarding', () => {
 
             // Complete the tour
             await page.locator('[data-testid="tour-skip-button"]').click();
+            await waitForTourCompletion(page);
 
             // Reload the page
             await page.reload();

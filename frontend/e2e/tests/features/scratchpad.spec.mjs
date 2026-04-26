@@ -205,7 +205,7 @@ test.describe('Scratchpad', () => {
                     expect(postData.selectedRows).toBeDefined();
                     expect(Array.isArray(postData.selectedRows)).toBe(true);
                     expect(postData.selectedRows.length).toBeGreaterThan(0);
-                    expect(postData.storageUnit).toEqual('query_export');
+                    expect(postData.fileBaseName).toEqual('query_export');
                 });
             });
 
@@ -240,7 +240,7 @@ test.describe('Scratchpad', () => {
                     const postData = JSON.parse(request.postData());
                     expect(postData.selectedRows).toBeDefined();
                     expect(postData.format).toEqual('excel');
-                    expect(postData.storageUnit).toEqual('query_export');
+                    expect(postData.fileBaseName).toEqual('query_export');
                 });
             });
 

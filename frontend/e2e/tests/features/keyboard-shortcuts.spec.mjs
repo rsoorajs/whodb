@@ -1032,6 +1032,7 @@ test.describe('Keyboard Shortcuts', () => {
 
                 // Press Cmd+Delete (Mac) or Ctrl+Delete (Win/Linux)
                 await whodb.typeCmdShortcut('Delete');
+                await page.locator('[data-testid="confirm-delete-row-button"]').click();
 
                 // Row should be deleted (count decreased)
                 await expect(page.locator('table tbody tr')).toHaveCount(initialCount - 1, { timeout: 10000 });
@@ -1048,6 +1049,7 @@ test.describe('Keyboard Shortcuts', () => {
 
                 // Press Cmd+Backspace (Mac) or Ctrl+Backspace (Win/Linux)
                 await whodb.typeCmdShortcut('Backspace');
+                await page.locator('[data-testid="confirm-delete-row-button"]').click();
 
                 // Row should be deleted (count decreased)
                 await expect(page.locator('table tbody tr')).toHaveCount(initialCount - 1, { timeout: 10000 });

@@ -40,7 +40,7 @@ import path from "path";
 import {chromium, expect, test as base} from "@playwright/test";
 import {WhoDB} from "./whodb.mjs";
 import {TIMEOUT} from "./helpers/test-utils.mjs";
-import {getDatabaseId, getDatabasesByCategory, hasFeature,} from "./database-config.mjs";
+import {getConnectionAdvanced, getDatabaseId, getDatabasesByCategory, hasFeature,} from "./database-config.mjs";
 import {VALID_FEATURES} from "./helpers/fixture-validator.mjs";
 import {mockAIProviders} from "./helpers/mock-providers.mjs";
 
@@ -340,10 +340,13 @@ export async function loginToDatabase(whodb, dbConfig, options = {}) {
     conn.user ?? undefined,
     conn.password ?? undefined,
     conn.database ?? undefined,
-    conn.advanced || {},
+    getConnectionAdvanced(conn),
     null,
     dbConfig.loginForm || null
   );
+  if (dbConfig.defaultDatabase != null && dbConfig.sidebar?.showsDatabaseDropdown) {
+    await whodb.selectDatabase(dbConfig.defaultDatabase);
+  }
   if (dbConfig.schema && dbConfig.sidebar?.showsSchemaDropdown) {
     await whodb.selectSchema(dbConfig.schema);
   }

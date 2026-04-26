@@ -120,7 +120,8 @@ describeOrSkip('Browser Storage', () => {
                     'persist:aiModels',
                     'persist:scratchpad',
                     'persist:tour',
-                    'persist:databaseMetadata'
+                    'persist:providers',
+                    'persist:exploreConditions'
                 ];
 
                 const results = {};

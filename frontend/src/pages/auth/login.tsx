@@ -102,6 +102,22 @@ const LOGIN_RESERVED_PARAMS = new Set([
  */
 const LOGIN_UI_PARAMS = new Set(["locale", "mode", "theme", "os"]);
 
+function getLoginUiSearchParams(searchParams: URLSearchParams): URLSearchParams {
+    const uiParams = new URLSearchParams();
+    LOGIN_UI_PARAMS.forEach(key => {
+        if (searchParams.has(key)) {
+            uiParams.set(key, searchParams.get(key)!);
+        }
+    });
+    return uiParams;
+}
+
+function getStorageUnitPath(searchParams: URLSearchParams): string {
+    const uiParams = getLoginUiSearchParams(searchParams);
+    const uiSearch = uiParams.toString();
+    return `${InternalRoutes.Dashboard.StorageUnit.path}${uiSearch ? `?${uiSearch}` : ""}`;
+}
+
 const EMPTY_DATABASE_TYPE: SourceTypeItem = {
     id: "",
     label: "",
@@ -358,22 +374,18 @@ export const LoginForm: FC<LoginFormProps> = ({
                 dispatch(AuthActions.login(profileData));
                 markFirstLoginComplete();
 
+                const storageUnitPath = getStorageUnitPath(searchParams);
+
                 // Clear all login-related URL params before navigation, preserving UI-only params.
                 const hasLoginParams = [...searchParams.keys()].some(k => !LOGIN_UI_PARAMS.has(k));
                 if (hasLoginParams) {
-                    const newParams = new URLSearchParams();
-                    LOGIN_UI_PARAMS.forEach(key => {
-                        if (searchParams.has(key)) {
-                            newParams.set(key, searchParams.get(key)!);
-                        }
-                    });
-                    setSearchParams(newParams, { replace: true });
+                    setSearchParams(getLoginUiSearchParams(searchParams), { replace: true });
                 }
 
                 if (onLoginSuccess) {
                     onLoginSuccess();
                 } else {
-                    navigate(InternalRoutes.Dashboard.StorageUnit.path);
+                    navigate(storageUnitPath);
                 }
                 toast.success(t('loginSuccessful'));
             } catch (error) {
@@ -414,17 +426,17 @@ export const LoginForm: FC<LoginFormProps> = ({
                 }
                 markFirstLoginComplete();
 
+                const storageUnitPath = getStorageUnitPath(searchParams);
+
                 // Clear login-related URL params before navigation
                 if (searchParams.has("resource")) {
-                    const newParams = new URLSearchParams(searchParams);
-                    newParams.delete("resource");
-                    setSearchParams(newParams, { replace: true });
+                    setSearchParams(getLoginUiSearchParams(searchParams), { replace: true });
                 }
 
                 if (onLoginSuccess) {
                     onLoginSuccess();
                 } else {
-                    navigate(InternalRoutes.Dashboard.StorageUnit.path);
+                    navigate(storageUnitPath);
                 }
                 toast.success(t('loginSuccessful'));
             } catch (error) {
@@ -749,6 +761,7 @@ export const LoginForm: FC<LoginFormProps> = ({
                     ...(hasRegion ? {'Region': searchParams.get("region")!} : {}),
                     ...(hasSearchPath ? {'Search Path': searchParams.get("search_path")!} : {}),
                 }));
+                setShowAdvanced(true);
             }
 
             // All other non-reserved params go into advanced form generically,
