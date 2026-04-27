@@ -108,14 +108,19 @@ test.describe('Cloud Providers', () => {
             test('displays existing provider cards', async ({ whodb, page }) => {
                 const testProvider = {
                     Id: 'test-provider-1',
+                    ProviderType: 'AWS',
                     Name: 'My AWS Dev',
                     Region: 'us-east-1',
-                    AuthMethod: 'access_key',
                     Status: 'Connected',
                     DiscoveredCount: 5,
                     IsEnvironmentDefined: false,
                     LastDiscoveryAt: null,
-                    __typename: 'CloudProvider',
+                    Error: null,
+                    ProfileName: null,
+                    DiscoverRDS: true,
+                    DiscoverElastiCache: true,
+                    DiscoverDocumentDB: true,
+                    __typename: 'AWSProvider',
                 };
 
                 await mockCloudProviders(page, { enabled: true, providers: [testProvider] });
@@ -133,14 +138,19 @@ test.describe('Cloud Providers', () => {
             test('removes AWS provider', async ({ whodb, page }) => {
                 const testProvider = {
                     Id: 'remove-me',
+                    ProviderType: 'AWS',
                     Name: 'Remove Test',
                     Region: 'eu-west-1',
-                    AuthMethod: 'access_key',
                     Status: 'Connected',
                     DiscoveredCount: 0,
                     IsEnvironmentDefined: false,
                     LastDiscoveryAt: null,
-                    __typename: 'CloudProvider',
+                    Error: null,
+                    ProfileName: null,
+                    DiscoverRDS: true,
+                    DiscoverElastiCache: true,
+                    DiscoverDocumentDB: true,
+                    __typename: 'AWSProvider',
                 };
 
                 await mockCloudProviders(page, { enabled: true, providers: [testProvider] });

@@ -88,6 +88,8 @@ func detectDatabaseType(columnType string) string {
 		return "int"
 	case uintTypes.Contains(upperType):
 		return "uint"
+	case bigIntTypes.Contains(upperType):
+		return "int"
 	case floatTypes.Contains(upperType):
 		return "float"
 	case boolTypes.Contains(upperType):

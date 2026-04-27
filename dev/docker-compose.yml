@@ -116,7 +116,17 @@ services:
   e2e_cockroachdb:
     image: cockroachdb/cockroach:latest
     container_name: e2e_cockroachdb
-    command: start-single-node --insecure --advertise-addr=e2e_cockroachdb
+    hostname: e2e_cockroachdb
+    entrypoint: ["/cockroach/cockroach"]
+    command:
+      - start
+      - --insecure
+      - --listen-addr=e2e_cockroachdb:26357
+      - --advertise-addr=e2e_cockroachdb:26357
+      - --sql-addr=e2e_cockroachdb:26257
+      - --http-addr=e2e_cockroachdb:8080
+      - --join=e2e_cockroachdb:26357
+      - --max-offset=5s
     ports:
       - "26257:26257"
     volumes:
@@ -409,7 +419,7 @@ services:
     container_name: e2e_yugabytedb
     command: >
       bash -c "
-        bin/yugabyted start --daemon=false --advertise_address=0.0.0.0 --tserver_flags='ysql_enable_auth=true,pgsql_proxy_bind_address=0.0.0.0:5433'
+        bin/yugabyted start --daemon=false --advertise_address=0.0.0.0 --master_flags='max_clock_skew_usec=5000000' --tserver_flags='ysql_enable_auth=true,pgsql_proxy_bind_address=0.0.0.0:5433,max_clock_skew_usec=5000000'
       "
     ports:
       - "5434:5433"
@@ -432,15 +442,8 @@ services:
         condition: service_healthy
     volumes:
       - ./sample-data/yugabytedb/data.sql:/data.sql:ro
-    entrypoint: >
-      sh -c "
-        until PGPASSWORD=yugabyte psql -h e2e_yugabytedb -p 5433 -U yugabyte -c 'SELECT 1' 2>/dev/null; do echo 'Waiting for YugabyteDB...'; sleep 2; done &&
-        PGPASSWORD=yugabyte psql -h e2e_yugabytedb -p 5433 -U yugabyte -c \"CREATE DATABASE test_db;\" &&
-        PGPASSWORD=yugabyte psql -h e2e_yugabytedb -p 5433 -U yugabyte -c \"CREATE USER \\\"user\\\" WITH PASSWORD 'password';\" &&
-        PGPASSWORD=yugabyte psql -h e2e_yugabytedb -p 5433 -U yugabyte -d test_db -c \"GRANT ALL PRIVILEGES ON DATABASE test_db TO \\\"user\\\";\" &&
-        PGPASSWORD=password psql -h e2e_yugabytedb -p 5433 -U user -d test_db -f /data.sql &&
-        echo 'YugabyteDB data loaded'
-      "
+      - ./sample-data/yugabytedb/init.sh:/init.sh:ro
+    entrypoint: ["/bin/sh", "/init.sh"]
     networks:
       - db
 
@@ -661,8 +664,11 @@ services:
     profiles: ["ssl"]
     image: cockroachdb/cockroach:latest
     container_name: e2e_cockroachdb_ssl
-    command: >
-      bash -c "
+    hostname: e2e_cockroachdb_ssl
+    command:
+      - bash
+      - -c
+      - |
         mkdir -p /certs &&
         cp /certs-src/ca.pem /certs/ca.crt &&
         cp /certs-src/server-cert.pem /certs/node.crt &&
@@ -671,8 +677,7 @@ services:
         cp /certs-src/client-key.pem /certs/client.root.key &&
         chmod 600 /certs/node.key /certs/client.root.key &&
         chmod 644 /certs/ca.crt /certs/node.crt /certs/client.root.crt &&
-        exec cockroach start-single-node --certs-dir=/certs --advertise-addr=e2e_cockroachdb_ssl
-      "
+        exec /cockroach/cockroach start --certs-dir=/certs --listen-addr=e2e_cockroachdb_ssl:26357 --advertise-addr=e2e_cockroachdb_ssl:26357 --sql-addr=e2e_cockroachdb_ssl:26257 --http-addr=e2e_cockroachdb_ssl:8080 --join=e2e_cockroachdb_ssl:26357 --max-offset=5s
     ports:
       - "26258:26257"
     volumes:
@@ -708,7 +713,7 @@ services:
         cp /certs/client.root.crt /tmp/certs/ &&
         cp /tmp/client.root.key /tmp/certs/ &&
         COCKROACH_CERTS_DIR=/tmp/certs /init.sh &&
-        cockroach sql --certs-dir=/tmp/certs --host=e2e_cockroachdb_ssl:26257 -e \"ALTER USER test_user WITH PASSWORD 'password';\"
+        cockroach sql --certs-dir=/tmp/certs --host=e2e_cockroachdb_ssl:26257 -e \"ALTER USER \\\"user\\\" WITH PASSWORD 'password';\"
       "
     networks:
       - db

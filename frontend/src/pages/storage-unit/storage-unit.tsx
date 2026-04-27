@@ -165,6 +165,12 @@ const StorageUnitCard: FC<{
         if (status && shouldFetchColumns) requestAnimationFrame(fetchColumns);
     }, [fetchColumns, shouldFetchColumns]);
 
+    useEffect(() => {
+        if (expanded && shouldFetchColumns && columns === undefined) {
+            requestAnimationFrame(fetchColumns);
+        }
+    }, [columns, expanded, fetchColumns, shouldFetchColumns]);
+
     const handleExpand = useCallback(() => {
         const next = !expanded;
         setExpanded(next);

@@ -29,13 +29,13 @@ WhoDB was built from the ground up to solve these problems with a focus on **spe
 
 <CardGroup cols={2}>
 <Card title="Instant Startup" icon="bolt">
-Load in under 1 second - no more waiting for heavy applications to launch
+Lightweight Go backend and browser UI, without a heavy desktop client
 </Card>
-<Card title="Real-Time Queries" icon="gauge-high">
-Query results appear instantly, even with large datasets
+<Card title="Focused Query Results" icon="gauge-high">
+Query views stay focused on the current result set, page size, and filters
 </Card>
 <Card title="Minimal Resource Usage" icon="microchip">
-Uses 90% less memory than traditional database tools
+Small server process compared with full desktop database IDEs
 </Card>
 <Card title="Browser-Based" icon="window-maximize">
 No installation required - access from any device with a browser
@@ -56,24 +56,24 @@ New users become productive in minutes, not hours. No training required.
 <Accordion title="Intuitive Navigation">
 Everything you need is exactly where you expect it. Sidebar navigation, context menus, and keyboard shortcuts make navigating databases effortless.
 
-- **Clear hierarchy**: Database → Schema → Table
-- **Quick search**: Find any table or column instantly
-- **Smart breadcrumbs**: Always know where you are
+- **Clear browse flow**: Connect, open Storage Units, then use Describe or Data
+- **Quick search**: Find source objects and visible row values quickly
+- **Simple navigation**: Sidebar routes, Storage Unit cards, and Scratchpad pages keep work organized
 </Accordion>
 <Accordion title="Spreadsheet-Like Data Grid">
-Work with database data the same way you work with spreadsheets. Click to sort, right-click for actions, search across all columns.
+Work with database data in a familiar grid. Click column headers to sort, right-click rows for actions, search loaded rows, and use WHERE conditions for server-side filtering.
 
 - **Familiar interface**: If you can use Excel, you can use WhoDB
-- **Inline editing**: Click cells to edit directly
-- **Bulk operations**: Select multiple rows for batch actions
+- **Edit sheets**: Open row values in a side sheet before saving changes
+- **Selected-row actions**: Select rows for supported export and delete workflows
 </Accordion>
 <Accordion title="Powerful Query Editor">
-Write SQL with modern features like syntax highlighting, auto-completion, and query history.
+Write SQL with syntax highlighting, query history, and page/cell organization in the web Scratchpad. Use the CLI TUI when you want terminal autocomplete, formatting, bookmarks, and external editor support.
 
 - **Syntax highlighting**: Color-coded SQL for easy reading
-- **Auto-completion**: Intelligent suggestions as you type
-- **Query history**: Reuse and clone previous queries
+- **Query history**: Reuse previous cell queries
 - **Multi-cell support**: Organize queries into logical sections
+- **CLI editor features**: Autocomplete and SQL formatting in the terminal TUI
 </Accordion>
 </AccordionGroup>
 
@@ -134,17 +134,16 @@ Generate realistic test data in seconds. Perfect for development and testing env
 - Configure row counts (1 to 10,000+)
 - Smart data type handling
 - Append or overwrite modes
-- Realistic fake data for all column types
+- Realistic fake data for supported column types
 </Accordion>
 <Accordion title="Flexible Export Options">
 Export data in the format you need:
 
 - **CSV**: For Excel and spreadsheet tools
 - **Excel (.xlsx)**: Native Excel format with formatting
-- **JSON**: For APIs and applications
-- **SQL**: INSERT statements for backups and migrations
+- **JSON Lines**: For records from sources like MongoDB when supported
 
-Configure delimiters, select specific columns, and apply filters before export.
+Configure CSV delimiters and apply filters before export. Use database-native tools for full backup and migration exports.
 </Accordion>
 <Accordion title="Advanced Filtering">
 Build complex WHERE conditions with a visual interface:
@@ -156,12 +155,12 @@ Build complex WHERE conditions with a visual interface:
 - NULL value handling
 </Accordion>
 <Accordion title="Query History & Reuse">
-Every query is automatically saved. Clone and modify previous queries instead of rewriting them from scratch.
+Scratchpad keeps history for each web cell so you can reload SQL you already ran. The CLI also has searchable history and bookmarks for terminal workflows.
 
-- **Searchable history**: Find queries by text or date
-- **One-click cloning**: Reuse successful queries
-- **Performance tracking**: See execution times
-- **Export history**: Save frequently-used queries
+- **Cell history**: Reload or rerun SQL from the current cell
+- **Query reuse**: Copy previous SQL into the editor and adjust it
+- **Execution details**: Review result status and timing with the query output
+- **CLI bookmarks**: Save named queries when working in the terminal
 </Accordion>
 </AccordionGroup>
 
@@ -272,23 +271,16 @@ Customize and extend WhoDB for your specific needs
 Self-host without dependencies on external services
 </Card>
 <Card title="Community Support" icon="users">
-Join thousands of developers using WhoDB worldwide
+Use GitHub issues and discussions to follow the project and report problems
 </Card>
 </CardGroup>
 
-## Enterprise Edition
+## Team Usage
 
-For teams that need advanced features, **WhoDB Enterprise Edition** offers:
+Teams usually run WhoDB behind their normal network controls and connect with database accounts that match each environment's access policy. Use read-only database credentials where possible, native database audit logging for compliance trails, and the CLI for repeatable checks.
 
-- **Additional database support**: Oracle, SQL Server, Cassandra, and more
-- **Team collaboration**: Share queries and workflows
-- **SSO integration**: LDAP, SAML, and OAuth support
-- **Audit logging**: Track all database access and changes
-- **Priority support**: Direct access to our engineering team
-- **Custom integrations**: Built specifically for your workflow
-
-<Card title="Enterprise Features" href="https://whodb.com/enterprise">
-Learn more about WhoDB Enterprise Edition →
+<Card title="Team Setup" icon="users" href="/guides/team-setup">
+Set up a shared CE deployment using Docker, database credentials, and operational guardrails.
 </Card>
 
 ## Getting Started
@@ -299,7 +291,7 @@ Ready to experience the fastest, most intuitive database tool you've ever used?
 
 <CardGroup cols={3}>
 <Card title="Try WhoDB" icon="rocket" href="/installation">
-Get started in under 5 minutes
+Install the current CE build
 </Card>
 <Card title="Watch Demo" icon="play" href="https://whodb.com/demo">
 See WhoDB in action
@@ -315,7 +307,7 @@ Complete documentation
 <Accordion title="Is WhoDB really free?">
 Yes! WhoDB Community Edition is completely free and open source. You can use it for personal projects, commercial projects, and everything in between. No hidden costs, no usage limits.
 
-Enterprise Edition is available for teams that need advanced features like additional database support, SSO, and priority support.
+If you are evaluating a separate commercial package, use that product channel for exact packaging and support terms. This documentation focuses on the CE code in this repository.
 </Accordion>
 <Accordion title="How does WhoDB compare to [other tool]?">
 We've created detailed comparison guides:
@@ -382,11 +374,11 @@ We have migration guides for users coming from [phpMyAdmin](/guides/migrating-fr
 
 ## Ready to Try WhoDB?
 
-Join thousands of developers who have already made the switch to faster, simpler database management.
+Start with the current CE build and validate it against your databases and workflows.
 
 <CardGroup cols={2}>
 <Card title="Get Started Free" icon="download" href="/installation">
-Install WhoDB in under 5 minutes
+Install the current CE build
 </Card>
 <Card title="View on GitHub" icon="github" href="https://github.com/clidey/whodb">
 Star us on GitHub ⭐

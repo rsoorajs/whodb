@@ -594,7 +594,7 @@ func (p *Sqlite3Plugin) executeRawSQL(config *engine.PluginConfig, query string,
 				selects[i] = quoted
 			}
 		}
-		castQuery := fmt.Sprintf("SELECT %s FROM (%s)", strings.Join(selects, ", "), query)
+		castQuery := fmt.Sprintf("SELECT %s FROM (%s)", strings.Join(selects, ", "), trimRawSQLiteSubquery(query))
 
 		castRows, err := db.Raw(castQuery, params...).Rows()
 		if err != nil {
@@ -683,7 +683,7 @@ func (p *Sqlite3Plugin) StreamRawExecute(config *engine.PluginConfig, query stri
 				selects[i] = quoted
 			}
 		}
-		castQuery := fmt.Sprintf("SELECT %s FROM (%s)", strings.Join(selects, ", "), query)
+		castQuery := fmt.Sprintf("SELECT %s FROM (%s)", strings.Join(selects, ", "), trimRawSQLiteSubquery(query))
 
 		castRows, err := db.Raw(castQuery, params...).Rows()
 		if err != nil {
@@ -697,6 +697,11 @@ func (p *Sqlite3Plugin) StreamRawExecute(config *engine.PluginConfig, query stri
 		return true, nil
 	})
 	return err
+}
+
+func trimRawSQLiteSubquery(query string) string {
+	trimmed := strings.TrimSpace(query)
+	return strings.TrimSuffix(trimmed, ";")
 }
 
 // ConvertRawToRows overrides the parent to handle SQLite datetime columns specially

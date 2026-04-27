@@ -55,30 +55,23 @@ export const rowsMethods = {
     async waitForRowValue(columnIndex, expectedValue, options = {}) {
         const timeout = options.timeout || 10000;
         const expectedStr = String(expectedValue).trim();
+        let foundIndex = -1;
 
         await expect(async () => {
             const rows = await this.page.locator("table tbody tr").all();
-            let found = false;
-            for (const row of rows) {
-                const cell = row.locator("td").nth(columnIndex);
+            foundIndex = -1;
+            for (let i = 0; i < rows.length; i++) {
+                const cell = rows[i].locator("td").nth(columnIndex);
                 const cellText = (await cell.innerText()).trim();
                 if (cellText === expectedStr) {
-                    found = true;
+                    foundIndex = i;
                     break;
                 }
             }
-            expect(found).toBe(true);
+            expect(foundIndex).not.toEqual(-1);
         }).toPass({ timeout });
 
-        const rows = await this.page.locator("table tbody tr").all();
-        for (let i = 0; i < rows.length; i++) {
-            const cell = rows[i].locator("td").nth(columnIndex);
-            const cellText = (await cell.innerText()).trim();
-            if (cellText === expectedStr) {
-                return i;
-            }
-        }
-        return -1;
+        return foundIndex;
     },
 
     /**
@@ -91,28 +84,22 @@ export const rowsMethods = {
         const timeout = options.timeout || 10000;
         const caseSensitive = options.caseSensitive || false;
         const searchStr = caseSensitive ? String(expectedValue) : String(expectedValue).toLowerCase();
+        let foundIndex = -1;
 
         await expect(async () => {
             const rows = await this.page.locator("table tbody tr").all();
-            let found = false;
-            for (const row of rows) {
-                const rowText = caseSensitive ? await row.innerText() : (await row.innerText()).toLowerCase();
+            foundIndex = -1;
+            for (let i = 0; i < rows.length; i++) {
+                const rowText = caseSensitive ? await rows[i].innerText() : (await rows[i].innerText()).toLowerCase();
                 if (rowText.includes(searchStr)) {
-                    found = true;
+                    foundIndex = i;
                     break;
                 }
             }
-            expect(found).toBe(true);
+            expect(foundIndex).not.toEqual(-1);
         }).toPass({ timeout });
 
-        const rows = await this.page.locator("table tbody tr").all();
-        for (let i = 0; i < rows.length; i++) {
-            const rowText = caseSensitive ? await rows[i].innerText() : (await rows[i].innerText()).toLowerCase();
-            if (rowText.includes(searchStr)) {
-                return i;
-            }
-        }
-        return -1;
+        return foundIndex;
     },
 
     /**
@@ -149,8 +136,9 @@ export const rowsMethods = {
     /**
      * Delete a row by index
      * @param {number} rowIndex
+     * @param {{ waitForRowCount?: boolean }} [options]
      */
-    async deleteRow(rowIndex) {
+    async deleteRow(rowIndex, { waitForRowCount = true } = {}) {
         const initialRowCount = await this.page.locator("table tbody tr").count();
         expect(await this.page.locator("table tbody tr").count()).toBeGreaterThan(rowIndex);
 
@@ -161,7 +149,15 @@ export const rowsMethods = {
         await deleteBtn.waitFor({ timeout: TIMEOUT.ELEMENT });
         await deleteBtn.click({ force: true });
 
-        await expect(this.page.locator("table tbody tr")).toHaveCount(initialRowCount - 1, { timeout: TIMEOUT.ACTION });
+        const confirmDeleteBtn = this.page.locator('[data-testid="confirm-delete-row-button"]');
+        await confirmDeleteBtn.waitFor({ state: "visible", timeout: TIMEOUT.ACTION });
+        await confirmDeleteBtn.click();
+        await confirmDeleteBtn.waitFor({ state: "hidden", timeout: TIMEOUT.ACTION });
+        await expect(this.page.locator("body")).not.toHaveAttribute("data-scroll-locked", /.+/, { timeout: TIMEOUT.ELEMENT });
+
+        if (waitForRowCount) {
+            await expect(this.page.locator("table tbody tr")).toHaveCount(initialRowCount - 1, { timeout: TIMEOUT.ACTION });
+        }
     },
 
     /**
@@ -222,7 +218,7 @@ export const rowsMethods = {
         }
 
         if (cancel) {
-            await this.page.keyboard.press("Escape");
+            await this.page.locator('[data-testid="cancel-edit-row"]').click();
             await this.page.getByText("Edit Row").first().waitFor({ state: "hidden" });
             await expect(this.page.locator("body")).not.toHaveAttribute("data-scroll-locked", /.+/, { timeout: TIMEOUT.ELEMENT });
         } else {

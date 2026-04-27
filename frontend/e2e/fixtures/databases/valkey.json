@@ -35,6 +35,7 @@
     "database": null,
     "advanced": {}
   },
+  "defaultDatabase": "0",
   "schema": null,
   "mockData": {
     "supportedTable": "user:1",
@@ -127,6 +128,14 @@
       "type": "hash",
       "expectedColumns": ["", "field", "value"],
       "expectedFields": ["created_at", "email", "id", "password", "username"]
+    },
+    "user:2": {
+      "type": "hash",
+      "expectedColumns": ["", "field", "value"],
+      "expectedRowCount": 5,
+      "testData": {
+        "firstRow": ["", "created_at", "2023-02-20T14:45:00Z"]
+      }
     },
     "orders:recent": {
       "type": "list",

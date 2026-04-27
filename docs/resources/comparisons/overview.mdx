@@ -16,15 +16,15 @@ This comparison reflects the current CE build in this repository.
 | Feature | WhoDB | phpMyAdmin | pgAdmin | DBeaver | TablePlus |
 |---------|-------|------------|---------|---------|-----------|
 | **Price** | Free (Open Source) | Free | Free | Free / $199 | $89-$129 |
-| **Memory Usage** | ~50MB | ~100MB | ~300MB | ~500MB+ | ~150MB |
-| **Startup Time** | \<1 second | 2-3 seconds | 5-8 seconds | 10-15 seconds | 2-3 seconds |
+| **Resource Usage** | Lightweight server | Moderate web stack | Heavier admin app | Heavy desktop IDE | Native desktop app |
+| **Startup Model** | Run server, open browser | Web/PHP app | Desktop or server app | Java desktop app | Native desktop app |
 | **Web-Based** | Yes | Yes | Desktop/Web | Desktop | Desktop |
 | **Multi-Database** | Yes (broad CE catalog) | MySQL only | PostgreSQL only | Yes (50+) | Yes (15+) |
 | **Schema Visualization** | Interactive Graph | No | Basic ERD | Basic ERD | Basic ERD |
 | **Modern UI** | Yes | No | No | Mixed | Yes |
 | **Query History** | Built-in | Basic | Basic | Advanced | Advanced |
 | **Mock Data Generation** | Yes | No | No | No | No |
-| **Real-time Search** | Yes | Limited | Limited | Yes | Yes |
+| **Search / Filtering** | Loaded-row search + WHERE filters | Limited | Limited | Yes | Yes |
 | **Multi-cell Queries** | Yes | No | No | Yes | No |
 | **Docker Support** | Excellent | Good | Good | N/A | N/A |
 | **Self-Hosted** | Yes | Yes | Yes | N/A | N/A |
@@ -37,8 +37,8 @@ This comparison reflects the current CE build in this repository.
 <AccordionGroup>
 <Accordion title="WhoDB">
 **Strengths:**
-- Minimal memory footprint (~50MB)
-- Instant startup (\<1 second)
+- Lightweight server process
+- Browser-based workflow
 - Browser-based, no installation required
 - Lightweight Go backend
 - React frontend with efficient virtualization
@@ -82,8 +82,8 @@ This comparison reflects the current CE build in this repository.
 - Plugin ecosystem
 
 **Limitations:**
-- Very high memory usage (500MB+)
-- Slow startup (10-15 seconds)
+- Heavier desktop runtime
+- More startup and workspace overhead than lightweight web tools
 - Complex interface
 - Steep learning curve
 
@@ -211,7 +211,7 @@ Good coverage of popular databases.
 
 <AccordionGroup>
 <Accordion title="Schema Visualization">
-**WhoDB**: Interactive graph view with relationship visualization, pan/zoom, node details
+**WhoDB**: Interactive graph view with relationship visualization, pan/zoom, node cards, and Data buttons
 
 **phpMyAdmin**: Designer view (basic, limited)
 
@@ -225,7 +225,7 @@ Winner: WhoDB (most intuitive and interactive)
 </Accordion>
 
 <Accordion title="Query Interface">
-**WhoDB**: Multi-cell scratchpad with syntax highlighting, query history, one-click reuse
+**WhoDB**: Multi-cell scratchpad with syntax highlighting, query history, and one-click reuse
 
 **phpMyAdmin**: Basic SQL tab, limited history
 
@@ -239,7 +239,7 @@ Winner: Tie between DBeaver (power) and WhoDB (simplicity)
 </Accordion>
 
 <Accordion title="Data Editing">
-**WhoDB**: Inline editing, add/edit/delete dialogs, bulk operations
+**WhoDB**: Add row, edit row, delete row, and selected-row actions through table controls and sheets
 
 **phpMyAdmin**: Row-by-row editing, basic interface
 
@@ -253,7 +253,7 @@ Winner: Tie between WhoDB and TablePlus (both excellent)
 </Accordion>
 
 <Accordion title="Export Options">
-**WhoDB**: CSV, Excel, JSON, SQL with filtering and column selection
+**WhoDB**: CSV and Excel for tables, plus JSON Lines for MongoDB-style records when supported
 
 **phpMyAdmin**: Multiple formats, good options
 
@@ -267,7 +267,7 @@ Winner: DBeaver (most comprehensive)
 </Accordion>
 
 <Accordion title="Mock Data Generation">
-**WhoDB**: Built-in realistic data generation for all column types
+**WhoDB**: Built-in mock data generation when the connected source and object support it
 
 **phpMyAdmin**: No built-in support
 
@@ -348,20 +348,20 @@ Startups need to move fast with limited resources. WhoDB provides:
 **Alternative:** TablePlus for Mac-centric teams who prefer native apps
 </Accordion>
 
-<Accordion title="Enterprise / Large Organization">
-**Recommended: WhoDB Enterprise or DBeaver Enterprise**
+<Accordion title="Large Organization">
+**Recommended: WhoDB CE or DBeaver paid editions, depending on the workflow**
 
 Large organizations need:
-- **WhoDB Enterprise**: Best for standardized, web-based access with modern UX
-- **DBeaver Enterprise**: Best for power users needing maximum database coverage
+- **WhoDB CE**: Best for standardized, web-based access when the current CE source catalog fits
+- **DBeaver paid editions**: Best for power users needing maximum database coverage
 
-Consider WhoDB Enterprise if you want:
+Consider WhoDB CE if you want:
 - Central web-based access
 - Easier IT management
 - Lower training costs
-- Better security controls
+- Security handled through your existing network, auth, and database controls
 
-Consider DBeaver Enterprise if you need:
+Consider DBeaver paid editions if you need:
 - Maximum database type support
 - Advanced query capabilities
 - Desktop-first workflow
@@ -445,27 +445,15 @@ DBeaver excels at:
     - Open source
     - Community support
   </Accordion>
-  <Accordion title="Freemium">
+  <Accordion title="Freemium / Paid Desktop">
     **DBeaver**
     - Community Edition: Free
-    - Enterprise Edition: $199/year per user
-    - Team Edition: Custom pricing
-    - Enterprise includes: NoSQL, cloud databases, team features, priority support
-  </Accordion>
-  <Accordion title="Paid">
-    **TablePlus**
-    - Standard: $89 (lifetime)
-    - Pro: $129 (lifetime)
-    - Free trial available
-    - Includes updates for 1 year
-    - Native desktop experience
+    - Paid editions add broader drivers, team features, and vendor support
 
-    **WhoDB Enterprise**
-    - Custom pricing
-    - Additional database support
-    - Priority support
-    - SSO integration
-    - Audit logging
+    **TablePlus**
+    - Commercial desktop app
+    - Free trial available
+    - Native desktop experience
   </Accordion>
 </AccordionGroup>
 
@@ -495,11 +483,11 @@ Switching database tools is easier than you might think. Here's how difficult it
 </Step>
 
 <Step title="From DBeaver to WhoDB">
-**Difficulty: Moderate (2-4 hours)**
+**Difficulty: Moderate**
 
 1. Evaluate database coverage (DBeaver supports more types)
-2. Export saved queries
-3. Recreate commonly-used queries in WhoDB
+2. Copy important SQL into Scratchpad pages, CLI bookmarks, or your repository
+3. Recreate commonly-used workflows in WhoDB
 4. Adjust to simpler interface
 
 Consider keeping DBeaver for specialized databases while using WhoDB for common ones.
@@ -545,16 +533,15 @@ WhoDB doesn't lock you in - use it alongside other tools as needed.
 - No per-user licensing costs
 - Quick onboarding
 
-**DBeaver Enterprise** is good for large teams with diverse database needs and dedicated training.
+Paid DBeaver editions are a better fit for large teams with diverse database needs and dedicated training.
 </Accordion>
 
 <Accordion title="Do I need the paid version of any tool?">
 **For most users, no.** Free versions of WhoDB, phpMyAdmin, pgAdmin, and DBeaver cover 90%+ of use cases.
 
 Consider paid versions if you need:
-- **DBeaver Enterprise**: NoSQL databases, cloud databases, team collaboration
+- **DBeaver paid editions**: Broader driver support, team features, or vendor support
 - **TablePlus**: You prefer native apps and like their design
-- **WhoDB Enterprise**: Additional databases, SSO, audit logging, priority support
 
 Try free versions first. You'll know when you need paid features.
 </Accordion>
@@ -570,7 +557,7 @@ All tools can be secured properly with:
 
 **Desktop tools (DBeaver, TablePlus)** store credentials locally on your machine.
 
-For enterprise security needs, consider **WhoDB Enterprise** with SSO and audit logging.
+For stricter security needs, run WhoDB behind your existing auth layer and use database-native auditing plus infrastructure logs.
 </Accordion>
 </AccordionGroup>
 
@@ -596,7 +583,7 @@ Maximum PostgreSQL features vs. better UX
 </Card>
 
 <Card title="Best for Power Users" icon="rocket">
-**DBeaver Enterprise**
+**DBeaver**
 
 Maximum databases and advanced features
 </Card>
@@ -626,7 +613,7 @@ Ready to see how WhoDB compares in practice?
 
 <CardGroup cols={2}>
 <Card title="Install WhoDB" icon="download" href="/installation">
-Get started in under 5 minutes
+Install the current CE build
 </Card>
 <Card title="Live Demo" icon="play" href="https://whodb.com/demo">
 Try WhoDB without installing

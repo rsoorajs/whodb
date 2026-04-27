@@ -30,7 +30,7 @@ import fs from "fs";
 import path from "path";
 import {test as setup} from "@playwright/test";
 import {WhoDB} from "../support/whodb.mjs";
-import {getDatabaseId, getDatabasesByCategory,} from "../support/database-config.mjs";
+import {getConnectionAdvanced, getDatabaseId, getDatabasesByCategory,} from "../support/database-config.mjs";
 import {mockAIProviders} from "../support/helpers/mock-providers.mjs";
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
@@ -64,10 +64,14 @@ for (const dbConfig of databases) {
       conn.user ?? undefined,
       conn.password ?? undefined,
       conn.database ?? undefined,
-      conn.advanced || {},
+      getConnectionAdvanced(conn),
       null,
       dbConfig.loginForm || null
     );
+
+    if (dbConfig.defaultDatabase != null && dbConfig.sidebar?.showsDatabaseDropdown) {
+      await whodb.selectDatabase(dbConfig.defaultDatabase);
+    }
 
     if (dbConfig.schema && dbConfig.sidebar?.showsSchemaDropdown) {
       // Wait for any health overlay to clear before interacting with sidebar

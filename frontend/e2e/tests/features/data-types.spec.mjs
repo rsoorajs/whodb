@@ -18,6 +18,26 @@ import { test, expect, forEachDatabase } from '../../support/test-fixture.mjs';
 import { getTableConfig } from '../../support/database-config.mjs';
 import { waitForMutation } from '../../support/helpers/test-utils.mjs';
 
+function rowSignature(row) {
+    return JSON.stringify(row.map(value => String(value ?? '').trim()));
+}
+
+async function waitForNewRowValue(whodb, columnIndex, expectedValue, existingSignatures, timeout = 10000) {
+    const expectedStr = String(expectedValue).trim();
+    let foundIndex = -1;
+
+    await expect(async () => {
+        const { rows } = await whodb.getTableData();
+        foundIndex = rows.findIndex(row => {
+            return !existingSignatures.has(rowSignature(row)) &&
+                String(row[columnIndex] || '').trim() === expectedStr;
+        });
+        expect(foundIndex).not.toEqual(-1);
+    }).toPass({ timeout });
+
+    return foundIndex;
+}
+
 /**
  * Data Types CRUD Operations Test Suite
  *
@@ -89,6 +109,9 @@ test.describe('Data Types CRUD Operations', () => {
                 test('ADD - creates row with type value', async ({ whodb, page }) => {
                     await whodb.data(tableName);
 
+                    const { rows: existingRows } = await whodb.getTableData();
+                    const existingSignatures = new Set(existingRows.map(rowSignature));
+
                     const verifyAdd = waitForMutation(page, 'AddRow');
                     await whodb.addRow({[columnName]: testConfig.addValue});
                     await verifyAdd();
@@ -100,9 +123,12 @@ test.describe('Data Types CRUD Operations', () => {
                         await whodb.sortBy(0);
                     }
 
-                    // Use retry-able assertion to wait for the new row to appear
-                    // columnIndex + 1 accounts for the checkbox column
-                    const rowIndex = await whodb.waitForRowValue(columnIndex + 1, expectedAddDisplay);
+                    const rowIndex = await waitForNewRowValue(
+                        whodb,
+                        columnIndex + 1,
+                        expectedAddDisplay,
+                        existingSignatures
+                    );
 
                     // Clean up - delete the row we just added
                     const verifyDelete = waitForMutation(page, 'DeleteRow');
@@ -220,6 +246,9 @@ test.describe('Data Types CRUD Operations', () => {
                 test('DELETE - removes row with type value', async ({ whodb, page }) => {
                     await whodb.data(tableName);
 
+                    const { rows: existingRows } = await whodb.getTableData();
+                    const existingSignatures = new Set(existingRows.map(rowSignature));
+
                     const verifyAdd = waitForMutation(page, 'AddRow');
                     await whodb.addRow({[columnName]: deleteValue});
                     await verifyAdd();
@@ -231,8 +260,12 @@ test.describe('Data Types CRUD Operations', () => {
                         await whodb.sortBy(0);
                     }
 
-                    // Use retry-able assertion to wait for the new row to appear
-                    const rowIndex = await whodb.waitForRowValue(columnIndex + 1, expectedDeleteDisplay);
+                    const rowIndex = await waitForNewRowValue(
+                        whodb,
+                        columnIndex + 1,
+                        expectedDeleteDisplay,
+                        existingSignatures
+                    );
 
                     // Get initial count after the row has appeared
                     const { rows } = await whodb.getTableData();

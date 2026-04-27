@@ -47,9 +47,22 @@ export type IGraphProps<NodeData extends unknown = any, EdgeData extends unknown
 export const Graph: FC<IGraphProps> = (props) => {
     const { t } = useTranslation('components/graph');
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
+    const graphInstanceRef = useRef<IGraphInstance | null>(null);
+    const {
+        nodeTypes,
+        children,
+        nodes: controlledNodes,
+        setNodes: setControlledNodes,
+        onNodesChange,
+        edges: controlledEdges,
+        setEdges: setControlledEdges,
+        onEdgesChange,
+        onReady,
+        ...reactFlowProps
+    } = props;
     const { fitView } = useReactFlow();
     const [isLayingOut, setIsLayingOut] = useState(true);
-    const { getNodes, getEdges, setNodes, setEdges } = useReactFlow();
+    const { getNodes } = useReactFlow();
     const [downloading, setDownloading] = useState(false);
     const [isSpacePressed, setIsSpacePressed] = useState(false);
 
@@ -93,7 +106,7 @@ export const Graph: FC<IGraphProps> = (props) => {
 
     const onLayout = useCallback((type = "dagre", padding?: number) => {
         const nodes = getNodes();
-        const edges = getEdges();
+        const edges = controlledEdges;
 
         if (nodes.length === 0) {
             return;
@@ -112,8 +125,8 @@ export const Graph: FC<IGraphProps> = (props) => {
         }
 
         setIsLayingOut(true);
-        setNodes(layouted.nodes);
-        setEdges(layouted.edges);
+        setControlledNodes(layouted.nodes);
+        setControlledEdges(layouted.edges);
 
         setTimeout(() => {
             setIsLayingOut(false);
@@ -122,7 +135,13 @@ export const Graph: FC<IGraphProps> = (props) => {
                 padding,
             });
         }, 350);
-    }, [fitView, getEdges, getNodes, setEdges, setNodes]);
+    }, [controlledEdges, fitView, getNodes, setControlledEdges, setControlledNodes]);
+
+    useEffect(() => {
+        if (graphInstanceRef.current) {
+            graphInstanceRef.current.layout = onLayout;
+        }
+    }, [onLayout]);
 
     const handleInit: OnInit = useCallback((instance) => {
         setTimeout(() => {
@@ -134,8 +153,9 @@ export const Graph: FC<IGraphProps> = (props) => {
         }, 100);
         const graphInstance = instance as IGraphInstance;
         graphInstance.layout = onLayout;
-        props.onReady?.(graphInstance);
-    }, [fitView, onLayout, props]);
+        graphInstanceRef.current = graphInstance;
+        onReady?.(graphInstance);
+    }, [fitView, onLayout, onReady]);
 
     const handleDownloadImage = useCallback(() => {
         if (reactFlowWrapper.current === null) {
@@ -169,11 +189,11 @@ export const Graph: FC<IGraphProps> = (props) => {
             "opacity-100": !isLayingOut,
             "!cursor-grab": isSpacePressed,
         })}
-        {...props}
-        nodeTypes={props.nodeTypes}
+        {...reactFlowProps}
+        nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        nodes={props.nodes}
-        edges={props.edges}
+        nodes={controlledNodes}
+        edges={controlledEdges}
         panOnScroll
         panOnScrollMode={PanOnScrollMode.Free}
         panOnDrag={isSpacePressed}
@@ -185,8 +205,8 @@ export const Graph: FC<IGraphProps> = (props) => {
         nodesConnectable={false}
         nodesDraggable={true}
         connectOnClick={false}
-        onNodesChange={props.onNodesChange}
-        onEdgesChange={props.onEdgesChange}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
         proOptions={{
             hideAttribution: true,
         }}
@@ -234,6 +254,6 @@ export const Graph: FC<IGraphProps> = (props) => {
                 </Tabs>
             </div>
         </div>
-        {props.children}
+        {children}
     </ReactFlow>
 }

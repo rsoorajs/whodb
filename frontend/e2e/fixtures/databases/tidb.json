@@ -59,7 +59,7 @@
     "documentEdit": true
   },
   "import": {
-    "sampleDataDir": "tidb",
+    "sampleDataDir": "mysql",
     "supportsMultiStatement": true,
     "csvTable": "users",
     "excelTable": "products",

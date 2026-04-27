@@ -152,8 +152,10 @@ export const ExploreStorageUnit: FC = () => {
 
     const currentObjectType = useMemo(() => findSourceObjectType(item, unit?.Kind), [item, unit?.Kind]);
     const currentObjectActions = unit?.Actions ?? currentObjectType?.Actions ?? [];
-    const isTabularObject = currentObjectType?.DataShape === DataShape.Tabular || currentObjectType?.DataShape === DataShape.Document;
-    const isContentObject = currentObjectType?.DataShape === DataShape.Content || unit?.Actions?.includes(SourceAction.ViewContent) === true;
+    const canViewRows = currentObjectActions.includes(SourceAction.ViewRows);
+    const canViewContent = currentObjectActions.includes(SourceAction.ViewContent);
+    const isTabularObject = currentObjectType?.DataShape === DataShape.Tabular || currentObjectType?.DataShape === DataShape.Document || canViewRows;
+    const isContentObject = !isTabularObject && (currentObjectType?.DataShape === DataShape.Content || canViewContent);
     const allowsInsertData = currentObjectActions.includes(SourceAction.InsertData);
     const allowsUpdateData = currentObjectActions.includes(SourceAction.UpdateData);
     const allowsDeleteData = currentObjectActions.includes(SourceAction.DeleteData);
@@ -381,8 +383,8 @@ export const ExploreStorageUnit: FC = () => {
     }, [current, currentPage, currentTableName, currentUnitRef, getStorageUnitRows, isTabularObject, item, pageSize, schema, searchCondition, sortConditions, unitName]);
 
     const handleQuery = useCallback(() => {
-        handleSubmitRequest();
         setCurrentPage(1);
+        handleSubmitRequest(0);
     }, [handleSubmitRequest]);
 
     const handlePageChange = useCallback((page: number) => {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,10 +25,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/clidey/whodb/cli/internal/agentmanifest"
 	"github.com/clidey/whodb/cli/internal/config"
 	dbmgr "github.com/clidey/whodb/cli/internal/database"
+	"github.com/clidey/whodb/cli/internal/doctor"
 	"github.com/clidey/whodb/cli/internal/history"
+	"github.com/clidey/whodb/cli/internal/runbooks"
 	"github.com/clidey/whodb/cli/internal/schemadiff"
+	"github.com/clidey/whodb/cli/internal/skillinstaller"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/providers"
@@ -1857,12 +1861,221 @@ func TestERDCmd_JSONEnvelope(t *testing.T) {
 	}
 }
 
+func TestAgentSchemaCmd_JSON(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	agentSchemaFormat = "json"
+
+	outBuf, errBuf := setCommandBuffers(t, agentSchemaCmd)
+	if err := agentSchemaCmd.RunE(agentSchemaCmd, []string{}); err != nil {
+		t.Fatalf("agent schema command failed: %v", err)
+	}
+
+	var manifest agentmanifest.Manifest
+	if err := json.Unmarshal(outBuf.Bytes(), &manifest); err != nil {
+		t.Fatalf("failed to decode agent schema output: %v", err)
+	}
+	if manifest.Name != "whodb" {
+		t.Fatalf("expected manifest name whodb, got %q", manifest.Name)
+	}
+	if len(manifest.SourceTypes) == 0 {
+		t.Fatal("expected source types in manifest")
+	}
+	if len(manifest.MCPTools) == 0 {
+		t.Fatal("expected MCP tools in manifest")
+	}
+	if errBuf.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", errBuf.String())
+	}
+}
+
+func TestDoctorCmd_JSONEnvelope(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	dbPath := createSQLiteTestDatabase(t,
+		"doctor-test.db",
+		"CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)",
+	)
+	saveTestConnection(t, config.Connection{
+		Name:     "doctor-sqlite",
+		Type:     "Sqlite3",
+		Host:     dbPath,
+		Database: dbPath,
+	})
+
+	doctorConnection = "doctor-sqlite"
+	doctorSchema = ""
+	doctorFormat = "json"
+	doctorQuiet = false
+
+	outBuf, errBuf := setCommandBuffers(t, doctorCmd)
+	if err := doctorCmd.RunE(doctorCmd, []string{}); err != nil {
+		t.Fatalf("doctor command failed: %v", err)
+	}
+
+	envelope := decodeJSONEnvelope[doctor.Report](t, outBuf)
+	if envelope.Command != "doctor" {
+		t.Fatalf("expected doctor command envelope, got %q", envelope.Command)
+	}
+	if envelope.Data.Connection.Name != "doctor-sqlite" {
+		t.Fatalf("expected doctor connection name, got %q", envelope.Data.Connection.Name)
+	}
+	if len(envelope.Data.Checks) == 0 {
+		t.Fatal("expected doctor checks")
+	}
+	if errBuf.Len() != 0 {
+		t.Fatalf("expected no stderr output, got %q", errBuf.String())
+	}
+}
+
+func TestRunbooksListAndDryRun_JSON(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	runbooksFormat = "json"
+	runbooksQuiet = false
+
+	listOut, listErr := setCommandBuffers(t, runbooksListCmd)
+	if err := runbooksListCmd.RunE(runbooksListCmd, []string{}); err != nil {
+		t.Fatalf("runbooks list failed: %v", err)
+	}
+	var definitions []runbooks.Definition
+	if err := json.Unmarshal(listOut.Bytes(), &definitions); err != nil {
+		t.Fatalf("failed to decode runbooks list: %v", err)
+	}
+	if len(definitions) == 0 {
+		t.Fatal("expected built-in runbooks")
+	}
+	if listErr.Len() != 0 {
+		t.Fatalf("expected no stderr from runbooks list, got %q", listErr.String())
+	}
+
+	runbooksDryRun = true
+	runbooksConnection = ""
+	runbooksSchema = ""
+	runbooksFrom = ""
+	runbooksTo = ""
+	runbooksFromSchema = ""
+	runbooksToSchema = ""
+
+	runOut, runErr := setCommandBuffers(t, runbooksRunCmd)
+	if err := runbooksRunCmd.RunE(runbooksRunCmd, []string{"schema-audit"}); err != nil {
+		t.Fatalf("runbooks dry-run failed: %v", err)
+	}
+	envelope := decodeJSONEnvelope[runbooks.Result](t, runOut)
+	if envelope.Command != "runbooks.run" {
+		t.Fatalf("expected runbooks.run command envelope, got %q", envelope.Command)
+	}
+	if !envelope.Data.DryRun {
+		t.Fatal("expected dry-run result")
+	}
+	if len(envelope.Data.Steps) == 0 {
+		t.Fatal("expected planned runbook steps")
+	}
+	if runErr.Len() != 0 {
+		t.Fatalf("expected no stderr from runbooks dry-run, got %q", runErr.String())
+	}
+}
+
+func TestSkillsListAndInstall_JSON(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	skillsFormat = "json"
+	skillsQuiet = false
+
+	listOut, listErr := setCommandBuffers(t, skillsListCmd)
+	if err := skillsListCmd.RunE(skillsListCmd, []string{}); err != nil {
+		t.Fatalf("skills list failed: %v", err)
+	}
+	var items []skillinstaller.Item
+	if err := json.Unmarshal(listOut.Bytes(), &items); err != nil {
+		t.Fatalf("failed to decode skills list: %v", err)
+	}
+	if len(items) == 0 {
+		t.Fatal("expected bundled skills")
+	}
+	if listErr.Len() != 0 {
+		t.Fatalf("expected no stderr from skills list, got %q", listErr.String())
+	}
+
+	targetDir := filepath.Join(t.TempDir(), "skills")
+	skillsTarget = ""
+	skillsTargetDir = targetDir
+	skillsAgentsDir = ""
+	skillsIncludeAgents = false
+	skillsForce = false
+
+	installOut, installErr := setCommandBuffers(t, skillsInstallCmd)
+	if err := skillsInstallCmd.RunE(skillsInstallCmd, []string{"whodb"}); err != nil {
+		t.Fatalf("skills install failed: %v", err)
+	}
+	envelope := decodeJSONEnvelope[skillinstaller.InstallResult](t, installOut)
+	if envelope.Command != "skills.install" {
+		t.Fatalf("expected skills.install command envelope, got %q", envelope.Command)
+	}
+	if len(envelope.Data.Skills) != 1 {
+		t.Fatalf("expected one installed skill, got %d", len(envelope.Data.Skills))
+	}
+	if _, err := os.Stat(filepath.Join(targetDir, "whodb", "SKILL.md")); err != nil {
+		t.Fatalf("expected installed skill file: %v", err)
+	}
+	if installErr.Len() != 0 {
+		t.Fatalf("expected no stderr from skills install, got %q", installErr.String())
+	}
+}
+
+func TestSkillsInstall_CodexTargetUsesAgentsSkills(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	skillsTarget = "codex"
+	skillsTargetDir = ""
+	skillsAgentsDir = ""
+	skillsIncludeAgents = false
+	skillsForce = false
+
+	result, err := skillinstaller.Install(skillinstaller.InstallOptions{
+		Name:   "whodb",
+		Target: skillsTarget,
+	})
+	if err != nil {
+		t.Fatalf("skills install failed: %v", err)
+	}
+	expectedPath := filepath.Join(testHome, ".agents", "skills", "whodb", "SKILL.md")
+	if len(result.Skills) != 1 || result.Skills[0].Path != expectedPath {
+		t.Fatalf("expected Codex skill at %q, got %#v", expectedPath, result.Skills)
+	}
+}
+
+func TestSkillsInstall_CodexTargetRequiresAgentsDirForAgents(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	_, err := skillinstaller.Install(skillinstaller.InstallOptions{
+		Target:        "codex",
+		IncludeAgents: true,
+	})
+	if err == nil {
+		t.Fatal("expected codex target with agents to require an explicit agents directory")
+	}
+	if !strings.Contains(err.Error(), "--include-agents requires --target claude-code or --agents-dir") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 // TestAllNewCommandsRegistered verifies all new commands are registered on rootCmd
 func TestAllNewCommandsRegistered(t *testing.T) {
 	cleanup := setupTestEnv(t)
 	defer cleanup()
 
 	expectedCommands := []string{
+		"agent",
+		"doctor",
+		"runbooks",
+		"skills",
 		"schemas",
 		"tables",
 		"columns",

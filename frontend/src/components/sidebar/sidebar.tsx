@@ -538,7 +538,7 @@ export const Sidebar: FC = () => {
                                                     placeholder={databaseSchemaTerminology === 'schema' && usesDatabaseInsteadOfSchema ? t('selectSchema') : t('selectDatabase')}
                                                     searchPlaceholder={databaseSchemaTerminology === 'schema' && usesDatabaseInsteadOfSchema ? t('searchSchema') : t('searchDatabase')}
                                                     side="left" align="start"
-                                                    buttonProps={{ "data-testid": "sidebar-database" }}
+                                                    buttonProps={{ "data-testid": "sidebar-database", "aria-label": databaseDropdownLabel }}
                                                 />
                                             )}
                                             {supportsSchema && !pathname.includes(InternalRoutes.RawExecute.path) && (
@@ -589,7 +589,7 @@ export const Sidebar: FC = () => {
                                                     placeholder={databaseSchemaTerminology === 'schema' && usesDatabaseInsteadOfSchema ? t('selectSchema') : t('selectDatabase')}
                                                     searchPlaceholder={databaseSchemaTerminology === 'schema' && usesDatabaseInsteadOfSchema ? t('searchSchema') : t('searchDatabase')}
                                                     side="left" align="start"
-                                                    buttonProps={{ "data-testid": "sidebar-database" }}
+                                                    buttonProps={{ "data-testid": "sidebar-database", "aria-label": databaseDropdownLabel }}
                                                 />
                                             )}
                                             {supportsSchema && !pathname.includes(InternalRoutes.RawExecute.path) && (
@@ -671,7 +671,7 @@ export const Sidebar: FC = () => {
                                 <button className={cn(
                                     "rounded-full p-1 text-muted-foreground/60 hover:text-muted-foreground transition-colors",
                                     updateInfo?.UpdateInfo?.updateAvailable && "text-blue-500/70 hover:text-blue-400"
-                                )}>
+                                )} data-testid="sidebar-version-info">
                                     <InformationCircleIcon className="w-4 h-4" />
                                 </button>
                             </TooltipTrigger>

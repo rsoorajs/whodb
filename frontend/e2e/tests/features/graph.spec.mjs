@@ -16,6 +16,21 @@
 
 import { test, expect, forEachDatabase } from '../../support/test-fixture.mjs';
 import { getTableConfig } from '../../support/database-config.mjs';
+import { TIMEOUT } from '../../support/helpers/test-utils.mjs';
+
+async function expectGraphTopology(whodb, expectedNodes) {
+    if (!expectedNodes) {
+        return;
+    }
+
+    await expect(async () => {
+        const graph = await whodb.getGraph();
+        for (const node of Object.keys(expectedNodes)) {
+            expect(graph, `Graph should have node: ${node}`).toHaveProperty(node);
+            expect(graph[node].sort()).toEqual(expectedNodes[node].sort());
+        }
+    }).toPass({ timeout: TIMEOUT.GRAPH });
+}
 
 test.describe('Graph Visualization', () => {
 
@@ -27,15 +42,7 @@ test.describe('Graph Visualization', () => {
         test('displays graph with expected topology', async ({ whodb, page }) => {
             await whodb.goto('graph');
 
-            const graph = await whodb.getGraph();
-            if (db.graph && db.graph.expectedNodes) {
-                for (const node of Object.keys(db.graph.expectedNodes)) {
-                    expect(graph, `Graph should have node: ${node}`).toHaveProperty(node);
-                    expect(graph[node].sort()).toEqual(
-                        db.graph.expectedNodes[node].sort()
-                    );
-                }
-            }
+            await expectGraphTopology(whodb, db.graph?.expectedNodes);
         });
 
         test('shows table metadata in graph nodes', async ({ whodb, page }) => {
@@ -87,15 +94,7 @@ test.describe('Graph Visualization', () => {
         test('displays graph with expected topology', async ({ whodb, page }) => {
             await whodb.goto('graph');
 
-            const graph = await whodb.getGraph();
-            if (db.graph && db.graph.expectedNodes) {
-                for (const node of Object.keys(db.graph.expectedNodes)) {
-                    expect(graph).toHaveProperty(node);
-                    expect(graph[node].sort()).toEqual(
-                        db.graph.expectedNodes[node].sort()
-                    );
-                }
-            }
+            await expectGraphTopology(whodb, db.graph?.expectedNodes);
         });
 
         test('shows collection metadata in graph nodes', async ({ whodb, page }) => {

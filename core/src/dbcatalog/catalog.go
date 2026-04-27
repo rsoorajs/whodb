@@ -284,7 +284,7 @@ var catalog = []ConnectableDatabase{
 	{
 		ID:         engine.DatabaseType_YugabyteDB,
 		Label:      "YugabyteDB",
-		PluginType: engine.DatabaseType_Postgres,
+		PluginType: engine.DatabaseType_YugabyteDB,
 		Extra:      map[string]string{"Port": "5433"},
 		Fields: FieldVisibility{
 			Hostname:   true,

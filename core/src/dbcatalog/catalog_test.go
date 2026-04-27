@@ -46,6 +46,17 @@ func TestFindReturnsPromotedQuestDBPluginType(t *testing.T) {
 	}
 }
 
+func TestFindReturnsPromotedYugabyteDBPluginType(t *testing.T) {
+	entry, ok := Find("YugabyteDB")
+	if !ok {
+		t.Fatal("expected YugabyteDB catalog entry")
+	}
+
+	if entry.PluginType != engine.DatabaseType_YugabyteDB {
+		t.Fatalf("expected YugabyteDB to resolve to its own plugin, got %q", entry.PluginType)
+	}
+}
+
 func TestDefaultPortUsesCatalogOverrides(t *testing.T) {
 	port, ok := DefaultPort("QuestDB")
 	if !ok {

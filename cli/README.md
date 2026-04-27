@@ -24,6 +24,10 @@ An interactive, production-ready command-line interface for WhoDB with a Claude 
 - **Query History** - Persistent history with re-execution
 - **Shell Completion** - Bash/Zsh/Fish install plus PowerShell script generation
 - **Programmatic Mode** - JSON/NDJSON/CSV/plain output plus streamed query/export paths for scripting and automation
+- **Agent Manifest** - Machine-readable command, source, MCP, workflow, and safety metadata
+- **Database Doctor** - Redacted connection and metadata diagnostics for support and AI agents
+- **Built-in Runbooks** - Repeatable workflows for connection checks, schema audits, and schema diffs
+- **Assistant Skills Installer** - Install bundled WhoDB skills and optional agents into local assistant directories
 - **MCP Server** - Model Context Protocol server for AI assistants (Claude, Cursor, etc.)
 
 ## Installation
@@ -345,6 +349,97 @@ These commands output structured data for scripting, automation, and AI integrat
 - Action and analysis commands such as `connections add/remove/test`, `history clear`, `audit`, `mock-data`, `diff`, `erd`, `bookmarks save/delete`, and `profiles save/delete` return a JSON envelope with `command`, `success`, and `data` when you pass `--format json`.
 - `query --stream` supports `plain`, `json`, `ndjson`, and `csv`. `export --stream` supports CSV only.
 
+### agent schema
+
+Emit a machine-readable manifest of WhoDB's agent-facing surface. The manifest includes source types, connection fields, programmatic commands, MCP tools, safety modes, and built-in workflows.
+
+```bash
+whodb-cli agent schema --format json
+```
+
+Flags:
+- `--format, -f`: Output format: `json`
+
+### doctor
+
+Run redacted connection, schema, and metadata diagnostics for one connection.
+
+```bash
+whodb-cli doctor --connection my-postgres
+whodb-cli doctor --connection my-postgres --schema public --format json
+```
+
+Flags:
+- `--connection, -c`: Connection name to inspect
+- `--schema, -s`: Schema override for metadata checks
+- `--format, -f`: Output format: `table` or `json`
+- `--quiet, -q`: Suppress informational messages
+
+### runbooks
+
+List, describe, and run built-in database workflows. Built-in runbooks are intentionally limited to WhoDB operations.
+
+```bash
+# List available workflows
+whodb-cli runbooks list
+
+# Inspect a workflow
+whodb-cli runbooks describe schema-audit
+
+# Show planned steps without executing
+whodb-cli runbooks run schema-audit --connection my-postgres --dry-run
+
+# Run a schema audit
+whodb-cli runbooks run schema-audit --connection my-postgres --schema public --format json
+
+# Compare two environments
+whodb-cli runbooks run schema-diff --from staging --to prod --format json
+```
+
+Built-in runbooks:
+- `connection-doctor`: Runs the same diagnostics as `doctor`
+- `schema-audit`: Loads storage units and runs data-quality checks
+- `schema-diff`: Compares schema metadata between two connections
+
+Flags:
+- `--format, -f`: Output format: `table` or `json`
+- `--quiet, -q`: Suppress informational messages
+- `run --connection, -c`: Connection name for `connection-doctor` and `schema-audit`
+- `run --schema, -s`: Schema override
+- `run --from`: Source connection for `schema-diff`
+- `run --to`: Target connection for `schema-diff`
+- `run --from-schema`: Source schema override for `schema-diff`
+- `run --to-schema`: Target schema override for `schema-diff`
+- `run --dry-run`: Show planned steps without executing
+
+### skills
+
+List and install bundled WhoDB assistant skills and optional agents.
+
+```bash
+# List bundled skills and agents
+whodb-cli skills list
+whodb-cli skills list --format json
+
+# Install all skills into an explicit directory
+whodb-cli skills install --target-dir ~/.agents/skills
+
+# Install one skill
+whodb-cli skills install query-builder --target-dir ~/.agents/skills
+
+# Install skills and bundled agents using a known target
+whodb-cli skills install --target claude-code --include-agents
+```
+
+Flags:
+- `--format, -f`: Output format: `table` or `json`
+- `--quiet, -q`: Suppress informational messages
+- `install --target`: Assistant target: `codex` or `claude-code`. Codex skills install to `~/.agents/skills`; Claude Code skills install to `~/.claude/skills`
+- `install --target-dir`: Directory where skills should be installed
+- `install --agents-dir`: Directory where agents should be installed
+- `install --include-agents`: Install bundled Markdown agents as well as skills. With `--target`, this is supported for `claude-code`; use `--agents-dir` for any custom agent destination
+- `install --force`: Overwrite existing installed files
+
 ### explain
 
 Run `EXPLAIN` using the current database plugin's native explain prefix.
@@ -594,6 +689,13 @@ This starts an MCP server that exposes these tools:
 | `whodb_erd` | Inspect backend graph/ERD metadata |
 | `whodb_audit` | Run data quality audits for a schema or table |
 | `whodb_suggestions` | Get backend-generated starter queries |
+
+It also exposes these resources:
+
+| Resource | Description |
+|----------|-------------|
+| `whodb://connections` | Available connection names |
+| `whodb://agent/schema` | Machine-readable WhoDB agent capability manifest |
 
 Write operations require confirmation by default. Use `--allow-write` to disable confirmations, or `--read-only` to block writes entirely.
 
@@ -1028,6 +1130,10 @@ cli/
 │   ├── tables.go       # List tables
 │   ├── columns.go      # Describe columns
 │   ├── connections.go  # Connection management
+│   ├── agent.go        # Agent capability manifest
+│   ├── doctor.go       # Connection diagnostics
+│   ├── runbooks.go     # Built-in workflows
+│   ├── skills.go       # Skill installer
 │   ├── export.go       # Data export
 │   ├── history.go      # Query history
 │   ├── mcp.go          # MCP server command
@@ -1046,8 +1152,12 @@ cli/
 │   │   ├── columns_view.go
 │   │   ├── schema_view.go
 │   │   └── messages.go
+│   ├── agentmanifest/  # Agent capability manifest builder
 │   ├── config/         # Unified config.json + keyring storage
 │   ├── database/       # Database manager
+│   ├── doctor/         # Connection diagnostics
+│   ├── runbooks/       # Built-in workflow execution
+│   ├── skillinstaller/ # Bundled skill installation
 │   └── history/        # Query history
 ├── pkg/
 │   ├── mcp/            # MCP server implementation

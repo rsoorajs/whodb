@@ -34,6 +34,7 @@ export const tableMethods = {
         await this.page.locator('[data-testid="storage-unit-card"]').first().waitFor({ timeout: TIMEOUT.NAVIGATION });
 
         const card = this.page.locator(`[data-testid="storage-unit-card"][data-table-name="${tableName}"]`).first();
+        await card.waitFor({ state: "visible", timeout: TIMEOUT.NAVIGATION });
         const exploreBtn = card.locator('[data-testid="explore-button"]');
         await exploreBtn.scrollIntoViewIfNeeded();
         await exploreBtn.waitFor({ state: "visible", timeout: TIMEOUT.ACTION });
@@ -42,11 +43,25 @@ export const tableMethods = {
 
     /**
      * Get explore fields as array of [key, value] pairs
+     * @param {{ expectedKeys?: string[] }} [options]
      * @returns {Promise<Array<[string, string]>>}
      */
-    async getExploreFields() {
+    async getExploreFields({ expectedKeys = [] } = {}) {
         await this.page.locator('[data-testid="explore-fields"]').waitFor({ state: "visible", timeout: TIMEOUT.ACTION });
-        await this.page.locator('[data-testid="explore-fields"] h3').waitFor({ timeout: TIMEOUT.ACTION });
+        await this.page.locator('[data-testid="explore-fields"] [data-field-key]').first().waitFor({ timeout: TIMEOUT.ACTION });
+
+        if (expectedKeys.length > 0) {
+            await expect(async () => {
+                const actualKeys = await this.page.evaluate(() => {
+                    return Array.from(document.querySelectorAll('[data-testid="explore-fields"] [data-field-key]'))
+                        .map((field) => field.getAttribute("data-field-key"))
+                        .filter(Boolean);
+                });
+                for (const expectedKey of expectedKeys) {
+                    expect(actualKeys).toContain(expectedKey);
+                }
+            }).toPass({ timeout: TIMEOUT.SLOW });
+        }
 
         return await this.page.evaluate(() => {
             const result = [];
@@ -79,13 +94,13 @@ export const tableMethods = {
         await this.page.locator('[data-testid="storage-unit-card"]').first().waitFor({ timeout: TIMEOUT.NAVIGATION });
 
         const card = this.page.locator(`[data-testid="storage-unit-card"][data-table-name="${tableName}"]`).first();
+        await card.waitFor({ state: "visible", timeout: TIMEOUT.NAVIGATION });
         const dataBtn = card.locator('[data-testid="data-button"]').first();
         await dataBtn.scrollIntoViewIfNeeded();
         await dataBtn.waitFor({ state: "visible", timeout: TIMEOUT.ACTION });
         await dataBtn.click({ force: true });
 
         await this.page.waitForURL(/\/storage-unit\/explore/, { timeout: TIMEOUT.ACTION });
-        await this.page.locator('[data-testid="storage-unit-card"]').first().waitFor({ state: "hidden", timeout: TIMEOUT.ELEMENT });
         await this.page.locator("table").filter({ visible: true }).waitFor({ timeout: TIMEOUT.ACTION });
         if (waitForRows) {
             await this.page.locator("table").filter({ visible: true }).locator("tbody tr").first().waitFor({ timeout: TIMEOUT.SLOW });
@@ -133,17 +148,37 @@ export const tableMethods = {
      * @returns {Promise<{columns: string[], rows: string[][]}>}
      */
     async getTableData() {
-        await this.page.locator("table").filter({ visible: true }).waitFor({ timeout: TIMEOUT.ACTION });
-        await this.page.locator("table").filter({ visible: true }).locator("tbody tr").first().waitFor({ timeout: TIMEOUT.ACTION });
+        await this.page.waitForFunction(() => {
+            return !!document.querySelector("table tbody tr")
+                || !!document.querySelector('[role="grid"] [role="row"] [role="gridcell"]');
+        }, { timeout: TIMEOUT.ACTION });
 
         return await this.page.evaluate(() => {
-            const table = document.querySelector("table");
-            if (!table) return { columns: [], rows: [] };
+            const table = Array.from(document.querySelectorAll("table"))
+                .find((el) => el.querySelector("tbody tr"));
+            if (table) {
+                const columns = Array.from(table.querySelectorAll("th")).map((el) => el.innerText.trim());
+                const rows = Array.from(table.querySelectorAll("tbody tr")).map((row) => {
+                    return Array.from(row.querySelectorAll("td")).map((cell) => cell.innerText.trim());
+                });
 
-            const columns = Array.from(table.querySelectorAll("th")).map((el) => el.innerText.trim());
-            const rows = Array.from(table.querySelectorAll("tbody tr")).map((row) => {
-                return Array.from(row.querySelectorAll("td")).map((cell) => cell.innerText.trim());
-            });
+                return { columns, rows };
+            }
+
+            const grid = Array.from(document.querySelectorAll('[role="grid"]'))
+                .find((el) => el.querySelector('[role="row"] [role="gridcell"]'));
+            if (!grid) return { columns: [], rows: [] };
+
+            const headerRow = Array.from(grid.querySelectorAll('[role="row"]'))
+                .find((row) => row.querySelector('[role="columnheader"]'));
+            const columns = headerRow
+                ? Array.from(headerRow.querySelectorAll('[role="columnheader"]')).map((el) => el.innerText.trim())
+                : [];
+            const rows = Array.from(grid.querySelectorAll('[role="row"]'))
+                .filter((row) => row.querySelector('[role="gridcell"]'))
+                .map((row) => {
+                    return Array.from(row.querySelectorAll('[role="gridcell"]')).map((cell) => cell.innerText.trim());
+                });
 
             return { columns, rows };
         });

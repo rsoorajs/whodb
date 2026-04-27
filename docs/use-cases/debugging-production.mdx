@@ -619,7 +619,7 @@ Reassign orders to customer based on last activity context, or delete if > 30 da
 ```sql
 -- Records modified today
 SELECT * FROM orders
-WHERE DATE(updated_at) = TODAY()
+WHERE DATE(updated_at) = CURRENT_DATE
 ORDER BY updated_at DESC
 LIMIT 100;
 
@@ -680,7 +680,7 @@ SELECT COUNT(*) FROM user_events;  -- Scans entire table
 SELECT SUM(amount) FROM orders;    -- Scans entire table
 
 -- Better approach: Keep running totals
-SELECT COUNT(*) FROM user_events_totals WHERE date = TODAY();
+SELECT COUNT(*) FROM user_events_totals WHERE date = CURRENT_DATE;
 ```
 
 ## Safe Query Patterns for Production Debugging

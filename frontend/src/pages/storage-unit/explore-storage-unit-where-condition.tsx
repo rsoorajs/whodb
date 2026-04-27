@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -257,8 +257,12 @@ export const ExploreStorageUnitWhereCondition: FC<IExploreStorageUnitWhereCondit
     }, [editingFilter, filters]);
 
     const handleSaveFilter = useCallback((index: number) => {
-        const updatedFilters = { ...filters };
-        updatedFilters.And!.Children[index] = { Type: WhereConditionType.Atomic, Atomic: { ...currentFilter } };
+        const updatedChildren = [...filters.And!.Children];
+        updatedChildren[index] = { Type: WhereConditionType.Atomic, Atomic: { ...currentFilter } };
+        const updatedFilters = {
+            Type: WhereConditionType.And,
+            And: { Children: updatedChildren }
+        };
         setFilters(updatedFilters);
         setEditingFilter(-1);
         setCurrentFilter({ ColumnType: "string", Key: "", Operator: "", Value: "" });

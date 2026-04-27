@@ -15,6 +15,24 @@
  */
 
 import { test, expect, forEachDatabase } from '../../support/test-fixture.mjs';
+import { TIMEOUT } from '../../support/helpers/test-utils.mjs';
+
+async function waitForPersistedProviderSelection(page) {
+    await expect.poll(
+        () => page.evaluate(() => {
+            const rawState = localStorage.getItem('persist:aiModels');
+            if (!rawState) {
+                return '';
+            }
+
+            const state = JSON.parse(rawState);
+            const current = state.current ? JSON.parse(state.current) : null;
+            const currentModel = state.currentModel ? JSON.parse(state.currentModel) : null;
+            return `${current?.modelType ?? ''}:${currentModel ?? ''}`;
+        }),
+        { timeout: TIMEOUT.ACTION }
+    ).toEqual('Ollama:llama3.1');
+}
 
 test.describe('Chat AI Integration', () => {
 
@@ -284,7 +302,7 @@ test.describe('Chat AI Integration', () => {
                     expect(requestBody.selectedRows).toBeTruthy();
                     expect(Array.isArray(requestBody.selectedRows)).toBeTruthy();
                     expect(requestBody.selectedRows.length).toEqual(2);
-                    expect(requestBody.storageUnit).toEqual('query_export');
+                    expect(requestBody.fileBaseName).toEqual('query_export');
                 });
             });
 
@@ -449,17 +467,17 @@ test.describe('Chat AI Integration', () => {
                 await test.step('verify initial provider and model selection', async () => {
                     await expect(page.locator('[data-testid="ai-provider-select"]')).toContainText('Ollama');
                     await expect(page.locator('[data-testid="ai-model-select"]')).toContainText('llama3.1');
+                    await waitForPersistedProviderSelection(page);
                 });
 
                 await test.step('navigate away and back', async () => {
-                    await page.goto('http://localhost:3000/storage-unit');
-                    await page.waitForTimeout(500);
-                    await page.goto('http://localhost:3000/chat');
-                    await page.locator('[data-testid="ai-provider"]').waitFor({ timeout: 10000 });
+                    await page.goto(whodb.url('/storage-unit'));
+                    await page.goto(whodb.url('/chat'));
+                    await page.locator('[data-testid="ai-provider"]').waitFor({ timeout: TIMEOUT.ACTION });
                 });
 
                 await test.step('verify provider persisted after navigation', async () => {
-                    await expect(page.locator('[data-testid="ai-provider-select"]')).toContainText('Ollama', { timeout: 5000 });
+                    await expect(page.locator('[data-testid="ai-provider-select"]')).toContainText('Ollama', { timeout: TIMEOUT.ACTION });
                 });
             });
 

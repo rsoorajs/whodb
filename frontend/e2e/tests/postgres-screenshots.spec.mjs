@@ -20,10 +20,14 @@ test.describe("Postgres Screenshot Generation", () => {
   const dbHost = "localhost";
   const dbUser = "user";
   const dbPassword = 'jio53$*(@nfe)';
-  const screenshotDir = "postgres";
+  const screenshotDir = process.env.WHODB_SCREENSHOT_DIR || "screenshots/postgres";
 
   function ssPath(name) {
-    return `e2e/screenshots/${screenshotDir}/${name}.png`;
+    return `${screenshotDir}/${name}.png`;
+  }
+
+  function ssName(name) {
+    return `${screenshotDir}/${name}`;
   }
 
   // Tests that need clean login page (01-04)
@@ -413,7 +417,7 @@ test.describe("Postgres Screenshot Generation", () => {
       await page.locator('[data-testid="add-row-field-password"] input').fill("password");
       await page.locator('[data-testid="add-row-field-created_at"] input').clear();
       await page.locator('[data-testid="add-row-field-created_at"] input').fill("2025-01-01");
-      await whodb.screenshotWithHighlight('[data-testid="submit-add-row-button"]', ssPath("41-add-row-submit-button"));
+      await whodb.screenshotWithHighlight('[data-testid="submit-add-row-button"]', ssName("41-add-row-submit-button"));
       await page.keyboard.press("Escape");
     });
 
@@ -424,7 +428,7 @@ test.describe("Postgres Screenshot Generation", () => {
       await page.waitForTimeout(300);
       await page.locator('[data-testid="editable-field-2"]').clear();
       await page.locator('[data-testid="editable-field-2"]').fill("updated_name");
-      await whodb.screenshotWithHighlight('[data-testid="update-button"]', ssPath("42-edit-row-update-hover"));
+      await whodb.screenshotWithHighlight('[data-testid="update-button"]', ssName("42-edit-row-update-hover"));
       await page.keyboard.press("Escape");
     });
 
@@ -432,7 +436,7 @@ test.describe("Postgres Screenshot Generation", () => {
       await whodb.data("products");
       await page.locator("table tbody tr").first().click({ button: "right", force: true });
       await page.waitForTimeout(200);
-      await whodb.screenshotWithHighlight('[data-testid="context-menu-delete-row"]', ssPath("43-context-menu-delete-option"));
+      await whodb.screenshotWithHighlight('[data-testid="context-menu-delete-row"]', ssName("43-context-menu-delete-option"));
       await page.mouse.click(0, 0);
     });
 
@@ -448,7 +452,7 @@ test.describe("Postgres Screenshot Generation", () => {
       await page.waitForTimeout(200);
       await page.locator("table tbody tr").first().click({ button: "right", force: true });
       await page.waitForTimeout(200);
-      await whodb.screenshotWithHighlight('[data-slot="context-menu-item"]:has-text("Select Row")', ssPath("45-context-menu-select-row"));
+      await whodb.screenshotWithHighlight('[data-slot="context-menu-item"]:has-text("Select Row")', ssName("45-context-menu-select-row"));
       await page.mouse.click(0, 0);
     });
 
@@ -511,14 +515,14 @@ test.describe("Postgres Screenshot Generation", () => {
       await page.waitForTimeout(1000);
       await whodb.openQueryHistory(0);
       await page.waitForTimeout(500);
-      await whodb.screenshotWithHighlight('[data-testid="clone-to-editor-button"]', ssPath("49-scratchpad-history-clone-button"));
+      await whodb.screenshotWithHighlight('[data-testid="clone-to-editor-button"]', ssName("49-scratchpad-history-clone-button"));
       await page.keyboard.press("Escape");
     });
 
     test("50 - Graph - Click Node Data Button", async ({ whodb, page }) => {
       await whodb.goto("graph");
       await page.waitForTimeout(1500);
-      await whodb.screenshotWithHighlight('[data-testid="rf__node-users"] [data-testid="data-button"]', ssPath("50-graph-node-data-button-hover"));
+      await whodb.screenshotWithHighlight('[data-testid="rf__node-users"] [data-testid="data-button"]', ssName("50-graph-node-data-button-hover"));
     });
   });
 
@@ -661,7 +665,7 @@ test.describe("Postgres Screenshot Generation", () => {
       await page.waitForTimeout(300);
       await page.locator('[data-testid="export-format-select"]').click();
       await page.waitForTimeout(300);
-      await whodb.screenshotWithHighlight('[role="option"]:has-text("CSV")', ssPath("65-export-format-csv-option"));
+      await whodb.screenshotWithHighlight('[role="option"]:has-text("CSV")', ssName("65-export-format-csv-option"));
       await page.keyboard.press("Escape");
     });
 
@@ -671,7 +675,7 @@ test.describe("Postgres Screenshot Generation", () => {
       await page.waitForTimeout(300);
       await page.locator('[data-testid="export-format-select"]').click();
       await page.waitForTimeout(300);
-      await whodb.screenshotWithHighlight('[role="option"]:has-text("Excel")', ssPath("66-export-format-excel-option"));
+      await whodb.screenshotWithHighlight('[role="option"]:has-text("Excel")', ssName("66-export-format-excel-option"));
       await page.keyboard.press("Escape");
     });
 
@@ -681,7 +685,7 @@ test.describe("Postgres Screenshot Generation", () => {
       await page.waitForTimeout(300);
       await page.locator('[data-testid="export-delimiter-select"]').click();
       await page.waitForTimeout(300);
-      await whodb.screenshotWithHighlight('[role="option"]:has-text("Comma")', ssPath("67-export-delimiter-comma"));
+      await whodb.screenshotWithHighlight('[role="option"]:has-text("Comma")', ssName("67-export-delimiter-comma"));
       await page.keyboard.press("Escape");
     });
 
@@ -707,7 +711,7 @@ test.describe("Postgres Screenshot Generation", () => {
       await page.waitForTimeout(500);
       await page.locator('[data-testid="export-delimiter-select"]').click({ force: true });
       await page.waitForTimeout(500);
-      await whodb.screenshotWithHighlight('[role="option"][data-value="|"]', ssPath("69-export-delimiter-pipe"));
+      await whodb.screenshotWithHighlight('[role="option"][data-value="|"]', ssName("69-export-delimiter-pipe"));
       await page.keyboard.press("Escape");
       await page.waitForTimeout(200);
       await page.keyboard.press("Escape");
@@ -953,7 +957,7 @@ test.describe("Postgres Screenshot Generation", () => {
     test("97 - Graph - Fit View Control", async ({ whodb, page }) => {
       await whodb.goto("graph");
       await page.waitForTimeout(1500);
-      await whodb.screenshotWithHighlight(".react-flow__controls-fitview", ssPath("97-graph-fit-view-control"));
+      await whodb.screenshotWithHighlight(".react-flow__controls-fitview", ssName("97-graph-fit-view-control"));
     });
 
     test("98 - Explore - Primary Key Column", async ({ whodb, page }) => {
@@ -1211,13 +1215,13 @@ test.describe("Postgres Screenshot Generation", () => {
       }]);
       await whodb.sendChatMessage("Hello");
       await whodb.waitForChatResponse();
-      await whodb.screenshotWithHighlight('[data-testid="chat-new-chat"]', ssPath("114-chat-new-chat-button"));
+      await whodb.screenshotWithHighlight('[data-testid="chat-new-chat"]', ssName("114-chat-new-chat-button"));
     });
 
     test("115 - Chat - Delete Provider Button", async ({ whodb, page }) => {
       await whodb.setupChatMock();
       await whodb.gotoChat();
-      await whodb.screenshotWithHighlight('[data-testid="chat-delete-provider"]', ssPath("115-chat-delete-provider-button"));
+      await whodb.screenshotWithHighlight('[data-testid="chat-delete-provider"]', ssName("115-chat-delete-provider-button"));
     });
   });
 });

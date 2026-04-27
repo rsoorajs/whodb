@@ -1,392 +1,95 @@
 ---
 title: "Scratchpad Introduction"
-description: "Get started with WhoDB's powerful Scratchpad query interface"
+description: "Use WhoDB's current Scratchpad query editor"
 ---
 
 # Scratchpad Introduction
 
-The Scratchpad is WhoDB's powerful SQL query editor that allows you to write, execute, and manage custom SQL queries. It combines a modern code editor with results visualization, query history, and multi-cell support for organizing complex workflows.
+Scratchpad is WhoDB's SQL workspace. It gives you page-based query organization, one or more query cells per page, query execution, result grids, action-query confirmations, and per-cell query history.
 
 <Tip>
-The Scratchpad is your SQL playground for exploring data, testing queries, and performing advanced operations
+Use Scratchpad for custom SQL. Use the Storage Unit data page when you want the guided grid, search, WHERE condition builder, row editing, export, and mock data actions.
 </Tip>
 
-## Main Interface Overview
+## Open Scratchpad
 
-When you access the Scratchpad view for the first time, you'll see the complete query interface:
+Open **Scratchpad** from the left sidebar. The route is `/scratchpad`.
 
 ![Scratchpad Main View](/images/27-scratchpad-main-view.png)
 
-The Scratchpad interface consists of several key components:
+The current layout is vertical:
 
-<CardGroup cols={2}>
-<Card title="Query Editor" icon="code">
-Write SQL queries with syntax highlighting and auto-completion
-</Card>
-<Card title="Execution Controls" icon="play">
-Run queries, clear results, and manage execution settings
-</Card>
-<Card title="Results Panel" icon="table">
-View query results in an interactive data grid
-</Card>
-<Card title="History Panel" icon="clock">
-Access previous queries and reuse saved commands
-</Card>
-<Card title="Cell Management" icon="window">
-Create multiple cells to organize related queries
-</Card>
-<Card title="Error Handling" icon="circle-exclamation">
-Clear error messages with debugging information
-</Card>
-</CardGroup>
+- The SQL editor is at the top of each cell.
+- Query results or action status render below the editor.
+- Multiple cells stack vertically within the active page.
+- Scratchpad pages appear as tabs above the cells.
 
-## Key Capabilities
+## Run Queries
 
-### SQL Query Execution
+Type SQL into the editor and run it with either:
 
-Execute any SQL query supported by your database engine:
+- The blue run button on the right side of the editor.
+- `Cmd/Ctrl + Enter`.
 
-<AccordionGroup>
-<Accordion title="SELECT Queries">
-Retrieve data from your tables:
+![Scratchpad Query Results](/images/29-scratchpad-query-results.png)
 
-```sql
-SELECT id, name, email, created_at
-FROM users
-WHERE status = 'active'
-ORDER BY created_at DESC
-LIMIT 50;
-```
+`SELECT` queries show a results grid below the editor. Action queries such as `INSERT`, `UPDATE`, and `DELETE` show an action result after confirmation.
 
-Results display in an interactive grid with sorting, filtering, and export capabilities.
-</Accordion>
-<Accordion title="Data Modification">
-Insert, update, or delete data:
+![Scratchpad Action Result](/images/40-scratchpad-action-result.png)
 
-```sql
-UPDATE products
-SET price = price * 1.1
-WHERE category = 'electronics'
-AND price > 100;
-```
+<Warning>
+WhoDB prompts before executing destructive SQL detected in Scratchpad. Review the SQL before confirming.
+</Warning>
 
-Execution results show how many rows were affected.
-</Accordion>
-<Accordion title="Aggregations">
-Perform calculations and groupings:
+## Errors
 
-```sql
-SELECT
-  category,
-  COUNT(*) as total_items,
-  AVG(price) as avg_price,
-  MAX(price) as max_price
-FROM products
-GROUP BY category
-ORDER BY total_items DESC;
-```
+Database errors are shown below the editor for the cell that failed.
 
-Perfect for analytics and reporting.
-</Accordion>
-<Accordion title="Joins">
-Combine data from multiple tables:
+![Scratchpad Query Error](/images/30-scratchpad-query-error.png)
 
-```sql
-SELECT
-  u.id,
-  u.username,
-  COUNT(o.id) as order_count,
-  SUM(o.total) as total_spent
-FROM users u
-LEFT JOIN orders o ON u.id = o.user_id
-GROUP BY u.id, u.username
-ORDER BY total_spent DESC;
-```
+Start with a small query such as `SELECT 1;`, then add complexity back until the error is isolated.
 
-Visualize complex relationships with ease.
-</Accordion>
-</AccordionGroup>
+## Pages And Cells
 
-### Multi-Cell Organization
+Scratchpad has two levels of organization:
 
-Organize related queries in separate cells within the same Scratchpad:
+- **Pages** are tabs across the top. Use the plus tab to add a page. Double-click a page name to rename it. Use the close button on a page tab to delete it.
+- **Cells** are query editors inside a page. Hover over a cell to reveal the add, clear, delete, and run controls.
 
-![Scratchpad Multiple Cells](/images/31-scratchpad-multiple-pages.png)
+![Scratchpad Multiple Pages](/images/31-scratchpad-multiple-pages.png)
 
-Each cell operates independently, allowing you to:
-- Run multiple queries without losing previous results
-- Organize queries by task or workflow
-- Compare results between different queries
-- Reorder cells to match your workflow
+The cell options menu currently contains **Clear**, **Copy Code**, and **Query History**.
 
-<Info>
-Each cell maintains its own execution history and results
-</Info>
+![Scratchpad Cell Options Menu](/images/32-scratchpad-cell-options-menu.png)
 
-### Query History
+Use the visible page tabs and cell controls to organize Scratchpad work.
 
-All executed queries are automatically saved to history:
+## Query History
+
+Open query history from the cell options menu or the history button on the cell.
 
 ![Query History Panel](/images/33-scratchpad-query-history.png)
 
-Quick access to:
-- Recently executed queries
-- Query cloning for quick variations
-- Search through historical queries
-- Timestamp and execution details
+History is stored per cell. Entries show the query text, success/error status, and timestamp. From a history entry you can copy the SQL, load it back into the current editor, or run it again.
 
-### Real-Time Feedback
+<Note>
+Loading a history entry puts that SQL into the current editor.
+</Note>
 
-Get instant feedback on query execution:
-
-**Successful Execution:**
-
-![Query Results](/images/29-scratchpad-query-results.png)
-
-See row counts, execution time, and formatted results.
-
-**Error Handling:**
-
-![Query Error](/images/30-scratchpad-query-error.png)
-
-Clear error messages help you debug SQL syntax issues.
-
-## Database Support
-
-The Scratchpad works with all WhoDB-supported databases:
-
-<CardGroup cols={2}>
-<Card title="PostgreSQL" icon="database">
-Full SQL support including window functions and JSON operations
-</Card>
-<Card title="MySQL" icon="database">
-Complete MySQL dialect support with optimization tips
-</Card>
-<Card title="SQLite" icon="database">
-SQLite-specific SQL with full feature support
-</Card>
-<Card title="MongoDB" icon="database">
-MongoDB aggregation pipeline queries
-</Card>
-<Card title="Redis" icon="database">
-Key-value operations and data inspection
-</Card>
-<Card title="More Databases" icon="plus">
-WhoDB continuously adds support for additional databases
-</Card>
-</CardGroup>
-
-## Common Use Cases
-
-### 1. Data Exploration
-
-Quickly explore your database structure and data:
-
-```sql
--- Check table size
-SELECT COUNT(*) as row_count FROM users;
-
--- View sample data
-SELECT * FROM users LIMIT 10;
-
--- Check column data types and constraints
-PRAGMA table_info(users);  -- SQLite
-DESC users;                -- MySQL
-```
-
-### 2. Performance Testing
-
-Test query performance before deploying to production:
-
-```sql
--- Find slow-running queries
-SELECT
-  id,
-  username,
-  email
-FROM users
-WHERE email LIKE '%@example.com'
-ORDER BY created_at DESC
-LIMIT 1000;
-```
-
-### 3. Data Validation
-
-Verify data quality and integrity:
-
-```sql
--- Find missing or invalid data
-SELECT id, name, email
-FROM users
-WHERE email IS NULL
-  OR email NOT LIKE '%@%.%';
-
--- Check for duplicates
-SELECT email, COUNT(*)
-FROM users
-GROUP BY email
-HAVING COUNT(*) > 1;
-```
-
-### 4. Batch Operations
-
-Perform bulk data modifications:
-
-```sql
--- Archive old records
-DELETE FROM audit_logs
-WHERE created_at < NOW() - INTERVAL '1 year';
-
--- Update multiple records
-UPDATE users
-SET verified = true
-WHERE email LIKE '%@company.com';
-```
-
-## Interface Elements
-
-### Execution Controls
-
-At the top of each cell, you'll find:
-
-![Scratchpad Code Editor](/images/28-scratchpad-code-editor.png)
-
-- **Run Button** (`Cmd/Ctrl + Enter`): Execute the query
-- **Clear Button**: Remove results and start fresh
-- **Cell Menu**: Additional cell options and settings
-- **Status Indicator**: Shows query execution status
-
-### Action Results
-
-After executing action queries (INSERT, UPDATE, DELETE):
-
-![Action Result](/images/40-scratchpad-action-result.png)
-
-WhoDB displays:
-- Number of rows affected
-- Execution time
-- Operation status (success/failure)
-
-### Cell Options
-
-Click the cell menu to access:
-
-![Cell Options Menu](/images/32-scratchpad-cell-options-menu.png)
-
-- Rename cell
-- Duplicate cell
-- Delete cell
-- Copy results
-- Clear results
-- Export results
-
-## Getting Started Tips
-
-<AccordionGroup>
-<Accordion title="Start Simple">
-Begin with basic SELECT queries to understand your data structure before moving to complex operations.
-</Accordion>
-<Accordion title="Use Auto-Completion">
-The editor provides schema-aware suggestions—start typing a table name and let the editor help complete it.
-</Accordion>
-<Accordion title="Save Important Queries">
-Regularly executed queries are automatically saved to history. Pin frequently used queries for quick access.
-</Accordion>
-<Accordion title="Test First">
-Always test queries on development data before running them on production databases.
-</Accordion>
-<Accordion title="Format Your Code">
-Use `Cmd/Ctrl + Shift + F` to auto-format SQL for better readability.
-</Accordion>
-</AccordionGroup>
-
-## Keyboard Shortcuts
-
-Master these shortcuts for faster query work:
+## Editor Shortcuts
 
 | Shortcut | Action |
 |----------|--------|
-| `Cmd/Ctrl + Enter` | Execute query |
-| `Cmd/Ctrl + Shift + F` | Format code |
-| `Cmd/Ctrl + N` | New cell |
-| `Cmd/Ctrl + D` | Duplicate cell |
-| `Cmd/Ctrl + /` | Toggle comment |
-| `Cmd/Ctrl + Z` | Undo |
-| `Cmd/Ctrl + Shift + Z` | Redo |
+| `Cmd/Ctrl + Enter` | Run the current query or selected SQL |
+| `Cmd/Ctrl + U` | Clear the current editor |
 
-## Best Practices
-
-<Steps>
-<Step title="Write Readable SQL">
-Use consistent indentation and clear naming. Your future self will thank you.
-
-```sql
-SELECT
-  u.id,
-  u.username,
-  COUNT(o.id) as total_orders
-FROM users u
-LEFT JOIN orders o ON u.id = o.user_id
-WHERE u.status = 'active'
-GROUP BY u.id, u.username
-ORDER BY total_orders DESC;
-```
-</Step>
-<Step title="Use Meaningful Comments">
-Document complex logic or important context within your SQL.
-
-```sql
--- Find users who placed orders in the last 90 days
--- but haven't made a purchase in the last 30 days
-SELECT u.id, u.username
-FROM users u
-WHERE u.id IN (
-  SELECT user_id FROM orders
-  WHERE created_at > NOW() - INTERVAL '90 days'
-)
-AND u.id NOT IN (
-  SELECT user_id FROM orders
-  WHERE created_at > NOW() - INTERVAL '30 days'
-);
-```
-</Step>
-<Step title="Test Safely">
-Always use LIMIT when exploring large tables or use transactions for modifications.
-
-```sql
--- Safe exploration
-SELECT * FROM large_table LIMIT 100;
-
--- Safe modification (if your database supports transactions)
-BEGIN;
-UPDATE users SET active = false WHERE inactive_days > 365;
--- Review the change, then COMMIT or ROLLBACK
-```
-</Step>
-<Step title="Leverage Query History">
-Clone and modify previous queries instead of rewriting from scratch.
-</Step>
-</Steps>
-
-## Next Steps
-
-Now that you understand the Scratchpad interface, dive deeper into specific features:
+## Related Pages
 
 <CardGroup cols={2}>
-<Card title="AI Chat Assistant" icon="robot" href="/ai/introduction">
-Query using natural language instead of SQL
+<Card title="Writing Queries" icon="code" href="/query/writing-queries">
+Learn the editor behavior and SQL execution flow.
 </Card>
-<Card title="Writing Queries" icon="pen" href="/query/writing-queries">
-Learn about the code editor, syntax highlighting, and auto-completion
-</Card>
-<Card title="Query Results" icon="chart-bar" href="/query/query-results">
-Master result display and data grid controls
-</Card>
-<Card title="Query History" icon="history" href="/query/query-history">
-Learn to organize and reuse your queries
+<Card title="Query History" icon="clock" href="/query/query-history">
+See what history stores and how to reuse entries.
 </Card>
 </CardGroup>
-
-<Note>
-The Scratchpad is powerful but be careful with DELETE and UPDATE queries—always backup important data first
-</Note>

@@ -23,6 +23,7 @@ export const extrasMethods = {
 
     async getGraph() {
         await this.page.locator(".react-flow__node").first().waitFor({ state: "visible", timeout: TIMEOUT.ACTION });
+        await expect(this.page.locator(".react-flow__node").filter({ hasText: "Loading..." })).toHaveCount(0, { timeout: TIMEOUT.GRAPH });
 
         await this.page.waitForFunction(() => {
             const container = document.querySelector(".react-flow");

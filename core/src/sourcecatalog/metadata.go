@@ -99,7 +99,11 @@ func registerSessionMetadata() {
 	RegisterSessionMetadataAliases(
 		SessionMetadataFromOperatorMap(specs.PostgresTypeDefinitions, specs.PostgreSQLSupportedOperators, specs.PostgresAliasMap),
 		string(engine.DatabaseType_Postgres),
+		string(engine.DatabaseType_YugabyteDB),
+	)
+	RegisterSessionMetadata(
 		string(engine.DatabaseType_QuestDB),
+		SessionMetadataFromOperatorMap(specs.QuestDBTypeDefinitions, specs.PostgreSQLSupportedOperators, specs.QuestDBAliasMap),
 	)
 	RegisterSessionMetadata(
 		string(engine.DatabaseType_CockroachDB),

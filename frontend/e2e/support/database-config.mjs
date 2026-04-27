@@ -120,6 +120,15 @@ export function hasFeature(dbConfig, feature) {
   return dbConfig.features?.[feature] === true;
 }
 
+/** Build login advanced fields from a fixture connection. */
+export function getConnectionAdvanced(connection) {
+  const advanced = { ...(connection.advanced || {}) };
+  if (connection.port != null && advanced.Port == null) {
+    advanced.Port = String(connection.port);
+  }
+  return advanced;
+}
+
 /** Get database identifier */
 export function getDatabaseId(dbConfig) {
   return dbConfig.id || dbConfig.type.toLowerCase();

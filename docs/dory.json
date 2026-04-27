@@ -209,6 +209,7 @@
               "resources/keyboard-shortcuts",
               "resources/glossary",
               "resources/supported-databases",
+              "resources/enterprise-edition",
               "resources/changelog"
             ]
           }

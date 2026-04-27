@@ -107,7 +107,7 @@
       },
       "metadata": {
         "type": "base table",
-        "hasSize": true,
+        "hasSize": false,
         "hasCount": false
       }
     }

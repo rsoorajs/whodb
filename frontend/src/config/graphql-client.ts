@@ -15,6 +15,7 @@
  */
 
 import {ApolloClient, InMemoryCache} from '@apollo/client';
+import {CombinedGraphQLErrors, CombinedProtocolErrors, ServerError} from '@apollo/client/errors';
 import {setContext} from '@apollo/client/link/context';
 import {onError} from '@apollo/client/link/error';
 import {HttpLink} from '@apollo/client/link/http';
@@ -97,8 +98,8 @@ const authLink = setContext((_, prevContext) => {
  *
  * This ensures seamless user experience when sessions expire.
  */
-const errorLink = onError(({networkError}) => {
-    if (networkError && 'statusCode' in networkError && networkError.statusCode === 401) {
+const errorLink = onError(({error}) => {
+    if (ServerError.is(error) && error.statusCode === 401) {
         if (onUnauthorizedHandler) {
             void onUnauthorizedHandler().then(handled => {
                 if (!handled) {
@@ -108,8 +109,8 @@ const errorLink = onError(({networkError}) => {
             return;
         }
         fallbackAutoLogin();
-    } else if (networkError) {
-        console.error('Network error:', networkError);
+    } else if (!CombinedGraphQLErrors.is(error) && !CombinedProtocolErrors.is(error)) {
+        console.error('Network error:', error);
     }
 });
 

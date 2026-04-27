@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -355,8 +355,8 @@ PROGRAMMATIC USAGE
   The CLI supports non-interactive commands for scripting:
 
   whodb-cli query "SELECT * FROM users" -c mydb -f json
-  whodb-cli schemas -c mydb --include-tables
-  whodb-cli tables -c mydb --include-columns
+  whodb-cli schemas -c mydb -f json
+  whodb-cli tables -c mydb -s public -f json
   whodb-cli columns -c mydb -t users
   whodb-cli diff --from staging --to prod --format json
   whodb-cli explain --connection mydb --format json "SELECT * FROM users"
@@ -366,13 +366,13 @@ PROGRAMMATIC USAGE
   whodb-cli bookmarks load recent-users --format json
   whodb-cli profiles list --format json
   whodb-cli profiles show production --format json
-  whodb-cli history --format json
+  whodb-cli history list --format json
   whodb-cli connections list
   whodb-cli connections test mydb --format json
   whodb-cli history clear --format json
   whodb-cli mock-data --connection mydb --table orders --rows 10 --analyze --format json
 
-  Query/list commands emit raw JSON arrays with -f json.
+  Query/list commands support structured output with -f json where available.
   Action/analysis commands emit {command, success, data} envelopes.
   Output formats: table, plain, json, ndjson, csv (use -f flag).
   ndjson emits one JSON object per row for streaming-friendly pipes.

@@ -106,11 +106,12 @@ func GenerateByType(dbType string, databaseType string, constraints map[string]a
 
 	switch normalizedType {
 	case "int", "integer", "int2", "int4", "int8", "smallint", "bigint", "tinyint", "mediumint", "serial", "bigserial", "smallserial",
-		"int16", "int32", "int64", "int128", "int256":
+		"int16", "int32", "int64", "hugeint", "int128", "int256":
 		return genInt(normalizedType, constraints, faker)
 
 	case "uint", "uint8", "uint16", "uint32", "uint64", "uint128", "uint256",
-		"tinyint unsigned", "smallint unsigned", "mediumint unsigned", "int unsigned", "bigint unsigned":
+		"tinyint unsigned", "smallint unsigned", "mediumint unsigned", "int unsigned", "bigint unsigned",
+		"utinyint", "usmallint", "uinteger", "ubigint":
 		return genUint(normalizedType, constraints, faker)
 
 	case "float", "float4", "float8", "real", "double", "double precision", "decimal", "numeric", "number", "money",
@@ -220,9 +221,9 @@ func genUint(typeName string, c map[string]any, f *gofakeit.Faker) any {
 	// Type-specific default limits
 	var minVal, maxVal uint64
 	switch typeName {
-	case "uint8", "tinyint unsigned":
+	case "uint8", "tinyint unsigned", "utinyint":
 		minVal, maxVal = 0, 255
-	case "uint16", "smallint unsigned":
+	case "uint16", "smallint unsigned", "usmallint":
 		minVal, maxVal = 0, 65535
 	case "mediumint unsigned":
 		minVal, maxVal = 0, 16777215

@@ -29,29 +29,26 @@ PostgreSQL-specific features, advanced administration, mature ecosystem
 
 ## Performance and Speed Comparison
 
-Performance is a critical differentiator between these tools. Let's look at real-world metrics:
+Performance depends heavily on deployment and database workload, but the tools have different runtime models:
 
 | Metric | WhoDB | pgAdmin |
 |--------|-------|---------|
-| **Startup Time** | \<1 second | 5-8 seconds |
-| **Initial Load** | \<200ms | 2-4 seconds |
-| **Memory Usage** | ~50MB | ~300MB |
-| **CPU Usage (idle)** | \<1% | 5-10% |
-| **Table Navigation** | Instant | 1-2 seconds |
-| **Large Table View (100K rows)** | Smooth | Laggy |
-| **Query Execution Display** | Immediate | 1-2 second delay |
-| **UI Responsiveness** | Excellent | Good |
+| **Runtime** | Go server + React frontend | PostgreSQL-focused admin application |
+| **Deployment** | Binary, Docker, or desktop CE | Desktop/server package |
+| **Primary Scope** | Daily browsing, querying, editing, graph, CLI/MCP | PostgreSQL administration |
+| **Large Table Handling** | Paginated current result set | Admin-grid workflow |
+| **Database Scope** | Broad CE source catalog | PostgreSQL-focused |
 
 **Why WhoDB is Faster:**
 - Lightweight Go backend vs. Python/PostgreSQL-based pgAdmin
 - Modern React frontend with efficient rendering
-- WebSocket support for real-time updates
+- Simple request/response UI with lightweight backend checks
 - No desktop application overhead
 - Optimized database queries
 - Minimal background processes
 
 **Real-World Impact:**
-A DBA checking 10 tables takes 30 seconds with pgAdmin startup alone. With WhoDB, they're already viewing tables.
+WhoDB is usually better for quick inspection and common development work. pgAdmin remains the better fit when you need PostgreSQL-specific administration screens.
 
 ## Deployment Architecture
 
@@ -85,8 +82,7 @@ A DBA checking 10 tables takes 30 seconds with pgAdmin startup alone. With WhoDB
 
 **Infrastructure Impact:**
 - Multiple processes needed
-- ~300MB+ memory per instance
-- Heavier resource requirements
+- Heavier resource requirements than a small single-purpose web tool
 - Traditional server deployment
 - Requires web server configuration
 - More complex scaling
@@ -105,7 +101,7 @@ A DBA checking 10 tables takes 30 seconds with pgAdmin startup alone. With WhoDB
 - Right-click context menus
 - Keyboard-driven workflow
 - Sidebar with database hierarchy
-- Real-time search functionality
+- Search across currently loaded rows and server-side filtering with WHERE conditions
 - Visual schema graph
 </Card>
 </CardGroup>
@@ -146,31 +142,31 @@ A DBA checking 10 tables takes 30 seconds with pgAdmin startup alone. With WhoDB
 | Feature | WhoDB | pgAdmin |
 |---------|:----:|:-------:|
 | **Explain Plans** | Yes | Yes, Advanced |
-| **VACUUM Analysis** | Yes | Yes |
-| **Query Profiling** | Yes | Yes, Detailed |
-| **Extension Management** | Yes | Yes |
-| **Trigger Management** | Yes | Yes |
-| **Rule Management** | Limited | Yes |
-| **Partition Management** | Yes | Yes |
-| **Replication Setup** | Yes | Advanced |
-| **Logical Replication** | Yes | Advanced |
-| **Materialized Views** | Yes | Yes |
-| **JSONB Operations** | Yes | Yes |
-| **Custom Types** | Yes | Yes |
-| **Domains** | Yes | Yes |
-| **Full-Text Search** | Yes | Yes |
+| **VACUUM Analysis** | Run SQL manually | Yes |
+| **Query Profiling** | Execution timing and EXPLAIN | Yes, Detailed |
+| **Extension Management** | Use native SQL/tools | Yes |
+| **Trigger Management** | Use native SQL/tools | Yes |
+| **Rule Management** | Use native SQL/tools | Yes |
+| **Partition Management** | Inspect/query; use native tools for admin | Yes |
+| **Replication Setup** | Use native PostgreSQL tools | Advanced |
+| **Logical Replication** | Use native PostgreSQL tools | Advanced |
+| **Materialized Views** | Browse/query where exposed | Yes |
+| **JSONB Operations** | Run SQL manually | Yes |
+| **Custom Types** | Query/inspect where exposed | Yes |
+| **Domains** | Query/inspect where exposed | Yes |
+| **Full-Text Search** | Run SQL manually | Yes |
 </Accordion>
 
 <Accordion title="Data Management">
 | Feature | WhoDB | pgAdmin |
 |---------|:----:|:-------:|
 | **Add Records** | Simple dialog | Form interface |
-| **Edit Records** | Inline/dialog | Form interface |
+| **Edit Records** | Edit sheet | Form interface |
 | **Delete Records** | Safe with confirmation | Bulk delete available |
-| **Bulk Operations** | Select & act | Multiple options |
+| **Bulk Operations** | Selected-row actions where supported | Multiple options |
 | **Column Filtering** | Visual builder | SQL WHERE builder |
-| **Data Search** | Real-time | Per-column |
-| **Data Export** | CSV, Excel, JSON, SQL | Multiple formats |
+| **Data Search** | Loaded-row search plus WHERE filters | Per-column |
+| **Data Export** | CSV/Excel, plus JSON Lines for MongoDB-style records when supported | Multiple formats |
 | **Data Import** | Yes | Yes |
 | **Mock Data** | Native generation | No |
 | **Column Sorting** | Click to sort | Column controls |
@@ -181,18 +177,18 @@ A DBA checking 10 tables takes 30 seconds with pgAdmin startup alone. With WhoDB
 <Accordion title="Administration">
 | Feature | WhoDB | pgAdmin |
 |---------|:----:|:-------:|
-| **User Management** | Yes | Comprehensive |
-| **Role Management** | Yes | Advanced |
-| **Permission Management** | Yes | Very comprehensive |
-| **Database Creation** | Yes | Yes |
-| **Database Cloning** | Limited | Yes |
-| **Tablespace Management** | Yes | Yes |
-| **Backup/Restore** | Yes | Advanced UI |
-| **Replication Management** | Yes | Advanced |
-| **Monitoring** | Yes | Detailed |
+| **User Management** | Use PostgreSQL-native tools | Comprehensive |
+| **Role Management** | Use PostgreSQL-native tools | Advanced |
+| **Permission Management** | Use PostgreSQL-native tools | Very comprehensive |
+| **Database Creation** | Use PostgreSQL-native tools | Yes |
+| **Database Cloning** | Use PostgreSQL-native tools | Yes |
+| **Tablespace Management** | Use PostgreSQL-native tools | Yes |
+| **Backup/Restore** | Native PostgreSQL tools recommended | Advanced UI |
+| **Replication Management** | Use PostgreSQL-native tools | Advanced |
+| **Monitoring** | Health endpoint, logs, and database exporters | Detailed |
 | **Connection Profiles** | Browser/env profiles | Detailed server registration |
-| **Server Configuration** | Yes | Advanced |
-| **Log Viewer** | Yes | Yes |
+| **Server Configuration** | Use PostgreSQL-native tools | Advanced |
+| **Log Viewer** | Use container/runtime logs | Yes |
 </Accordion>
 </AccordionGroup>
 
@@ -201,9 +197,9 @@ A DBA checking 10 tables takes 30 seconds with pgAdmin startup alone. With WhoDB
 | Feature | WhoDB | pgAdmin |
 |---------|:----:|:-------:|
 | **Syntax Highlighting** | Yes | Yes |
-| **Auto-completion** | Yes | Yes |
-| **Query History** | Searchable | Limited |
-| **Query Bookmarks** | Yes | Yes |
+| **Auto-completion** | CLI TUI; web CE editor focuses on syntax highlighting | Yes |
+| **Query History** | Per-cell web history; CLI history search | Limited |
+| **Query Bookmarks** | CLI bookmarks | Yes |
 | **Multi-Query Execution** | Multi-cell | Batch execution |
 | **Explain Plans** | Yes | Advanced |
 | **Query Profiling** | Yes | Detailed |
@@ -267,7 +263,7 @@ pgAdmin exclusively supports:
 - More detailed query information
 - Advanced profiling tools
 
-**Winner:** WhoDB (20-30% faster workflow)
+**Winner:** WhoDB for routine development workflows
 </Accordion>
 
 <Accordion title="PostgreSQL Administration">
@@ -317,7 +313,7 @@ pgAdmin exclusively supports:
 
 <Accordion title="Team Onboarding">
 **WhoDB:**
-- New team member productive in 10-15 minutes
+- Smaller surface area for common database tasks
 - Intuitive interface
 - Minimal training
 - Self-explanatory features
@@ -348,38 +344,34 @@ pgAdmin exclusively supports:
 
 ## Performance Deep Dive
 
-### Startup Performance
+### Startup Behavior
 
-When you need to check something quickly in a database, startup time matters:
+When you need to check something quickly in a database, workflow overhead matters:
 
-**pgAdmin Startup Sequence:**
-1. Application initialization (1-2 seconds)
-2. Python environment startup (1-2 seconds)
-3. Component loading (2-3 seconds)
-4. First page render (1-2 seconds)
-**Total: 5-8+ seconds**
+**pgAdmin Workflow:**
+1. Open pgAdmin.
+2. Unlock or connect to the target server.
+3. Navigate the PostgreSQL object tree.
+4. Open the table, query tool, or admin screen you need.
 
-**WhoDB Startup Sequence:**
-1. Go binary initialization (\<100ms)
-2. React app load (\<200ms)
-3. Ready to use (\<1 second total)
-**Total: \<1 second**
+**WhoDB Workflow:**
+1. Run the server or open the existing deployment.
+2. Connect to the target source.
+3. Open Storage Units, Graph, Data, or Scratchpad.
 
-**Impact:** For a developer checking database state 20 times per day:
-- pgAdmin: 100-160 seconds (2-3 minutes daily) waiting for startup
-- WhoDB: 20 seconds total
+**Impact:** WhoDB keeps the path to common inspection tasks short; pgAdmin exposes more PostgreSQL administration depth.
 
 ### Query Performance
 
-Running a complex query with 100K row results:
+Running a complex query is mostly database-bound. The main product difference is how each tool displays and navigates results:
 
 | Operation | WhoDB | pgAdmin |
 |-----------|-------|---------|
 | Query execution | Same (database speed) | Same (database speed) |
-| Result rendering | \<1 second | 3-5 seconds |
-| Pagination | Smooth | Choppy |
-| Sorting column | Instant | 1-2 seconds |
-| Export results | \<2 seconds | 5+ seconds |
+| Result rendering | Paginated result grid | Query tool result grid |
+| Pagination | Current result-set paging | Query tool paging |
+| Sorting column | Grid/table sorting where supported | Query tool/table sorting |
+| Export results | Table/query export formats supported by WhoDB | PostgreSQL-oriented export options |
 
 ### Memory Efficiency
 
@@ -420,7 +412,7 @@ wget https://github.com/clidey/whodb/releases/download/v1.0/whodb
 chmod +x whodb
 ./whodb
 ```
-Takes less than 5 minutes.
+This is a simple Docker or binary startup flow.
 </Step>
 
 <Step title="Connect Your PostgreSQL Databases">
@@ -442,7 +434,7 @@ Spend 15-30 minutes exploring:
 Map your common tasks:
 - **Browse tables** → Click table in sidebar → View data
 - **Run queries** → Scratchpad tab → Write SQL → Execute
-- **Edit data** → Click cell → Edit inline or dialog
+- **Edit data** → Select a row and use the edit-row sheet
 - **Export data** → Right-click table → Export
 
 All familiar, cleaner interface.
@@ -460,7 +452,7 @@ Most teams prefer hybrid approach.
 
 **Total Migration Time:** 1-2 hours
 **Team Training:** 15-30 minutes per person
-**Productivity Gain:** 20-40% faster daily workflows
+**Workflow Impact:** Less UI overhead for common browse, query, and data-review tasks
 
 ## Security and Compliance
 
@@ -480,24 +472,24 @@ Both tools support enterprise security features:
 | Feature | WhoDB | pgAdmin |
 |---------|:----:|:-------:|
 | **Database Auth** | Yes | Yes |
-| **LDAP** | EE only | Yes |
-| **OAuth** | EE only | No |
+| **LDAP** | Use reverse proxy or external auth layer | Yes |
+| **OAuth** | Use reverse proxy or external auth layer | No |
 | **Kerberos** | No | Yes |
-| **SAML** | EE only | No |
+| **SAML** | Use reverse proxy or external auth layer | No |
 
-pgAdmin has more traditional enterprise auth. WhoDB Enterprise adds modern auth.
+pgAdmin has more traditional built-in auth options. For WhoDB CE, use your normal authentication layer in front of the app.
 </Accordion>
 
 <Accordion title="Audit & Logging">
 | Feature | WhoDB | pgAdmin |
 |---------|:----:|:-------:|
-| **Query Logging** | Yes | Yes |
-| **User Actions** | Yes | Yes |
-| **Change Tracking** | Yes | Limited |
-| **Audit Export** | Yes | Limited |
-| **Compliance Reports** | EE | Limited |
+| **Query Logging** | Use database-native logs and app/container logs | Yes |
+| **User Actions** | Use reverse proxy/app/runtime logs | Yes |
+| **Change Tracking** | Use PostgreSQL-native auditing | Limited |
+| **Audit Export** | Use PostgreSQL-native tooling | Limited |
+| **Compliance Reports** | Build from database/infrastructure logs | Limited |
 
-WhoDB Enterprise has better audit logging for compliance.
+For compliance needs, plan audit logging at the database and infrastructure layer.
 </Accordion>
 </AccordionGroup>
 
@@ -507,7 +499,7 @@ WhoDB Enterprise has better audit logging for compliance.
 <Accordion title="Query Execution & Profiling">
 **WhoDB:**
 - Syntax highlighting
-- Auto-completion
+- Web Scratchpad history and CLI TUI autocomplete
 - Execution time display
 - Basic explain plans
 - Query history
@@ -526,28 +518,25 @@ WhoDB Enterprise has better audit logging for compliance.
 
 <Accordion title="User/Role Management">
 **WhoDB:**
-- Role creation
-- Permission management
-- Grant/revoke operations
-- User listing
+- Use native PostgreSQL SQL or admin tools for role changes
+- Store separate connection profiles for different database users
+- Use least-privilege credentials when connecting through WhoDB
 
 **pgAdmin:**
-- All of above, plus:
 - Complex privilege hierarchies
 - Inheritance chains
 - Template roles
 - Fine-grained permissions
 - Advanced role properties
 
-**Verdict:** pgAdmin for complex permission structures, WhoDB for standard setups
+**Verdict:** pgAdmin for role administration, WhoDB for using the credentials you have already provisioned
 </Accordion>
 
 <Accordion title="Backup/Restore">
 **WhoDB:**
-- Simple backup/restore interface
-- Database export
-- Table-level backup
-- SQL export
+- CSV/Excel export for table or query results
+- Useful inspection UI before and after backup or restore work
+- Use native PostgreSQL tools for full SQL/custom-format backups
 
 **pgAdmin:**
 - All of above, plus:
@@ -557,14 +546,13 @@ WhoDB Enterprise has better audit logging for compliance.
 - Parallel backup support
 - Selective restore options
 
-**Verdict:** pgAdmin for complex backup strategies, WhoDB for standard backups
+**Verdict:** pgAdmin or native PostgreSQL tools for backup strategy; WhoDB for inspection and table/result export
 </Accordion>
 
 <Accordion title="Replication Setup">
 **WhoDB:**
-- Basic replication monitoring
-- Connection configuration
-- Status viewing
+- Use Scratchpad/native SQL to inspect replication-related catalog views
+- Use native PostgreSQL tools for configuration
 
 **pgAdmin:**
 - Streaming replication setup
@@ -583,20 +571,20 @@ WhoDB Enterprise has better audit logging for compliance.
 **Situation:** Development team using pgAdmin spends 2-3 hours daily on database tasks.
 
 **Problem with pgAdmin:**
-- 5+ second startup for each connection
+- More UI overhead for simple queries
 - Complex interface for simple queries
 - No mock data for testing
 - Slower data viewing/editing
 - Steep onboarding for new developers
 
 **WhoDB Solution:**
-- \<1 second startup
+- Shorter path to common browse and query tasks
 - Intuitive interface for queries
 - Built-in mock data generation
 - Faster data operations
-- 30-minute onboarding
+- Lower onboarding overhead
 
-**Result:** 30-40% productivity improvement, new developers productive on day 1
+**Result:** Development teams can use WhoDB for routine inspection while keeping pgAdmin for PostgreSQL administration.
 
 ### Scenario 2: Infrastructure Modernization
 
@@ -669,13 +657,10 @@ WhoDB Enterprise has better audit logging for compliance.
 | **Licensing** | Permissive | PostgreSQL License |
 | **Hosting** | Self-hosted | Self-hosted |
 | **Support** | Community | Community |
-| **Enterprise Edition** | Available | N/A |
-| **Enterprise Support** | Yes | No |
 | **Per-User Cost** | None | None |
 
 **Cost Analysis:**
 - Community users: Both completely free
-- Enterprise users: WhoDB Enterprise available with support
 - Infrastructure: WhoDB cheaper due to lighter resource usage
 
 ## Final Verdict
@@ -710,7 +695,7 @@ WhoDB Enterprise has better audit logging for compliance.
 <Accordion title="Team Recommendations">
 **Development Teams:**
 - Use WhoDB as primary tool
-- 20-30% faster workflow
+- Lower overhead for common browse/query tasks
 - Better new developer onboarding
 - Keep pgAdmin for complex admin tasks
 
@@ -750,7 +735,7 @@ Ready to experience faster PostgreSQL management?
 
 <CardGroup cols={2}>
 <Card title="Install WhoDB Free" icon="download" href="/installation">
-Get started in under 5 minutes
+Install the current CE build
 </Card>
 <Card title="Live Demo" icon="play" href="https://whodb.com/demo">
 Try it without installing
@@ -769,7 +754,7 @@ Absolutely! Many teams do exactly this. Use WhoDB for daily work and pgAdmin for
 </Accordion>
 
 <Accordion title="Is WhoDB as feature-rich as pgAdmin?">
-WhoDB has 95% of pgAdmin's features for common use cases. pgAdmin has additional PostgreSQL-specific admin features DBAs need. For most developers and analysts, WhoDB has everything needed.
+No. WhoDB covers common browsing, querying, graph, editing, export, import, CLI, and MCP workflows. pgAdmin has deeper PostgreSQL administration features that DBAs may still need.
 </Accordion>
 
 <Accordion title="How does WhoDB handle advanced PostgreSQL features?">
@@ -777,10 +762,7 @@ WhoDB supports all major PostgreSQL features: arrays, JSONB, full-text search, p
 </Accordion>
 
 <Accordion title="What's the learning curve difference?">
-WhoDB: 10-15 minutes for basic productivity
-pgAdmin: 4-8 hours for basic proficiency
-
-If you're already a pgAdmin expert, you'll find WhoDB's interface refreshingly simple. If new to database tools, WhoDB is dramatically easier.
+WhoDB has a smaller surface area for common database work. pgAdmin has more PostgreSQL-specific administration screens, so it takes longer to learn if you are new to PostgreSQL tooling.
 </Accordion>
 
 <Accordion title="Does WhoDB support PostgreSQL replication?">

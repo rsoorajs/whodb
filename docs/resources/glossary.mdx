@@ -17,7 +17,7 @@ Use the search function (Cmd/Ctrl + F) to quickly find terms in this glossary
 A SQL function that performs calculations across multiple rows and returns a single value. Common examples include COUNT(), SUM(), AVG(), MIN(), and MAX(). These functions are typically used with GROUP BY clauses to summarize data.
 
 **API (Application Programming Interface)**
-A set of rules and tools for building software applications. WhoDB exposes functionality through a GraphQL API, allowing external applications and integrations to interact with database operations programmatically.
+A set of rules and tools for building software applications. WhoDB uses backend endpoints internally for its own web UI, but those endpoints are not documented as a supported public integration API. For scripting and automation, use `whodb-cli` or database-native clients.
 
 **Auto-Increment**
 A database feature that automatically generates unique numeric values for a column, typically used for primary keys. Each new row receives the next sequential number without manual intervention.
@@ -28,7 +28,7 @@ An alternative name given to a table, column, or subquery in SQL, typically usin
 ## B
 
 **Backup**
-A complete copy of database data created for recovery purposes. WhoDB's export features allow you to create backups in various formats (SQL, CSV, Excel) for data protection and migration.
+A complete copy of database data created for recovery purposes. Use database-native tools for full backups; WhoDB export is for grid/query-result data extracts.
 
 **Batch Operation**
 Processing multiple database records in a single transaction or operation, rather than individually. WhoDB supports batch operations for adding, editing, and deleting multiple rows efficiently.
@@ -94,10 +94,10 @@ A distributed search and analytics engine built on top of Apache Lucene. Support
 A method of visually representing database structures showing entities (tables) and their relationships. WhoDB's Graph view provides an interactive ER diagram of your database schema.
 
 **Export**
-The process of extracting data from WhoDB in various formats (CSV, Excel, JSON, SQL) for use in other applications or for backup purposes.
+The process of extracting data from WhoDB. Current CE formats are CSV, Excel, and JSON Lines for records from sources like MongoDB when supported.
 
 **Explore View**
-One of WhoDB's primary views that displays detailed information about a table's structure including columns, data types, indexes, primary keys, and foreign key relationships.
+The Storage Unit data route used to view rows. For structure and metadata, use **Describe** on a Storage Unit card.
 
 ## F
 
@@ -108,7 +108,7 @@ A mechanism to restrict which rows are displayed based on specified criteria. Wh
 A column or combination of columns that references a primary key in another table, enforcing referential integrity and establishing relationships between tables.
 
 **Format Query**
-WhoDB's feature to automatically reorganize and indent SQL code for improved readability using keyboard shortcut Cmd/Ctrl + Shift + F.
+Readable SQL style with consistent indentation and line breaks. The CLI TUI includes SQL formatting; the current CE web Scratchpad focuses on syntax highlighting and execution.
 
 **Full-Text Search**
 A search capability that indexes and searches all text columns in a table. Available in databases that support full-text search like PostgreSQL with text search extensions.
@@ -155,7 +155,7 @@ A SQL operation that combines rows from two or more tables based on related colu
 A lightweight data format using key-value pairs and hierarchical structures. WhoDB supports JSON data types in many databases and can export data as JSON.
 
 **JSON Export**
-WhoDB's capability to export database query results in JSON format, useful for APIs, web applications, and data processing pipelines.
+For records from sources like MongoDB, WhoDB can export newline-delimited JSON when the source supports it. Table exports use CSV and Excel.
 
 ## K
 
@@ -398,24 +398,24 @@ A region's standard time offset used in datetime operations. WhoDB respects data
 <Accordion title="WhoDB Features">
 - **Scratchpad**: Query editor interface
 - **Graph View**: Visual schema representation
-- **Schema Explorer**: Hierarchical structure browser
+- **Storage Units**: Source object browser for tables, collections, views, and equivalent objects
+- **Describe**: Storage Unit metadata and column inspection
 - **Chat Feature**: AI-powered query assistant
 - **Mock Data**: Generated test data
 - **Export**: Data download functionality
-- **Batch Operations**: Multiple row modifications
+- **Selected Row Actions**: Operations on selected loaded rows where supported
 - **Keyboard Shortcuts**: Quick action commands
 </Accordion>
 
-<Accordion title="WhoDB Editions">
+<Accordion title="WhoDB Packaging">
 - **Community Edition**: Free, open-source version
-- **Enterprise Edition**: Commercial version with additional databases
-- **Storage Unit**: Connected database instance
+- **Storage Unit**: Source object such as a table, view, collection, key, or similar object exposed by a connector
 - **Connection Profile**: Saved database credentials
 </Accordion>
 
 <Accordion title="WhoDB Operations">
-- **Inline Edit**: Direct cell value modification
-- **Quick Export**: Rapid data download
+- **Edit Row**: Side-sheet row update flow from the data grid
+- **Export**: CSV, Excel, or supported document-row download
 - **Filter**: Restrict visible rows
 - **Search**: Find specific data
 - **Pagination**: Browse large datasets

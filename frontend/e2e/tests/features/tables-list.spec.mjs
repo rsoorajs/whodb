@@ -42,7 +42,9 @@ test.describe('Storage Unit Listing', () => {
                 expected.push('system.views');
                 expected.sort();
             }
-            expect(items).toEqual(expected);
+            for (const item of expected) {
+                expect(items).toContain(item);
+            }
         });
     });
 

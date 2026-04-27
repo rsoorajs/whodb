@@ -39,7 +39,7 @@
 #   ./run-e2e.sh false all                    # GUI mode (--headed), all databases
 #
 # Architecture:
-#   - Headless mode: Loops through databases sequentially for better isolation/logging
+#   - Headless mode: Runs one Playwright process per selected database
 #   - GUI mode: Single Playwright session with --headed flag
 
 set -e
@@ -58,8 +58,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Default CE database configurations (can be overridden via env vars)
-DEFAULT_DATABASES="postgres mysql mysql8 mariadb sqlite duckdb mongodb redis elasticsearch cockroachdb clickhouse memcached valkey dragonfly opensearch starrocks yugabytedb questdb ferretdb"
-DEFAULT_CATEGORIES="postgres:sql mysql:sql mysql8:sql mariadb:sql sqlite:sql duckdb:sql mongodb:document redis:keyvalue elasticsearch:document cockroachdb:sql clickhouse:sql memcached:cache valkey:keyvalue dragonfly:keyvalue opensearch:document starrocks:sql yugabytedb:sql questdb:sql ferretdb:document"
+DEFAULT_DATABASES="postgres mysql mysql8 mariadb tidb sqlite duckdb mongodb redis elasticsearch cockroachdb clickhouse memcached valkey dragonfly opensearch yugabytedb questdb ferretdb"
+DEFAULT_CATEGORIES="postgres:sql mysql:sql mysql8:sql mariadb:sql tidb:sql sqlite:sql duckdb:sql mongodb:document redis:keyvalue elasticsearch:document cockroachdb:sql clickhouse:sql memcached:cache valkey:keyvalue dragonfly:keyvalue opensearch:document yugabytedb:sql questdb:sql ferretdb:document"
 
 # Use env vars or defaults
 DATABASES_STR="${WHODB_DATABASES:-$DEFAULT_DATABASES}"
@@ -118,6 +118,7 @@ echo "   Databases: ${DATABASES[*]}"
 
 # Setup environment (databases + build binary + start backend)
 echo "⚙️ Setting up test environment..."
+export WHODB_SPEC_FILE="$SPEC_FILE"
 bash "$SCRIPT_DIR/setup-e2e.sh" "$SETUP_MODE" "$TARGET_DB"
 
 cd "$PROJECT_ROOT/frontend"
@@ -183,15 +184,15 @@ else
     SPEC_PATTERN=""
 fi
 
-# When running a single mutating spec, Playwright project dependencies can cause
-# the full standalone suite to run (even if the spec is filtered on the CLI).
-# This opt-in mode runs the auth setup project, then runs the mutating project
-# with --no-deps to avoid triggering the full standalone project.
-PW_NO_DEPS="${WHODB_PW_NO_DEPS:-false}"
-KEYBOARD_ONLY=false
-if [ "$SPEC_FILE" = "keyboard-shortcuts" ] || [ "$SPEC_FILE" = "keyboard-shortcuts.spec.mjs" ]; then
-    KEYBOARD_ONLY=true
-fi
+# When running a single mutating spec, Playwright project dependencies would
+# otherwise run the full standalone suite before the targeted spec.
+SPEC_BASENAME="${SPEC_FILE%.spec.mjs}"
+MUTATING_SPEC=false
+case "$SPEC_BASENAME" in
+    crud|mock-data|import|data-types|key-types|schema-management|chat|keyboard-shortcuts|type-casting)
+        MUTATING_SPEC=true
+        ;;
+esac
 
 # Determine Playwright config + projects (read-only + mutating)
 PW_PROJECT="standalone"
@@ -218,7 +219,7 @@ fi
 if [ "$HEADLESS" = "true" ]; then
     # Headless mode: Run all databases in parallel (1 Playwright process per database).
     # Each process gets its own browser, outputDir, and blob report — no file collisions.
-    # The backend handles concurrent connections fine (9 cached connections, well under the 50 limit).
+    # The backend handles the parallel database connections within the test connection limit.
 
     # Warm Playwright's transform cache so parallel workers don't race on .mjs compilation.
     DATABASE="${DATABASES[0]}" CATEGORY="$(get_category "${DATABASES[0]}")" \
@@ -234,7 +235,7 @@ if [ "$HEADLESS" = "true" ]; then
         (
             cd "$PROJECT_ROOT/frontend"
             LOG_FILE="$PROJECT_ROOT/frontend/e2e/logs/$db.log"
-            if [ "$PW_NO_DEPS" = "true" ] && [ "$KEYBOARD_ONLY" = "true" ]; then
+            if [ "$MUTATING_SPEC" = "true" ]; then
                 DATABASE="$db" \
                 CATEGORY="$(get_category "$db")" \
                 pnpm exec playwright test \

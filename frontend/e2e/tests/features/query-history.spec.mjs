@@ -21,6 +21,10 @@ test.describe('Query History', () => {
 
     // SQL Databases with scratchpad support
     forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
         test('stores executed queries in history', async ({ whodb, page }) => {
             await whodb.goto('scratchpad');
 

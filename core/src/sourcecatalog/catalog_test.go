@@ -177,6 +177,31 @@ func TestBuildTypeSpecKeepsQuestDBAppendOnlyAndSchemaLess(t *testing.T) {
 	}
 }
 
+func TestQuestDBSessionMetadataUsesQuestDBTypes(t *testing.T) {
+	t.Parallel()
+
+	metadata, ok := coresourcecatalog.ResolveSessionMetadata("QuestDB")
+	if !ok {
+		t.Fatal("expected QuestDB session metadata")
+	}
+
+	typeIDs := make(map[string]bool, len(metadata.TypeDefinitions))
+	for _, typeDefinition := range metadata.TypeDefinitions {
+		typeIDs[typeDefinition.ID] = true
+	}
+
+	for _, expected := range []string{"INT", "VARCHAR", "STRING", "TIMESTAMP"} {
+		if !typeIDs[expected] {
+			t.Fatalf("expected QuestDB type %q, got %#v", expected, typeIDs)
+		}
+	}
+	for _, unsupported := range []string{"CHARACTER", "CHARACTER VARYING"} {
+		if typeIDs[unsupported] {
+			t.Fatalf("expected QuestDB metadata not to expose %q, got %#v", unsupported, typeIDs)
+		}
+	}
+}
+
 func TestBuildTypeSpecExposesSourceTraits(t *testing.T) {
 	t.Parallel()
 
