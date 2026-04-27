@@ -9,16 +9,30 @@ If the `ee/` directory is present, read `ee/AGENTS.md` for additional context. D
 
 ## Non-Negotiable Rules
 
-1. **Analyze before coding** - Read relevant files and understand patterns before writing code. Always check to see if something existing was done, or if an existing pattern can be reused or adapted.
+1. **Analyze before coding** - Read relevant files and understand patterns before writing code. State assumptions explicitly, ask when requirements are ambiguous, and always check whether an existing pattern can be reused or adapted.
 2. **GraphQL-first** - All new API functionality via GraphQL. Never add HTTP resolvers unless explicitly needed (e.g., file downloads)
 3. **No SQL injection** - Never use `fmt.Sprintf` with user input for SQL. Use parameterized queries or GORM builders. See `.claude/docs/sql-security.md`
 4. **Plugin architecture** - Never use `switch dbType` or `if dbType ==` in shared code. All database-specific logic goes in plugins. See `.claude/docs/plugin-architecture.md`
 5. **Documentation requirements** - All exported Go functions/types need doc comments. All exported TypeScript functions/components need JSDoc. See `.claude/docs/documentation.md`
 6. **Localization requirements** - All user-facing strings must use `t()` with YAML keys. No fallback strings. No hardcoded UI text. See `.claude/docs/localization.md`
-7. **Verify before completing** - After finishing any task, verify: (1) type checks pass (`pnpm run build:ce` for frontend, `go build ./cmd/whodb` for backend), (2) no linting errors, (3) all added code is actually used (no dead code). See `.claude/docs/verification.md`
+7. **Verify before completing** - For non-trivial tasks, define success criteria before editing. After finishing, verify: (1) type checks pass (`pnpm run build:ce` for frontend, `go build ./cmd/whodb` for backend), (2) no linting errors, (3) all added code is actually used (no dead code). See `.claude/docs/verification.md`
 8. **Fallback clarification** - Do not include fallback logic UNLESS you were asked to. If you think the project could benefit from fallback logic, first ask and clarify
 9. **Show proof** - When making a claim about how something outside of our codebase works, for example a 3rd party library or function, always provide official documentation or the actual code to back that up. Check online if you have to.
 10. **No defensive code** - Do not program defensively. If there is an edge or use case that you think needs to be handled, first ask.
+11. **Surgical changes** - Touch only the files and lines required by the request. Do not refactor, reformat, rename, or "improve" adjacent code unless the task requires it.
+12. **Simplicity first** - Solve the requested problem with the smallest clear implementation. Do not add speculative abstractions, configurability, or features.
+13. **Own your cleanup** - Remove imports, variables, functions, files, and generated artifacts made unused by your own changes. Mention unrelated dead code or suspicious behavior instead of deleting it.
+
+## Execution Workflow
+
+For non-trivial tasks, use a short goal-driven loop:
+
+1. Identify the expected behavior or failure path.
+2. Choose the smallest change that satisfies the request.
+3. Add or update focused tests when the behavior is testable and the risk justifies it.
+4. Run the relevant verification commands and inspect the diff before finishing.
+
+If the task is unclear or has multiple valid interpretations, stop and ask instead of silently choosing. If the implementation grows beyond the request, pause and simplify before continuing.
 
 ## Project Structure
 
@@ -118,10 +132,13 @@ See `.claude/docs/commands.md` for full reference.
 ## Development Principles
 
 - Clean, readable code over clever code
+- Keep every changed line tied directly to the user's request
 - Only add what is required - no overengineering
+- Prefer existing style and local helper APIs over new abstractions
 - Do not modify existing functionality without justification
 - Do not rename variables/files unless necessary
-- Remove unused code - no leftovers
+- Remove unused code introduced by your changes - no leftovers
+- Do not delete unrelated dead code unless asked
 - Only comment edge cases and complex logic, not obvious code
 - Ask questions to understand requirements fully
 - Use subagents to accomplish tasks faster
