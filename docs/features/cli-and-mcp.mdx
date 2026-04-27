@@ -1,11 +1,11 @@
 ---
 title: "CLI & MCP"
-description: "Interactive CLI, terminal commands, SSH tunnels, and MCP server support"
+description: "Interactive CLI, terminal commands, SSH tunnels, assistant integrations, and MCP server support"
 ---
 
 # CLI & MCP
 
-WhoDB ships a separate CLI alongside the web app. Use it when you want a terminal UI, scriptable database checks, SSH tunneling, or an MCP server for local tooling.
+WhoDB ships a separate CLI alongside the web app. Use it when you want a terminal UI, scriptable database checks, SSH tunneling, assistant integration setup, or an MCP server for local tooling.
 
 <Note>
 The CLI and MCP server are the supported automation surfaces. The WhoDB web app's internal backend endpoints are not documented as a public integration API.
@@ -73,6 +73,10 @@ The current CLI command tree includes:
 | `bookmarks` | List, save, load, and delete saved query bookmarks. |
 | `profiles` | List, save, show, and delete TUI profiles. |
 | `cloud` | Inspect configured cloud providers and discovered resources. |
+| `agent` | Emit machine-readable metadata about CLI commands, MCP tools, source types, and built-in workflows. |
+| `doctor` | Run redacted connection, schema, and metadata diagnostics for one connection. |
+| `runbooks` | List, describe, and run built-in database workflows such as connection checks, schema audits, and schema diffs. |
+| `skills` | List bundled assistant skills and install native assistant integrations. |
 | `completion` | Generate, install, or uninstall shell completions. |
 | `guide` | Print the full CLI usage guide. |
 | `version` | Print version information. |
@@ -128,6 +132,18 @@ whodb-cli diff --from staging --to prod --schema public --format json
 
 # Render relationship metadata
 whodb-cli erd --connection local-postgres --schema public --format json
+
+# Emit agent-facing CLI and MCP metadata
+whodb-cli agent schema --format json
+
+# Diagnose a connection without exposing secrets
+whodb-cli doctor --connection local-postgres --schema public --format json
+
+# Preview a built-in workflow before running it
+whodb-cli runbooks run schema-audit --connection local-postgres --dry-run
+
+# Preview assistant integration files without writing them
+whodb-cli skills install --target cursor --dry-run
 ```
 
 ## Import And Export
@@ -183,6 +199,78 @@ whodb-cli connections add --from-discovered aws-prod-us-west-2/prod-db --user al
 ## SSH Tunneling
 
 Built-in SSH tunneling belongs to the CLI/TUI surface in this codebase. If your database sits behind a bastion host and you want WhoDB tooling to manage the tunnel, use the CLI rather than the web login page.
+
+## Agent Metadata, Diagnostics, And Runbooks
+
+The CLI includes command surfaces designed for operators and AI agents that need a stable, scriptable view of WhoDB capabilities.
+
+```bash
+# Machine-readable command, source, MCP, workflow, and safety metadata
+whodb-cli agent schema --format json
+
+# Redacted diagnostics for one connection
+whodb-cli doctor --connection local-postgres --schema public --format json
+
+# List and inspect built-in workflows
+whodb-cli runbooks list
+whodb-cli runbooks describe schema-audit
+
+# Preview or run workflows
+whodb-cli runbooks run connection-doctor --connection local-postgres --dry-run
+whodb-cli runbooks run schema-audit --connection local-postgres --schema public --format json
+whodb-cli runbooks run schema-diff --from staging --to prod --format json
+```
+
+Built-in runbooks are intentionally limited to WhoDB operations:
+
+- `connection-doctor`: runs the same diagnostics as `doctor`
+- `schema-audit`: loads storage units and runs data-quality checks
+- `schema-diff`: compares schema metadata between two connections
+
+## Assistant Integrations
+
+The CLI can install bundled WhoDB assistant skills and native assistant configuration files.
+
+```bash
+# List bundled skills and agents
+whodb-cli skills list
+whodb-cli skills list --format json
+
+# Install all bundled skills into an explicit skills directory
+whodb-cli skills install --target-dir ~/.codex/skills
+
+# Install skills and bundled Markdown agents for Claude Code
+whodb-cli skills install --target claude-code --include-agents
+
+# Install native MCP configuration for an assistant
+whodb-cli skills install --target cursor
+whodb-cli skills install --target vscode
+whodb-cli skills install --target gemini-cli
+
+# Preview files and backup paths without modifying disk
+whodb-cli skills install --target cursor --dry-run
+```
+
+Supported assistant targets:
+
+| Target | Files installed |
+|--------|-----------------|
+| `codex` | Skills under `~/.codex/skills` |
+| `claude-code` | Skills under `~/.claude/skills`, plus Markdown agents under `~/.claude/agents` with `--include-agents` |
+| `cursor` | `~/.cursor/mcp.json` |
+| `vscode` | VS Code user `mcp.json` |
+| `github-copilot` | GitHub Copilot CLI `~/.copilot/mcp-config.json` |
+| `gemini-cli` | `~/.gemini/extensions/whodb/gemini-extension.json` and `GEMINI.md` |
+| `windsurf` | `~/.codeium/mcp_config.json` |
+| `opencode` | `~/.config/opencode/opencode.json` with `mcp.whodb` |
+| `cline` | Cline MCP settings plus `~/Documents/Cline/Rules/whodb.md` |
+| `zed` | `~/.config/zed/settings.json` with `context_servers.whodb` |
+| `continue` | `~/.continue/config.yaml` |
+| `aider` | `~/.aider.conf.yml` plus `~/.aider/whodb-conventions.md` |
+
+Existing JSON and JSONC configuration files are merged in place and rewritten as formatted JSON. Before an existing JSON or YAML assistant config is rewritten, the original file is saved beside it as `<filename>.whodb.bak`.
+
+Use `--dry-run` to preview created or updated files and any backup paths without writing changes.
 
 ## MCP Server
 
