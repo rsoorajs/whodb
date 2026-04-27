@@ -175,8 +175,32 @@ wait_for_init_services() {
 
     echo "⏳ Waiting for data init container(s):$init_services"
     if ! $(docker_compose_cmd) wait $init_services; then
-        echo "❌ Data init container failed:$init_services"
-        $(docker_compose_cmd) logs --no-color $init_services || true
+        local failed_init_services=""
+        local service_state
+        local service_status
+        local service_exit_code
+        for service in $init_services; do
+            local container_id
+            container_id="$($(docker_compose_cmd) ps -q "$service" 2>/dev/null || true)"
+            if [ -z "$container_id" ]; then
+                failed_init_services="$failed_init_services $service"
+                continue
+            fi
+
+            service_state="$(docker inspect -f '{{.State.Status}} {{.State.ExitCode}}' "$container_id" 2>/dev/null || true)"
+            service_status="${service_state%% *}"
+            service_exit_code="${service_state##* }"
+            if [ "$service_status" = "exited" ] && [ "$service_exit_code" != "0" ]; then
+                failed_init_services="$failed_init_services $service"
+            fi
+        done
+
+        if [ -z "$failed_init_services" ]; then
+            failed_init_services="$init_services"
+        fi
+
+        echo "❌ Data init container failed:$failed_init_services"
+        $(docker_compose_cmd) logs --no-color $failed_init_services || true
         exit 1
     fi
     echo "✅ Data init container(s) completed:$init_services"
