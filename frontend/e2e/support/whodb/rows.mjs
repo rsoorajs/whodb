@@ -42,7 +42,7 @@ export const rowsMethods = {
         await this.page.locator('[data-testid="submit-add-row-button"]').click();
         await this.page.locator('[data-testid="submit-add-row-button"]').waitFor({ state: "hidden", timeout: TIMEOUT.ACTION });
         await expect(this.page.locator("body")).not.toHaveAttribute("data-scroll-locked", /.+/, { timeout: TIMEOUT.ELEMENT });
-        await this.page.locator("table tbody").waitFor({ state: "visible" });
+        await this.waitForDataTable();
     },
 
     /**
@@ -58,11 +58,10 @@ export const rowsMethods = {
         let foundIndex = -1;
 
         await expect(async () => {
-            const rows = await this.page.locator("table tbody tr").all();
+            const { rows } = await this.getTableData();
             foundIndex = -1;
             for (let i = 0; i < rows.length; i++) {
-                const cell = rows[i].locator("td").nth(columnIndex);
-                const cellText = (await cell.innerText()).trim();
+                const cellText = String(rows[i][columnIndex] ?? "").trim();
                 if (cellText === expectedStr) {
                     foundIndex = i;
                     break;
@@ -87,11 +86,12 @@ export const rowsMethods = {
         let foundIndex = -1;
 
         await expect(async () => {
-            const rows = await this.page.locator("table tbody tr").all();
+            const { rows } = await this.getTableData();
             foundIndex = -1;
             for (let i = 0; i < rows.length; i++) {
-                const rowText = caseSensitive ? await rows[i].innerText() : (await rows[i].innerText()).toLowerCase();
-                if (rowText.includes(searchStr)) {
+                const rowText = rows[i].join(" ");
+                const comparableRowText = caseSensitive ? rowText : rowText.toLowerCase();
+                if (comparableRowText.includes(searchStr)) {
                     foundIndex = i;
                     break;
                 }
@@ -109,7 +109,7 @@ export const rowsMethods = {
      */
     async openContextMenu(rowIndex, maxRetries = 3) {
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            const targetRow = this.page.locator("table tbody tr").nth(rowIndex);
+            const targetRow = this.dataRow(rowIndex);
             await targetRow.scrollIntoViewIfNeeded();
             await targetRow.waitFor({ state: "visible" });
             await targetRow.click({ button: "right", force: true });
@@ -139,8 +139,8 @@ export const rowsMethods = {
      * @param {{ waitForRowCount?: boolean }} [options]
      */
     async deleteRow(rowIndex, { waitForRowCount = true } = {}) {
-        const initialRowCount = await this.page.locator("table tbody tr").count();
-        expect(await this.page.locator("table tbody tr").count()).toBeGreaterThan(rowIndex);
+        const initialRowCount = await this.dataRows().count();
+        expect(initialRowCount).toBeGreaterThan(rowIndex);
 
         await this.openContextMenu(rowIndex);
 
@@ -156,7 +156,7 @@ export const rowsMethods = {
         await expect(this.page.locator("body")).not.toHaveAttribute("data-scroll-locked", /.+/, { timeout: TIMEOUT.ELEMENT });
 
         if (waitForRowCount) {
-            await expect(this.page.locator("table tbody tr")).toHaveCount(initialRowCount - 1, { timeout: TIMEOUT.ACTION });
+            await expect(this.dataRows()).toHaveCount(initialRowCount - 1, { timeout: TIMEOUT.ACTION });
         }
     },
 

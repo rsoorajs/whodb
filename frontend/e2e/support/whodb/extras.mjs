@@ -22,7 +22,7 @@ export const extrasMethods = {
     // ── Graph ─────────────────────────────────────────────────────────────
 
     async getGraph() {
-        await this.page.locator(".react-flow__node").first().waitFor({ state: "visible", timeout: TIMEOUT.ACTION });
+        await this.page.locator(".react-flow__node").first().waitFor({ state: "visible", timeout: TIMEOUT.GRAPH });
         await expect(this.page.locator(".react-flow__node").filter({ hasText: "Loading..." })).toHaveCount(0, { timeout: TIMEOUT.GRAPH });
 
         await this.page.waitForFunction(() => {

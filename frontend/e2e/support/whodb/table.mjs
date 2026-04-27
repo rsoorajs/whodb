@@ -17,8 +17,58 @@
 import {expect} from "@playwright/test";
 import {TIMEOUT} from "../helpers/test-utils.mjs";
 
+export const DATA_CONTAINER_SELECTOR = 'table, [role="grid"]';
+export const DATA_ROW_SELECTOR = 'table tbody tr, [role="grid"] [role="row"]:has([role="gridcell"])';
+export const DATA_CELL_SELECTOR = 'td, [role="gridcell"]';
+
 /** Methods for table/storage-unit navigation, data extraction, sorting, pagination */
 export const tableMethods = {
+    /**
+     * Get the visible data table/grid container.
+     * @returns {import("@playwright/test").Locator}
+     */
+    dataContainer() {
+        return this.page.locator(DATA_CONTAINER_SELECTOR).filter({ visible: true }).first();
+    },
+
+    /**
+     * Get rendered data rows from either native table or ARIA grid markup.
+     * @returns {import("@playwright/test").Locator}
+     */
+    dataRows() {
+        return this.page.locator(DATA_ROW_SELECTOR);
+    },
+
+    /**
+     * Get one rendered data row by index.
+     * @param {number} rowIndex
+     * @returns {import("@playwright/test").Locator}
+     */
+    dataRow(rowIndex) {
+        return this.dataRows().nth(rowIndex);
+    },
+
+    /**
+     * Get one rendered data cell by row and cell index.
+     * @param {number} rowIndex
+     * @param {number} cellIndex
+     * @returns {import("@playwright/test").Locator}
+     */
+    dataCell(rowIndex, cellIndex) {
+        return this.dataRow(rowIndex).locator(DATA_CELL_SELECTOR).nth(cellIndex);
+    },
+
+    /**
+     * Wait for the data table/grid to render.
+     * @param {{ waitForRows?: boolean, timeout?: number, rowTimeout?: number }} [options]
+     */
+    async waitForDataTable({ waitForRows = true, timeout = TIMEOUT.SLOW, rowTimeout = TIMEOUT.SLOW } = {}) {
+        await this.dataContainer().waitFor({ state: "visible", timeout });
+        if (waitForRows) {
+            await this.dataRows().first().waitFor({ state: "visible", timeout: rowTimeout });
+        }
+    },
+
     /**
      * Navigate to storage unit page and click explore on a specific table
      * @param {string} tableName
@@ -101,10 +151,7 @@ export const tableMethods = {
         await dataBtn.click({ force: true });
 
         await this.page.waitForURL(/\/storage-unit\/explore/, { timeout: TIMEOUT.ACTION });
-        await this.page.locator("table").filter({ visible: true }).waitFor({ timeout: TIMEOUT.ACTION });
-        if (waitForRows) {
-            await this.page.locator("table").filter({ visible: true }).locator("tbody tr").first().waitFor({ timeout: TIMEOUT.SLOW });
-        }
+        await this.waitForDataTable({ waitForRows });
     },
 
     /**
@@ -151,7 +198,7 @@ export const tableMethods = {
         await this.page.waitForFunction(() => {
             return !!document.querySelector("table tbody tr")
                 || !!document.querySelector('[role="grid"] [role="row"] [role="gridcell"]');
-        }, { timeout: TIMEOUT.ACTION });
+        }, { timeout: TIMEOUT.SLOW });
 
         return await this.page.evaluate(() => {
             const table = Array.from(document.querySelectorAll("table"))

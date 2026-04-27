@@ -138,9 +138,9 @@ mkdir -p e2e/reports/test-results e2e/reports/blobs e2e/reports/html
 echo "🌐 Starting frontend dev server..."
 BACKEND_PORT="${WHODB_BACKEND_PORT:-8080}"
 if [ "$VITE_EDITION" = "ee" ]; then
-    VITE_BACKEND_PORT="$BACKEND_PORT" NODE_ENV=test pnpm exec vite --config vite.ee.config.mts --port 3000 --clearScreen false --logLevel error > e2e/logs/frontend.log 2>&1 &
+    VITE_BACKEND_PORT="$BACKEND_PORT" NODE_ENV=test pnpm exec vite --config vite.ee.config.mts --port 3000 --strictPort --clearScreen false --logLevel error > e2e/logs/frontend.log 2>&1 &
 else
-    VITE_BACKEND_PORT="$BACKEND_PORT" NODE_ENV=test pnpm exec vite --port 3000 --clearScreen false --logLevel error > e2e/logs/frontend.log 2>&1 &
+    VITE_BACKEND_PORT="$BACKEND_PORT" NODE_ENV=test pnpm exec vite --port 3000 --strictPort --clearScreen false --logLevel error > e2e/logs/frontend.log 2>&1 &
 fi
 FRONTEND_PID=$!
 
@@ -148,7 +148,10 @@ FRONTEND_PID=$!
 echo "⏳ Waiting for frontend to be ready..."
 COUNTER=0
 while [ $COUNTER -lt 30 ]; do
-    if nc -z localhost 3000 2>/dev/null; then
+    if ! kill -0 "$FRONTEND_PID" 2>/dev/null; then
+        break
+    fi
+    if curl -fsS http://localhost:3000/ 2>/dev/null | grep -q 'id="root"'; then
         echo "✅ Frontend is ready on port 3000"
         break
     fi
@@ -156,9 +159,14 @@ while [ $COUNTER -lt 30 ]; do
     COUNTER=$((COUNTER + 1))
 done
 
-if ! nc -z localhost 3000 2>/dev/null; then
+if ! kill -0 "$FRONTEND_PID" 2>/dev/null; then
     echo "❌ Frontend failed to start"
-    kill $FRONTEND_PID 2>/dev/null || true
+    tail -50 e2e/logs/frontend.log 2>/dev/null || true
+    exit 1
+fi
+
+if ! curl -fsS http://localhost:3000/ 2>/dev/null | grep -q 'id="root"'; then
+    echo "❌ Frontend did not serve the WhoDB app on port 3000"
     exit 1
 fi
 

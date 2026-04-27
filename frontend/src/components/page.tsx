@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import classNames from "classnames";
 import {AnimatePresence, motion} from "framer-motion";
 import {FC, ReactNode} from "react";
 import {twMerge} from "tailwind-merge";
-import {IInternalRoute} from "../config/routes";
+import type {IInternalRoute} from "../config/routes";
 import {useAppSelector} from "../store/hooks";
 import {Breadcrumb} from "./breadcrumbs";
 import {Loading} from "./loading";
