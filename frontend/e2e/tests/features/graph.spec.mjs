@@ -29,7 +29,7 @@ async function expectGraphTopology(whodb, expectedNodes) {
             expect(graph, `Graph should have node: ${node}`).toHaveProperty(node);
             expect(graph[node].sort()).toEqual(expectedNodes[node].sort());
         }
-    }).toPass({ timeout: TIMEOUT.SLOW });
+    }).toPass({ timeout: TIMEOUT.GRAPH });
 }
 
 test.describe('Graph Visualization', () => {

@@ -148,17 +148,37 @@ export const tableMethods = {
      * @returns {Promise<{columns: string[], rows: string[][]}>}
      */
     async getTableData() {
-        await this.page.locator("table").filter({ visible: true }).waitFor({ timeout: TIMEOUT.ACTION });
-        await this.page.locator("table").filter({ visible: true }).locator("tbody tr").first().waitFor({ timeout: TIMEOUT.ACTION });
+        await this.page.waitForFunction(() => {
+            return !!document.querySelector("table tbody tr")
+                || !!document.querySelector('[role="grid"] [role="row"] [role="gridcell"]');
+        }, { timeout: TIMEOUT.ACTION });
 
         return await this.page.evaluate(() => {
-            const table = document.querySelector("table");
-            if (!table) return { columns: [], rows: [] };
+            const table = Array.from(document.querySelectorAll("table"))
+                .find((el) => el.querySelector("tbody tr"));
+            if (table) {
+                const columns = Array.from(table.querySelectorAll("th")).map((el) => el.innerText.trim());
+                const rows = Array.from(table.querySelectorAll("tbody tr")).map((row) => {
+                    return Array.from(row.querySelectorAll("td")).map((cell) => cell.innerText.trim());
+                });
 
-            const columns = Array.from(table.querySelectorAll("th")).map((el) => el.innerText.trim());
-            const rows = Array.from(table.querySelectorAll("tbody tr")).map((row) => {
-                return Array.from(row.querySelectorAll("td")).map((cell) => cell.innerText.trim());
-            });
+                return { columns, rows };
+            }
+
+            const grid = Array.from(document.querySelectorAll('[role="grid"]'))
+                .find((el) => el.querySelector('[role="row"] [role="gridcell"]'));
+            if (!grid) return { columns: [], rows: [] };
+
+            const headerRow = Array.from(grid.querySelectorAll('[role="row"]'))
+                .find((row) => row.querySelector('[role="columnheader"]'));
+            const columns = headerRow
+                ? Array.from(headerRow.querySelectorAll('[role="columnheader"]')).map((el) => el.innerText.trim())
+                : [];
+            const rows = Array.from(grid.querySelectorAll('[role="row"]'))
+                .filter((row) => row.querySelector('[role="gridcell"]'))
+                .map((row) => {
+                    return Array.from(row.querySelectorAll('[role="gridcell"]')).map((cell) => cell.innerText.trim());
+                });
 
             return { columns, rows };
         });

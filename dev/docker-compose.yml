@@ -419,7 +419,7 @@ services:
     container_name: e2e_yugabytedb
     command: >
       bash -c "
-        bin/yugabyted start --daemon=false --advertise_address=0.0.0.0 --tserver_flags='ysql_enable_auth=true,pgsql_proxy_bind_address=0.0.0.0:5433'
+        bin/yugabyted start --daemon=false --advertise_address=0.0.0.0 --master_flags='max_clock_skew_usec=5000000' --tserver_flags='ysql_enable_auth=true,pgsql_proxy_bind_address=0.0.0.0:5433,max_clock_skew_usec=5000000'
       "
     ports:
       - "5434:5433"

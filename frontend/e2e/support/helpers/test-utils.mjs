@@ -31,6 +31,8 @@ export const TIMEOUT = Object.freeze({
     NAVIGATION:15_000,
     /** Slow operation — login completion, async DB mutations, mock data gen (30s) */
     SLOW:      30_000,
+    /** Graph metadata — CockroachDB column discovery can exceed slow waits (60s) */
+    GRAPH:     60_000,
     /** Login API — full auth flow including potential retries (60s) */
     LOGIN:     60_000,
 });

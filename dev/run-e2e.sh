@@ -184,15 +184,15 @@ else
     SPEC_PATTERN=""
 fi
 
-# When running a single mutating spec, Playwright project dependencies can cause
-# the full standalone suite to run (even if the spec is filtered on the CLI).
-# This opt-in mode runs the auth setup project, then runs the mutating project
-# with --no-deps to avoid triggering the full standalone project.
-PW_NO_DEPS="${WHODB_PW_NO_DEPS:-false}"
-KEYBOARD_ONLY=false
-if [ "$SPEC_FILE" = "keyboard-shortcuts" ] || [ "$SPEC_FILE" = "keyboard-shortcuts.spec.mjs" ]; then
-    KEYBOARD_ONLY=true
-fi
+# When running a single mutating spec, Playwright project dependencies would
+# otherwise run the full standalone suite before the targeted spec.
+SPEC_BASENAME="${SPEC_FILE%.spec.mjs}"
+MUTATING_SPEC=false
+case "$SPEC_BASENAME" in
+    crud|mock-data|import|data-types|key-types|schema-management|chat|keyboard-shortcuts|type-casting)
+        MUTATING_SPEC=true
+        ;;
+esac
 
 # Determine Playwright config + projects (read-only + mutating)
 PW_PROJECT="standalone"
@@ -235,7 +235,7 @@ if [ "$HEADLESS" = "true" ]; then
         (
             cd "$PROJECT_ROOT/frontend"
             LOG_FILE="$PROJECT_ROOT/frontend/e2e/logs/$db.log"
-            if [ "$PW_NO_DEPS" = "true" ] && [ "$KEYBOARD_ONLY" = "true" ]; then
+            if [ "$MUTATING_SPEC" = "true" ]; then
                 DATABASE="$db" \
                 CATEGORY="$(get_category "$db")" \
                 pnpm exec playwright test \

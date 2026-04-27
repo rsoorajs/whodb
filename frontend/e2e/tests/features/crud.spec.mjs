@@ -395,30 +395,34 @@ test.describe('CRUD Operations', () => {
                     const verifyAdd = waitForMutation(page, 'AddRow');
                     await whodb.addRow({ field: uniqueField, value: testValues.original });
                     await verifyAdd();
+                    await whodb.waitForRowContaining(uniqueField, { timeout: TIMEOUT.SLOW });
                 });
 
                 await test.step('update field with network verification', async () => {
-                    const { rows } = await whodb.getTableData();
-                    const addedIndex = rows.findIndex(r => r[1] === uniqueField);
-                    expect(addedIndex, `Added field ${uniqueField} should exist`).toBeGreaterThan(-1);
+                    const addedIndex = await whodb.waitForRowContaining(uniqueField, { timeout: TIMEOUT.SLOW });
 
                     const verifyUpdate = waitForMutation(page, 'UpdateStorageUnit');
                     await whodb.updateRow(addedIndex, 1, testValues.modified, false);
                     await verifyUpdate();
 
-                    const { rows: updatedRows } = await whodb.getTableData();
-                    const updated = updatedRows.find(r => r[1] === uniqueField);
-                    expect(updated?.[2]).toEqual(testValues.modified);
+                    await expect(async () => {
+                        const { rows } = await whodb.getTableData();
+                        const updated = rows.find(r => r[1] === uniqueField);
+                        expect(updated?.[2]).toEqual(testValues.modified);
+                    }).toPass({ timeout: TIMEOUT.SLOW });
                 });
 
                 await test.step('delete isolated hash field', async () => {
-                    const { rows } = await whodb.getTableData();
-                    const updatedIndex = rows.findIndex(r => r[1] === uniqueField);
-                    expect(updatedIndex, `Updated field ${uniqueField} should exist`).toBeGreaterThan(-1);
+                    const updatedIndex = await whodb.waitForRowContaining(uniqueField, { timeout: TIMEOUT.SLOW });
 
                     const verifyDelete = waitForMutation(page, 'DeleteRow');
                     await whodb.deleteRow(updatedIndex);
                     await verifyDelete();
+
+                    await expect(async () => {
+                        const { rows } = await whodb.getTableData();
+                        expect(rows.some(r => r[1] === uniqueField)).toBe(false);
+                    }).toPass({ timeout: TIMEOUT.SLOW });
                 });
             });
 
@@ -430,16 +434,20 @@ test.describe('CRUD Operations', () => {
                 await whodb.addRow({ field: uniqueField, value: testValues.original });
                 await verifyAdd();
 
+                const addedIndex = await whodb.waitForRowContaining(uniqueField, { timeout: TIMEOUT.SLOW });
                 const { rows } = await whodb.getTableData();
-                const addedIndex = rows.findIndex(r => r[1] === uniqueField);
                 expect(addedIndex, `Added field ${uniqueField} should exist`).toBeGreaterThan(-1);
                 const currentValue = rows[addedIndex][2];
 
                 await whodb.updateRow(addedIndex, 1, 'temp_value', true);
 
-                const { rows: verifyRows } = await whodb.getTableData();
-                const unchangedIndex = verifyRows.findIndex(r => r[1] === uniqueField);
-                expect(verifyRows[unchangedIndex][2]).toEqual(currentValue);
+                let unchangedIndex = -1;
+                await expect(async () => {
+                    const { rows: verifyRows } = await whodb.getTableData();
+                    unchangedIndex = verifyRows.findIndex(r => r[1] === uniqueField);
+                    expect(unchangedIndex, `Added field ${uniqueField} should still exist`).toBeGreaterThan(-1);
+                    expect(verifyRows[unchangedIndex][2]).toEqual(currentValue);
+                }).toPass({ timeout: TIMEOUT.SLOW });
 
                 const verifyDelete = waitForMutation(page, 'DeleteRow');
                 await whodb.deleteRow(unchangedIndex);
@@ -480,8 +488,8 @@ test.describe('CRUD Operations', () => {
                 await whodb.addRow({ field: uniqueField, value: 'delete_value' });
                 await verifyAdd();
 
+                const addedIndex = await whodb.waitForRowContaining(uniqueField, { timeout: TIMEOUT.SLOW });
                 const { rows } = await whodb.getTableData();
-                const addedIndex = rows.findIndex(r => r[1] === uniqueField);
                 expect(addedIndex, `Added field ${uniqueField} should exist`).toBeGreaterThan(-1);
                 const countAfterAdd = rows.length;
 
@@ -489,9 +497,11 @@ test.describe('CRUD Operations', () => {
                 await whodb.deleteRow(addedIndex);
                 await verifyDelete();
 
-                const { rows: newRows } = await whodb.getTableData();
-                expect(newRows.length).toEqual(countAfterAdd - 1);
-                expect(newRows.find(r => r[1] === uniqueField)).toBeUndefined();
+                await expect(async () => {
+                    const { rows: newRows } = await whodb.getTableData();
+                    expect(newRows.length).toEqual(countAfterAdd - 1);
+                    expect(newRows.find(r => r[1] === uniqueField)).toBeUndefined();
+                }).toPass({ timeout: TIMEOUT.SLOW });
             });
         });
     });

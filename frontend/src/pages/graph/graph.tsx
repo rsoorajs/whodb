@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -420,7 +420,7 @@ export const GraphPage: FC = () => {
             }, 50);
             return () => clearTimeout(timer);
         }
-    }, [isInitialized, computedNodes]);
+    }, [isInitialized, computedNodes, computedEdges]);
 
     const handleOnReady = useCallback((instance: IGraphInstance) => {
         reactFlowRef.current = instance;
