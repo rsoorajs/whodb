@@ -266,7 +266,7 @@ test.describe('CRUD Operations', () => {
                     await expect(page.locator('[data-testid="context-menu-edit-row"]')).toBeVisible();
                     await page.locator('[data-testid="context-menu-edit-row"]').click();
                     await expect(page.getByText('Edit Row').first()).toBeVisible();
-                    await page.keyboard.press('Escape');
+                    await page.locator('[data-testid="cancel-edit-row"]').click();
                     await expect(page.getByText('Edit Row').first()).not.toBeAttached();
                 });
                 return;

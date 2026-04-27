@@ -15,8 +15,35 @@
  */
 
 import { test, expect, forEachDatabase } from '../../support/test-fixture.mjs';
-import { waitForMutation } from '../../support/helpers/test-utils.mjs';
+import { getUniqueTestId, waitForMutation } from '../../support/helpers/test-utils.mjs';
 
+function matchesTypeLabel(text, label) {
+    if (text === label) {
+        return true;
+    }
+    if (label === 'int') {
+        return /^int\d*$/.test(text);
+    }
+    return false;
+}
+
+async function selectFieldType(page, typeLabels) {
+    const options = page.locator('[role="option"]');
+    const optionCount = await options.count();
+    for (let i = 0; i < optionCount; i++) {
+        const text = ((await options.nth(i).textContent()) ?? '').trim().toLowerCase();
+        if (typeLabels.some(label => matchesTypeLabel(text, label))) {
+            await options.nth(i).click();
+            return;
+        }
+    }
+
+    throw new Error(`No field type option found for: ${typeLabels.join(', ')}`);
+}
+
+function schemaQualifiedTableName(db, tableName) {
+    return `${db.sql?.schemaPrefix ?? ''}${tableName}`;
+}
 
 /**
  * Schema/Table Management Tests
@@ -210,9 +237,13 @@ test.describe('Schema Management', () => {
     test.describe('Create New Table', () => {
         forEachDatabase('sql', (db) => {
             test.describe(`${db.type}`, () => {
-                const uniqueTableName = `test_table_${Date.now()}`;
+                const createdTableNames = new Set();
 
                 test.afterEach(async ({ whodb, page }) => {
+                    if (createdTableNames.size === 0) {
+                        return;
+                    }
+
                     // Clean up: Delete the created table if it exists
                     // Use scratchpad to drop the table
                     await page.goto(whodb.url('/scratchpad'));
@@ -223,19 +254,25 @@ test.describe('Schema Management', () => {
                     // Wait for the editor cell to be ready
                     await page.locator('[data-testid="cell-0"]').waitFor({ timeout: 10000 });
 
-                    // Type DROP TABLE query using the cell's textarea/editor
-                    const dropQuery = `DROP TABLE IF EXISTS ${uniqueTableName};`;
                     const editorLocator = page.locator('[data-testid="cell-0"]')
                         .locator('textarea, [contenteditable="true"], .cm-content')
                         .first();
-                    await editorLocator.click();
-                    await editorLocator.fill('');
-                    await editorLocator.fill(dropQuery);
 
-                    await whodb.runCode(0);
+                    for (const tableName of createdTableNames) {
+                        const dropQuery = `DROP TABLE IF EXISTS ${schemaQualifiedTableName(db, tableName)};`;
+                        await editorLocator.click();
+                        await editorLocator.fill('');
+                        await editorLocator.fill(dropQuery);
+                        await whodb.runCode(0);
+                    }
+
+                    createdTableNames.clear();
                 });
 
                 test('successfully creates a new table', async ({ whodb, page }) => {
+                    const uniqueTableName = `test_table_${getUniqueTestId()}`;
+                    createdTableNames.add(uniqueTableName);
+
                     await page.goto(whodb.url('/storage-unit'));
 
                     // Wait for storage unit cards to load
@@ -261,22 +298,7 @@ test.describe('Schema Management', () => {
                     // Field type
                     await firstField.locator('button[data-testid^="field-type-"]').click();
 
-                    // Select INTEGER or INT type
-                    const options = page.locator('[role="option"]');
-                    const optionCount = await options.count();
-                    let foundInt = false;
-                    for (let i = 0; i < optionCount; i++) {
-                        const text = (await options.nth(i).textContent()).toLowerCase();
-                        if (text === 'integer' || text === 'int' || text.includes('int')) {
-                            await options.nth(i).click();
-                            foundInt = true;
-                            break;
-                        }
-                    }
-                    if (!foundInt) {
-                        // Fallback: click first option
-                        await options.first().click();
-                    }
+                    await selectFieldType(page, ['integer', 'int']);
 
                     // Add second field: name (text/varchar)
                     await page.locator('[data-testid="add-field-button"]').click();
@@ -288,22 +310,7 @@ test.describe('Schema Management', () => {
                     // Field type
                     await secondField.locator('button[data-testid^="field-type-"]').click();
 
-                    // Select TEXT or VARCHAR type
-                    const typeOptions = page.locator('[role="option"]');
-                    const typeOptionCount = await typeOptions.count();
-                    let foundText = false;
-                    for (let i = 0; i < typeOptionCount; i++) {
-                        const text = (await typeOptions.nth(i).textContent()).toLowerCase();
-                        if (text === 'text' || text === 'varchar' || text.includes('char')) {
-                            await typeOptions.nth(i).click();
-                            foundText = true;
-                            break;
-                        }
-                    }
-                    if (!foundText) {
-                        // Fallback: click second option
-                        await typeOptions.nth(1).click();
-                    }
+                    await selectFieldType(page, ['varchar', 'string', 'text']);
 
                     const verifyCreate = waitForMutation(page, 'AddStorageUnit');
 
@@ -320,6 +327,9 @@ test.describe('Schema Management', () => {
                 });
 
                 test('new table appears in storage unit list after creation', async ({ whodb, page }) => {
+                    const uniqueTableName = `test_table_${getUniqueTestId()}`;
+                    createdTableNames.add(uniqueTableName);
+
                     // First create the table
                     await page.goto(whodb.url('/storage-unit'));
 
@@ -343,7 +353,7 @@ test.describe('Schema Management', () => {
 
                     await firstField.locator('button[data-testid^="field-type-"]').click();
 
-                    await page.locator('[role="option"]').first().click();
+                    await selectFieldType(page, ['integer', 'int']);
 
                     const verifyCreate = waitForMutation(page, 'AddStorageUnit');
 

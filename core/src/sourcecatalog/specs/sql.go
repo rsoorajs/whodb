@@ -89,6 +89,36 @@ var PostgresTypeDefinitions = []engine.TypeDefinition{
 	{ID: "HSTORE", Label: "hstore", Category: engine.TypeCategoryOther},
 }
 
+// QuestDBAliasMap maps common SQL aliases to QuestDB type definition IDs.
+var QuestDBAliasMap = map[string]string{
+	"BOOL":    "BOOLEAN",
+	"INTEGER": "INT",
+	"BIGINT":  "LONG",
+	"TEXT":    "VARCHAR",
+}
+
+// QuestDBTypeDefinitions contains the column types exposed for QuestDB table creation.
+var QuestDBTypeDefinitions = []engine.TypeDefinition{
+	{ID: "BOOLEAN", Label: "boolean", Category: engine.TypeCategoryBoolean},
+	{ID: "BYTE", Label: "byte", Category: engine.TypeCategoryNumeric},
+	{ID: "SHORT", Label: "short", Category: engine.TypeCategoryNumeric},
+	{ID: "INT", Label: "int", Category: engine.TypeCategoryNumeric},
+	{ID: "LONG", Label: "long", Category: engine.TypeCategoryNumeric},
+	{ID: "FLOAT", Label: "float", Category: engine.TypeCategoryNumeric},
+	{ID: "DOUBLE", Label: "double", Category: engine.TypeCategoryNumeric},
+	{ID: "DECIMAL", Label: "decimal", HasPrecision: true, DefaultPrecision: engine.IntPtr(18), Category: engine.TypeCategoryNumeric},
+	{ID: "VARCHAR", Label: "varchar", Category: engine.TypeCategoryText},
+	{ID: "STRING", Label: "string", Category: engine.TypeCategoryText},
+	{ID: "SYMBOL", Label: "symbol", Category: engine.TypeCategoryText},
+	{ID: "BINARY", Label: "binary", Category: engine.TypeCategoryBinary},
+	{ID: "DATE", Label: "date", Category: engine.TypeCategoryDatetime},
+	{ID: "TIMESTAMP", Label: "timestamp", Category: engine.TypeCategoryDatetime},
+	{ID: "TIMESTAMP_NS", Label: "timestamp_ns", Category: engine.TypeCategoryDatetime},
+	{ID: "UUID", Label: "uuid", Category: engine.TypeCategoryOther},
+	{ID: "IPV4", Label: "ipv4", Category: engine.TypeCategoryOther},
+	{ID: "LONG256", Label: "long256", Category: engine.TypeCategoryOther},
+}
+
 var CockroachDBTypeDefinitions = []engine.TypeDefinition{
 	{ID: "SMALLINT", Label: "smallint", Category: engine.TypeCategoryNumeric},
 	{ID: "INTEGER", Label: "integer", Category: engine.TypeCategoryNumeric},

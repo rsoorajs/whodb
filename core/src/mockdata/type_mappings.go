@@ -221,9 +221,9 @@ func genUint(typeName string, c map[string]any, f *gofakeit.Faker) any {
 	// Type-specific default limits
 	var minVal, maxVal uint64
 	switch typeName {
-	case "uint8", "tinyint unsigned":
+	case "uint8", "tinyint unsigned", "utinyint":
 		minVal, maxVal = 0, 255
-	case "uint16", "smallint unsigned":
+	case "uint16", "smallint unsigned", "usmallint":
 		minVal, maxVal = 0, 65535
 	case "mediumint unsigned":
 		minVal, maxVal = 0, 16777215

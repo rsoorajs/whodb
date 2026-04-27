@@ -25,6 +25,7 @@ COCKROACH_INIT_HOST="${COCKROACH_INIT_HOST:-$COCKROACH_HOST}"
 COCKROACH_INIT_PORT="${COCKROACH_INIT_PORT:-26357}"
 MAX_RETRIES="${COCKROACH_MAX_RETRIES:-90}"
 RETRY_INTERVAL="${COCKROACH_RETRY_INTERVAL:-2}"
+POST_INIT_STABLE_CHECKS="${COCKROACH_POST_INIT_STABLE_CHECKS:-5}"
 
 # Build connection flags: --insecure or --certs-dir
 if [ -n "$COCKROACH_CERTS_DIR" ]; then
@@ -80,5 +81,29 @@ fi
 
 echo "Running init SQL..."
 cockroach sql $CONN_FLAGS --host="${COCKROACH_HOST}:${COCKROACH_PORT}" < /data.sql
+
+echo "Checking CockroachDB seeded database stability..."
+stable_checks=0
+stability_attempts=0
+STABILITY_USER_FLAGS=""
+if [ -z "$COCKROACH_CERTS_DIR" ]; then
+    STABILITY_USER_FLAGS="--user=user"
+fi
+
+while [ $stable_checks -lt $POST_INIT_STABLE_CHECKS ]; do
+    if cockroach sql $CONN_FLAGS $STABILITY_USER_FLAGS --host="${COCKROACH_HOST}:${COCKROACH_PORT}" --database=test_db -e "SELECT datname FROM pg_database WHERE datistemplate = false AND datallowconn AND has_database_privilege(datname, 'CONNECT'); SELECT schema_name AS schemaname FROM information_schema.schemata WHERE has_schema_privilege(schema_name, 'USAGE') AND schema_name NOT IN ('information_schema', 'pg_catalog', 'crdb_internal', 'pg_extension'); SELECT table_name, table_type FROM information_schema.tables WHERE table_schema = 'test_schema'; SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'test_schema' AND table_name = 'users' ORDER BY ordinal_position; SELECT COUNT(*) FROM test_schema.users; SELECT * FROM test_schema.users ORDER BY id LIMIT 100;" > /dev/null 2>&1; then
+        stable_checks=$((stable_checks + 1))
+        echo "CockroachDB seeded database check $stable_checks/$POST_INIT_STABLE_CHECKS succeeded"
+    else
+        stable_checks=0
+        stability_attempts=$((stability_attempts + 1))
+        if [ $stability_attempts -ge $MAX_RETRIES ]; then
+            echo "ERROR: CockroachDB seeded database did not become stable within $((MAX_RETRIES * RETRY_INTERVAL))s"
+            exit 1
+        fi
+        echo "CockroachDB seeded database check failed, retrying in ${RETRY_INTERVAL}s..."
+    fi
+    sleep $RETRY_INTERVAL
+done
 
 echo "CockroachDB initialization complete!"

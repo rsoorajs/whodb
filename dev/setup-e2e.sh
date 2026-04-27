@@ -377,10 +377,12 @@ if [ "$SKIP_CE_DATABASES" = "false" ]; then
         fi
 
         # Wait for SSL container if applicable
-        SSL_PORT=$(get_ssl_port "$TARGET_DB")
-        if [ -n "$SSL_PORT" ]; then
-            echo "⏳ Waiting for $TARGET_DB SSL to be ready..."
-            wait_for_port "$TARGET_DB-SSL" "$SSL_PORT" "$DB_WAIT"
+        if needs_ssl; then
+            SSL_PORT=$(get_ssl_port "$TARGET_DB")
+            if [ -n "$SSL_PORT" ]; then
+                echo "⏳ Waiting for $TARGET_DB SSL to be ready..."
+                wait_for_port "$TARGET_DB-SSL" "$SSL_PORT" "$DB_WAIT"
+            fi
         fi
 
         # Wait for background Postgres check

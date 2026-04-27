@@ -25,6 +25,7 @@ SEED_RETRIES="${YUGABYTEDB_SEED_RETRIES:-3}"
 SEED_RETRY_INTERVAL="${YUGABYTEDB_SEED_RETRY_INTERVAL:-10}"
 STABLE_CHECKS="${YUGABYTEDB_STABLE_CHECKS:-5}"
 STABLE_CHECK_INTERVAL="${YUGABYTEDB_STABLE_CHECK_INTERVAL:-2}"
+POST_SEED_STABLE_CHECKS="${YUGABYTEDB_POST_SEED_STABLE_CHECKS:-10}"
 
 run_admin_sql() {
     PGPASSWORD=yugabyte psql -v ON_ERROR_STOP=1 -h "$YUGABYTEDB_HOST" -p "$YUGABYTEDB_PORT" -U yugabyte "$@"
@@ -90,6 +91,24 @@ wait_for_stable_test_sql() {
     echo "YugabyteDB test connection is stable!"
 }
 
+wait_for_stable_seed_data() {
+    stable_checks=0
+
+    echo "Checking YugabyteDB seeded data stability..."
+    while [ $stable_checks -lt "$POST_SEED_STABLE_CHECKS" ]; do
+        if run_test_sql -c "SELECT COUNT(*) FROM test_schema.users; SELECT COUNT(*) FROM test_schema.order_items;" >/dev/null 2>&1; then
+            stable_checks=$((stable_checks + 1))
+            echo "Seeded data check $stable_checks/$POST_SEED_STABLE_CHECKS succeeded"
+        else
+            stable_checks=0
+            echo "YugabyteDB seeded data check failed, restarting stability checks..."
+        fi
+        sleep "$STABLE_CHECK_INTERVAL"
+    done
+
+    echo "YugabyteDB seeded data is stable!"
+}
+
 wait_for_admin_sql
 
 if ! run_admin_sql -tAc "SELECT 1 FROM pg_database WHERE datname = 'test_db'" | grep -q 1; then
@@ -112,6 +131,7 @@ while [ $seed_attempt -le "$SEED_RETRIES" ]; do
 
     echo "Running YugabyteDB seed SQL (attempt $seed_attempt/$SEED_RETRIES)..."
     if run_test_sql -f /data.sql; then
+        wait_for_stable_seed_data
         echo "YugabyteDB data loaded"
         exit 0
     fi

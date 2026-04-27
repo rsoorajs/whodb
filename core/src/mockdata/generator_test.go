@@ -773,6 +773,33 @@ func TestGenUintRespectsConstraints(t *testing.T) {
 	}
 }
 
+func TestGenUintUsesTypeLimits(t *testing.T) {
+	faker := gofakeit.New(1)
+
+	tests := []struct {
+		typeName string
+		max      uint
+	}{
+		{"utinyint", 255},
+		{"usmallint", 65535},
+		{"uint8", 255},
+		{"uint16", 65535},
+	}
+
+	for _, tt := range tests {
+		for i := 0; i < 100; i++ {
+			val := genUint(tt.typeName, nil, faker)
+			n, ok := val.(uint)
+			if !ok {
+				t.Fatalf("%s: expected uint, got %T", tt.typeName, val)
+			}
+			if n > tt.max {
+				t.Fatalf("%s iteration %d: value %d exceeds max %d", tt.typeName, i, n, tt.max)
+			}
+		}
+	}
+}
+
 func TestGenDateFormat(t *testing.T) {
 	faker := gofakeit.New(1)
 

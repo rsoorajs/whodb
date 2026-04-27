@@ -218,7 +218,7 @@ export const rowsMethods = {
         }
 
         if (cancel) {
-            await this.page.keyboard.press("Escape");
+            await this.page.locator('[data-testid="cancel-edit-row"]').click();
             await this.page.getByText("Edit Row").first().waitFor({ state: "hidden" });
             await expect(this.page.locator("body")).not.toHaveAttribute("data-scroll-locked", /.+/, { timeout: TIMEOUT.ELEMENT });
         } else {
