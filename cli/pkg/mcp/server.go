@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/clidey/whodb/cli/internal/agentmanifest"
 	"github.com/clidey/whodb/cli/pkg/version"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -643,6 +644,23 @@ func registerResources(server *mcp.Server) {
 		}
 
 		data, _ := json.MarshalIndent(conns, "", "  ")
+		return &mcp.ReadResourceResult{
+			Contents: []*mcp.ResourceContents{
+				{Text: string(data)},
+			},
+		}, nil
+	})
+
+	server.AddResource(&mcp.Resource{
+		Name:        "agent-schema",
+		URI:         "whodb://agent/schema",
+		Description: "Machine-readable WhoDB agent capability manifest",
+		MIMEType:    "application/json",
+	}, func(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
+		data, err := json.MarshalIndent(agentmanifest.Build(), "", "  ")
+		if err != nil {
+			return nil, err
+		}
 		return &mcp.ReadResourceResult{
 			Contents: []*mcp.ResourceContents{
 				{Text: string(data)},
