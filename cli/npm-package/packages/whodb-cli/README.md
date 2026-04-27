@@ -103,6 +103,8 @@ npx @clidey/whodb-cli skills install --target claude-code --include-agents
 
 Supported targets: `codex`, `claude-code`, `cursor`, `vscode`, `github-copilot`, `gemini-cli`, `windsurf`, `opencode`, `cline`, `zed`, `continue`, and `aider`.
 
+Existing JSON and JSONC configuration files are merged in place and rewritten as formatted JSON.
+
 ## Environment Variables
 
 Configure database connections via environment profiles, for example `WHODB_POSTGRES='[{"alias":"prod","host":"localhost","user":"user","password":"pass","database":"db","port":"5432"}]'` or `WHODB_MYSQL_1='{"alias":"dev","host":"localhost","user":"user","password":"pass","database":"devdb","port":"3306"}'`. Each object supports `alias` (connection name), `host`, `user`, `password`, `database`, `port`, and optional `config`.

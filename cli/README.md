@@ -453,6 +453,8 @@ Supported targets:
 | `continue` | `~/.continue/config.yaml` |
 | `aider` | `~/.aider.conf.yml` plus `~/.aider/whodb-conventions.md` |
 
+Existing JSON and JSONC configuration files are merged in place and rewritten as formatted JSON.
+
 Flags:
 - `--format, -f`: Output format: `table` or `json`
 - `--quiet, -q`: Suppress informational messages

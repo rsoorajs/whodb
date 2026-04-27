@@ -429,9 +429,130 @@ func readJSONObject(path string) (map[string]any, error) {
 		return config, nil
 	}
 	if err := json.Unmarshal(data, &config); err != nil {
-		return nil, fmt.Errorf("failed to parse %s as JSON: %w", path, err)
+		data, err = stripJSONC(data)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse %s as JSON or JSONC: %w", path, err)
+		}
+		if err := json.Unmarshal(data, &config); err != nil {
+			return nil, fmt.Errorf("failed to parse %s as JSON or JSONC: %w", path, err)
+		}
 	}
 	return config, nil
+}
+
+func stripJSONC(data []byte) ([]byte, error) {
+	stripped := make([]byte, 0, len(data))
+	inString := false
+	escaped := false
+
+	for index := 0; index < len(data); index++ {
+		character := data[index]
+		if inString {
+			stripped = append(stripped, character)
+			if escaped {
+				escaped = false
+				continue
+			}
+			switch character {
+			case '\\':
+				escaped = true
+			case '"':
+				inString = false
+			}
+			continue
+		}
+
+		switch character {
+		case '"':
+			inString = true
+			stripped = append(stripped, character)
+		case '/':
+			if index+1 >= len(data) {
+				stripped = append(stripped, character)
+				continue
+			}
+			switch data[index+1] {
+			case '/':
+				index += 2
+				for index < len(data) && data[index] != '\n' && data[index] != '\r' {
+					index++
+				}
+				if index < len(data) {
+					stripped = append(stripped, data[index])
+				}
+			case '*':
+				index += 2
+				for index+1 < len(data) && !(data[index] == '*' && data[index+1] == '/') {
+					if data[index] == '\n' || data[index] == '\r' {
+						stripped = append(stripped, data[index])
+					}
+					index++
+				}
+				if index+1 >= len(data) {
+					return nil, fmt.Errorf("unterminated JSONC block comment")
+				}
+				index++
+			default:
+				stripped = append(stripped, character)
+			}
+		default:
+			stripped = append(stripped, character)
+		}
+	}
+
+	return stripTrailingJSONCommas(stripped), nil
+}
+
+func stripTrailingJSONCommas(data []byte) []byte {
+	stripped := make([]byte, 0, len(data))
+	inString := false
+	escaped := false
+
+	for index := 0; index < len(data); index++ {
+		character := data[index]
+		if inString {
+			stripped = append(stripped, character)
+			if escaped {
+				escaped = false
+				continue
+			}
+			switch character {
+			case '\\':
+				escaped = true
+			case '"':
+				inString = false
+			}
+			continue
+		}
+
+		switch character {
+		case '"':
+			inString = true
+			stripped = append(stripped, character)
+		case ',':
+			next := index + 1
+			for next < len(data) && isJSONWhitespace(data[next]) {
+				next++
+			}
+			if next < len(data) && (data[next] == '}' || data[next] == ']') {
+				continue
+			}
+			stripped = append(stripped, character)
+		default:
+			stripped = append(stripped, character)
+		}
+	}
+
+	return stripped
+}
+
+func isJSONWhitespace(character byte) bool {
+	switch character {
+	case ' ', '\t', '\n', '\r':
+		return true
+	default:
+		return false
+	}
 }
 
 func writeJSONFile(path string, value any, force bool) error {

@@ -2195,6 +2195,63 @@ func TestSkillsInstall_AssistantIntegrationPreservesExistingJSONConfig(t *testin
 	}
 }
 
+func TestSkillsInstall_AssistantIntegrationPreservesExistingJSONCConfig(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	path := filepath.Join(testHome, ".cursor", "mcp.json")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+	existing := `{
+  // Existing servers can be hand-edited JSONC.
+  "mcpServers": {
+    "other": {
+      "command": "node",
+      "args": [
+        "server.js",
+      ],
+      "url": "https://example.test//keep",
+    },
+    /* trailing comma below */
+  },
+}
+`
+	if err := os.WriteFile(path, []byte(existing), 0o644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	result, err := skillinstaller.Install(skillinstaller.InstallOptions{Target: "cursor"})
+	if err != nil {
+		t.Fatalf("install failed: %v", err)
+	}
+	if len(result.Configs) != 1 {
+		t.Fatalf("expected one config result, got %#v", result.Configs)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile failed: %v", err)
+	}
+	var config map[string]map[string]map[string]any
+	if err := json.Unmarshal(data, &config); err != nil {
+		t.Fatalf("rewritten config should be strict JSON: %v", err)
+	}
+	servers := config["mcpServers"]
+	if servers["other"] == nil {
+		t.Fatalf("expected existing server to be preserved, got %#v", servers)
+	}
+	if servers["other"]["url"] != "https://example.test//keep" {
+		t.Fatalf("expected string content to be preserved, got %#v", servers["other"])
+	}
+	if servers["whodb"] == nil {
+		t.Fatalf("expected whodb server to be added, got %#v", servers)
+	}
+	if strings.Contains(string(data), "// Existing") || strings.Contains(string(data), "/* trailing") {
+		t.Fatalf("expected rewritten config to be normalized JSON, got %q", string(data))
+	}
+}
+
 // TestAllNewCommandsRegistered verifies all new commands are registered on rootCmd
 func TestAllNewCommandsRegistered(t *testing.T) {
 	cleanup := setupTestEnv(t)
