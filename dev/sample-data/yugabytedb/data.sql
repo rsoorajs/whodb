@@ -15,7 +15,6 @@
 -- YugabyteDB seed data.
 -- Based on the Postgres seed but without XML (unsupported by YugabyteDB).
 
-DROP SCHEMA IF EXISTS test_schema CASCADE;
 CREATE SCHEMA test_schema;
 
 -- Users Table
@@ -42,7 +41,7 @@ CREATE TABLE IF NOT EXISTS test_schema.orders (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
     order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    total_amount DECIMAL(10,2) NOT NULL DEFAULT 0, -- Will be updated via trigger
+    total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
     status VARCHAR(20) CHECK (status IN ('pending', 'completed', 'canceled')) DEFAULT 'pending',
     FOREIGN KEY (user_id) REFERENCES test_schema.users(id) ON DELETE CASCADE
 );
@@ -68,12 +67,6 @@ CREATE TABLE IF NOT EXISTS test_schema.payments (
     FOREIGN KEY (order_id) REFERENCES test_schema.orders(id) ON DELETE CASCADE
 );
 
--- Indexes for faster queries
-CREATE INDEX idx_users_email ON test_schema.users(email);
-CREATE INDEX idx_orders_user_id ON test_schema.orders(user_id);
-CREATE INDEX idx_order_items_order_id ON test_schema.order_items(order_id);
-CREATE INDEX idx_payments_order_id ON test_schema.payments(order_id);
-
 -- View for Order Summary
 CREATE VIEW test_schema.order_summary AS
 SELECT
@@ -84,25 +77,6 @@ SELECT
     o.total_amount
 FROM test_schema.orders o
 JOIN test_schema.users u ON o.user_id = u.id;
-
--- Function to Update Order Total Automatically
-CREATE OR REPLACE FUNCTION test_schema.update_order_total() RETURNS TRIGGER AS $$
-BEGIN
-    UPDATE test_schema.orders
-    SET total_amount = (
-        SELECT COALESCE(SUM(price_at_purchase * quantity), 0)
-        FROM test_schema.order_items
-        WHERE order_id = NEW.order_id
-    )
-    WHERE id = NEW.order_id;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Trigger to Recalculate Order Total when an Order Item is Added/Updated
-CREATE TRIGGER trg_update_order_total
-AFTER INSERT OR UPDATE OR DELETE ON test_schema.order_items
-FOR EACH ROW EXECUTE FUNCTION test_schema.update_order_total();
 
 /*
  * Copyright 2026 Clidey, Inc.
@@ -135,10 +109,26 @@ INSERT INTO test_schema.products (name, description, price, stock_quantity) VALU
 
 -- Sample Orders
 INSERT INTO test_schema.orders (user_id, total_amount, status) VALUES
-(1, 0, 'completed'),
-(2, 0, 'pending');
+(1, 2000.00, 'completed'),
+(2, 150.00, 'pending');
 
--- Sample Order Items (Trigger will update the total_amount)
+/*
+ * Copyright 2026 Clidey, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+-- Sample Order Items
 INSERT INTO test_schema.order_items (order_id, product_id, quantity, price_at_purchase) VALUES
 (1, 1, 1, 1200.00), -- Laptop
 (1, 2, 1, 800.00),  -- Smartphone

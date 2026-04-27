@@ -23,6 +23,8 @@ MAX_RETRIES="${YUGABYTEDB_MAX_RETRIES:-90}"
 RETRY_INTERVAL="${YUGABYTEDB_RETRY_INTERVAL:-2}"
 SEED_RETRIES="${YUGABYTEDB_SEED_RETRIES:-3}"
 SEED_RETRY_INTERVAL="${YUGABYTEDB_SEED_RETRY_INTERVAL:-10}"
+STABLE_CHECKS="${YUGABYTEDB_STABLE_CHECKS:-5}"
+STABLE_CHECK_INTERVAL="${YUGABYTEDB_STABLE_CHECK_INTERVAL:-2}"
 
 run_admin_sql() {
     PGPASSWORD=yugabyte psql -v ON_ERROR_STOP=1 -h "$YUGABYTEDB_HOST" -p "$YUGABYTEDB_PORT" -U yugabyte "$@"
@@ -70,6 +72,24 @@ wait_for_test_sql() {
     exit 1
 }
 
+wait_for_stable_test_sql() {
+    stable_checks=0
+
+    echo "Checking YugabyteDB test connection stability..."
+    while [ $stable_checks -lt "$STABLE_CHECKS" ]; do
+        if run_test_sql -c "SELECT 1" >/dev/null 2>&1; then
+            stable_checks=$((stable_checks + 1))
+            echo "Stable check $stable_checks/$STABLE_CHECKS succeeded"
+        else
+            stable_checks=0
+            echo "YugabyteDB test connection became unavailable, restarting stability checks..."
+        fi
+        sleep "$STABLE_CHECK_INTERVAL"
+    done
+
+    echo "YugabyteDB test connection is stable!"
+}
+
 wait_for_admin_sql
 
 if ! run_admin_sql -tAc "SELECT 1 FROM pg_database WHERE datname = 'test_db'" | grep -q 1; then
@@ -80,9 +100,16 @@ run_admin_sql -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolnam
 run_admin_sql -d test_db -c "GRANT ALL PRIVILEGES ON DATABASE test_db TO \"user\";"
 
 wait_for_test_sql
+wait_for_stable_test_sql
 
 seed_attempt=1
 while [ $seed_attempt -le "$SEED_RETRIES" ]; do
+    run_admin_sql -c "DROP DATABASE IF EXISTS test_db;"
+    run_admin_sql -c "CREATE DATABASE test_db;"
+    run_admin_sql -d test_db -c "GRANT ALL PRIVILEGES ON DATABASE test_db TO \"user\";"
+    wait_for_test_sql
+    wait_for_stable_test_sql
+
     echo "Running YugabyteDB seed SQL (attempt $seed_attempt/$SEED_RETRIES)..."
     if run_test_sql -f /data.sql; then
         echo "YugabyteDB data loaded"
@@ -98,4 +125,5 @@ while [ $seed_attempt -le "$SEED_RETRIES" ]; do
     echo "YugabyteDB seed SQL failed, retrying in ${SEED_RETRY_INTERVAL}s..."
     sleep "$SEED_RETRY_INTERVAL"
     wait_for_test_sql
+    wait_for_stable_test_sql
 done
