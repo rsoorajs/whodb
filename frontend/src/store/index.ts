@@ -154,9 +154,15 @@ const chatTransform = createTransform(
 const aiModelsPersistTransform = createTransform(
   (inboundState: any) => {
     if (!inboundState?.modelTypes) return inboundState;
+    // Only persist non-platform providers (user-added API keys)
+    const nonPlatformProviders = inboundState.modelTypes.filter((m: any) => !m.isPlatformProvider);
     return {
       ...inboundState,
-      modelTypes: inboundState.modelTypes.filter((m: any) => !m.isPlatformProvider),
+      modelTypes: nonPlatformProviders,
+      // Don't persist current selection for platform providers (goes in platform store instead)
+      current: inboundState.current?.isPlatformProvider ? undefined : inboundState.current,
+      currentModel: inboundState.current?.isPlatformProvider ? undefined : inboundState.currentModel,
+      models: inboundState.current?.isPlatformProvider ? [] : inboundState.models,
     };
   },
   (outboundState: any) => outboundState,
@@ -202,7 +208,9 @@ export const reduxStore = configureStore({
 /** Injects an additional reducer slice into the store. Called by EE at boot to add EE-specific state. */
 export function registerReducer(key: string, reducer: Reducer): void {
   if (key in eeReducerMap) return;
-  eeReducerMap[key] = reducer;
+  // Persist EE reducers (like platform)
+  const persistedReducer = persistReducer({ key, storage }, reducer);
+  eeReducerMap[key] = persistedReducer;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   reduxStore.replaceReducer(buildRootReducer() as any);
 }

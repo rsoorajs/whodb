@@ -143,7 +143,16 @@ export const InternalRoutes = {
 
 export const PrivateRoute: FC = () => {
     const loggedIn = useAppSelector(state => state.auth.status === "logged-in");
+    const SetupGuard = getComponent('setup-guard');
+
     if(loggedIn) {
+        if (SetupGuard) {
+            return (
+                <Suspense fallback={<LoadingPage />}>
+                    <SetupGuard><Outlet /></SetupGuard>
+                </Suspense>
+            );
+        }
         return <Outlet />;
     }
     return <Navigate to={PublicRoutes.Login.path} />
