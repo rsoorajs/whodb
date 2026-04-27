@@ -32,6 +32,7 @@ var (
 	skillsAgentsDir     string
 	skillsIncludeAgents bool
 	skillsForce         bool
+	skillsDryRun        bool
 )
 
 var skillsCmd = &cobra.Command{
@@ -81,7 +82,10 @@ var skillsInstallCmd = &cobra.Command{
 
   # Install MCP configuration for an assistant
   whodb-cli skills install --target cursor
-  whodb-cli skills install --target gemini-cli`,
+  whodb-cli skills install --target gemini-cli
+
+  # Preview files without writing
+  whodb-cli skills install --target cursor --dry-run`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		format, err := resolveSkillsFormat(skillsFormat)
 		if err != nil {
@@ -98,6 +102,7 @@ var skillsInstallCmd = &cobra.Command{
 			AgentsDir:     skillsAgentsDir,
 			IncludeAgents: skillsIncludeAgents,
 			Force:         skillsForce,
+			DryRun:        skillsDryRun,
 		})
 		if err != nil {
 			return err
@@ -137,19 +142,35 @@ func writeSkillItems(cmd *cobra.Command, items []skillinstaller.Item) {
 func writeSkillInstallResult(cmd *cobra.Command, result skillinstaller.InstallResult) {
 	out := newCommandOutput(cmd, output.FormatTable, false)
 	for _, item := range result.Skills {
-		out.Success("Installed skill %s to %s", item.Name, item.Path)
+		writeInstalledItem(out, result.DryRun, "skill", item)
 	}
 	for _, item := range result.Agents {
-		out.Success("Installed agent %s to %s", item.Name, item.Path)
+		writeInstalledItem(out, result.DryRun, "agent", item)
 	}
 	for _, item := range result.Configs {
-		out.Success("Installed config %s to %s", item.Name, item.Path)
+		writeInstalledItem(out, result.DryRun, "config", item)
 	}
 	for _, item := range result.Rules {
-		out.Success("Installed rule %s to %s", item.Name, item.Path)
+		writeInstalledItem(out, result.DryRun, "rule", item)
 	}
 	for _, item := range result.Extensions {
-		out.Success("Installed extension %s to %s", item.Name, item.Path)
+		writeInstalledItem(out, result.DryRun, "extension", item)
+	}
+}
+
+func writeInstalledItem(out *output.Writer, dryRun bool, label string, item skillinstaller.InstalledFile) {
+	if !dryRun {
+		out.Success("Installed %s %s to %s", label, item.Name, item.Path)
+		return
+	}
+
+	action := item.Action
+	if action == "" {
+		action = "write"
+	}
+	out.Info("Would %s %s %s at %s", action, label, item.Name, item.Path)
+	if item.BackupPath != "" {
+		out.Info("Would back up %s %s to %s", label, item.Name, item.BackupPath)
 	}
 }
 
@@ -183,6 +204,7 @@ func init() {
 	skillsInstallCmd.Flags().StringVar(&skillsAgentsDir, "agents-dir", "", "directory where agents should be installed")
 	skillsInstallCmd.Flags().BoolVar(&skillsIncludeAgents, "include-agents", false, "install bundled agents as well as skills")
 	skillsInstallCmd.Flags().BoolVar(&skillsForce, "force", false, "overwrite existing installed files")
+	skillsInstallCmd.Flags().BoolVar(&skillsDryRun, "dry-run", false, "show files that would be written without modifying disk")
 
 	skillsCmd.RegisterFlagCompletionFunc("format", completeOutputFormats)
 	skillsInstallCmd.RegisterFlagCompletionFunc("target", completeSkillTargets)

@@ -434,6 +434,9 @@ whodb-cli skills install --target claude-code --include-agents
 whodb-cli skills install --target cursor
 whodb-cli skills install --target vscode
 whodb-cli skills install --target gemini-cli
+
+# Preview files without modifying disk
+whodb-cli skills install --target cursor --dry-run
 ```
 
 Supported targets:
@@ -455,6 +458,7 @@ Supported targets:
 
 Existing JSON and JSONC configuration files are merged in place and rewritten as formatted JSON.
 Before an existing JSON or YAML assistant config is rewritten, the original file is saved beside it as `<filename>.whodb.bak`.
+Use `--dry-run` to preview created or updated files and any backup paths without writing changes.
 
 Flags:
 - `--format, -f`: Output format: `table` or `json`
@@ -464,6 +468,7 @@ Flags:
 - `install --agents-dir`: Directory where agents should be installed
 - `install --include-agents`: Install bundled Markdown agents as well as skills. With `--target`, this is supported for `claude-code`; use `--agents-dir` for any custom agent destination
 - `install --force`: Overwrite existing installed files
+- `install --dry-run`: Show files that would be written without modifying disk
 
 ### explain
 

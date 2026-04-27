@@ -46,10 +46,12 @@ type InstallOptions struct {
 	AgentsDir     string
 	IncludeAgents bool
 	Force         bool
+	DryRun        bool
 }
 
 // InstallResult describes files written by an install operation.
 type InstallResult struct {
+	DryRun     bool            `json:"dryRun,omitempty"`
 	Skills     []InstalledFile `json:"skills,omitempty"`
 	Agents     []InstalledFile `json:"agents,omitempty"`
 	Configs    []InstalledFile `json:"configs,omitempty"`
@@ -59,8 +61,10 @@ type InstallResult struct {
 
 // InstalledFile records one installed asset.
 type InstalledFile struct {
-	Name string `json:"name"`
-	Path string `json:"path"`
+	Name       string `json:"name"`
+	Path       string `json:"path"`
+	Action     string `json:"action,omitempty"`
+	BackupPath string `json:"backupPath,omitempty"`
 }
 
 // List returns all bundled skills and agents.
@@ -112,13 +116,17 @@ func Install(opts InstallOptions) (InstallResult, error) {
 		return InstallResult{}, err
 	}
 
-	result := InstallResult{Skills: make([]InstalledFile, 0, len(names))}
+	result := InstallResult{DryRun: opts.DryRun, Skills: make([]InstalledFile, 0, len(names))}
 	for _, name := range names {
-		path, err := installSkill(name, targetDir, opts.Force)
+		path, err := installSkill(name, targetDir, opts.Force, opts.DryRun)
 		if err != nil {
 			return result, err
 		}
-		result.Skills = append(result.Skills, InstalledFile{Name: name, Path: path})
+		item, err := installedFile(name, path, opts.DryRun, false)
+		if err != nil {
+			return result, err
+		}
+		result.Skills = append(result.Skills, item)
 	}
 
 	if opts.IncludeAgents {
@@ -127,11 +135,15 @@ func Install(opts InstallOptions) (InstallResult, error) {
 			return result, err
 		}
 		for _, name := range agents {
-			path, err := installAgent(name, agentsDir, opts.Force)
+			path, err := installAgent(name, agentsDir, opts.Force, opts.DryRun)
 			if err != nil {
 				return result, err
 			}
-			result.Agents = append(result.Agents, InstalledFile{Name: name, Path: path})
+			item, err := installedFile(name, path, opts.DryRun, false)
+			if err != nil {
+				return result, err
+			}
+			result.Agents = append(result.Agents, item)
 		}
 	}
 
@@ -196,91 +208,139 @@ func installIntegrationTarget(opts InstallOptions) (InstallResult, error) {
 		return InstallResult{}, err
 	}
 
-	result := InstallResult{}
+	result := InstallResult{DryRun: opts.DryRun}
 	switch opts.Target {
 	case "cursor":
 		path := filepath.Join(home, ".cursor", "mcp.json")
-		if err := mergeJSONSection(path, "mcpServers", "whodb", stdioMCPServer(false), opts.Force); err != nil {
+		item, err := installedFile("cursor-mcp", path, opts.DryRun, true)
+		if err != nil {
 			return result, err
 		}
-		result.Configs = append(result.Configs, InstalledFile{Name: "cursor-mcp", Path: path})
+		if err := mergeJSONSection(path, "mcpServers", "whodb", stdioMCPServer(false), opts.Force, opts.DryRun); err != nil {
+			return result, err
+		}
+		result.Configs = append(result.Configs, item)
 	case "vscode":
 		path, err := vscodeMCPConfigPath()
 		if err != nil {
 			return result, err
 		}
-		if err := mergeJSONSection(path, "servers", "whodb", stdioMCPServer(true), opts.Force); err != nil {
+		item, err := installedFile("vscode-mcp", path, opts.DryRun, true)
+		if err != nil {
 			return result, err
 		}
-		result.Configs = append(result.Configs, InstalledFile{Name: "vscode-mcp", Path: path})
+		if err := mergeJSONSection(path, "servers", "whodb", stdioMCPServer(true), opts.Force, opts.DryRun); err != nil {
+			return result, err
+		}
+		result.Configs = append(result.Configs, item)
 	case "github-copilot":
 		path := filepath.Join(home, ".copilot", "mcp-config.json")
 		server := stdioMCPServer(true)
 		server["tools"] = []string{"*"}
-		if err := mergeJSONSection(path, "mcpServers", "whodb", server, opts.Force); err != nil {
+		item, err := installedFile("github-copilot-mcp", path, opts.DryRun, true)
+		if err != nil {
 			return result, err
 		}
-		result.Configs = append(result.Configs, InstalledFile{Name: "github-copilot-mcp", Path: path})
+		if err := mergeJSONSection(path, "mcpServers", "whodb", server, opts.Force, opts.DryRun); err != nil {
+			return result, err
+		}
+		result.Configs = append(result.Configs, item)
 	case "gemini-cli":
 		extensionDir := filepath.Join(home, ".gemini", "extensions", "whodb")
 		manifestPath := filepath.Join(extensionDir, "gemini-extension.json")
 		contextPath := filepath.Join(extensionDir, "GEMINI.md")
-		if err := writeJSONFile(manifestPath, geminiExtensionManifest(), opts.Force); err != nil {
+		item, err := installedFile("gemini-cli-extension", extensionDir, opts.DryRun, false)
+		if err != nil {
 			return result, err
 		}
-		if err := writeFile(contextPath, []byte(geminiContext()), opts.Force); err != nil {
+		if err := writeJSONFile(manifestPath, geminiExtensionManifest(), opts.Force, opts.DryRun); err != nil {
 			return result, err
 		}
-		result.Extensions = append(result.Extensions, InstalledFile{Name: "gemini-cli-extension", Path: extensionDir})
+		if err := writeFile(contextPath, []byte(geminiContext()), opts.Force, opts.DryRun); err != nil {
+			return result, err
+		}
+		result.Extensions = append(result.Extensions, item)
 	case "windsurf":
 		path := filepath.Join(home, ".codeium", "mcp_config.json")
-		if err := mergeJSONSection(path, "mcpServers", "whodb", stdioMCPServer(false), opts.Force); err != nil {
+		item, err := installedFile("windsurf-mcp", path, opts.DryRun, true)
+		if err != nil {
 			return result, err
 		}
-		result.Configs = append(result.Configs, InstalledFile{Name: "windsurf-mcp", Path: path})
+		if err := mergeJSONSection(path, "mcpServers", "whodb", stdioMCPServer(false), opts.Force, opts.DryRun); err != nil {
+			return result, err
+		}
+		result.Configs = append(result.Configs, item)
 	case "opencode":
 		path := filepath.Join(home, ".config", "opencode", "opencode.json")
-		if err := mergeOpenCodeConfig(path, opts.Force); err != nil {
+		item, err := installedFile("opencode-mcp", path, opts.DryRun, true)
+		if err != nil {
 			return result, err
 		}
-		result.Configs = append(result.Configs, InstalledFile{Name: "opencode-mcp", Path: path})
+		if err := mergeOpenCodeConfig(path, opts.Force, opts.DryRun); err != nil {
+			return result, err
+		}
+		result.Configs = append(result.Configs, item)
 	case "cline":
 		mcpPath := filepath.Join(home, ".cline", "data", "settings", "cline_mcp_settings.json")
-		if err := mergeJSONSection(mcpPath, "mcpServers", "whodb", clineMCPServer(), opts.Force); err != nil {
+		configItem, err := installedFile("cline-mcp", mcpPath, opts.DryRun, true)
+		if err != nil {
+			return result, err
+		}
+		if err := mergeJSONSection(mcpPath, "mcpServers", "whodb", clineMCPServer(), opts.Force, opts.DryRun); err != nil {
 			return result, err
 		}
 		rulePath := filepath.Join(home, "Documents", "Cline", "Rules", "whodb.md")
-		if err := writeFile(rulePath, []byte(assistantRuleMarkdown()), opts.Force); err != nil {
+		ruleItem, err := installedFile("cline-rule", rulePath, opts.DryRun, false)
+		if err != nil {
 			return result, err
 		}
-		result.Configs = append(result.Configs, InstalledFile{Name: "cline-mcp", Path: mcpPath})
-		result.Rules = append(result.Rules, InstalledFile{Name: "cline-rule", Path: rulePath})
+		if err := writeFile(rulePath, []byte(assistantRuleMarkdown()), opts.Force, opts.DryRun); err != nil {
+			return result, err
+		}
+		result.Configs = append(result.Configs, configItem)
+		result.Rules = append(result.Rules, ruleItem)
 	case "zed":
 		path, err := zedSettingsPath()
 		if err != nil {
 			return result, err
 		}
-		if err := mergeJSONSection(path, "context_servers", "whodb", stdioMCPServer(false), opts.Force); err != nil {
+		item, err := installedFile("zed-context-server", path, opts.DryRun, true)
+		if err != nil {
 			return result, err
 		}
-		result.Configs = append(result.Configs, InstalledFile{Name: "zed-context-server", Path: path})
+		if err := mergeJSONSection(path, "context_servers", "whodb", stdioMCPServer(false), opts.Force, opts.DryRun); err != nil {
+			return result, err
+		}
+		result.Configs = append(result.Configs, item)
 	case "continue":
 		path := filepath.Join(home, ".continue", "config.yaml")
-		if err := mergeContinueConfig(path, opts.Force); err != nil {
+		item, err := installedFile("continue-config", path, opts.DryRun, true)
+		if err != nil {
 			return result, err
 		}
-		result.Configs = append(result.Configs, InstalledFile{Name: "continue-config", Path: path})
+		if err := mergeContinueConfig(path, opts.Force, opts.DryRun); err != nil {
+			return result, err
+		}
+		result.Configs = append(result.Configs, item)
 	case "aider":
 		conventionsPath := filepath.Join(home, ".aider", "whodb-conventions.md")
-		if err := writeFile(conventionsPath, []byte(assistantRuleMarkdown()), opts.Force); err != nil {
+		ruleItem, err := installedFile("aider-conventions", conventionsPath, opts.DryRun, false)
+		if err != nil {
+			return result, err
+		}
+		if err := writeFile(conventionsPath, []byte(assistantRuleMarkdown()), opts.Force, opts.DryRun); err != nil {
 			return result, err
 		}
 		configPath := filepath.Join(home, ".aider.conf.yml")
-		if err := mergeAiderConfig(configPath, conventionsPath); err != nil {
+		configItem, err := installedFile("aider-config", configPath, opts.DryRun, true)
+		if err != nil {
 			return result, err
 		}
-		result.Configs = append(result.Configs, InstalledFile{Name: "aider-config", Path: configPath})
-		result.Rules = append(result.Rules, InstalledFile{Name: "aider-conventions", Path: conventionsPath})
+		if err := mergeAiderConfig(configPath, conventionsPath, opts.DryRun); err != nil {
+			return result, err
+		}
+		result.Configs = append(result.Configs, configItem)
+		result.Rules = append(result.Rules, ruleItem)
 	default:
 		return result, fmt.Errorf("unsupported target %q", opts.Target)
 	}
@@ -291,11 +351,15 @@ func installIntegrationTarget(opts InstallOptions) (InstallResult, error) {
 			return result, err
 		}
 		for _, name := range agents {
-			path, err := installAgent(name, opts.AgentsDir, opts.Force)
+			path, err := installAgent(name, opts.AgentsDir, opts.Force, opts.DryRun)
 			if err != nil {
 				return result, err
 			}
-			result.Agents = append(result.Agents, InstalledFile{Name: name, Path: path})
+			item, err := installedFile(name, path, opts.DryRun, false)
+			if err != nil {
+				return result, err
+			}
+			result.Agents = append(result.Agents, item)
 		}
 	}
 
@@ -363,7 +427,38 @@ func zedSettingsPath() (string, error) {
 	return filepath.Join(home, ".config", "zed", "settings.json"), nil
 }
 
-func mergeJSONSection(path, section, name string, value map[string]any, force bool) error {
+func installedFile(name, path string, dryRun, includeBackup bool) (InstalledFile, error) {
+	item := InstalledFile{Name: name, Path: path}
+	if !dryRun {
+		return item, nil
+	}
+
+	exists, err := fileExists(path)
+	if err != nil {
+		return item, err
+	}
+	if exists {
+		item.Action = "update"
+		if includeBackup {
+			item.BackupPath = path + ".whodb.bak"
+		}
+	} else {
+		item.Action = "create"
+	}
+	return item, nil
+}
+
+func fileExists(path string) (bool, error) {
+	if _, err := os.Stat(path); err == nil {
+		return true, nil
+	} else if os.IsNotExist(err) {
+		return false, nil
+	} else {
+		return false, err
+	}
+}
+
+func mergeJSONSection(path, section, name string, value map[string]any, force, dryRun bool) error {
 	config, err := readJSONObject(path)
 	if err != nil {
 		return err
@@ -383,10 +478,10 @@ func mergeJSONSection(path, section, name string, value map[string]any, force bo
 	}
 	sectionMap[name] = value
 
-	return writeJSONFile(path, config, true)
+	return writeJSONFile(path, config, true, dryRun)
 }
 
-func mergeOpenCodeConfig(path string, force bool) error {
+func mergeOpenCodeConfig(path string, force, dryRun bool) error {
 	config, err := readJSONObject(path)
 	if err != nil {
 		return err
@@ -413,7 +508,7 @@ func mergeOpenCodeConfig(path string, force bool) error {
 		"enabled": true,
 	}
 
-	return writeJSONFile(path, config, true)
+	return writeJSONFile(path, config, true, dryRun)
 }
 
 func readJSONObject(path string) (map[string]any, error) {
@@ -555,7 +650,7 @@ func isJSONWhitespace(character byte) bool {
 	}
 }
 
-func writeJSONFile(path string, value any, force bool) error {
+func writeJSONFile(path string, value any, force, dryRun bool) error {
 	if !force {
 		if _, err := os.Stat(path); err == nil {
 			return fmt.Errorf("%s already exists; use --force to overwrite", path)
@@ -568,10 +663,10 @@ func writeJSONFile(path string, value any, force bool) error {
 		return err
 	}
 	data = append(data, '\n')
-	return writeConfigFile(path, data, true)
+	return writeConfigFile(path, data, true, dryRun)
 }
 
-func mergeContinueConfig(path string, force bool) error {
+func mergeContinueConfig(path string, force, dryRun bool) error {
 	config, err := readYAMLObject(path)
 	if err != nil {
 		return err
@@ -593,16 +688,16 @@ func mergeContinueConfig(path string, force bool) error {
 		return err
 	}
 	appendYAMLStringList(config, "rules", "Use the WhoDB MCP server for database schema exploration, SQL querying, explain plans, data-quality audits, and schema comparisons.")
-	return writeYAMLFile(path, config)
+	return writeYAMLFile(path, config, dryRun)
 }
 
-func mergeAiderConfig(path, conventionsPath string) error {
+func mergeAiderConfig(path, conventionsPath string, dryRun bool) error {
 	config, err := readYAMLObject(path)
 	if err != nil {
 		return err
 	}
 	appendYAMLStringList(config, "read", conventionsPath)
-	return writeYAMLFile(path, config)
+	return writeYAMLFile(path, config, dryRun)
 }
 
 func readYAMLObject(path string) (map[string]any, error) {
@@ -623,12 +718,12 @@ func readYAMLObject(path string) (map[string]any, error) {
 	return config, nil
 }
 
-func writeYAMLFile(path string, value any) error {
+func writeYAMLFile(path string, value any, dryRun bool) error {
 	data, err := yaml.Marshal(value)
 	if err != nil {
 		return err
 	}
-	return writeConfigFile(path, data, true)
+	return writeConfigFile(path, data, true, dryRun)
 }
 
 func mergeYAMLNamedList(config map[string]any, key string, item map[string]any, force bool) error {
@@ -726,7 +821,7 @@ func agentNames() ([]string, error) {
 	return names, nil
 }
 
-func installSkill(name, targetDir string, force bool) (string, error) {
+func installSkill(name, targetDir string, force, dryRun bool) (string, error) {
 	sourcePath := filepath.ToSlash(filepath.Join("skills", name, "SKILL.md"))
 	data, err := whodbplugin.FS.ReadFile(sourcePath)
 	if err != nil {
@@ -734,13 +829,13 @@ func installSkill(name, targetDir string, force bool) (string, error) {
 	}
 
 	destPath := filepath.Join(targetDir, name, "SKILL.md")
-	if err := writeFile(destPath, data, force); err != nil {
+	if err := writeFile(destPath, data, force, dryRun); err != nil {
 		return "", err
 	}
 	return destPath, nil
 }
 
-func installAgent(name, targetDir string, force bool) (string, error) {
+func installAgent(name, targetDir string, force, dryRun bool) (string, error) {
 	sourcePath := filepath.ToSlash(filepath.Join("agents", name+".md"))
 	data, err := whodbplugin.FS.ReadFile(sourcePath)
 	if err != nil {
@@ -748,19 +843,18 @@ func installAgent(name, targetDir string, force bool) (string, error) {
 	}
 
 	destPath := filepath.Join(targetDir, name+".md")
-	if err := writeFile(destPath, data, force); err != nil {
+	if err := writeFile(destPath, data, force, dryRun); err != nil {
 		return "", err
 	}
 	return destPath, nil
 }
 
-func writeFile(path string, data []byte, force bool) error {
-	if !force {
-		if _, err := os.Stat(path); err == nil {
-			return fmt.Errorf("%s already exists; use --force to overwrite", path)
-		} else if !os.IsNotExist(err) {
-			return err
-		}
+func writeFile(path string, data []byte, force, dryRun bool) error {
+	if err := validateFileWrite(path, force); err != nil {
+		return err
+	}
+	if dryRun {
+		return nil
 	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
@@ -768,11 +862,25 @@ func writeFile(path string, data []byte, force bool) error {
 	return os.WriteFile(path, data, 0o644)
 }
 
-func writeConfigFile(path string, data []byte, force bool) error {
+func validateFileWrite(path string, force bool) error {
+	if !force {
+		if _, err := os.Stat(path); err == nil {
+			return fmt.Errorf("%s already exists; use --force to overwrite", path)
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+	}
+	return nil
+}
+
+func writeConfigFile(path string, data []byte, force, dryRun bool) error {
+	if dryRun {
+		return nil
+	}
 	if err := backupExistingFile(path); err != nil {
 		return err
 	}
-	return writeFile(path, data, force)
+	return writeFile(path, data, force, false)
 }
 
 func backupExistingFile(path string) error {

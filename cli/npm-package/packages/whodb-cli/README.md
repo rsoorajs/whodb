@@ -99,12 +99,14 @@ npx @clidey/whodb-cli skills install --target cursor
 npx @clidey/whodb-cli skills install --target vscode
 npx @clidey/whodb-cli skills install --target gemini-cli
 npx @clidey/whodb-cli skills install --target claude-code --include-agents
+npx @clidey/whodb-cli skills install --target cursor --dry-run
 ```
 
 Supported targets: `codex`, `claude-code`, `cursor`, `vscode`, `github-copilot`, `gemini-cli`, `windsurf`, `opencode`, `cline`, `zed`, `continue`, and `aider`.
 
 Existing JSON and JSONC configuration files are merged in place and rewritten as formatted JSON.
 Before an existing JSON or YAML assistant config is rewritten, the original file is saved beside it as `<filename>.whodb.bak`.
+Use `--dry-run` to preview created or updated files and any backup paths without writing changes.
 
 ## Environment Variables
 

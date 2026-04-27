@@ -2027,6 +2027,51 @@ func TestSkillsListAndInstall_JSON(t *testing.T) {
 	}
 }
 
+func TestSkillsInstall_DryRunJSONDoesNotWrite(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+	defer func() {
+		skillsDryRun = false
+	}()
+
+	path := filepath.Join(testHome, ".cursor", "mcp.json")
+	_ = os.Remove(path)
+	_ = os.Remove(path + ".whodb.bak")
+
+	skillsFormat = "json"
+	skillsQuiet = false
+	skillsTarget = "cursor"
+	skillsTargetDir = ""
+	skillsAgentsDir = ""
+	skillsIncludeAgents = false
+	skillsForce = false
+	skillsDryRun = true
+
+	installOut, installErr := setCommandBuffers(t, skillsInstallCmd)
+	if err := skillsInstallCmd.RunE(skillsInstallCmd, []string{}); err != nil {
+		t.Fatalf("skills dry-run failed: %v", err)
+	}
+	envelope := decodeJSONEnvelope[skillinstaller.InstallResult](t, installOut)
+	if !envelope.Data.DryRun {
+		t.Fatal("expected dry-run result")
+	}
+	if len(envelope.Data.Configs) != 1 {
+		t.Fatalf("expected one planned config, got %#v", envelope.Data.Configs)
+	}
+	if envelope.Data.Configs[0].Action != "create" {
+		t.Fatalf("expected create action, got %#v", envelope.Data.Configs[0])
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatalf("expected dry-run to leave config absent, got %v", err)
+	}
+	if _, err := os.Stat(path + ".whodb.bak"); !os.IsNotExist(err) {
+		t.Fatalf("expected dry-run to leave backup absent, got %v", err)
+	}
+	if installErr.Len() != 0 {
+		t.Fatalf("expected no stderr from skills dry-run, got %q", installErr.String())
+	}
+}
+
 func TestSkillsInstall_CodexTargetUsesAgentsSkills(t *testing.T) {
 	cleanup := setupTestEnv(t)
 	defer cleanup()
@@ -2162,6 +2207,7 @@ func TestSkillsInstall_AssistantIntegrationPreservesExistingJSONConfig(t *testin
 	defer cleanup()
 
 	path := filepath.Join(testHome, ".cursor", "mcp.json")
+	_ = os.Remove(path + ".whodb.bak")
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatalf("MkdirAll failed: %v", err)
 	}
@@ -2199,6 +2245,76 @@ func TestSkillsInstall_AssistantIntegrationPreservesExistingJSONConfig(t *testin
 	}
 	if string(backup) != existing {
 		t.Fatalf("expected backup to match original config, got %q", string(backup))
+	}
+}
+
+func TestSkillsInstall_DryRunDoesNotWriteSkill(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	targetDir := filepath.Join(t.TempDir(), "skills")
+	result, err := skillinstaller.Install(skillinstaller.InstallOptions{
+		Name:      "whodb",
+		TargetDir: targetDir,
+		DryRun:    true,
+	})
+	if err != nil {
+		t.Fatalf("dry-run failed: %v", err)
+	}
+	if !result.DryRun {
+		t.Fatal("expected dry-run result")
+	}
+	if len(result.Skills) != 1 {
+		t.Fatalf("expected one planned skill, got %#v", result.Skills)
+	}
+	if result.Skills[0].Action != "create" {
+		t.Fatalf("expected create action, got %#v", result.Skills[0])
+	}
+	if _, err := os.Stat(filepath.Join(targetDir, "whodb", "SKILL.md")); !os.IsNotExist(err) {
+		t.Fatalf("expected dry-run to leave skill absent, got %v", err)
+	}
+}
+
+func TestSkillsInstall_DryRunReportsBackupAndDoesNotWriteConfig(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	path := filepath.Join(testHome, ".cursor", "mcp.json")
+	_ = os.Remove(path + ".whodb.bak")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+	existing := `{"mcpServers":{"other":{"command":"node","args":["server.js"]}}}`
+	if err := os.WriteFile(path, []byte(existing), 0o644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	result, err := skillinstaller.Install(skillinstaller.InstallOptions{
+		Target: "cursor",
+		DryRun: true,
+	})
+	if err != nil {
+		t.Fatalf("dry-run failed: %v", err)
+	}
+	if !result.DryRun {
+		t.Fatal("expected dry-run result")
+	}
+	if len(result.Configs) != 1 {
+		t.Fatalf("expected one planned config, got %#v", result.Configs)
+	}
+	planned := result.Configs[0]
+	if planned.Action != "update" || planned.BackupPath != path+".whodb.bak" {
+		t.Fatalf("expected update with backup path, got %#v", planned)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile failed: %v", err)
+	}
+	if string(data) != existing {
+		t.Fatalf("expected dry-run to leave config unchanged, got %q", string(data))
+	}
+	if _, err := os.Stat(path + ".whodb.bak"); !os.IsNotExist(err) {
+		t.Fatalf("expected dry-run to leave backup absent, got %v", err)
 	}
 }
 
