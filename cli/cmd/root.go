@@ -65,7 +65,7 @@ Features:
   - Workspace restore — resumes your last reconnectable TUI session on startup
   - Data quality audit with configurable thresholds (Ctrl+U)
   - Agent capability manifest (agent schema), connection diagnostics (doctor), and built-in runbooks
-  - Bundled assistant skill installation (skills)
+  - Bundled assistant skills and MCP integration installation (skills)
   - Read-only mode (Ctrl+Y)
   - JSON cell viewer, fish-style history suggestions
 

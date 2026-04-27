@@ -17,6 +17,7 @@ npm install -g @clidey/whodb-cli
 - **Interactive TUI**: Full terminal UI for database management
 - **Programmatic Commands**: Query, export, and manage databases from scripts
 - **MCP Server**: Integrate with Claude Desktop, Claude Code, and other MCP clients
+- **Assistant Integrations**: Install ready-to-use MCP configs for Codex, Claude Code, Cursor, VS Code, GitHub Copilot CLI, Gemini CLI, Windsurf, OpenCode, Cline, Zed, Continue, and aider
 
 ## Supported Databases
 
@@ -88,6 +89,19 @@ Example configuration (from `whodb-cli mcp serve --help`):
   }
 }
 ```
+
+## Assistant Integration Installer
+
+Install native assistant configuration with the bundled CLI:
+
+```bash
+npx @clidey/whodb-cli skills install --target cursor
+npx @clidey/whodb-cli skills install --target vscode
+npx @clidey/whodb-cli skills install --target gemini-cli
+npx @clidey/whodb-cli skills install --target claude-code --include-agents
+```
+
+Supported targets: `codex`, `claude-code`, `cursor`, `vscode`, `github-copilot`, `gemini-cli`, `windsurf`, `opencode`, `cline`, `zed`, `continue`, and `aider`.
 
 ## Environment Variables
 

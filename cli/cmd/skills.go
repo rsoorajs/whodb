@@ -66,18 +66,22 @@ var skillsListCmd = &cobra.Command{
 
 var skillsInstallCmd = &cobra.Command{
 	Use:           "install [name]",
-	Short:         "Install bundled skills",
+	Short:         "Install bundled skills or assistant integrations",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Args:          cobra.MaximumNArgs(1),
 	Example: `  # Install all skills to a specific directory
-  whodb-cli skills install --target-dir ~/.agents/skills
+  whodb-cli skills install --target-dir ~/.codex/skills
 
   # Install one skill
-  whodb-cli skills install query-builder --target-dir ~/.agents/skills
+  whodb-cli skills install query-builder --target-dir ~/.codex/skills
 
   # Install common skill and agent directories for a target
-  whodb-cli skills install --target claude-code --include-agents`,
+  whodb-cli skills install --target claude-code --include-agents
+
+  # Install MCP configuration for an assistant
+  whodb-cli skills install --target cursor
+  whodb-cli skills install --target gemini-cli`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		format, err := resolveSkillsFormat(skillsFormat)
 		if err != nil {
@@ -138,6 +142,32 @@ func writeSkillInstallResult(cmd *cobra.Command, result skillinstaller.InstallRe
 	for _, item := range result.Agents {
 		out.Success("Installed agent %s to %s", item.Name, item.Path)
 	}
+	for _, item := range result.Configs {
+		out.Success("Installed config %s to %s", item.Name, item.Path)
+	}
+	for _, item := range result.Rules {
+		out.Success("Installed rule %s to %s", item.Name, item.Path)
+	}
+	for _, item := range result.Extensions {
+		out.Success("Installed extension %s to %s", item.Name, item.Path)
+	}
+}
+
+func completeSkillTargets(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return []string{
+		"codex",
+		"claude-code",
+		"cursor",
+		"vscode",
+		"github-copilot",
+		"gemini-cli",
+		"windsurf",
+		"opencode",
+		"cline",
+		"zed",
+		"continue",
+		"aider",
+	}, cobra.ShellCompDirectiveNoFileComp
 }
 
 func init() {
@@ -148,11 +178,12 @@ func init() {
 	skillsCmd.PersistentFlags().StringVarP(&skillsFormat, "format", "f", "table", "output format: table or json")
 	skillsCmd.PersistentFlags().BoolVarP(&skillsQuiet, "quiet", "q", false, "suppress informational messages")
 
-	skillsInstallCmd.Flags().StringVar(&skillsTarget, "target", "", "assistant target: codex or claude-code")
+	skillsInstallCmd.Flags().StringVar(&skillsTarget, "target", "", "assistant target: codex, claude-code, cursor, vscode, github-copilot, gemini-cli, windsurf, opencode, cline, zed, continue, or aider")
 	skillsInstallCmd.Flags().StringVar(&skillsTargetDir, "target-dir", "", "directory where skills should be installed")
 	skillsInstallCmd.Flags().StringVar(&skillsAgentsDir, "agents-dir", "", "directory where agents should be installed")
 	skillsInstallCmd.Flags().BoolVar(&skillsIncludeAgents, "include-agents", false, "install bundled agents as well as skills")
 	skillsInstallCmd.Flags().BoolVar(&skillsForce, "force", false, "overwrite existing installed files")
 
 	skillsCmd.RegisterFlagCompletionFunc("format", completeOutputFormats)
+	skillsInstallCmd.RegisterFlagCompletionFunc("target", completeSkillTargets)
 }

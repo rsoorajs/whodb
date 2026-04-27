@@ -27,7 +27,7 @@ An interactive, production-ready command-line interface for WhoDB with a Claude 
 - **Agent Manifest** - Machine-readable command, source, MCP, workflow, and safety metadata
 - **Database Doctor** - Redacted connection and metadata diagnostics for support and AI agents
 - **Built-in Runbooks** - Repeatable workflows for connection checks, schema audits, and schema diffs
-- **Assistant Skills Installer** - Install bundled WhoDB skills and optional agents into local assistant directories
+- **Assistant Integration Installer** - Install bundled WhoDB skills, agents, MCP configs, and rule files into local assistant directories
 - **MCP Server** - Model Context Protocol server for AI assistants (Claude, Cursor, etc.)
 
 ## Installation
@@ -414,27 +414,49 @@ Flags:
 
 ### skills
 
-List and install bundled WhoDB assistant skills and optional agents.
+List bundled WhoDB assistant skills and install native assistant integrations.
 
 ```bash
 # List bundled skills and agents
 whodb-cli skills list
 whodb-cli skills list --format json
 
-# Install all skills into an explicit directory
-whodb-cli skills install --target-dir ~/.agents/skills
+# Install all skills into an explicit skills directory
+whodb-cli skills install --target-dir ~/.codex/skills
 
 # Install one skill
-whodb-cli skills install query-builder --target-dir ~/.agents/skills
+whodb-cli skills install query-builder --target-dir ~/.codex/skills
 
-# Install skills and bundled agents using a known target
+# Install skills and bundled agents for Claude Code
 whodb-cli skills install --target claude-code --include-agents
+
+# Install native MCP configuration for an assistant
+whodb-cli skills install --target cursor
+whodb-cli skills install --target vscode
+whodb-cli skills install --target gemini-cli
 ```
+
+Supported targets:
+
+| Target | Files installed |
+|--------|-----------------|
+| `codex` | Skills under `~/.codex/skills` |
+| `claude-code` | Skills under `~/.claude/skills`, plus Markdown agents under `~/.claude/agents` with `--include-agents` |
+| `cursor` | `~/.cursor/mcp.json` |
+| `vscode` | VS Code user `mcp.json` |
+| `github-copilot` | GitHub Copilot CLI `~/.copilot/mcp-config.json` |
+| `gemini-cli` | `~/.gemini/extensions/whodb/gemini-extension.json` and `GEMINI.md` |
+| `windsurf` | `~/.codeium/mcp_config.json` |
+| `opencode` | `~/.config/opencode/opencode.json` with `mcp.whodb` |
+| `cline` | Cline MCP settings plus `~/Documents/Cline/Rules/whodb.md` |
+| `zed` | `~/.config/zed/settings.json` with `context_servers.whodb` |
+| `continue` | `~/.continue/config.yaml` |
+| `aider` | `~/.aider.conf.yml` plus `~/.aider/whodb-conventions.md` |
 
 Flags:
 - `--format, -f`: Output format: `table` or `json`
 - `--quiet, -q`: Suppress informational messages
-- `install --target`: Assistant target: `codex` or `claude-code`. Codex skills install to `~/.agents/skills`; Claude Code skills install to `~/.claude/skills`
+- `install --target`: Assistant target to install. Supported values are listed above
 - `install --target-dir`: Directory where skills should be installed
 - `install --agents-dir`: Directory where agents should be installed
 - `install --include-agents`: Install bundled Markdown agents as well as skills. With `--target`, this is supported for `claude-code`; use `--agents-dir` for any custom agent destination
@@ -1133,7 +1155,7 @@ cli/
 │   ├── agent.go        # Agent capability manifest
 │   ├── doctor.go       # Connection diagnostics
 │   ├── runbooks.go     # Built-in workflows
-│   ├── skills.go       # Skill installer
+│   ├── skills.go       # Skill and assistant integration installer
 │   ├── export.go       # Data export
 │   ├── history.go      # Query history
 │   ├── mcp.go          # MCP server command
@@ -1157,7 +1179,7 @@ cli/
 │   ├── database/       # Database manager
 │   ├── doctor/         # Connection diagnostics
 │   ├── runbooks/       # Built-in workflow execution
-│   ├── skillinstaller/ # Bundled skill installation
+│   ├── skillinstaller/ # Bundled skill and assistant integration installation
 │   └── history/        # Query history
 ├── pkg/
 │   ├── mcp/            # MCP server implementation

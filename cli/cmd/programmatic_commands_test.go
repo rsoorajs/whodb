@@ -2044,7 +2044,7 @@ func TestSkillsInstall_CodexTargetUsesAgentsSkills(t *testing.T) {
 	if err != nil {
 		t.Fatalf("skills install failed: %v", err)
 	}
-	expectedPath := filepath.Join(testHome, ".agents", "skills", "whodb", "SKILL.md")
+	expectedPath := filepath.Join(testHome, ".codex", "skills", "whodb", "SKILL.md")
 	if len(result.Skills) != 1 || result.Skills[0].Path != expectedPath {
 		t.Fatalf("expected Codex skill at %q, got %#v", expectedPath, result.Skills)
 	}
@@ -2063,6 +2063,135 @@ func TestSkillsInstall_CodexTargetRequiresAgentsDirForAgents(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "--include-agents requires --target claude-code or --agents-dir") {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestSkillsInstall_CodexTargetUsesExplicitAgentsDir(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	agentsDir := filepath.Join(t.TempDir(), "agents")
+	result, err := skillinstaller.Install(skillinstaller.InstallOptions{
+		Name:          "whodb",
+		Target:        "codex",
+		AgentsDir:     agentsDir,
+		IncludeAgents: true,
+		Force:         true,
+	})
+	if err != nil {
+		t.Fatalf("skills install failed: %v", err)
+	}
+	if len(result.Skills) != 1 {
+		t.Fatalf("expected one installed skill, got %#v", result.Skills)
+	}
+	if len(result.Agents) == 0 {
+		t.Fatal("expected bundled agents to install into explicit agents dir")
+	}
+	if _, err := os.Stat(filepath.Join(agentsDir, "database-analyst.md")); err != nil {
+		t.Fatalf("expected installed agent file: %v", err)
+	}
+}
+
+func TestSkillsInstall_AssistantIntegrationTargets(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		t.Fatalf("UserConfigDir failed: %v", err)
+	}
+
+	targets := []struct {
+		name      string
+		checkPath string
+	}{
+		{name: "cursor", checkPath: filepath.Join(testHome, ".cursor", "mcp.json")},
+		{name: "vscode", checkPath: filepath.Join(configDir, "Code", "User", "mcp.json")},
+		{name: "github-copilot", checkPath: filepath.Join(testHome, ".copilot", "mcp-config.json")},
+		{name: "gemini-cli", checkPath: filepath.Join(testHome, ".gemini", "extensions", "whodb", "gemini-extension.json")},
+		{name: "windsurf", checkPath: filepath.Join(testHome, ".codeium", "mcp_config.json")},
+		{name: "opencode", checkPath: filepath.Join(testHome, ".config", "opencode", "opencode.json")},
+		{name: "cline", checkPath: filepath.Join(testHome, ".cline", "data", "settings", "cline_mcp_settings.json")},
+		{name: "zed", checkPath: filepath.Join(configDir, "zed", "settings.json")},
+		{name: "continue", checkPath: filepath.Join(testHome, ".continue", "config.yaml")},
+		{name: "aider", checkPath: filepath.Join(testHome, ".aider.conf.yml")},
+	}
+
+	for _, target := range targets {
+		t.Run(target.name, func(t *testing.T) {
+			result, err := skillinstaller.Install(skillinstaller.InstallOptions{
+				Target: target.name,
+				Force:  true,
+			})
+			if err != nil {
+				t.Fatalf("install failed: %v", err)
+			}
+			if len(result.Configs)+len(result.Rules)+len(result.Extensions) == 0 {
+				t.Fatalf("expected installed integration files, got %#v", result)
+			}
+			data, err := os.ReadFile(target.checkPath)
+			if err != nil {
+				t.Fatalf("expected %s to exist: %v", target.checkPath, err)
+			}
+			content := string(data)
+			if target.name == "aider" {
+				if !strings.Contains(content, "whodb-conventions.md") {
+					t.Fatalf("expected aider config to read WhoDB conventions, got %q", content)
+				}
+				return
+			}
+			if !strings.Contains(content, "whodb") || !strings.Contains(content, "@clidey/whodb-cli") {
+				t.Fatalf("expected WhoDB MCP config in %s, got %q", target.checkPath, content)
+			}
+		})
+	}
+
+	if _, err := os.Stat(filepath.Join(testHome, "Documents", "Cline", "Rules", "whodb.md")); err != nil {
+		t.Fatalf("expected Cline rule file: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(testHome, ".aider", "whodb-conventions.md")); err != nil {
+		t.Fatalf("expected aider conventions file: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(testHome, ".gemini", "extensions", "whodb", "GEMINI.md")); err != nil {
+		t.Fatalf("expected Gemini context file: %v", err)
+	}
+}
+
+func TestSkillsInstall_AssistantIntegrationPreservesExistingJSONConfig(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	path := filepath.Join(testHome, ".cursor", "mcp.json")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+	existing := `{"mcpServers":{"other":{"command":"node","args":["server.js"]}}}`
+	if err := os.WriteFile(path, []byte(existing), 0o644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	result, err := skillinstaller.Install(skillinstaller.InstallOptions{Target: "cursor"})
+	if err != nil {
+		t.Fatalf("install failed: %v", err)
+	}
+	if len(result.Configs) != 1 {
+		t.Fatalf("expected one config result, got %#v", result.Configs)
+	}
+
+	var config map[string]map[string]any
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile failed: %v", err)
+	}
+	if err := json.Unmarshal(data, &config); err != nil {
+		t.Fatalf("JSON parse failed: %v", err)
+	}
+	servers := config["mcpServers"]
+	if servers["other"] == nil {
+		t.Fatalf("expected existing server to be preserved, got %#v", servers)
+	}
+	if servers["whodb"] == nil {
+		t.Fatalf("expected whodb server to be added, got %#v", servers)
 	}
 }
 

@@ -163,7 +163,7 @@ func buildCommands() []Command {
 		{Name: "runbooks describe", Description: "Describe one built-in database workflow.", Formats: []string{"table", "json"}},
 		{Name: "runbooks run", Description: "Run one built-in database workflow.", Formats: []string{"table", "json"}},
 		{Name: "skills list", Description: "List bundled WhoDB skills and agents.", Formats: []string{"table", "json"}},
-		{Name: "skills install", Description: "Install bundled WhoDB skills and optional agents into a local assistant directory.", Formats: []string{"table", "json"}},
+		{Name: "skills install", Description: "Install bundled WhoDB skills or MCP integrations into local assistant configuration.", Formats: []string{"table", "json"}},
 		{Name: "query", Description: "Execute a SQL query.", Formats: []string{"plain", "json", "ndjson", "csv"}, RequiresConnection: true},
 		{Name: "schemas", Description: "List schemas for a connection.", Formats: []string{"plain", "json", "csv"}, RequiresConnection: true},
 		{Name: "tables", Description: "List tables or storage units in a schema.", Formats: []string{"plain", "json", "csv"}, RequiresConnection: true},

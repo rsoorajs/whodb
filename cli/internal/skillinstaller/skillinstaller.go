@@ -14,18 +14,21 @@
  * limitations under the License.
  */
 
-// Package skillinstaller installs the bundled WhoDB assistant skills and agents.
+// Package skillinstaller installs bundled WhoDB assistant skills and integrations.
 package skillinstaller
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 
 	whodbplugin "github.com/clidey/whodb/cli/external-plugin/whodb"
+	"go.yaml.in/yaml/v3"
 )
 
 // Item describes one bundled skill or agent.
@@ -35,7 +38,7 @@ type Item struct {
 	Description string `json:"description,omitempty"`
 }
 
-// InstallOptions configures a skill installation.
+// InstallOptions configures a skill or assistant integration installation.
 type InstallOptions struct {
 	Name          string
 	Target        string
@@ -47,8 +50,11 @@ type InstallOptions struct {
 
 // InstallResult describes files written by an install operation.
 type InstallResult struct {
-	Skills []InstalledFile `json:"skills"`
-	Agents []InstalledFile `json:"agents,omitempty"`
+	Skills     []InstalledFile `json:"skills,omitempty"`
+	Agents     []InstalledFile `json:"agents,omitempty"`
+	Configs    []InstalledFile `json:"configs,omitempty"`
+	Rules      []InstalledFile `json:"rules,omitempty"`
+	Extensions []InstalledFile `json:"extensions,omitempty"`
 }
 
 // InstalledFile records one installed asset.
@@ -87,8 +93,12 @@ func List() ([]Item, error) {
 	return items, nil
 }
 
-// Install copies bundled skills and optional agents to the selected target.
+// Install writes bundled skills, agents, or assistant integration files.
 func Install(opts InstallOptions) (InstallResult, error) {
+	if isIntegrationTarget(opts.Target) {
+		return installIntegrationTarget(opts)
+	}
+
 	targetDir, agentsDir, err := resolveTargetDirs(opts)
 	if err != nil {
 		return InstallResult{}, err
@@ -149,11 +159,403 @@ func resolveTargetDirs(opts InstallOptions) (string, string, error) {
 
 	switch target {
 	case "codex":
-		return filepath.Join(home, ".agents", "skills"), "", nil
+		return filepath.Join(home, ".codex", "skills"), opts.AgentsDir, nil
 	case "claude-code":
-		return filepath.Join(home, ".claude", "skills"), filepath.Join(home, ".claude", "agents"), nil
+		agentsDir := opts.AgentsDir
+		if strings.TrimSpace(agentsDir) == "" {
+			agentsDir = filepath.Join(home, ".claude", "agents")
+		}
+		return filepath.Join(home, ".claude", "skills"), agentsDir, nil
 	default:
 		return "", "", fmt.Errorf("unsupported target %q", target)
+	}
+}
+
+func isIntegrationTarget(target string) bool {
+	switch strings.TrimSpace(target) {
+	case "cursor", "vscode", "github-copilot", "gemini-cli", "windsurf", "opencode", "cline", "zed", "continue", "aider":
+		return true
+	default:
+		return false
+	}
+}
+
+func installIntegrationTarget(opts InstallOptions) (InstallResult, error) {
+	if strings.TrimSpace(opts.TargetDir) != "" {
+		return InstallResult{}, fmt.Errorf("--target-dir installs skills directly; omit it when installing --target %s", opts.Target)
+	}
+	if strings.TrimSpace(opts.Name) != "" && opts.Name != "all" {
+		return InstallResult{}, fmt.Errorf("--target %s installs the whole WhoDB integration; omit the skill name", opts.Target)
+	}
+	if opts.IncludeAgents && strings.TrimSpace(opts.AgentsDir) == "" {
+		return InstallResult{}, fmt.Errorf("--include-agents is only supported for claude-code or a custom --agents-dir")
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return InstallResult{}, err
+	}
+
+	result := InstallResult{}
+	switch opts.Target {
+	case "cursor":
+		path := filepath.Join(home, ".cursor", "mcp.json")
+		if err := mergeJSONSection(path, "mcpServers", "whodb", stdioMCPServer(false), opts.Force); err != nil {
+			return result, err
+		}
+		result.Configs = append(result.Configs, InstalledFile{Name: "cursor-mcp", Path: path})
+	case "vscode":
+		path, err := vscodeMCPConfigPath()
+		if err != nil {
+			return result, err
+		}
+		if err := mergeJSONSection(path, "servers", "whodb", stdioMCPServer(true), opts.Force); err != nil {
+			return result, err
+		}
+		result.Configs = append(result.Configs, InstalledFile{Name: "vscode-mcp", Path: path})
+	case "github-copilot":
+		path := filepath.Join(home, ".copilot", "mcp-config.json")
+		server := stdioMCPServer(true)
+		server["tools"] = []string{"*"}
+		if err := mergeJSONSection(path, "mcpServers", "whodb", server, opts.Force); err != nil {
+			return result, err
+		}
+		result.Configs = append(result.Configs, InstalledFile{Name: "github-copilot-mcp", Path: path})
+	case "gemini-cli":
+		extensionDir := filepath.Join(home, ".gemini", "extensions", "whodb")
+		manifestPath := filepath.Join(extensionDir, "gemini-extension.json")
+		contextPath := filepath.Join(extensionDir, "GEMINI.md")
+		if err := writeJSONFile(manifestPath, geminiExtensionManifest(), opts.Force); err != nil {
+			return result, err
+		}
+		if err := writeFile(contextPath, []byte(geminiContext()), opts.Force); err != nil {
+			return result, err
+		}
+		result.Extensions = append(result.Extensions, InstalledFile{Name: "gemini-cli-extension", Path: extensionDir})
+	case "windsurf":
+		path := filepath.Join(home, ".codeium", "mcp_config.json")
+		if err := mergeJSONSection(path, "mcpServers", "whodb", stdioMCPServer(false), opts.Force); err != nil {
+			return result, err
+		}
+		result.Configs = append(result.Configs, InstalledFile{Name: "windsurf-mcp", Path: path})
+	case "opencode":
+		path := filepath.Join(home, ".config", "opencode", "opencode.json")
+		if err := mergeOpenCodeConfig(path, opts.Force); err != nil {
+			return result, err
+		}
+		result.Configs = append(result.Configs, InstalledFile{Name: "opencode-mcp", Path: path})
+	case "cline":
+		mcpPath := filepath.Join(home, ".cline", "data", "settings", "cline_mcp_settings.json")
+		if err := mergeJSONSection(mcpPath, "mcpServers", "whodb", clineMCPServer(), opts.Force); err != nil {
+			return result, err
+		}
+		rulePath := filepath.Join(home, "Documents", "Cline", "Rules", "whodb.md")
+		if err := writeFile(rulePath, []byte(assistantRuleMarkdown()), opts.Force); err != nil {
+			return result, err
+		}
+		result.Configs = append(result.Configs, InstalledFile{Name: "cline-mcp", Path: mcpPath})
+		result.Rules = append(result.Rules, InstalledFile{Name: "cline-rule", Path: rulePath})
+	case "zed":
+		path, err := zedSettingsPath()
+		if err != nil {
+			return result, err
+		}
+		if err := mergeJSONSection(path, "context_servers", "whodb", stdioMCPServer(false), opts.Force); err != nil {
+			return result, err
+		}
+		result.Configs = append(result.Configs, InstalledFile{Name: "zed-context-server", Path: path})
+	case "continue":
+		path := filepath.Join(home, ".continue", "config.yaml")
+		if err := mergeContinueConfig(path, opts.Force); err != nil {
+			return result, err
+		}
+		result.Configs = append(result.Configs, InstalledFile{Name: "continue-config", Path: path})
+	case "aider":
+		conventionsPath := filepath.Join(home, ".aider", "whodb-conventions.md")
+		if err := writeFile(conventionsPath, []byte(assistantRuleMarkdown()), opts.Force); err != nil {
+			return result, err
+		}
+		configPath := filepath.Join(home, ".aider.conf.yml")
+		if err := mergeAiderConfig(configPath, conventionsPath); err != nil {
+			return result, err
+		}
+		result.Configs = append(result.Configs, InstalledFile{Name: "aider-config", Path: configPath})
+		result.Rules = append(result.Rules, InstalledFile{Name: "aider-conventions", Path: conventionsPath})
+	default:
+		return result, fmt.Errorf("unsupported target %q", opts.Target)
+	}
+
+	if opts.IncludeAgents {
+		agents, err := agentNames()
+		if err != nil {
+			return result, err
+		}
+		for _, name := range agents {
+			path, err := installAgent(name, opts.AgentsDir, opts.Force)
+			if err != nil {
+				return result, err
+			}
+			result.Agents = append(result.Agents, InstalledFile{Name: name, Path: path})
+		}
+	}
+
+	return result, nil
+}
+
+func stdioMCPServer(includeType bool) map[string]any {
+	server := map[string]any{
+		"command": "npx",
+		"args":    []string{"-y", "@clidey/whodb-cli", "mcp", "serve"},
+	}
+	if includeType {
+		server["type"] = "stdio"
+	}
+	return server
+}
+
+func clineMCPServer() map[string]any {
+	server := stdioMCPServer(false)
+	server["disabled"] = false
+	return server
+}
+
+func geminiExtensionManifest() map[string]any {
+	return map[string]any{
+		"name":            "whodb",
+		"version":         "1.0.0",
+		"contextFileName": "GEMINI.md",
+		"mcpServers": map[string]any{
+			"whodb": stdioMCPServer(false),
+		},
+	}
+}
+
+func geminiContext() string {
+	return assistantRuleMarkdown()
+}
+
+func assistantRuleMarkdown() string {
+	return `# WhoDB Database Assistance
+
+Use the WhoDB MCP server for database work. Start with ` + "`whodb_connections`" + ` to find available connections, then inspect schemas with ` + "`whodb_schemas`" + `, ` + "`whodb_tables`" + `, and ` + "`whodb_columns`" + ` before writing queries.
+
+Prefer read-only exploration queries with explicit limits while investigating data. Use ` + "`whodb_explain`" + ` for query plans, ` + "`whodb_erd`" + ` for relationship metadata, ` + "`whodb_audit`" + ` for data-quality checks, and ` + "`whodb_diff`" + ` for schema comparisons.
+`
+}
+
+func vscodeMCPConfigPath() (string, error) {
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(configDir, "Code", "User", "mcp.json"), nil
+}
+
+func zedSettingsPath() (string, error) {
+	if runtime.GOOS == "linux" && os.Getenv("XDG_CONFIG_HOME") != "" {
+		configHome := os.Getenv("XDG_CONFIG_HOME")
+		return filepath.Join(configHome, "zed", "settings.json"), nil
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, ".config", "zed", "settings.json"), nil
+}
+
+func mergeJSONSection(path, section, name string, value map[string]any, force bool) error {
+	config, err := readJSONObject(path)
+	if err != nil {
+		return err
+	}
+
+	sectionValue, ok := config[section]
+	if !ok {
+		sectionValue = map[string]any{}
+		config[section] = sectionValue
+	}
+	sectionMap, ok := sectionValue.(map[string]any)
+	if !ok {
+		return fmt.Errorf("%s contains non-object %q", path, section)
+	}
+	if _, exists := sectionMap[name]; exists && !force {
+		return fmt.Errorf("%s already contains %s.%s; use --force to overwrite", path, section, name)
+	}
+	sectionMap[name] = value
+
+	return writeJSONFile(path, config, true)
+}
+
+func mergeOpenCodeConfig(path string, force bool) error {
+	config, err := readJSONObject(path)
+	if err != nil {
+		return err
+	}
+	if _, ok := config["$schema"]; !ok {
+		config["$schema"] = "https://opencode.ai/config.json"
+	}
+
+	mcpValue, ok := config["mcp"]
+	if !ok {
+		mcpValue = map[string]any{}
+		config["mcp"] = mcpValue
+	}
+	mcpMap, ok := mcpValue.(map[string]any)
+	if !ok {
+		return fmt.Errorf("%s contains non-object %q", path, "mcp")
+	}
+	if _, exists := mcpMap["whodb"]; exists && !force {
+		return fmt.Errorf("%s already contains mcp.whodb; use --force to overwrite", path)
+	}
+	mcpMap["whodb"] = map[string]any{
+		"type":    "local",
+		"command": []string{"npx", "-y", "@clidey/whodb-cli", "mcp", "serve"},
+		"enabled": true,
+	}
+
+	return writeJSONFile(path, config, true)
+}
+
+func readJSONObject(path string) (map[string]any, error) {
+	config := map[string]any{}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return config, nil
+		}
+		return nil, err
+	}
+	if len(strings.TrimSpace(string(data))) == 0 {
+		return config, nil
+	}
+	if err := json.Unmarshal(data, &config); err != nil {
+		return nil, fmt.Errorf("failed to parse %s as JSON: %w", path, err)
+	}
+	return config, nil
+}
+
+func writeJSONFile(path string, value any, force bool) error {
+	if !force {
+		if _, err := os.Stat(path); err == nil {
+			return fmt.Errorf("%s already exists; use --force to overwrite", path)
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+	}
+	data, err := json.MarshalIndent(value, "", "  ")
+	if err != nil {
+		return err
+	}
+	data = append(data, '\n')
+	return writeFile(path, data, true)
+}
+
+func mergeContinueConfig(path string, force bool) error {
+	config, err := readYAMLObject(path)
+	if err != nil {
+		return err
+	}
+	if _, ok := config["name"]; !ok {
+		config["name"] = "WhoDB"
+	}
+	if _, ok := config["version"]; !ok {
+		config["version"] = "1.0.0"
+	}
+	if _, ok := config["schema"]; !ok {
+		config["schema"] = "v1"
+	}
+	if err := mergeYAMLNamedList(config, "mcpServers", map[string]any{
+		"name":    "whodb",
+		"command": "npx",
+		"args":    []string{"-y", "@clidey/whodb-cli", "mcp", "serve"},
+	}, force); err != nil {
+		return err
+	}
+	appendYAMLStringList(config, "rules", "Use the WhoDB MCP server for database schema exploration, SQL querying, explain plans, data-quality audits, and schema comparisons.")
+	return writeYAMLFile(path, config)
+}
+
+func mergeAiderConfig(path, conventionsPath string) error {
+	config, err := readYAMLObject(path)
+	if err != nil {
+		return err
+	}
+	appendYAMLStringList(config, "read", conventionsPath)
+	return writeYAMLFile(path, config)
+}
+
+func readYAMLObject(path string) (map[string]any, error) {
+	config := map[string]any{}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return config, nil
+		}
+		return nil, err
+	}
+	if len(strings.TrimSpace(string(data))) == 0 {
+		return config, nil
+	}
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		return nil, fmt.Errorf("failed to parse %s as YAML: %w", path, err)
+	}
+	return config, nil
+}
+
+func writeYAMLFile(path string, value any) error {
+	data, err := yaml.Marshal(value)
+	if err != nil {
+		return err
+	}
+	return writeFile(path, data, true)
+}
+
+func mergeYAMLNamedList(config map[string]any, key string, item map[string]any, force bool) error {
+	name, _ := item["name"].(string)
+	items := yamlList(config[key])
+	for index, existing := range items {
+		existingMap, ok := existing.(map[string]any)
+		if !ok {
+			continue
+		}
+		if existingMap["name"] == name {
+			if !force {
+				return fmt.Errorf("%s already contains %s; use --force to overwrite", key, name)
+			}
+			items[index] = item
+			config[key] = items
+			return nil
+		}
+	}
+	config[key] = append(items, item)
+	return nil
+}
+
+func appendYAMLStringList(config map[string]any, key, value string) {
+	items := yamlList(config[key])
+	for _, item := range items {
+		if item == value {
+			config[key] = items
+			return
+		}
+	}
+	config[key] = append(items, value)
+}
+
+func yamlList(value any) []any {
+	switch typed := value.(type) {
+	case nil:
+		return []any{}
+	case []any:
+		return typed
+	case []string:
+		result := make([]any, 0, len(typed))
+		for _, item := range typed {
+			result = append(result, item)
+		}
+		return result
+	default:
+		return []any{typed}
 	}
 }
 
