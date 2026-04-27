@@ -51,6 +51,7 @@ import { ExternalLink } from "../utils/external-links";
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from "../hooks/use-translation";
 import { getAIProviderOverrides } from "../config/ai-provider-registry";
+import { persistAISelection } from "../config/ai-persistence";
 import {
     ArrowPathIcon,
     ArrowTopRightOnSquareIcon,
@@ -78,6 +79,11 @@ export const useAI = () => {
     const modelsRaw = useAppSelector(state => state.aiModels.models);
     const models = ensureModelsArray(modelsRaw);
     const [modelAvailable, setModelAvailable] = useState(true);
+
+    // Get persisted AI selection from platform store (EE only)
+    const platformState = useAppSelector(state => (state as any).platform);
+    const persistedProviderId = platformState?.selectedAIProviderId;
+    const persistedModel = platformState?.selectedAIModel;
 
     const dispatch = useAppDispatch();
 
@@ -130,7 +136,11 @@ export const useAI = () => {
 
     const handleAIModelChange = useCallback((item: string) => {
         dispatch(AIModelsActions.setCurrentModel(item));
-    }, [dispatch]);
+
+        if (modelType) {
+            persistAISelection({ providerId: modelType.id, model: item });
+        }
+    }, [dispatch, modelType]);
 
     const handleAIModelRemove = useCallback((_: any, item: string) => {
         if (modelType?.id === item) {
@@ -143,15 +153,26 @@ export const useAI = () => {
     const handleAIProviderChange = useCallback((item: string) => {
         dispatch(AIModelsActions.setCurrentModelType({ id: item }));
         handleAIModelTypeChange(item);
-    }, [handleAIModelTypeChange]);
+
+        persistAISelection({ providerId: item, model: null });
+    }, [handleAIModelTypeChange, dispatch]);
 
     const stateRef = useRef({ modelType, currentModel, modelTypes });
     stateRef.current = { modelType, currentModel, modelTypes };
 
     const loadProviders = useCallback(async () => {
-        const { modelType: currentType, currentModel: savedModel, modelTypes: currentModelTypes } = stateRef.current;
+        const state = stateRef.current;
+        const { modelType: currentType, currentModel: savedModel, modelTypes: currentModelTypes } = state;
         const overrides = getAIProviderOverrides();
         const isPlatformMode = overrides?.isActive() ?? false;
+
+        // Set selection immediately from platform store if available (before async loading)
+        if (persistedProviderId && !currentType) {
+            dispatch(AIModelsActions.setCurrentModelType({ id: persistedProviderId }));
+            if (persistedModel) {
+                dispatch(AIModelsActions.setCurrentModel(persistedModel));
+            }
+        }
 
         const userAddedProviders = isPlatformMode
             ? []
@@ -186,7 +207,10 @@ export const useAI = () => {
 
         const waitingForPlatform = currentType?.isPlatformProvider && !isPlatformMode;
 
-        if (currentType && !finalModelTypes.some(model => model.id === currentType.id) && !waitingForPlatform) {
+        // Check if we have a persisted provider ID to restore from platform store
+        const shouldRestoreSelection = !currentType && persistedProviderId && finalModelTypes.some(m => m.id === persistedProviderId);
+
+        if (currentType && !finalModelTypes.some(model => model.id === currentType.id) && !waitingForPlatform && !shouldRestoreSelection) {
             dispatch(AIModelsActions.setCurrentModelType({ id: "" }));
             dispatch(AIModelsActions.setModels([]));
             dispatch(AIModelsActions.setCurrentModel(undefined));
@@ -198,9 +222,17 @@ export const useAI = () => {
             return;
         }
 
-        const selectedProvider = currentType && finalModelTypes.some(m => m.id === currentType.id)
+        // Restore selection if available
+        let selectedProvider = currentType && finalModelTypes.some(m => m.id === currentType.id)
             ? currentType
             : null;
+
+        if (!selectedProvider && shouldRestoreSelection) {
+            selectedProvider = finalModelTypes.find(m => m.id === persistedProviderId) || null;
+            if (selectedProvider) {
+                dispatch(AIModelsActions.setCurrentModelType({ id: selectedProvider.id }));
+            }
+        }
 
         if (!selectedProvider && finalModelTypes.length > 0) {
             const firstProvider = finalModelTypes[0];
@@ -229,9 +261,13 @@ export const useAI = () => {
                 .then((aiModels) => {
                     dispatch(AIModelsActions.setModels(aiModels));
                     if (aiModels.length > 0) {
-                        if (!savedModel || !aiModels.includes(savedModel)) {
-                            dispatch(AIModelsActions.setCurrentModel(aiModels[0]));
-                        }
+                        // Try to restore persisted model from platform store, fall back to saved model, then first model
+                        const modelToSelect = (persistedModel && aiModels.includes(persistedModel))
+                            ? persistedModel
+                            : (savedModel && aiModels.includes(savedModel))
+                                ? savedModel
+                                : aiModels[0];
+                        dispatch(AIModelsActions.setCurrentModel(modelToSelect));
                     }
                 })
                 .catch(() => {
@@ -572,7 +608,7 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
                         data-testid="chat-delete-provider"
                         variant="secondary"
                         className={cn({
-                            "hidden": disableNewChat || modelType?.isEnvironmentDefined,
+                            "hidden": disableNewChat || modelType?.isEnvironmentDefined || modelType?.isPlatformProvider,
                         })}
                     >
                         <TrashIcon className="w-4 h-4" /> {t('deleteProvider')}

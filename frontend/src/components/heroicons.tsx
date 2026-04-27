@@ -68,6 +68,7 @@ import {
   LockClosedIcon as LockClosedIconCE,
   ListBulletIcon as ListBulletIconCE,
   MagnifyingGlassIcon as MagnifyingGlassIconCE,
+  PaperClipIcon as PaperClipIconCE,
   PencilIcon as PencilIconCE,
   PencilSquareIcon as PencilSquareIconCE,
   PlayIcon as PlayIconCE,
@@ -151,6 +152,7 @@ export const LinkIcon = iconOverrides.LinkIcon ?? LinkIconCE;
 export const LockClosedIcon = iconOverrides.LockClosedIcon ?? LockClosedIconCE;
 export const ListBulletIcon = iconOverrides.ListBulletIcon ?? ListBulletIconCE;
 export const MagnifyingGlassIcon = iconOverrides.MagnifyingGlassIcon ?? MagnifyingGlassIconCE;
+export const PaperClipIcon = iconOverrides.PaperClipIcon ?? PaperClipIconCE;
 export const PencilIcon = iconOverrides.PencilIcon ?? PencilIconCE;
 export const PencilSquareIcon = iconOverrides.PencilSquareIcon ?? PencilSquareIconCE;
 export const PlayIcon = iconOverrides.PlayIcon ?? PlayIconCE;

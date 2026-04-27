@@ -850,8 +850,8 @@ export const ChatPage: FC = () => {
     }, [chats.length, currentModel, getDatabaseSuggestions, modelAvailable, sourceScopeRef]);
 
     return (
-        <InternalPage routes={[InternalRoutes.Chat]} className="h-full" sidebar={<ChatHistorySidebar />}>
-            <div className="flex flex-col w-full h-full gap-2">
+        <InternalPage routes={[InternalRoutes.Chat]} className="h-full min-w-0" sidebar={<ChatHistorySidebar />}>
+            <div className="flex flex-col w-full h-full gap-2 min-w-[30%]">
                 <AIProvider
                     {...aiState}
                     onClear={handleClear}
