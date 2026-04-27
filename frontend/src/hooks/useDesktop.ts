@@ -97,11 +97,6 @@ export const useDesktopMenu = () => {
   const { showConfirm } = useDesktopDialog();
   const currentAuth = useAppSelector(state => state.auth.current);
 
-  // The menu handlers below are registered with desktopService exactly once
-  // (the useEffect depends only on isDesktop) and therefore close over stale
-  // values of auth state and the current route on every app transition. Mirror
-  // those values into refs that each render updates, so handlers always see
-  // the live values when the user actually triggers a menu action.
   const currentAuthRef = useRef(currentAuth);
   const locationRef = useRef(location);
   currentAuthRef.current = currentAuth;
