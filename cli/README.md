@@ -454,6 +454,7 @@ Supported targets:
 | `aider` | `~/.aider.conf.yml` plus `~/.aider/whodb-conventions.md` |
 
 Existing JSON and JSONC configuration files are merged in place and rewritten as formatted JSON.
+Before an existing JSON or YAML assistant config is rewritten, the original file is saved beside it as `<filename>.whodb.bak`.
 
 Flags:
 - `--format, -f`: Output format: `table` or `json`

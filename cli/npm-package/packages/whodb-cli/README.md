@@ -104,6 +104,7 @@ npx @clidey/whodb-cli skills install --target claude-code --include-agents
 Supported targets: `codex`, `claude-code`, `cursor`, `vscode`, `github-copilot`, `gemini-cli`, `windsurf`, `opencode`, `cline`, `zed`, `continue`, and `aider`.
 
 Existing JSON and JSONC configuration files are merged in place and rewritten as formatted JSON.
+Before an existing JSON or YAML assistant config is rewritten, the original file is saved beside it as `<filename>.whodb.bak`.
 
 ## Environment Variables
 

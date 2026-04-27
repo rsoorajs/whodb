@@ -2193,6 +2193,56 @@ func TestSkillsInstall_AssistantIntegrationPreservesExistingJSONConfig(t *testin
 	if servers["whodb"] == nil {
 		t.Fatalf("expected whodb server to be added, got %#v", servers)
 	}
+	backup, err := os.ReadFile(path + ".whodb.bak")
+	if err != nil {
+		t.Fatalf("expected existing config backup: %v", err)
+	}
+	if string(backup) != existing {
+		t.Fatalf("expected backup to match original config, got %q", string(backup))
+	}
+}
+
+func TestSkillsInstall_AssistantIntegrationDoesNotBackupNewJSONConfig(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	path := filepath.Join(testHome, ".cursor", "mcp.json")
+	_ = os.Remove(path)
+	_ = os.Remove(path + ".whodb.bak")
+	if _, err := skillinstaller.Install(skillinstaller.InstallOptions{Target: "cursor"}); err != nil {
+		t.Fatalf("install failed: %v", err)
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("expected config file: %v", err)
+	}
+	if _, err := os.Stat(path + ".whodb.bak"); !os.IsNotExist(err) {
+		t.Fatalf("expected no backup for new config, got %v", err)
+	}
+}
+
+func TestSkillsInstall_AssistantIntegrationBacksUpExistingYAMLConfig(t *testing.T) {
+	cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	path := filepath.Join(testHome, ".continue", "config.yaml")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+	existing := "name: Existing\nversion: 1.0.0\nschema: v1\nrules:\n  - keep this rule\n"
+	if err := os.WriteFile(path, []byte(existing), 0o644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	if _, err := skillinstaller.Install(skillinstaller.InstallOptions{Target: "continue"}); err != nil {
+		t.Fatalf("install failed: %v", err)
+	}
+	backup, err := os.ReadFile(path + ".whodb.bak")
+	if err != nil {
+		t.Fatalf("expected existing YAML config backup: %v", err)
+	}
+	if string(backup) != existing {
+		t.Fatalf("expected backup to match original YAML config, got %q", string(backup))
+	}
 }
 
 func TestSkillsInstall_AssistantIntegrationPreservesExistingJSONCConfig(t *testing.T) {

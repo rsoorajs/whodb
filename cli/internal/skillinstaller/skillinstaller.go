@@ -568,7 +568,7 @@ func writeJSONFile(path string, value any, force bool) error {
 		return err
 	}
 	data = append(data, '\n')
-	return writeFile(path, data, true)
+	return writeConfigFile(path, data, true)
 }
 
 func mergeContinueConfig(path string, force bool) error {
@@ -628,7 +628,7 @@ func writeYAMLFile(path string, value any) error {
 	if err != nil {
 		return err
 	}
-	return writeFile(path, data, true)
+	return writeConfigFile(path, data, true)
 }
 
 func mergeYAMLNamedList(config map[string]any, key string, item map[string]any, force bool) error {
@@ -766,6 +766,24 @@ func writeFile(path string, data []byte, force bool) error {
 		return err
 	}
 	return os.WriteFile(path, data, 0o644)
+}
+
+func writeConfigFile(path string, data []byte, force bool) error {
+	if err := backupExistingFile(path); err != nil {
+		return err
+	}
+	return writeFile(path, data, force)
+}
+
+func backupExistingFile(path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	return os.WriteFile(path+".whodb.bak", data, 0o644)
 }
 
 func readSkillDescription(name string) (string, error) {
