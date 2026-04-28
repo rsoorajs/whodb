@@ -30,7 +30,7 @@ var (
 	ltePattern        = regexp.MustCompile(`<=\s*\(?(-?\d+(?:\.\d+)?)\)?`)
 	ltPattern         = regexp.MustCompile(`<[^=]\s*\(?(-?\d+(?:\.\d+)?)\)?|<\s*\(?(-?\d+(?:\.\d+)?)\)?$`)
 	betweenPattern    = regexp.MustCompile(`(?i)between\s+\(?(-?\d+(?:\.\d+)?)\)?\s+and\s+\(?(-?\d+(?:\.\d+)?)\)?`)
-	typeCastPattern   = regexp.MustCompile(`::\w+(\s+\w+)?(\[\])?`)
+	typeCastPattern   = regexp.MustCompile(`:{2,3}\w+(\s+\w+)?(\[\])?`)
 	columnNamePattern = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*`)
 	// Pattern for OR-style equality constraints: [col]='value' OR [col]='value2'
 	// Matches: [column]='value' or column='value' (with single or double quotes)
@@ -139,7 +139,7 @@ func ParseORClauseValues(clause string) []string {
 //   - Single quotes: 'value'
 //   - Double quotes: "value"
 //   - MySQL charset prefix: _utf8mb4'value'
-//   - PostgreSQL type casts: 'value'::text
+//   - PostgreSQL/CockroachDB type casts: 'value'::text, 'value':::STRING
 func ParseValueList(content string) []string {
 	var values []string
 	parts := strings.Split(content, ",")
@@ -280,6 +280,35 @@ func SanitizeConstraintValue(value string) string {
 	value = typeCastPattern.ReplaceAllString(value, "")
 	value = strings.TrimSpace(value)
 	value = strings.Trim(value, "'\"")
+	return value
+}
+
+// TrimEnclosingParens removes balanced outer parentheses without changing nested expressions.
+func TrimEnclosingParens(value string) string {
+	value = strings.TrimSpace(value)
+	for len(value) >= 2 && value[0] == '(' && value[len(value)-1] == ')' {
+		depth := 0
+		enclosesEntireValue := true
+		for i := 0; i < len(value); i++ {
+			switch value[i] {
+			case '(':
+				depth++
+			case ')':
+				depth--
+				if depth == 0 && i != len(value)-1 {
+					enclosesEntireValue = false
+				}
+			}
+			if depth < 0 {
+				enclosesEntireValue = false
+				break
+			}
+		}
+		if depth != 0 || !enclosesEntireValue {
+			break
+		}
+		value = strings.TrimSpace(value[1 : len(value)-1])
+	}
 	return value
 }
 

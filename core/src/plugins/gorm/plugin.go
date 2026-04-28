@@ -156,6 +156,9 @@ type GormPluginFunctions interface {
 	// Default: 65535 (PostgreSQL/MySQL limit). Override for databases with lower limits.
 	GetMaxBulkInsertParameters() int
 
+	// GetBulkInsertBatchSize returns the preferred bulk insert row batch size.
+	GetBulkInsertBatchSize() int
+
 	// BuildSkipConflictClause returns an OnConflict clause that skips duplicate rows
 	// during append-mode imports. Dialect-specific because Postgres uses DO NOTHING
 	// while MySQL needs identity assignments (pk = pk) since GORM can't generate the
@@ -709,6 +712,11 @@ func (p *GormPlugin) NormalizeType(typeName string) string {
 // GetMaxBulkInsertParameters returns the default limit of 65535 parameters.
 func (p *GormPlugin) GetMaxBulkInsertParameters() int {
 	return 65535
+}
+
+// GetBulkInsertBatchSize returns the default bulk insert row batch size.
+func (p *GormPlugin) GetBulkInsertBatchSize() int {
+	return 1000
 }
 
 // BuildSkipConflictClause returns ON CONFLICT (pk) DO NOTHING — works for Postgres, SQLite, ClickHouse.

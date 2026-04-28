@@ -143,7 +143,7 @@ export const InternalRoutes = {
 
 export const PrivateRoute: FC = () => {
     const loggedIn = useAppSelector(state => state.auth.status === "logged-in");
-    const SetupGuard = getComponent('setup-guard');
+    const SetupGuard = getComponent('setup-guard') as FC<{ children: ReactNode }> | undefined;
 
     if(loggedIn) {
         if (SetupGuard) {

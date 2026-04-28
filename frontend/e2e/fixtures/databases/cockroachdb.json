@@ -37,6 +37,7 @@
   "mockData": {
     "supportedTable": "products",
     "tableWithFKs": "orders",
+    "dataTypesRowCount": 20,
     "fkRelationships": {
       "orders": {
         "parentTable": "users",

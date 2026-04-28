@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -154,7 +154,7 @@ func (p *MySQLPlugin) parseCheckConstraint(checkClause string, constraints map[s
 	}
 
 	// Now trim outer parentheses for other constraint types
-	clause := strings.Trim(checkClause, "()")
+	clause := gorm_plugin.TrimEnclosingParens(checkClause)
 
 	columnName := gorm_plugin.ExtractColumnNameFromClause(clause)
 	if columnName == "" {

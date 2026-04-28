@@ -40,8 +40,8 @@ export const rowsMethods = {
         }
 
         await this.page.locator('[data-testid="submit-add-row-button"]').click();
-        await this.page.locator('[data-testid="submit-add-row-button"]').waitFor({ state: "hidden", timeout: TIMEOUT.ACTION });
-        await expect(this.page.locator("body")).not.toHaveAttribute("data-scroll-locked", /.+/, { timeout: TIMEOUT.ELEMENT });
+        await this.page.locator('[data-testid="submit-add-row-button"]').waitFor({ state: "hidden", timeout: TIMEOUT.SLOW });
+        await expect(this.page.locator("body")).not.toHaveAttribute("data-scroll-locked", /.+/, { timeout: TIMEOUT.SLOW });
         await this.waitForDataTable();
     },
 
@@ -53,7 +53,7 @@ export const rowsMethods = {
      * @returns {Promise<number>}
      */
     async waitForRowValue(columnIndex, expectedValue, options = {}) {
-        const timeout = options.timeout || 10000;
+        const timeout = options.timeout || TIMEOUT.SLOW;
         const expectedStr = String(expectedValue).trim();
         let foundIndex = -1;
 
@@ -80,7 +80,7 @@ export const rowsMethods = {
      * @returns {Promise<number>}
      */
     async waitForRowContaining(expectedValue, options = {}) {
-        const timeout = options.timeout || 10000;
+        const timeout = options.timeout || TIMEOUT.SLOW;
         const caseSensitive = options.caseSensitive || false;
         const searchStr = caseSensitive ? String(expectedValue) : String(expectedValue).toLowerCase();
         let foundIndex = -1;
@@ -156,7 +156,10 @@ export const rowsMethods = {
         await expect(this.page.locator("body")).not.toHaveAttribute("data-scroll-locked", /.+/, { timeout: TIMEOUT.ELEMENT });
 
         if (waitForRowCount) {
-            await expect(this.dataRows()).toHaveCount(initialRowCount - 1, { timeout: TIMEOUT.ACTION });
+            await expect(async () => {
+                const { rows } = await this.getTableData();
+                expect(rows.length).toEqual(initialRowCount - 1);
+            }).toPass({ timeout: TIMEOUT.SLOW });
         }
     },
 
@@ -223,8 +226,9 @@ export const rowsMethods = {
             await expect(this.page.locator("body")).not.toHaveAttribute("data-scroll-locked", /.+/, { timeout: TIMEOUT.ELEMENT });
         } else {
             await this.page.locator('[data-testid="update-button"]').click();
-            await this.page.locator('[data-testid="update-button"]').waitFor({ state: "hidden" });
-            await expect(this.page.locator("body")).not.toHaveAttribute("data-scroll-locked", /.+/, { timeout: TIMEOUT.ELEMENT });
+            await this.page.locator('[data-testid="update-button"]').waitFor({ state: "hidden", timeout: TIMEOUT.SLOW });
+            await expect(this.page.locator("body")).not.toHaveAttribute("data-scroll-locked", /.+/, { timeout: TIMEOUT.SLOW });
+            await this.waitForDataTable();
         }
     },
 };

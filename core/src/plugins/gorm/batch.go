@@ -303,7 +303,7 @@ func (p *GormPlugin) BulkAddRows(config *engine.PluginConfig, schema string, sto
 		}
 
 		batchCfg := &BatchConfig{
-			BatchSize:     1000,
+			BatchSize:     p.GormPluginFunctions.GetBulkInsertBatchSize(),
 			UseBulkInsert: true,
 			FailOnError:   true,
 			LogProgress:   len(records) > 10000, // Log progress for large datasets

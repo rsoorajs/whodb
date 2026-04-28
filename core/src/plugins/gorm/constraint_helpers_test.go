@@ -110,6 +110,11 @@ func TestParseINClauseValues(t *testing.T) {
 			clause:   "status IN ('active'::character varying, 'inactive'::character varying)",
 			expected: []string{"active", "inactive"},
 		},
+		{
+			name:     "CockroachDB type casts in IN clause",
+			clause:   "status IN ('pending':::STRING, 'completed':::STRING, 'canceled':::STRING)",
+			expected: []string{"pending", "completed", "canceled"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -158,6 +163,11 @@ func TestParseValueList(t *testing.T) {
 			content:  "'values'::text[]",
 			expected: []string{"values"},
 		},
+		{
+			name:     "CockroachDB type casts",
+			content:  "'pending':::STRING, 'completed':::STRING",
+			expected: []string{"pending", "completed"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -165,6 +175,44 @@ func TestParseValueList(t *testing.T) {
 			result := ParseValueList(tt.content)
 			if !reflect.DeepEqual(result, tt.expected) {
 				t.Errorf("ParseValueList(%q) = %v, want %v", tt.content, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestTrimEnclosingParens(t *testing.T) {
+	tests := []struct {
+		name     string
+		value    string
+		expected string
+	}{
+		{
+			name:     "simple wrapper",
+			value:    "(status >= 0)",
+			expected: "status >= 0",
+		},
+		{
+			name:     "nested wrapper preserves IN list",
+			value:    "((status IN ('pending'::STRING, 'completed'::STRING, 'canceled'::STRING)))",
+			expected: "status IN ('pending'::STRING, 'completed'::STRING, 'canceled'::STRING)",
+		},
+		{
+			name:     "non-enclosing parens remain",
+			value:    "(age >= 18) AND (age <= 120)",
+			expected: "(age >= 18) AND (age <= 120)",
+		},
+		{
+			name:     "function call wrapper",
+			value:    "((length(password) >= 8))",
+			expected: "length(password) >= 8",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := TrimEnclosingParens(tt.value)
+			if result != tt.expected {
+				t.Errorf("TrimEnclosingParens(%q) = %q, want %q", tt.value, result, tt.expected)
 			}
 		})
 	}

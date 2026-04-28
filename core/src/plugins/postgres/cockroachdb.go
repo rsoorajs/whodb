@@ -18,9 +18,11 @@ package postgres
 
 import (
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"strings"
 
+	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/common/ssl"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
@@ -266,6 +268,33 @@ func cockroachDBColumnIsAutoIncrement(columnDefault sql.NullString) bool {
 // MarkGeneratedColumns is a no-op because CockroachDB column discovery already marks computed columns.
 func (p *CockroachDBPlugin) MarkGeneratedColumns(config *engine.PluginConfig, schema string, storageUnit string, columns []engine.Column) error {
 	return nil
+}
+
+// GetBulkInsertBatchSize returns a smaller row batch for CockroachDB bulk inserts.
+func (p *CockroachDBPlugin) GetBulkInsertBatchSize() int {
+	return 1
+}
+
+// HandleCustomDataType converts CockroachDB-specific writable values.
+func (p *CockroachDBPlugin) HandleCustomDataType(value string, columnType string, isNullable bool) (any, bool, error) {
+	baseType := common.ParseTypeSpec(p.NormalizeType(strings.ToUpper(columnType))).BaseType
+	if baseType != "BYTEA" {
+		return nil, false, nil
+	}
+
+	if isNullable && (value == "" || strings.EqualFold(value, "NULL")) {
+		return nil, true, nil
+	}
+
+	blobData, hasHexPrefix, err := gorm_plugin.DecodeHexLiteral(value)
+	if err != nil {
+		return nil, true, fmt.Errorf("invalid hex binary format: %v", err)
+	}
+	if !hasHexPrefix {
+		blobData = []byte(value)
+	}
+
+	return gorm.Expr("decode(?, 'hex')", hex.EncodeToString(blobData)), true, nil
 }
 
 // IsGeometryType returns false for CockroachDB since it has limited geometry support

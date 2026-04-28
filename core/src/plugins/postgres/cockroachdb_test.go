@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/clidey/whodb/core/src/engine"
+	"gorm.io/gorm/clause"
 )
 
 func TestCockroachDBSchemaQueryExcludesSystemSchemas(t *testing.T) {
@@ -115,5 +116,73 @@ func TestCockroachDBMarkGeneratedColumnsIsNoOp(t *testing.T) {
 
 	if err := plugin.MarkGeneratedColumns(nil, "test_schema", "users", columns); err != nil {
 		t.Fatalf("MarkGeneratedColumns returned error: %v", err)
+	}
+}
+
+func TestCockroachDBParseCheckConstraintWithStringCasts(t *testing.T) {
+	plugin := NewCockroachDBPlugin().PluginFunctions.(*CockroachDBPlugin)
+	constraints := map[string]map[string]any{}
+
+	plugin.parseCheckConstraint("CHECK ((status IN ('pending'::STRING, 'completed'::STRING, 'canceled'::STRING)))", constraints)
+
+	values, ok := constraints["status"]["check_values"].([]string)
+	if !ok {
+		t.Fatalf("expected status check_values, got %#v", constraints["status"]["check_values"])
+	}
+
+	expected := []string{"pending", "completed", "canceled"}
+	if len(values) != len(expected) {
+		t.Fatalf("expected %d values, got %d (%v)", len(expected), len(values), values)
+	}
+	for i, expectedValue := range expected {
+		if values[i] != expectedValue {
+			t.Fatalf("value %d = %q, want %q", i, values[i], expectedValue)
+		}
+	}
+}
+
+func TestCockroachDBBulkInsertBatchSize(t *testing.T) {
+	plugin := NewCockroachDBPlugin().PluginFunctions.(*CockroachDBPlugin)
+
+	if batchSize := plugin.GetBulkInsertBatchSize(); batchSize != 1 {
+		t.Fatalf("expected CockroachDB bulk insert batch size 1, got %d", batchSize)
+	}
+}
+
+func TestCockroachDBHandleCustomDataTypeBytea(t *testing.T) {
+	plugin := NewCockroachDBPlugin().PluginFunctions.(*CockroachDBPlugin)
+
+	value, handled, err := plugin.HandleCustomDataType("0x1234", "BYTEA", false)
+	if err != nil {
+		t.Fatalf("HandleCustomDataType returned error: %v", err)
+	}
+	if !handled {
+		t.Fatalf("expected BYTEA to be handled")
+	}
+
+	expr, ok := value.(clause.Expr)
+	if !ok {
+		t.Fatalf("expected clause.Expr, got %T", value)
+	}
+	if expr.SQL != "decode(?, 'hex')" {
+		t.Fatalf("expected decode expression, got %q", expr.SQL)
+	}
+	if len(expr.Vars) != 1 || expr.Vars[0] != "1234" {
+		t.Fatalf("expected hex var 1234, got %#v", expr.Vars)
+	}
+}
+
+func TestCockroachDBHandleCustomDataTypeByteaNullableNull(t *testing.T) {
+	plugin := NewCockroachDBPlugin().PluginFunctions.(*CockroachDBPlugin)
+
+	value, handled, err := plugin.HandleCustomDataType("", "BYTEA", true)
+	if err != nil {
+		t.Fatalf("HandleCustomDataType returned error: %v", err)
+	}
+	if !handled {
+		t.Fatalf("expected nullable BYTEA to be handled")
+	}
+	if value != nil {
+		t.Fatalf("expected nil nullable BYTEA value, got %#v", value)
 	}
 }
