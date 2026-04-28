@@ -161,18 +161,18 @@ class HealthCheckService {
         }
     }
 
-    /**
-     * Reschedules the health check with the current interval.
-     */
     private reschedule(): void {
         if (this.intervalId !== null) {
             clearTimeout(this.intervalId);
         }
 
         if (this.isRunning) {
-            this.intervalId = setTimeout(() => {
-                this.performHealthCheck();
-                this.reschedule();
+            this.intervalId = setTimeout(async () => {
+                try {
+                    await this.performHealthCheck();
+                } finally {
+                    this.reschedule();
+                }
             }, this.currentInterval);
         }
     }
