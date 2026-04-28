@@ -161,15 +161,6 @@ class HealthCheckService {
         }
     }
 
-    /**
-     * Reschedules the health check with the current interval.
-     *
-     * The timer callback awaits performHealthCheck before calling reschedule
-     * again. Without the await, a slow health query would overlap with the
-     * next one, and reschedule would read currentInterval / consecutiveFailures
-     * before performHealthCheck had a chance to update them via
-     * increaseInterval / resetInterval. See issue #925.
-     */
     private reschedule(): void {
         if (this.intervalId !== null) {
             clearTimeout(this.intervalId);
@@ -180,9 +171,6 @@ class HealthCheckService {
                 try {
                     await this.performHealthCheck();
                 } finally {
-                    // performHealthCheck catches its own errors, but guard
-                    // against unexpected throws so one bad check cannot stop
-                    // the polling loop entirely.
                     this.reschedule();
                 }
             }, this.currentInterval);
