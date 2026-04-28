@@ -17,6 +17,9 @@
 
 # Get edition from parameter (default to CE)
 EDITION="${1:-ce}"
+if [ "$EDITION" = "ee-only" ]; then
+    EDITION="ee"
+fi
 
 echo "🧹 Cleaning up $EDITION E2E environment..."
 
