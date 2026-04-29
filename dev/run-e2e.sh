@@ -29,6 +29,7 @@
 #   WHODB_DATABASES      - space-separated list of databases to test
 #   WHODB_DB_CATEGORIES  - colon-separated db:category pairs (e.g., "postgres:sql mysql:sql")
 #   WHODB_VITE_EDITION   - vite build edition (empty for CE)
+#   WHODB_VITE_CONFIG    - optional Vite config path
 #   WHODB_SETUP_MODE     - mode to pass to setup-e2e.sh (default: ce)
 #   WHODB_EDITION_LABEL  - label for output (default: CE)
 #   WHODB_EXTRA_WAIT     - set to 'true' for extra service wait time
@@ -64,7 +65,7 @@ DEFAULT_CATEGORIES="postgres:sql mysql:sql mysql8:sql mariadb:sql tidb:sql sqlit
 # Use env vars or defaults
 DATABASES_STR="${WHODB_DATABASES:-$DEFAULT_DATABASES}"
 CATEGORIES_STR="${WHODB_DB_CATEGORIES:-$DEFAULT_CATEGORIES}"
-VITE_EDITION="${WHODB_VITE_EDITION:-}"
+VITE_CONFIG="${WHODB_VITE_CONFIG:-}"
 SETUP_MODE="${WHODB_SETUP_MODE:-ce}"
 EDITION_LABEL="${WHODB_EDITION_LABEL:-CE}"
 EXTRA_WAIT="${WHODB_EXTRA_WAIT:-false}"
@@ -137,8 +138,8 @@ mkdir -p e2e/reports/test-results e2e/reports/blobs e2e/reports/html
 # Start frontend dev server
 echo "🌐 Starting frontend dev server..."
 BACKEND_PORT="${WHODB_BACKEND_PORT:-8080}"
-if [ "$VITE_EDITION" = "ee" ]; then
-    VITE_BACKEND_PORT="$BACKEND_PORT" NODE_ENV=test pnpm exec vite --config vite.ee.config.mts --port 3000 --strictPort --clearScreen false --logLevel error > e2e/logs/frontend.log 2>&1 &
+if [ -n "$VITE_CONFIG" ]; then
+    VITE_BACKEND_PORT="$BACKEND_PORT" NODE_ENV=test pnpm exec vite --config "$VITE_CONFIG" --port 3000 --strictPort --clearScreen false --logLevel error > e2e/logs/frontend.log 2>&1 &
 else
     VITE_BACKEND_PORT="$BACKEND_PORT" NODE_ENV=test pnpm exec vite --port 3000 --strictPort --clearScreen false --logLevel error > e2e/logs/frontend.log 2>&1 &
 fi
