@@ -56,6 +56,7 @@ test.describe('Database Contracts', () => {
             expectRowsContain(tableData.rows, db.testTable.searchTerm);
 
             if (db.features.pagination) {
+                await whodb.data(tableName);
                 await whodb.setTablePageSize(1);
                 await whodb.submitTable();
                 tableData = await whodb.getTableData();
@@ -98,6 +99,7 @@ test.describe('Database Contracts', () => {
             expectRowsContain(tableData.rows, db.testTable.searchTerm);
 
             if (db.features.pagination) {
+                await whodb.data(tableName);
                 await whodb.setTablePageSize(1);
                 await whodb.submitTable();
                 tableData = await whodb.getTableData();
