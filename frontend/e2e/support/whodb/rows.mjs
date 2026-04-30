@@ -17,6 +17,36 @@
 import {expect} from "@playwright/test";
 import {TIMEOUT} from "../helpers/test-utils.mjs";
 
+async function waitForStableLocator(locator) {
+    await locator.evaluate((element) => {
+        return new Promise((resolve) => {
+            let lastRect = "";
+            let stableFrames = 0;
+
+            const check = () => {
+                const rect = element.getBoundingClientRect();
+                const currentRect = `${rect.x}:${rect.y}:${rect.width}:${rect.height}`;
+
+                if (currentRect === lastRect) {
+                    stableFrames += 1;
+                } else {
+                    stableFrames = 0;
+                    lastRect = currentRect;
+                }
+
+                if (stableFrames >= 3) {
+                    resolve();
+                    return;
+                }
+
+                requestAnimationFrame(check);
+            };
+
+            requestAnimationFrame(check);
+        });
+    });
+}
+
 /** Methods for row-level operations: add, delete, update, context menu */
 export const rowsMethods = {
     /**
@@ -39,8 +69,12 @@ export const rowsMethods = {
             }
         }
 
-        await this.page.locator('[data-testid="submit-add-row-button"]').click();
-        await this.page.locator('[data-testid="submit-add-row-button"]').waitFor({ state: "hidden", timeout: TIMEOUT.SLOW });
+        const submitAddRowButton = this.page.locator('[data-testid="submit-add-row-button"]');
+        await submitAddRowButton.waitFor({ state: "visible", timeout: TIMEOUT.ACTION });
+        await expect(submitAddRowButton).toBeEnabled({ timeout: TIMEOUT.ACTION });
+        await waitForStableLocator(submitAddRowButton);
+        await submitAddRowButton.click();
+        await submitAddRowButton.waitFor({ state: "hidden", timeout: TIMEOUT.SLOW });
         await expect(this.page.locator("body")).not.toHaveAttribute("data-scroll-locked", /.+/, { timeout: TIMEOUT.SLOW });
         await this.waitForDataTable();
     },
