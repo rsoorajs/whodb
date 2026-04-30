@@ -47,6 +47,7 @@ export const VALID_FEATURES = [
   "documentEdit",
   "scratchpadUpdate",
   "multiConditionFilter",
+  "schemaManagement",
   "typeCasting",
   "sslConnection",
   "import",
