@@ -220,6 +220,9 @@ if [ "$SPEC_FILE" = "accessibility" ] || [ "$SPEC_FILE" = "accessibility.spec.mj
     PW_ARGS="--config=$PW_CONFIG --project=$PW_PROJECT"
 else
     PW_ARGS="--config=$PW_CONFIG --project=$PW_PROJECT --project=$PW_PROJECT_MUTATING"
+    for extra_project in ${WHODB_EXTRA_PLAYWRIGHT_PROJECTS:-}; do
+        PW_ARGS="$PW_ARGS --project=$extra_project"
+    done
 fi
 if [ "$HEADLESS" = "false" ]; then
     PW_ARGS="$PW_ARGS --headed"
