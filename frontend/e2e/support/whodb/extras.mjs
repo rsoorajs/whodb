@@ -81,6 +81,20 @@ export const extrasMethods = {
         await mockDataItem.scrollIntoViewIfNeeded();
         await mockDataItem.waitFor({ timeout: TIMEOUT.ELEMENT });
         await mockDataItem.click({ force: true });
+
+        const sheet = this.page.locator('[data-testid="mock-data-sheet"]');
+        await sheet.waitFor({ state: "visible", timeout: TIMEOUT.ACTION });
+        await this.page.waitForFunction(() => {
+            const sheetEl = document.querySelector('[data-testid="mock-data-sheet"]');
+            if (!sheetEl) {
+                return false;
+            }
+
+            const rect = sheetEl.getBoundingClientRect();
+            const visibleWidth = Math.min(rect.right, window.innerWidth) - Math.max(rect.left, 0);
+            const requiredWidth = Math.min(rect.width, window.innerWidth) * 0.9;
+            return rect.width > 0 && rect.height > 0 && visibleWidth >= requiredWidth;
+        }, { timeout: TIMEOUT.ACTION });
     },
 
     // ── Export ─────────────────────────────────────────────────────────────
