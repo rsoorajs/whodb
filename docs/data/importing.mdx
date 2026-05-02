@@ -1,6 +1,6 @@
 ---
 title: "Importing Data"
-description: "Import CSV, Excel, or SQL into a table using the current WhoDB import flow"
+description: "Import CSV, Excel, or SQL using the current WhoDB import flow"
 ---
 
 # Importing Data
@@ -12,17 +12,17 @@ WhoDB's current import flow lives inside the table view and supports two paths:
 
 ## Open The Import Flow
 
-Use the import action from the current table or the `Mod + I` shortcut.
+Open a table, then use the import action in the table toolbar or press `Mod + I`.
 
 <Note>
-Imports target the currently selected table and schema context.
+Structured file imports target the table you currently have open.
 </Note>
 
 ## Supported Modes
 
 <CardGroup cols={2}>
 <Card title="Data Import" icon="table">
-Upload CSV or Excel files, preview the mapping, and import rows into the current table.
+Upload CSV or Excel files, review the preview, and import rows into the current table.
 </Card>
 <Card title="SQL Import" icon="code">
 Paste SQL or upload a `.sql` file and run it through the import panel.
@@ -39,13 +39,17 @@ The current UI supports:
 - `.xlsx`
 - `.xlsm`
 </Step>
+<Step title="Use Headers">
+For in-app CSV and Excel imports, the first row is treated as the header row.
+
+Match those headers to the target table's column names. If the file includes an auto-generated column such as an ID, WhoDB shows a checkbox so you can explicitly allow that column.
+</Step>
 <Step title="Review The Preview">
-WhoDB requests a preview before import and shows:
+WhoDB loads a preview before import and shows:
 
 - detected columns
-- sample rows
-- mapping to the target table
-- validation errors
+- up to three sample rows
+- validation messages when the file and table do not line up
 - detected Excel sheet name when applicable
 </Step>
 <Step title="Adjust File Options">
@@ -68,19 +72,19 @@ SQL import can start from either:
 - a pasted SQL script
 - an uploaded SQL file
 
-The current flow requires an explicit confirmation checkbox before execution.
+Use one source at a time: either paste SQL or upload a file. The current flow requires an explicit confirmation checkbox before execution.
 
 ## Current Limits
 
-The current frontend import flow enforces these limits:
+The import panel uses these limits:
 
 - maximum file size: `50 MB`
-- maximum row count: `100000`
+- maximum row count: `100,000`
 - preview rows shown in the UI: `3`
 
 ## Validation Behavior
 
-Before import, the app can block execution for issues such as:
+WhoDB stops the import and shows a validation message for issues such as:
 
 - invalid or missing column mapping
 - auto-generated columns that require explicit consent
@@ -90,11 +94,26 @@ Use the preview result to fix the file or adjust the import mode before retrying
 
 ## Related Tools
 
-If you need scriptable or terminal-based imports, the CLI also provides:
+If you need scriptable or terminal-based CSV and Excel imports, use the CLI:
 
 ```bash
 whodb-cli import --connection mydb --file data.csv --table users
 ```
+
+Useful CLI flags include:
+
+- `--schema`
+- `--delimiter`
+- `--sheet`
+- `--header=false`
+- `--mapping position`
+- `--mode append`
+- `--mode overwrite`
+- `--mode upsert`
+- `--create-table`
+- `--allow-auto-generated`
+
+For scriptable SQL imports, use the native database client for your engine, such as `psql -f seed.sql` or `mysql database < seed.sql`.
 
 See [CLI & MCP](/features/cli-and-mcp) for the current command surface.
 

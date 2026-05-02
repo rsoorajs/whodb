@@ -17,9 +17,8 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
+	"io"
 	"strings"
 
 	dbmgr "github.com/clidey/whodb/cli/internal/database"
@@ -41,6 +40,16 @@ var (
 	auditPort        int
 	auditUser        string
 )
+
+type auditSummaryOutput struct {
+	TablesScanned int `json:"tablesScanned"`
+	IssuesFound   int `json:"issuesFound"`
+}
+
+type auditCommandOutput struct {
+	Summary auditSummaryOutput  `json:"summary"`
+	Results []*dbmgr.TableAudit `json:"results"`
+}
 
 var auditCmd = &cobra.Command{
 	Use:           "audit",
@@ -74,7 +83,12 @@ Checks performed:
   # Custom null thresholds
   whodb-cli audit --connection mydb --null-warning 15 --null-error 60`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		out := output.New(output.WithQuiet(auditQuiet))
+		format, err := resolveAuditFormat(auditFormat)
+		if err != nil {
+			return err
+		}
+		quiet := auditQuiet || format == output.FormatJSON
+		out := newCommandOutput(cmd, format, quiet)
 
 		mgr, err := dbmgr.NewManager()
 		if err != nil {
@@ -85,12 +99,12 @@ Checks performed:
 		if auditType != "" && !typeKnown {
 			return fmt.Errorf("unsupported database type %q", auditType)
 		}
-		if auditType != "" && typeKnown && resolvedType.RequiredFields.Database && auditDatabase == "" && auditConnection == "" {
+		if auditType != "" && typeKnown && isConnectionFieldRequired(string(resolvedType.ID), "Database") && auditDatabase == "" && auditConnection == "" {
 			return fmt.Errorf("--database is required for %s", resolvedType.Label)
 		}
 
 		var conn *dbmgr.Connection
-		if typeKnown && (auditDatabase != "" || !resolvedType.RequiredFields.Database) {
+		if typeKnown && (auditDatabase != "" || !isConnectionFieldRequired(string(resolvedType.ID), "Database")) {
 			// Inline connection from flags
 			h := auditHost
 			if h == "" {
@@ -126,7 +140,7 @@ Checks performed:
 		}
 
 		var spinner *output.Spinner
-		if !auditQuiet {
+		if !quiet {
 			spinner = output.NewSpinner(fmt.Sprintf("Connecting to %s...", conn.Type))
 		}
 		if spinner != nil {
@@ -139,7 +153,7 @@ Checks performed:
 			return fmt.Errorf("cannot connect to database: %w", err)
 		}
 		if spinner != nil {
-			spinner.StopWithSuccess("Connected")
+			spinner.Stop()
 		}
 		defer mgr.Disconnect()
 
@@ -167,7 +181,7 @@ Checks performed:
 			config.NullErrorPct = auditNullError
 		}
 
-		if !auditQuiet {
+		if !quiet {
 			spinner = output.NewSpinner("Running audit...")
 		}
 		if spinner != nil {
@@ -198,35 +212,54 @@ Checks performed:
 			spinner.StopWithSuccess("Audit complete")
 		}
 
-		if auditFormat == "json" {
-			return printAuditJSON(results)
+		if format == output.FormatJSON {
+			return writeAutomationEnvelope(cmd, "audit", buildAuditCommandOutput(results))
 		}
-		printAuditTable(results, out)
+		printAuditTable(cmd.OutOrStdout(), results)
 		return nil
 	},
 }
 
-// printAuditJSON outputs audit results as JSON to stdout.
-func printAuditJSON(results []*dbmgr.TableAudit) error {
-	encoder := json.NewEncoder(os.Stdout)
-	encoder.SetIndent("", "  ")
-	return encoder.Encode(results)
+func resolveAuditFormat(value string) (output.Format, error) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", "table":
+		return output.FormatTable, nil
+	case "json":
+		return output.FormatJSON, nil
+	default:
+		return "", fmt.Errorf("invalid --format %q (expected table or json)", value)
+	}
 }
 
-// printAuditTable outputs audit results as a human-readable table.
-func printAuditTable(results []*dbmgr.TableAudit, out *output.Writer) {
+func buildAuditCommandOutput(results []*dbmgr.TableAudit) auditCommandOutput {
 	totalIssues := 0
 	for _, t := range results {
 		totalIssues += len(t.Issues)
 	}
-	fmt.Fprintf(os.Stdout, "\n%d tables scanned, %d issues found\n\n", len(results), totalIssues)
+
+	return auditCommandOutput{
+		Summary: auditSummaryOutput{
+			TablesScanned: len(results),
+			IssuesFound:   totalIssues,
+		},
+		Results: results,
+	}
+}
+
+// printAuditTable outputs audit results as a human-readable table.
+func printAuditTable(out io.Writer, results []*dbmgr.TableAudit) {
+	totalIssues := 0
+	for _, t := range results {
+		totalIssues += len(t.Issues)
+	}
+	fmt.Fprintf(out, "\n%d tables scanned, %d issues found\n\n", len(results), totalIssues)
 
 	for _, tbl := range results {
 		icon := tableSeverityIcon(tbl)
-		fmt.Fprintf(os.Stdout, "%s %s (%d rows)\n", icon, tbl.TableName, tbl.RowCount)
+		fmt.Fprintf(out, "%s %s (%d rows)\n", icon, tbl.TableName, tbl.RowCount)
 
 		if !tbl.HasPrimaryKey {
-			fmt.Fprintf(os.Stdout, "  [!] No primary key\n")
+			fmt.Fprintf(out, "  [!] No primary key\n")
 		}
 
 		// Column summary
@@ -236,10 +269,10 @@ func printAuditTable(results []*dbmgr.TableAudit, out *output.Writer) {
 			if col.IsPrimary {
 				pkLabel = " [PK]"
 			}
-			fmt.Fprintf(os.Stdout, "  %s %-20s %-12s nulls:%.0f%% distinct:%d%s\n",
+			fmt.Fprintf(out, "  %s %-20s %-12s nulls:%.0f%% distinct:%d%s\n",
 				colIcon, col.Name, col.Type, col.NullPct, col.DistinctCount, pkLabel)
 			for _, issue := range col.Issues {
-				fmt.Fprintf(os.Stdout, "      %s\n", issue)
+				fmt.Fprintf(out, "      %s\n", issue)
 			}
 		}
 
@@ -251,22 +284,22 @@ func printAuditTable(results []*dbmgr.TableAudit, out *output.Writer) {
 			if fk.OrphanCount > 0 {
 				fkLine += fmt.Sprintf(" (%d orphans)", fk.OrphanCount)
 			}
-			fmt.Fprintln(os.Stdout, fkLine)
+			fmt.Fprintln(out, fkLine)
 		}
 
 		// Duplicates
 		for _, dup := range tbl.Duplicates {
-			fmt.Fprintf(os.Stdout, "  [!] Duplicates in %s: %d groups, %d rows\n",
+			fmt.Fprintf(out, "  [!] Duplicates in %s: %d groups, %d rows\n",
 				strings.Join(dup.Columns, ", "), dup.DuplicateCount, dup.TotalDuplicateRows)
 		}
 
 		// Issues
 		for _, issue := range tbl.Issues {
 			issueIcon := columnSeverityIcon(issue.Severity)
-			fmt.Fprintf(os.Stdout, "  %s %s\n", issueIcon, issue.Message)
+			fmt.Fprintf(out, "  %s %s\n", issueIcon, issue.Message)
 		}
 
-		fmt.Fprintln(os.Stdout)
+		fmt.Fprintln(out)
 	}
 }
 

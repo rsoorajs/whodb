@@ -24,29 +24,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
+	"github.com/clidey/whodb/core/src/query"
 	"github.com/go-redis/redis/v8"
 )
 
 type RedisPlugin struct {
 	engine.BasePlugin
-}
-
-var redisOperators = map[string]string{
-	"=":           "=",
-	"!=":          "!=",
-	"<>":          "!=",
-	">":           ">",
-	">=":          ">=",
-	"<":           "<",
-	"<=":          "<=",
-	"CONTAINS":    "CONTAINS",
-	"STARTS WITH": "STARTS WITH",
-	"ENDS WITH":   "ENDS WITH",
-	"IN":          "IN",
-	"NOT IN":      "NOT IN",
 }
 
 func (p *RedisPlugin) IsAvailable(ctx context.Context, config *engine.PluginConfig) bool {
@@ -68,7 +53,7 @@ func (p *RedisPlugin) GetDatabases(config *engine.PluginConfig) ([]string, error
 		dbConfig := *config
 		dbConfig.Credentials.Database = strconv.Itoa(i)
 
-		if p.IsAvailable(context.Background(), &dbConfig) {
+		if p.IsAvailable(config.OperationContext(), &dbConfig) {
 			availableDatabases = append(availableDatabases, strconv.Itoa(i))
 		}
 	}
@@ -83,7 +68,7 @@ func (p *RedisPlugin) GetDatabases(config *engine.PluginConfig) ([]string, error
 }
 
 func (p *RedisPlugin) GetStorageUnits(config *engine.PluginConfig, schema string) ([]engine.StorageUnit, error) {
-	ctx := context.Background()
+	ctx := config.OperationContext()
 
 	client, err := DB(config)
 	if err != nil {
@@ -225,7 +210,7 @@ func (p *RedisPlugin) GetStorageUnits(config *engine.PluginConfig, schema string
 }
 
 func (p *RedisPlugin) StorageUnitExists(config *engine.PluginConfig, schema string, storageUnit string) (bool, error) {
-	ctx := context.Background()
+	ctx := config.OperationContext()
 	client, err := DB(config)
 	if err != nil {
 		return false, err
@@ -245,7 +230,7 @@ func (p *RedisPlugin) GetRows(
 ) (*engine.GetRowsResult, error) {
 	storageUnit := req.StorageUnit
 	where := req.Where
-	ctx := context.Background()
+	ctx := config.OperationContext()
 
 	client, err := DB(config)
 	if err != nil {
@@ -355,8 +340,8 @@ func (p *RedisPlugin) GetRows(
 	return result, nil
 }
 
-func (p *RedisPlugin) GetRowCount(config *engine.PluginConfig, schema, storageUnit string, where *model.WhereCondition) (int64, error) {
-	ctx := context.Background()
+func (p *RedisPlugin) GetRowCount(config *engine.PluginConfig, schema, storageUnit string, where *query.WhereCondition) (int64, error) {
+	ctx := config.OperationContext()
 
 	client, err := DB(config)
 	if err != nil {
@@ -402,7 +387,7 @@ func (p *RedisPlugin) GetRowCount(config *engine.PluginConfig, schema, storageUn
 }
 
 func (p *RedisPlugin) GetColumnsForTable(config *engine.PluginConfig, schema string, storageUnit string) ([]engine.Column, error) {
-	ctx := context.Background()
+	ctx := config.OperationContext()
 
 	client, err := DB(config)
 	if err != nil {
@@ -433,7 +418,7 @@ func (p *RedisPlugin) GetColumnsForTable(config *engine.PluginConfig, schema str
 	}
 }
 
-func filterRedisHash(field, value string, where *model.WhereCondition) bool {
+func filterRedisHash(field, value string, where *query.WhereCondition) bool {
 	condition, err := convertWhereConditionToRedisFilter(where)
 	if err != nil {
 		return true // Ignore filtering on error
@@ -453,7 +438,7 @@ func filterRedisHash(field, value string, where *model.WhereCondition) bool {
 	return true
 }
 
-func filterRedisList(value string, where *model.WhereCondition) bool {
+func filterRedisList(value string, where *query.WhereCondition) bool {
 	condition, err := convertWhereConditionToRedisFilter(where)
 	if err != nil {
 		return true // Ignore filtering on error
@@ -469,7 +454,7 @@ func filterRedisList(value string, where *model.WhereCondition) bool {
 	return true
 }
 
-func filterRedisSet(value string, where *model.WhereCondition) bool {
+func filterRedisSet(value string, where *query.WhereCondition) bool {
 	condition, err := convertWhereConditionToRedisFilter(where)
 	if err != nil {
 		return true
@@ -485,7 +470,7 @@ func filterRedisSet(value string, where *model.WhereCondition) bool {
 	return true
 }
 
-func filterRedisZSet(member string, score string, where *model.WhereCondition) bool {
+func filterRedisZSet(member string, score string, where *query.WhereCondition) bool {
 	condition, err := convertWhereConditionToRedisFilter(where)
 	if err != nil {
 		return true
@@ -511,13 +496,13 @@ type redisFilter struct {
 	Value    string
 }
 
-func convertWhereConditionToRedisFilter(where *model.WhereCondition) (map[string]redisFilter, error) {
+func convertWhereConditionToRedisFilter(where *query.WhereCondition) (map[string]redisFilter, error) {
 	if where == nil {
 		return nil, nil
 	}
 
 	switch where.Type {
-	case model.WhereConditionTypeAtomic:
+	case query.WhereConditionTypeAtomic:
 		if where.Atomic == nil {
 			return nil, fmt.Errorf("atomic condition must have an atomicwherecondition")
 		}
@@ -583,25 +568,6 @@ func (p *RedisPlugin) FormatValue(val any) string {
 		return ""
 	}
 	return fmt.Sprintf("%v", val)
-}
-
-// GetDatabaseMetadata returns Redis metadata for frontend configuration.
-// Redis is a key-value store without traditional type definitions or operators.
-func (p *RedisPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
-	ops := make([]string, 0, len(redisOperators))
-	for op := range redisOperators {
-		ops = append(ops, op)
-	}
-	sort.Strings(ops)
-	return &engine.DatabaseMetadata{
-		DatabaseType:    engine.DatabaseType_Redis,
-		TypeDefinitions: []engine.TypeDefinition{},
-		Operators:       ops,
-		AliasMap:        map[string]string{},
-		Capabilities: engine.Capabilities{
-			SupportsDatabaseSwitch: true,
-		},
-	}
 }
 
 func init() {

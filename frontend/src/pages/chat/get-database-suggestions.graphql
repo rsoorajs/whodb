@@ -1,5 +1,5 @@
-query GetDatabaseQuerySuggestions($schema: String!) {
-  DatabaseQuerySuggestions(schema: $schema) {
+query GetDatabaseQuerySuggestions($ref: SourceObjectRefInput) {
+  DatabaseQuerySuggestions: SourceQuerySuggestions(ref: $ref) {
     description
     category
   }

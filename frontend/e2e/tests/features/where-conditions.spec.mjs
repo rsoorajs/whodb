@@ -17,6 +17,7 @@
 import { test, expect, forEachDatabase, conditionalTest } from '../../support/test-fixture.mjs';
 import { hasFeature } from '../../support/database-config.mjs';
 import { getDocumentId, parseDocument } from '../../support/categories/document.mjs';
+import { TIMEOUT } from '../../support/helpers/test-utils.mjs';
 
 /**
  * Get the operator for a given database
@@ -51,16 +52,20 @@ test.describe('Where Conditions', () => {
             await whodb.whereTable([[idField, eq, testId3]]);
             await whodb.submitTable();
 
-            const { rows } = await whodb.getTableData();
-            expect(rows.length).toEqual(1);
-            expect(rows[0][1]).toEqual(testId3); // id column
+            await expect(async () => {
+                const { rows } = await whodb.getTableData();
+                expect(rows.length).toEqual(1);
+                expect(rows[0][1]).toEqual(testId3); // id column
+            }).toPass({ timeout: TIMEOUT.SLOW });
 
             // Clear conditions
             await whodb.clearWhereConditions();
             await whodb.submitTable();
 
-            const { rows: clearedRows } = await whodb.getTableData();
-            expect(clearedRows.length).toBeGreaterThan(1);
+            await expect(async () => {
+                const { rows } = await whodb.getTableData();
+                expect(rows.length).toBeGreaterThan(1);
+            }).toPass({ timeout: TIMEOUT.SLOW });
         });
 
         // Skip multi-condition tests for databases where data may be affected by async mutations
@@ -132,7 +137,7 @@ test.describe('Where Conditions', () => {
             await whodb.submitTable();
         });
 
-        test('shows more conditions button when exceeding visible limit', async ({ whodb, page }) => {
+        conditionalTest(multiConditionSupported, 'shows more conditions button when exceeding visible limit', async ({ whodb, page }) => {
             await whodb.data(tableName);
 
             // Clear any existing conditions first

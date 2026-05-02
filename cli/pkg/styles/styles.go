@@ -19,6 +19,9 @@ package styles
 import (
 	"os"
 	"runtime"
+	"strconv"
+	"strings"
+	"sync"
 	"sync/atomic"
 
 	"github.com/charmbracelet/lipgloss"
@@ -43,6 +46,12 @@ func init() {
 }
 
 var colorDisabled atomic.Bool
+
+var (
+	helpRenderCacheMu    sync.RWMutex
+	helpRenderWidthCache = make(map[string]string)
+	helpRenderPartsCache = make(map[string]string)
+)
 
 func init() {
 	if _, exists := os.LookupEnv("NO_COLOR"); exists {
@@ -212,6 +221,14 @@ func RenderHelpWidth(maxWidth int, keys ...string) string {
 		return ""
 	}
 
+	cacheKey := helpWidthCacheKey(maxWidth, keys)
+	helpRenderCacheMu.RLock()
+	if cached, ok := helpRenderWidthCache[cacheKey]; ok {
+		helpRenderCacheMu.RUnlock()
+		return cached
+	}
+	helpRenderCacheMu.RUnlock()
+
 	var parts []string
 	for i := 0; i < len(keys); i += 2 {
 		if i+1 < len(keys) {
@@ -221,7 +238,13 @@ func RenderHelpWidth(maxWidth int, keys ...string) string {
 		}
 	}
 
-	return RenderHelpPartsWidth(parts, maxWidth)
+	result := RenderHelpPartsWidth(parts, maxWidth)
+
+	helpRenderCacheMu.Lock()
+	helpRenderWidthCache[cacheKey] = result
+	helpRenderCacheMu.Unlock()
+
+	return result
 }
 
 func RenderHelpParts(parts []string) string {
@@ -233,6 +256,14 @@ func RenderHelpPartsWidth(parts []string, maxWidth int) string {
 	if len(parts) == 0 {
 		return ""
 	}
+
+	cacheKey := helpPartsCacheKey(maxWidth, parts)
+	helpRenderCacheMu.RLock()
+	if cached, ok := helpRenderPartsCache[cacheKey]; ok {
+		helpRenderCacheMu.RUnlock()
+		return cached
+	}
+	helpRenderCacheMu.RUnlock()
 
 	separator := MutedStyle.Render(" • ")
 	maxLineWidth := maxWidth
@@ -275,7 +306,40 @@ func RenderHelpPartsWidth(parts []string, maxWidth int) string {
 		}
 		result += line
 	}
-	return HelpStyle.Render(result)
+	rendered := HelpStyle.Render(result)
+
+	helpRenderCacheMu.Lock()
+	helpRenderPartsCache[cacheKey] = rendered
+	helpRenderCacheMu.Unlock()
+
+	return rendered
+}
+
+func helpWidthCacheKey(maxWidth int, keys []string) string {
+	return currentHelpThemeName() + "\x00" + renderHelpKeyWidth(maxWidth) + "\x00" + strings.Join(keys, "\x1f")
+}
+
+func helpPartsCacheKey(maxWidth int, parts []string) string {
+	return currentHelpThemeName() + "\x00parts\x00" + renderHelpKeyWidth(maxWidth) + "\x00" + strings.Join(parts, "\x1f")
+}
+
+func renderHelpKeyWidth(width int) string {
+	return strconv.Itoa(width)
+}
+
+func currentHelpThemeName() string {
+	if theme := GetTheme(); theme != nil {
+		return theme.Name
+	}
+	return ""
+}
+
+func clearHelpRenderCaches() {
+	helpRenderCacheMu.Lock()
+	defer helpRenderCacheMu.Unlock()
+
+	helpRenderWidthCache = make(map[string]string)
+	helpRenderPartsCache = make(map[string]string)
 }
 
 func RenderHelpWithMaxItems(maxPerLine int, keys ...string) string {

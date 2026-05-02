@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-import { FC, useCallback, useEffect } from "react";
+import { useMutation, useQuery } from "@apollo/client/react";
+import { FC, useCallback } from "react";
 import { Badge, Button, cn, toast } from "@clidey/ux";
 import {
     AzureProvider,
     CloudProviderStatus,
-    useGetAzureProvidersQuery,
-    useRefreshAzureProviderMutation,
-    useRemoveCloudProviderMutation,
+    GetAzureProvidersDocument,
+    GetDiscoveredConnectionsDocument,
+    RefreshAzureProviderDocument,
+    RemoveCloudProviderDocument,
 } from "@graphql";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ProvidersActions } from "../../store/providers";
@@ -35,6 +37,7 @@ import {
     PlusIcon,
     TrashIcon,
 } from "../heroicons";
+import { removeAzureProviderCache, removeCloudProviderCache, upsertAzureProviderCache, upsertCloudProviderCache } from "../../utils/apollo-provider-cache";
 
 /**
  * Local Azure provider with optional environment-defined flag.
@@ -73,18 +76,11 @@ export const AzureProvidersSection: FC = () => {
     const editingProviderId = useAppSelector(state => state.providers.editingProviderId);
 
     // GraphQL queries and mutations
-    const { data, loading, refetch } = useGetAzureProvidersQuery();
-    const [refreshProvider, { loading: refreshLoading }] = useRefreshAzureProviderMutation();
-    const [removeProvider, { loading: removeLoading }] = useRemoveCloudProviderMutation();
+    const { data, loading, refetch } = useQuery(GetAzureProvidersDocument);
+    const [refreshProvider, { loading: refreshLoading }] = useMutation(RefreshAzureProviderDocument);
+    const [removeProvider, { loading: removeLoading }] = useMutation(RemoveCloudProviderDocument);
 
     const azureProviders: LocalAzureProvider[] = (data?.AzureProviders as LocalAzureProvider[] | undefined) ?? [];
-
-    // Refetch when modal closes to pick up changes
-    useEffect(() => {
-        if (!azureModalOpen) {
-            refetch();
-        }
-    }, [azureModalOpen, refetch]);
 
     const handleAddProvider = useCallback(() => {
         dispatch(ProvidersActions.openAddProviderModal());
@@ -98,7 +94,11 @@ export const AzureProvidersSection: FC = () => {
         try {
             const { data } = await removeProvider({
                 variables: { id },
-                refetchQueries: ['GetAzureProviders', 'GetDiscoveredConnections'],
+                refetchQueries: [GetDiscoveredConnectionsDocument],
+                update(cache) {
+                    removeAzureProviderCache(cache, id);
+                    removeCloudProviderCache(cache, id);
+                },
             });
             if (data?.RemoveCloudProvider?.Status) {
                 toast.success(t('providerRemoved', { name }));
@@ -113,7 +113,13 @@ export const AzureProvidersSection: FC = () => {
         try {
             const { data } = await refreshProvider({
                 variables: { id },
-                refetchQueries: ['GetAzureProviders', 'GetDiscoveredConnections'],
+                refetchQueries: [GetDiscoveredConnectionsDocument],
+                update(cache, result) {
+                    if (result.data?.RefreshAzureProvider) {
+                        upsertAzureProviderCache(cache, result.data.RefreshAzureProvider);
+                        upsertCloudProviderCache(cache, result.data.RefreshAzureProvider);
+                    }
+                },
             });
             if (data?.RefreshAzureProvider) {
                 toast.success(t('refreshComplete', { count: data.RefreshAzureProvider.DiscoveredCount }));

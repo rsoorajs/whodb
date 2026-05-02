@@ -24,6 +24,8 @@ import (
 	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
+	"github.com/clidey/whodb/core/src/plugins"
+	"gorm.io/gorm"
 )
 
 // ExportData exports data to tabular format (CSV/Excel). If selectedRows is nil/empty, exports all rows from the table.
@@ -47,7 +49,7 @@ func (p *GormPlugin) ExportData(config *engine.PluginConfig, schema string, stor
 			rowData := make([]string, len(columns))
 			for j, col := range columns {
 				if val, ok := row[col]; ok {
-					rowData[j] = p.FormatValue(val)
+					rowData[j] = p.GormPluginFunctions.FormatValue(val)
 				} else {
 					rowData[j] = ""
 				}
@@ -62,85 +64,88 @@ func (p *GormPlugin) ExportData(config *engine.PluginConfig, schema string, stor
 	}
 
 	// Export all rows from the database
-	db, err := p.DB(config)
-	if err != nil {
-		log.WithError(err).Error(fmt.Sprintf("Failed to connect to database for export of table %s.%s", schema, storageUnit))
-		return err
-	}
-
-	// Get ordered columns using GORM migrator (preserves column order)
-	helper := NewMigratorHelper(db, p.GormPluginFunctions)
-	fullTableName := p.FormTableName(schema, storageUnit)
-	orderedColumns, err := helper.GetOrderedColumns(fullTableName)
-	if err != nil {
-		log.WithError(err).Error(fmt.Sprintf("Failed to get columns for export of table %s.%s", schema, storageUnit))
-		return fmt.Errorf("failed to get columns: %v", err)
-	}
-
-	if len(orderedColumns) == 0 {
-		return fmt.Errorf("no columns found for table %s.%s", schema, storageUnit)
-	}
-
-	// Convert to separate arrays for columns and types
-	columns := make([]string, len(orderedColumns))
-	columnTypes := make([]string, len(orderedColumns))
-	for i, col := range orderedColumns {
-		columns[i] = col.Name
-		columnTypes[i] = col.Type
-	}
-
-	// Write headers with type information
-	headers := make([]string, len(columns))
-	for i, col := range columns {
-		headers[i] = common.FormatCSVHeader(col, columnTypes[i])
-	}
-	if err := writer(headers); err != nil {
-		log.WithError(err).Error(fmt.Sprintf("Failed to write CSV headers for table %s.%s export", schema, storageUnit))
-		return fmt.Errorf("failed to write headers: %v", err)
-	}
-
-	// Use batch processor for efficient export
-	processor := NewBatchProcessor(p, p.Type, &BatchConfig{
-		BatchSize:   10000, // Larger batch size for exports
-		LogProgress: true,  // Log export progress
-	})
-
-	// Export data in batches to avoid memory issues
-	totalRows := 0
-	err = processor.ExportInBatches(db, schema, storageUnit, columns, func(batch []map[string]any) error {
-		// Process each batch
-		for _, record := range batch {
-			row := make([]string, len(columns))
-			for i, col := range columns {
-				if val, exists := record[col]; exists {
-					row[i] = p.FormatValue(val)
-				} else {
-					row[i] = ""
-				}
-			}
-
-			if err := writer(row); err != nil {
-				log.WithError(err).Error(fmt.Sprintf("Failed to write row %d during export of table %s.%s", totalRows+1, schema, storageUnit))
-				return fmt.Errorf("failed to write row %d: %v", totalRows+1, err)
-			}
-			totalRows++
+	_, err := plugins.WithConnection(config, p.DB, func(db *gorm.DB) (struct{}, error) {
+		columnConfig := config
+		if config != nil {
+			clonedConfig := *config
+			clonedConfig.Transaction = db
+			columnConfig = &clonedConfig
+		} else {
+			columnConfig = &engine.PluginConfig{Transaction: db}
 		}
-		return nil
+
+		// Resolve columns through the plugin API so connector-specific overrides
+		// (QuestDB, ClickHouse, SQLite, etc.) are reused for exports too.
+		orderedColumns, err := p.PluginFunctions.GetColumnsForTable(columnConfig, schema, storageUnit)
+		if err != nil {
+			log.WithError(err).Error(fmt.Sprintf("Failed to get columns for export of table %s.%s", schema, storageUnit))
+			return struct{}{}, fmt.Errorf("failed to get columns: %v", err)
+		}
+
+		if len(orderedColumns) == 0 {
+			return struct{}{}, fmt.Errorf("no columns found for table %s.%s", schema, storageUnit)
+		}
+
+		// Convert to separate arrays for columns and types
+		columns := make([]string, len(orderedColumns))
+		columnTypes := make([]string, len(orderedColumns))
+		for i, col := range orderedColumns {
+			columns[i] = col.Name
+			columnTypes[i] = col.Type
+		}
+
+		// Write headers with type information
+		headers := make([]string, len(columns))
+		for i, col := range columns {
+			headers[i] = common.FormatCSVHeader(col, columnTypes[i])
+		}
+		if err := writer(headers); err != nil {
+			log.WithError(err).Error(fmt.Sprintf("Failed to write CSV headers for table %s.%s export", schema, storageUnit))
+			return struct{}{}, fmt.Errorf("failed to write headers: %v", err)
+		}
+
+		// Use batch processor for efficient export
+		processor := NewBatchProcessor(p, p.Type, &BatchConfig{
+			BatchSize:   10000, // Larger batch size for exports
+			LogProgress: true,  // Log export progress
+		})
+
+		// Export data in batches to avoid memory issues
+		totalRows := 0
+		err = processor.ExportInBatches(db, schema, storageUnit, columns, func(batch []map[string]any) error {
+			// Process each batch
+			for _, record := range batch {
+				row := make([]string, len(columns))
+				for i, col := range columns {
+					if val, exists := record[col]; exists {
+						row[i] = p.GormPluginFunctions.FormatValue(val)
+					} else {
+						row[i] = ""
+					}
+				}
+
+				if err := writer(row); err != nil {
+					log.WithError(err).Error(fmt.Sprintf("Failed to write row %d during export of table %s.%s", totalRows+1, schema, storageUnit))
+					return fmt.Errorf("failed to write row %d: %v", totalRows+1, err)
+				}
+				totalRows++
+			}
+			return nil
+		})
+		if err != nil {
+			return struct{}{}, fmt.Errorf("export failed after %d rows: %v", totalRows, err)
+		}
+
+		log.WithField("totalRows", totalRows).
+			WithField("table", fmt.Sprintf("%s.%s", schema, storageUnit)).
+			Info("Export completed successfully")
+
+		return struct{}{}, nil
 	})
-
-	if err != nil {
-		return fmt.Errorf("export failed after %d rows: %v", totalRows, err)
-	}
-
-	log.WithField("totalRows", totalRows).
-		WithField("table", fmt.Sprintf("%s.%s", schema, storageUnit)).
-		Info("Export completed successfully")
-
-	return nil
+	return err
 }
 
-// FormatValue converts any values to strings appropriately for CSV
-func (p *GormPlugin) FormatValue(val any) string {
+func formatExportValue(plugin GormPluginFunctions, val any) string {
 	if val == nil {
 		return ""
 	}
@@ -151,38 +156,33 @@ func (p *GormPlugin) FormatValue(val any) string {
 	case string:
 		return common.EscapeFormula(v)
 	case time.Time:
-		// Format time in ISO 8601 format that can be parsed back
-		if v.Hour() == 0 && v.Minute() == 0 && v.Second() == 0 && v.Nanosecond() == 0 {
-			// Date only
-			return common.EscapeFormula(v.Format("2006-01-02"))
-		}
-		// Full datetime
-		return common.EscapeFormula(v.Format("2006-01-02T15:04:05"))
+		return common.EscapeFormula(plugin.FormatTimeForExport(v))
 	case *time.Time:
 		if v == nil {
 			return ""
 		}
-		// Format time in ISO 8601 format that can be parsed back
-		if v.Hour() == 0 && v.Minute() == 0 && v.Second() == 0 && v.Nanosecond() == 0 {
-			// Date only
-			return common.EscapeFormula(v.Format("2006-01-02"))
-		}
-		// Full datetime
-		return common.EscapeFormula(v.Format("2006-01-02T15:04:05"))
+		return common.EscapeFormula(plugin.FormatTimeForExport(*v))
 	case sql.NullTime:
 		if !v.Valid {
 			return ""
 		}
-		// Format time in ISO 8601 format that can be parsed back
-		if v.Time.Hour() == 0 && v.Time.Minute() == 0 && v.Time.Second() == 0 && v.Time.Nanosecond() == 0 {
-			// Date only
-			return common.EscapeFormula(v.Time.Format("2006-01-02"))
-		}
-		// Full datetime
-		return common.EscapeFormula(v.Time.Format("2006-01-02T15:04:05"))
+		return common.EscapeFormula(plugin.FormatTimeForExport(v.Time))
 	default:
 		return common.EscapeFormula(fmt.Sprintf("%v", v))
 	}
+}
+
+// FormatValue converts any values to strings appropriately for CSV.
+func (p *GormPlugin) FormatValue(val any) string {
+	return formatExportValue(p.GormPluginFunctions, val)
+}
+
+// FormatTimeForExport returns the default string representation for exported timestamps.
+func (p *GormPlugin) FormatTimeForExport(value time.Time) string {
+	if value.Hour() == 0 && value.Minute() == 0 && value.Second() == 0 && value.Nanosecond() == 0 {
+		return value.Format("2006-01-02")
+	}
+	return value.Format("2006-01-02T15:04:05")
 }
 
 // GetPlaceholder returns the placeholder for prepared statements

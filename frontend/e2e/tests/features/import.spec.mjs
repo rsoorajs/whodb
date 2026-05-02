@@ -63,6 +63,10 @@ test.describe('Data Import', () => {
     // ========================================================================
 
     forEachDatabase('sql', (db) => {
+        if (db.import.supportsFileImport === false) {
+            return;
+        }
+
         const csvTable = db.import.csvTable;
         const expectedColumns = db.import.csvExpectedColumns;
 
@@ -130,6 +134,10 @@ test.describe('Data Import', () => {
     // ========================================================================
 
     forEachDatabase('sql', (db) => {
+        if (db.import.supportsFileImport === false) {
+            return;
+        }
+
         const excelTable = db.import.excelTable;
 
         test.describe('Excel Import', () => {

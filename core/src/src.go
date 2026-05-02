@@ -19,7 +19,6 @@ package src
 import (
 	"fmt"
 
-	"github.com/clidey/whodb/core/src/dbcatalog"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/envconfig"
 	"github.com/clidey/whodb/core/src/llm"
@@ -27,6 +26,8 @@ import (
 	"github.com/clidey/whodb/core/src/migrate"
 	"github.com/clidey/whodb/core/src/mockdata"
 	"github.com/clidey/whodb/core/src/plugins/sqlite3"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
+	_ "github.com/clidey/whodb/core/src/sources/database"
 	"github.com/clidey/whodb/core/src/types"
 )
 
@@ -73,7 +74,7 @@ func GetLoginProfiles() []types.DatabaseCredentials {
 		profiles = append(profiles, retrievedProfiles...)
 	}
 
-	for _, databaseType := range dbcatalog.IDs() {
+	for _, databaseType := range sourcecatalog.IDs() {
 		databaseProfiles := envconfig.GetDefaultDatabaseCredentials(databaseType)
 		for _, databaseProfile := range databaseProfiles {
 			databaseProfile.Type = databaseType
@@ -95,11 +96,12 @@ func GetLoginProfileId(index int, profile types.DatabaseCredentials) string {
 }
 
 func GetLoginCredentials(profile types.DatabaseCredentials) *engine.Credentials {
-	advanced := []engine.Record{
-		{
+	advanced := []engine.Record{}
+	if port := defaultPortForProfile(profile.Type, profile.Port); port != "" {
+		advanced = append(advanced, engine.Record{
 			Key:   "Port",
-			Value: profile.Port,
-		},
+			Value: port,
+		})
 	}
 
 	for key, value := range profile.Advanced {
@@ -118,6 +120,24 @@ func GetLoginCredentials(profile types.DatabaseCredentials) *engine.Credentials 
 		Advanced:  advanced,
 		IsProfile: profile.IsProfile,
 	}
+}
+
+func defaultPortForProfile(sourceType string, configuredPort string) string {
+	if configuredPort != "" {
+		return configuredPort
+	}
+
+	spec, ok := sourcecatalog.Find(sourceType)
+	if !ok {
+		return ""
+	}
+
+	field, ok := spec.ConnectionFieldByKey("Port")
+	if !ok {
+		return ""
+	}
+
+	return field.DefaultValue
 }
 
 // NewMockDataGenerator creates a new mock data generator with the specified FK density ratio.

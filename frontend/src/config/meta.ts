@@ -14,12 +14,17 @@
  * limitations under the License.
  */
 
-const DEFAULT_TITLE = "Clidey WhoDB";
-const DEFAULT_ICON = "/images/logo.svg";
+import {withBasePath} from "../utils/base-path";
 
+const DEFAULT_TITLE = "Clidey WhoDB";
+const DEFAULT_ICON_PATH = "/images/logo.svg";
+
+/**
+ * Applies the current branding metadata to the document shell.
+ */
 export const updateDocumentMeta = (extensions: Record<string, any>) => {
     const title = extensions.MetaTitle || DEFAULT_TITLE;
-    const icon = extensions.MetaIcon || DEFAULT_ICON;
+    const icon = extensions.MetaIcon || withBasePath(DEFAULT_ICON_PATH);
 
     document.title = title;
 

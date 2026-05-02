@@ -28,9 +28,11 @@ test.describe('Explore Metadata', () => {
         const tableName = testTable.name;
 
         test('shows table metadata and column types', async ({ whodb, page }) => {
-            await whodb.explore(tableName);
-            const fields = await whodb.getExploreFields();
             const tableConfig = getTableConfig(db, tableName);
+            await whodb.explore(tableName);
+            const fields = await whodb.getExploreFields({
+                expectedKeys: tableConfig ? Object.keys(tableConfig.columns) : [],
+            });
             if (tableConfig) {
                 verifyColumnTypes(fields, tableConfig.columns);
                 if (tableConfig.metadata) {

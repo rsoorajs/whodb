@@ -106,7 +106,7 @@ query GetDiscoveredConnections {
     ProviderType
     ProviderID
     Name
-    DatabaseType
+    DatabaseType: SourceType
     Region
     Status
     Metadata {
@@ -122,7 +122,7 @@ query GetProviderConnections($providerId: ID!) {
     ProviderType
     ProviderID
     Name
-    DatabaseType
+    DatabaseType: SourceType
     Region
     Status
     Metadata {

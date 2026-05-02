@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/clidey/whodb/core/graph/model"
+	"github.com/clidey/whodb/core/src/query"
 	"github.com/clidey/whodb/core/src/common/graphutil"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
@@ -41,7 +41,7 @@ func (p *MongoDBPlugin) GetRows(config *engine.PluginConfig, req *engine.GetRows
 		}).Error("Failed to connect to MongoDB for row retrieval")
 		return nil, err
 	}
-	ctx, cancel := opCtx()
+	ctx, cancel := opCtx(config)
 	defer cancel()
 	defer disconnectClient(client)
 
@@ -77,7 +77,7 @@ func (p *MongoDBPlugin) GetRows(config *engine.PluginConfig, req *engine.GetRows
 		sortMap := bson.D{}
 		for _, s := range sortConds {
 			direction := 1 // ASC
-			if s.Direction == model.SortDirectionDesc {
+			if s.Direction == query.SortDirectionDesc {
 				direction = -1 // DESC
 			}
 			sortMap = append(sortMap, bson.E{Key: s.Column, Value: direction})
@@ -138,12 +138,12 @@ func (p *MongoDBPlugin) GetRows(config *engine.PluginConfig, req *engine.GetRows
 	return result, nil
 }
 
-func (p *MongoDBPlugin) GetRowCount(config *engine.PluginConfig, database, collection string, where *model.WhereCondition) (int64, error) {
+func (p *MongoDBPlugin) GetRowCount(config *engine.PluginConfig, database, collection string, where *query.WhereCondition) (int64, error) {
 	client, err := DB(config)
 	if err != nil {
 		return 0, err
 	}
-	ctx, cancel := opCtx()
+	ctx, cancel := opCtx(config)
 	defer cancel()
 	defer disconnectClient(client)
 
@@ -165,7 +165,7 @@ func (p *MongoDBPlugin) GetRowCount(config *engine.PluginConfig, database, colle
 }
 
 func (p *MongoDBPlugin) GetColumnsForTable(config *engine.PluginConfig, schema string, storageUnit string) ([]engine.Column, error) {
-	ctx, cancel := opCtx()
+	ctx, cancel := opCtx(config)
 	defer cancel()
 	client, err := DB(config)
 	if err != nil {

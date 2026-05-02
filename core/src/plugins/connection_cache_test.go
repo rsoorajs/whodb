@@ -17,6 +17,8 @@
 package plugins
 
 import (
+	"context"
+	"database/sql"
 	"testing"
 	"time"
 
@@ -24,6 +26,24 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
+
+type invalidConnPool struct{}
+
+func (invalidConnPool) PrepareContext(context.Context, string) (*sql.Stmt, error) {
+	return nil, nil
+}
+
+func (invalidConnPool) ExecContext(context.Context, string, ...any) (sql.Result, error) {
+	return nil, nil
+}
+
+func (invalidConnPool) QueryContext(context.Context, string, ...any) (*sql.Rows, error) {
+	return nil, nil
+}
+
+func (invalidConnPool) QueryRowContext(context.Context, string, ...any) *sql.Row {
+	return &sql.Row{}
+}
 
 func resetCacheState(t *testing.T) {
 	t.Helper()
@@ -184,6 +204,42 @@ func TestGetOrCreateConnectionReusesCache(t *testing.T) {
 
 	if db1 != db2 {
 		t.Fatalf("expected same db instance from cache")
+	}
+}
+
+func TestGetOrCreateConnectionReusesCachedHandleWithoutSQLDB(t *testing.T) {
+	resetCacheState(t)
+	t.Cleanup(func() { resetCacheState(t) })
+
+	cfg := newTestConfig()
+	callCount := 0
+	createDB := func(*engine.PluginConfig) (*gorm.DB, error) {
+		callCount++
+		db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+		if err != nil {
+			return nil, err
+		}
+		db.Config.ConnPool = invalidConnPool{}
+		if db.Statement != nil {
+			db.Statement.ConnPool = invalidConnPool{}
+		}
+		return db, nil
+	}
+
+	db1, err := getOrCreateConnection(cfg, createDB)
+	if err != nil {
+		t.Fatalf("first call failed: %v", err)
+	}
+	db2, err := getOrCreateConnection(cfg, createDB)
+	if err != nil {
+		t.Fatalf("second call failed: %v", err)
+	}
+
+	if callCount != 1 {
+		t.Fatalf("expected createDB to be called once for cached handle reuse, got %d", callCount)
+	}
+	if db1 != db2 {
+		t.Fatalf("expected cached handle to be reused when sql.DB is unavailable")
 	}
 }
 

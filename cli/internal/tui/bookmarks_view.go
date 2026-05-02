@@ -130,11 +130,10 @@ func (v *BookmarksView) Update(msg tea.Msg) (*BookmarksView, tea.Cmd) {
 					name = v.nextBookmarkName()
 				}
 				v.parent.config.AddSavedQuery(name, v.editorQuery)
-				v.parent.config.Save()
 				v.naming = false
 				v.nameInput.Blur()
 				v.nameInput.SetValue("")
-				return v, v.parent.SetStatus("Saved: " + name)
+				return v, tea.Batch(v.parent.requestConfigSave(), v.parent.SetStatus("Saved: "+name))
 			case "esc":
 				v.naming = false
 				v.nameInput.Blur()
@@ -204,12 +203,11 @@ func (v *BookmarksView) Update(msg tea.Msg) (*BookmarksView, tea.Cmd) {
 			if idx >= 0 && idx < len(queries) {
 				name := queries[idx].Name
 				v.parent.config.DeleteSavedQuery(name)
-				v.parent.config.Save()
 				// Adjust cursor if it fell off the end
 				if v.cursor >= v.itemCount() && v.cursor > 0 {
 					v.cursor--
 				}
-				return v, v.parent.SetStatus("Deleted: " + name)
+				return v, tea.Batch(v.parent.requestConfigSave(), v.parent.SetStatus("Deleted: "+name))
 			}
 			return v, nil
 		}

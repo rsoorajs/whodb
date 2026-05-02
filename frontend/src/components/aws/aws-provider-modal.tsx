@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { skipToken, useMutation, useQuery } from "@apollo/client/react";
 import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import {
     Badge,
@@ -32,21 +33,23 @@ import {
 } from "@clidey/ux";
 import { SearchSelect } from "../ux";
 import {
+    AddAwsProviderDocument,
     AwsProvider,
     AwsProviderInput,
     CloudProviderStatus,
+    GetAwsRegionsDocument,
+    GetDiscoveredConnectionsDocument,
+    GetLocalAwsProfilesDocument,
+    TestAwsCredentialsDocument,
+    TestCloudProviderDocument,
+    UpdateAwsProviderDocument,
     LocalAwsProfile,
-    useAddAwsProviderMutation,
-    useUpdateAwsProviderMutation,
-    useTestCloudProviderMutation,
-    useTestAwsCredentialsMutation,
-    useGetLocalAwsProfilesQuery,
-    useGetAwsRegionsQuery,
 } from "@graphql";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ProvidersActions, LocalCloudProvider } from "../../store/providers";
 import { useTranslation } from "@/hooks/use-translation";
 import { ChevronDownIcon, CloudIcon } from "../heroicons";
+import { upsertCloudProviderCache } from "../../utils/apollo-provider-cache";
 
 export interface AwsProviderModalProps {
     open: boolean;
@@ -71,15 +74,14 @@ export const AwsProviderModal: FC<AwsProviderModalProps> = ({
     }, [editingProviderId, cloudProviders]);
 
     const isEditMode = editingProviderId !== null;
+    const localProfilesQueryOptions = isEditMode ? skipToken : {};
 
     // Query local AWS profiles
-    const { data: localProfilesData, loading: profilesLoading } = useGetLocalAwsProfilesQuery({
-        skip: isEditMode, // Only fetch for new providers
-    });
+    const { data: localProfilesData, loading: profilesLoading } = useQuery(GetLocalAwsProfilesDocument, localProfilesQueryOptions);
     const localProfiles = localProfilesData?.LocalAWSProfiles ?? [];
 
     // Query AWS regions from backend
-    const { data: regionsData } = useGetAwsRegionsQuery();
+    const { data: regionsData } = useQuery(GetAwsRegionsDocument);
     const awsRegions = regionsData?.AWSRegions ?? [];
 
     // Form state
@@ -92,14 +94,24 @@ export const AwsProviderModal: FC<AwsProviderModalProps> = ({
     const [discoverDocumentDB, setDiscoverDocumentDB] = useState(true);
 
     // GraphQL mutations - refetch providers and connections after add/update
-    const [addProvider, { loading: addLoading }] = useAddAwsProviderMutation({
-        refetchQueries: ['GetCloudProviders', 'GetDiscoveredConnections'],
+    const [addProvider, { loading: addLoading }] = useMutation(AddAwsProviderDocument, {
+        refetchQueries: [GetDiscoveredConnectionsDocument],
+        update(cache, { data }) {
+            if (data?.AddAWSProvider) {
+                upsertCloudProviderCache(cache, data.AddAWSProvider);
+            }
+        },
     });
-    const [updateProvider, { loading: updateLoading }] = useUpdateAwsProviderMutation({
-        refetchQueries: ['GetCloudProviders', 'GetDiscoveredConnections'],
+    const [updateProvider, { loading: updateLoading }] = useMutation(UpdateAwsProviderDocument, {
+        refetchQueries: [GetDiscoveredConnectionsDocument],
+        update(cache, { data }) {
+            if (data?.UpdateAWSProvider) {
+                upsertCloudProviderCache(cache, data.UpdateAWSProvider);
+            }
+        },
     });
-    const [testProvider, { loading: testLoading }] = useTestCloudProviderMutation();
-    const [testCredentials, { loading: testCredentialsLoading }] = useTestAwsCredentialsMutation();
+    const [testProvider, { loading: testLoading }] = useMutation(TestCloudProviderDocument);
+    const [testCredentials, { loading: testCredentialsLoading }] = useMutation(TestAwsCredentialsDocument);
 
     const loading = addLoading || updateLoading || testLoading || testCredentialsLoading;
 

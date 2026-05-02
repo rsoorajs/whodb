@@ -1,3 +1,11 @@
-query GetSchema {
-    Schema
+query GetSchema($parent: SourceObjectRefInput, $kinds: [SourceObjectKind!]) {
+    Schema: SourceObjects(parent: $parent, kinds: $kinds) {
+        Name
+        Kind
+        Ref {
+            Kind
+            Locator
+            Path
+        }
+    }
 }

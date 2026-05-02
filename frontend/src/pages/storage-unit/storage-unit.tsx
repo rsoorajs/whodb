@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import {useLazyQuery, useMutation, useQuery} from "@apollo/client/react";
 import {
     Badge,
     Button,
@@ -39,14 +40,17 @@ import {
     VirtualizedTableBody
 } from '@clidey/ux';
 import {TypeSelector} from "../../components/type-selector";
-import {findTypeDefinition} from "../../utils/database-data-types";
+import {findColumnTypeDefinition} from "../../utils/source-column-types";
 import {
-    DatabaseType,
+    AddStorageUnitDocument,
+    DataShape,
+    GetColumnsBatchDocument,
+    GetGraphQuery,
+    GetStorageUnitsQuery,
+    GetStorageUnitsDocument,
     RecordInput,
-    StorageUnit,
-    useAddStorageUnitMutation,
-    useGetColumnsBatchLazyQuery,
-    useGetStorageUnitsQuery
+    SourceSchemaFidelity,
+    SourceAction,
 } from '@graphql';
 import {
     ArrowPathRoundedSquareIcon,
@@ -64,43 +68,84 @@ import {
 } from '../../components/heroicons';
 import classNames from "classnames";
 import {FC, useCallback, useEffect, useMemo, useState} from "react";
-import {useNavigate, useSearchParams} from "react-router-dom";
+import {useLocation, useNavigate, useSearchParams} from "react-router-dom";
 import {Handle, Position} from "reactflow";
 import {Card, ExpandableCard} from "../../components/card";
 import {IGraphCardProps} from "../../components/graph/graph";
 import {Loading, LoadingPage} from "../../components/loading";
 import {InternalPage} from "../../components/page";
 import {InternalRoutes} from "../../config/routes";
-import {useDatabaseTraits} from "../../hooks/useDatabaseTraits";
+import {useSourceContract} from "../../hooks/useSourceContract";
 import {trackFrontendEvent} from "../../config/posthog";
 import {useAppDispatch, useAppSelector} from "../../store/hooks";
 import {Tip} from '../../components/tip';
 import {SettingsActions} from '../../store/settings';
 import {useTranslation} from '../../hooks/use-translation';
+import {buildSourceParentObjectRef, buildSourceParentRef} from '../../utils/source-refs';
+import { findSourceObjectType, type SourceTypeItem } from '../../config/source-types';
 
-const StorageUnitCard: FC<{ unit: StorageUnit, schema: string }> = ({ unit, schema }) => {
+type SourceBrowserObject = GetStorageUnitsQuery['StorageUnit'][number];
+
+type StorageBrowserState = {
+    parent?: SourceBrowserObject;
+    trail?: SourceBrowserObject[];
+};
+
+function isTabularSourceObject(
+    item: SourceTypeItem | undefined,
+    unit: SourceBrowserObject
+): boolean {
+    const dataShape = findSourceObjectType(item, unit.Kind)?.DataShape;
+    return dataShape === DataShape.Tabular || dataShape === DataShape.Document;
+}
+
+function nextBrowserState(
+    trail: SourceBrowserObject[],
+    unit: SourceBrowserObject
+): StorageBrowserState {
+    return {
+        parent: unit,
+        trail: [...trail, unit],
+    };
+}
+
+const StorageUnitCard: FC<{
+    unit: SourceBrowserObject;
+    trail: SourceBrowserObject[];
+}> = ({ unit, trail }) => {
     const [expanded, setExpanded] = useState(false);
     const navigate = useNavigate();
     const { t } = useTranslation('pages/storage-unit');
     const current = useAppSelector(state => state.auth.current);
-    const { pluginType } = useDatabaseTraits(current?.Type);
+    const { item, schemaFidelity } = useSourceContract(current?.Type);
     const [columns, setColumns] = useState<any[] | undefined>(undefined);
     const [columnsLoading, setColumnsLoading] = useState(false);
-    const [fetchColumnsBatch] = useGetColumnsBatchLazyQuery();
+    const [fetchColumnsBatch] = useLazyQuery(GetColumnsBatchDocument);
+    const canBrowse = unit.Actions.includes(SourceAction.Browse) && unit.HasChildren;
+    const shouldFetchColumns = isTabularSourceObject(item, unit);
 
-    const handleNavigateToDatabase = useCallback(() => {
+    const handleNavigateToObject = useCallback(() => {
+        if (canBrowse) {
+            navigate(InternalRoutes.Dashboard.StorageUnit.path, {
+                state: nextBrowserState(trail, unit),
+            });
+            return;
+        }
+
         navigate(InternalRoutes.Dashboard.ExploreStorageUnit.path, {
             state: {
                 unit,
+                parentRef: buildSourceParentObjectRef(item, unit.Ref),
+                trail,
             },
-        })
-    }, [navigate, unit]);
+        });
+    }, [canBrowse, item, navigate, trail, unit]);
 
     const fetchColumns = useCallback(() => {
-        if (columns !== undefined) return;
+        if (!shouldFetchColumns || columns !== undefined) return;
         setColumnsLoading(true);
         fetchColumnsBatch({
-            variables: { schema, storageUnits: [unit.Name] },
+            variables: { refs: [unit.Ref] },
         }).then(result => {
             const batch = result.data?.ColumnsBatch;
             if (batch && batch.length > 0 && batch[0].Columns.length > 0) {
@@ -113,18 +158,24 @@ const StorageUnitCard: FC<{ unit: StorageUnit, schema: string }> = ({ unit, sche
         }).finally(() => {
             setColumnsLoading(false);
         });
-    }, [columns, fetchColumnsBatch, schema, unit.Name]);
+    }, [columns, fetchColumnsBatch, shouldFetchColumns, unit.Ref]);
 
     const handleSetExpanded = useCallback((status: boolean) => {
         setExpanded(status);
-        if (status) requestAnimationFrame(fetchColumns);
-    }, [fetchColumns]);
+        if (status && shouldFetchColumns) requestAnimationFrame(fetchColumns);
+    }, [fetchColumns, shouldFetchColumns]);
+
+    useEffect(() => {
+        if (expanded && shouldFetchColumns && columns === undefined) {
+            requestAnimationFrame(fetchColumns);
+        }
+    }, [columns, expanded, fetchColumns, shouldFetchColumns]);
 
     const handleExpand = useCallback(() => {
         const next = !expanded;
         setExpanded(next);
-        if (next) requestAnimationFrame(fetchColumns);
-    }, [expanded, fetchColumns]);
+        if (next && shouldFetchColumns) requestAnimationFrame(fetchColumns);
+    }, [expanded, fetchColumns, shouldFetchColumns]);
 
     const [introAttributes, expandedAttributes] = useMemo(() => {
         return [ unit.Attributes.slice(0,4), unit.Attributes.slice(4) ];
@@ -155,7 +206,7 @@ const StorageUnitCard: FC<{ unit: StorageUnit, schema: string }> = ({ unit, sche
                 <Button onClick={handleExpand} data-testid="explore-button" variant="secondary">
                     <MagnifyingGlassIcon className="w-4 h-4" /> {t('describe')}
                 </Button>
-                <Button onClick={handleNavigateToDatabase} data-testid="data-button" variant="secondary">
+                <Button onClick={handleNavigateToObject} data-testid="data-button" variant="secondary">
                     <CircleStackIcon className="w-4 h-4" /> {t('data')}
                 </Button>
             </div>
@@ -165,7 +216,7 @@ const StorageUnitCard: FC<{ unit: StorageUnit, schema: string }> = ({ unit, sche
                 <TableCellsIcon className="w-5 h-5" />
                 {unit.Name}
             </SheetTitle>
-            {(pluginType === DatabaseType.MongoDb || pluginType === DatabaseType.ElasticSearch) && (
+            {schemaFidelity === SourceSchemaFidelity.Sampled && (
                 <div className="mb-2" data-testid="sampled-schema-warning">
                     <div className="flex items-center gap-xs text-sm">
                         <InformationCircleIcon className="w-4 h-4" />
@@ -196,12 +247,12 @@ const StorageUnitCard: FC<{ unit: StorageUnit, schema: string }> = ({ unit, sche
                             ))
                         }
                     </StackList>
-                    {columnsLoading && (
+                    {columnsLoading && shouldFetchColumns && (
                         <div className="mt-8">
                             <Loading hideText={true} />
                         </div>
                     )}
-                    {!columnsLoading && columns && columns.length > 0 && (
+                    {!columnsLoading && shouldFetchColumns && columns && columns.length > 0 && (
                         <div className="mt-8">
                             <h3 className="text-xs font-semibold uppercase text-muted-foreground">{t('columns')}</h3>
                             <StackList>
@@ -222,7 +273,7 @@ const StorageUnitCard: FC<{ unit: StorageUnit, schema: string }> = ({ unit, sche
                 </div>
             </div>
             <div className="flex items-end grow">
-                <Button onClick={handleNavigateToDatabase} data-testid="data-button" variant="secondary" className="w-full">
+                <Button onClick={handleNavigateToObject} data-testid="data-button" variant="secondary" className="w-full">
                     <CircleStackIcon className="w-4 h-4" /> {t('data')}
                 </Button>
             </div>
@@ -231,6 +282,7 @@ const StorageUnitCard: FC<{ unit: StorageUnit, schema: string }> = ({ unit, sche
 }
 
 export const StorageUnitPage: FC = () => {
+    const location = useLocation();
     const navigate = useNavigate();
     const [searchParams,] = useSearchParams();
     const [create, setCreate] = useState(searchParams.get("create") === "true");
@@ -240,21 +292,26 @@ export const StorageUnitPage: FC = () => {
     let schema = useAppSelector(state => state.database.schema);
     const current = useAppSelector(state => state.auth.current);
     const {
+        item,
         isNoSQL,
         singularStorageUnitLabel,
         storageUnitLabel,
         supportsModifiers,
         supportsScratchpad,
         usesDatabaseInsteadOfSchema,
-    } = useDatabaseTraits(current?.Type);
+    } = useSourceContract(current?.Type);
     const view = useAppSelector(state => state.settings.storageUnitView);
-    const [addStorageUnit,] = useAddStorageUnitMutation();
+    const [addStorageUnit,] = useMutation(AddStorageUnitDocument);
     const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
     const [expandedUnitColumns, setExpandedUnitColumns] = useState<{ name: string; columns: any[] } | null>(null);
     const [expandedUnitColumnsLoading, setExpandedUnitColumnsLoading] = useState(false);
-    const [fetchColumnsBatchForList] = useGetColumnsBatchLazyQuery();
+    const [fetchColumnsBatchForList] = useLazyQuery(GetColumnsBatchDocument);
     const dispatch = useAppDispatch();
     const { t } = useTranslation('pages/storage-unit');
+    const { t: tCommon } = useTranslation('common');
+    const locationState = location.state as StorageBrowserState | undefined;
+    const trail = locationState?.trail ?? [];
+    const currentParent = locationState?.parent;
 
     useEffect(() => {
         void trackFrontendEvent('ui.storage_unit_viewed', {
@@ -268,11 +325,25 @@ export const StorageUnitPage: FC = () => {
         schema = current?.Database ?? '';
     }
 
-    const { loading, data, refetch } = useGetStorageUnitsQuery({
+    const initialParentRef = useMemo(() => buildSourceParentRef(item, current, schema), [current, item, schema]);
+    const canCreateObjects = useMemo(() => {
+        const parentKind = currentParent?.Kind ?? initialParentRef?.Kind;
+        if (parentKind) {
+            return findSourceObjectType(item, parentKind)?.Actions.includes(SourceAction.CreateChild) ?? false;
+        }
+        return item?.contract?.RootActions?.includes(SourceAction.CreateChild) ?? false;
+    }, [currentParent?.Kind, initialParentRef?.Kind, item]);
+    const parentRef = currentParent?.Ref ?? initialParentRef;
+
+    const { loading, data, refetch } = useQuery(GetStorageUnitsDocument, {
         variables: {
-            schema,
+            parent: parentRef,
         },
     });
+
+    const storageUnits = useMemo(() => {
+        return (data?.StorageUnit ?? []) as SourceBrowserObject[];
+    }, [data?.StorageUnit]);
 
     // Refetch storage units when the connection context changes (profile switch or database switch)
     const currentProfileId = current?.Id;
@@ -287,9 +358,15 @@ export const StorageUnitPage: FC = () => {
     useEffect(() => {
         if (!expandedUnit) return;
         if (expandedUnitColumns?.name === expandedUnit) return;
+        const expandedSourceUnit = storageUnits.find(unit => unit.Name === expandedUnit);
+        if (!expandedSourceUnit) return;
+        if (!isTabularSourceObject(item, expandedSourceUnit)) {
+            setExpandedUnitColumns({ name: expandedUnit, columns: [] });
+            return;
+        }
         setExpandedUnitColumnsLoading(true);
         fetchColumnsBatchForList({
-            variables: { schema, storageUnits: [expandedUnit] },
+            variables: { refs: [expandedSourceUnit.Ref] },
         }).then(result => {
             const batch = result.data?.ColumnsBatch;
             if (batch && batch.length > 0 && batch[0].Columns.length > 0) {
@@ -302,7 +379,7 @@ export const StorageUnitPage: FC = () => {
         }).finally(() => {
             setExpandedUnitColumnsLoading(false);
         });
-    }, [expandedUnit, expandedUnitColumns?.name, fetchColumnsBatchForList, schema]);
+    }, [expandedUnit, expandedUnitColumns?.name, fetchColumnsBatchForList, item, storageUnits]);
 
     const [filterValue, setFilterValue] = useState("");
 
@@ -334,7 +411,7 @@ export const StorageUnitPage: FC = () => {
         setError(undefined);
         addStorageUnit({
             variables: {
-                schema,
+                parent: parentRef,
                 storageUnit: storageUnitName,
                 fields,
             },
@@ -354,7 +431,7 @@ export const StorageUnitPage: FC = () => {
                 toast.error(e.message);
             },
         });
-    }, [addStorageUnit, current?.Type, fields, isNoSQL, refetch, schema, singularStorageUnitLabel, storageUnitName, t, trackFrontendEvent]);
+    }, [addStorageUnit, current?.Type, fields, isNoSQL, parentRef, refetch, singularStorageUnitLabel, storageUnitName, t, trackFrontendEvent]);
 
     const handleAddField = useCallback(() => {
         setFields(f => [...f, { Key: "", Value: "", Extra: [] }]);
@@ -396,29 +473,64 @@ export const StorageUnitPage: FC = () => {
 
     const filterStorageUnits = useMemo(() => {
         const lowerCaseFilterValue = filterValue.toLowerCase();
-        return (data?.StorageUnit ?? []).filter(unit => unit.Name.toLowerCase().includes(lowerCaseFilterValue))
-            .sort((a, b) => a.Name.localeCompare(b.Name));
-    }, [data?.StorageUnit, filterValue]);
+        return storageUnits.filter(unit => (unit.Name ?? "").toLowerCase().includes(lowerCaseFilterValue))
+            .sort((a, b) => {
+                if (a.HasChildren !== b.HasChildren) {
+                    return a.HasChildren ? -1 : 1;
+                }
+                return (a.Name ?? "").localeCompare(b.Name ?? "");
+            });
+    }, [filterValue, storageUnits]);
 
     const showModifiers = useMemo(() => {
         return supportsModifiers;
     }, [supportsModifiers]);
 
+    const handleOpenUnit = useCallback((unit: SourceBrowserObject) => {
+        if (unit.Actions.includes(SourceAction.Browse) && unit.HasChildren) {
+            navigate(InternalRoutes.Dashboard.StorageUnit.path, {
+                state: nextBrowserState(trail, unit),
+            });
+            return;
+        }
+
+        navigate(InternalRoutes.Dashboard.ExploreStorageUnit.path, {
+            state: {
+                unit,
+                parentRef: buildSourceParentObjectRef(item, unit.Ref),
+                trail,
+            },
+        });
+    }, [item, navigate, trail]);
+
+    const previousBrowserState = useMemo<StorageBrowserState | undefined>(() => {
+        if (trail.length === 0) {
+            return undefined;
+        }
+        if (trail.length === 1) {
+            return {};
+        }
+        return {
+            parent: trail[trail.length - 2],
+            trail: trail.slice(0, -1),
+        };
+    }, [trail]);
+
     const sharedAttributeKeys = useMemo(() => {
-        if (!data?.StorageUnit || data.StorageUnit.length === 0) {
+        if (storageUnits.length === 0) {
             return [];
         }
 
         // Get attributes that exist in ALL storage units (intersection of all attributes)
         // Preserve the order from the first unit (backend returns metadata like Type first)
-        const firstUnitKeys = data.StorageUnit[0].Attributes.map(attr => attr.Key);
+        const firstUnitKeys = storageUnits[0]?.Attributes.map(attr => attr.Key) ?? [];
 
         return firstUnitKeys.filter(key =>
-            data.StorageUnit.every(unit =>
+            storageUnits.every(unit =>
                 unit.Attributes.some(attr => attr.Key === key)
             )
         );
-    }, [data?.StorageUnit]);
+    }, [storageUnits]);
 
     if (loading) {
         return <InternalPage routes={routes}>
@@ -429,6 +541,15 @@ export const StorageUnitPage: FC = () => {
     return <InternalPage routes={routes}>
         <div className="flex w-full h-fit my-2 gap-lg justify-between">
             <div className="flex justify-between items-center">
+                {previousBrowserState != null && (
+                    <Button
+                        variant="secondary"
+                        className="mr-2"
+                        onClick={() => navigate(InternalRoutes.Dashboard.StorageUnit.path, { state: previousBrowserState })}
+                    >
+                        {tCommon('back')}
+                    </Button>
+                )}
                 <SearchInput value={filterValue} onChange={e => setFilterValue(e.target.value)} placeholder={t('searchPlaceholder')} />
             </div>
             <div className="flex items-center gap-2">
@@ -455,7 +576,7 @@ export const StorageUnitPage: FC = () => {
         <div className={cn("flex flex-wrap gap-4", {
             "hidden": view !== "card",
         })} data-testid="storage-unit-card-list">
-            {current?.Type !== DatabaseType.Memcached && <ExpandableCard className="overflow-visible min-w-[200px] max-w-[700px] h-full" icon={<PlusCircleIcon className="w-4 h-4" />} isExpanded={create} setExpanded={setCreate} tag={<Badge variant="destructive">{error}</Badge>}>
+            {canCreateObjects && <ExpandableCard className="overflow-visible min-w-[200px] max-w-[700px] h-full" icon={<PlusCircleIcon className="w-4 h-4" />} isExpanded={create} setExpanded={setCreate} tag={<Badge variant="destructive">{error}</Badge>}>
                 <div className="flex flex-col grow h-full justify-between mt-2 gap-2" data-testid="create-storage-unit-card">
                     <h1 className="text-lg"><span className="prefix-create-storage-unit">{t('createTitle', { storageUnit: singularStorageUnitLabel })}</span></h1>
                     <Button className="self-end" onClick={e => { e.stopPropagation(); handleCreate(); }} variant="secondary">
@@ -483,7 +604,7 @@ export const StorageUnitPage: FC = () => {
                                             <Input value={field.Key} onChange={e => handleFieldValueChange("Key", index, e.target.value)} placeholder={t('fieldNamePlaceholder')}/>
                                             <Label>{t('fieldTypeLabel')}</Label>
                                             <TypeSelector
-                                                databaseType={current?.Type}
+                                                sourceType={current?.Type}
                                                 value={field.Value}
                                                 onChange={value => handleFieldValueChange("Value", index, value)}
                                                 placeholder={t('fieldTypePlaceholder')}
@@ -495,7 +616,7 @@ export const StorageUnitPage: FC = () => {
 
                                             {(() => {
                                                 const typeDef = current?.Type && field.Value
-                                                    ? findTypeDefinition(field.Value, current.Type)
+                                                    ? findColumnTypeDefinition(field.Value, current.Type)
                                                     : undefined;
                                                 return typeDef?.tableModel ? (
                                                     <p className="text-xs text-muted-foreground">
@@ -538,8 +659,8 @@ export const StorageUnitPage: FC = () => {
                 </div>
             </ExpandableCard>}
             {
-                data != null && data.StorageUnit.length > 0 && filterStorageUnits.map(unit => (
-                    <StorageUnitCard key={unit.Name} unit={unit} schema={schema} />
+                storageUnits.length > 0 && filterStorageUnits.map(unit => (
+                    <StorageUnitCard key={`${unit.Name}-${unit.Kind}`} unit={unit} trail={trail} />
                 ))
             }
         </div>
@@ -562,6 +683,9 @@ export const StorageUnitPage: FC = () => {
                     rowHeight={40}>
                     {(rowIndex: number) => {
                         const unit = filterStorageUnits[rowIndex];
+                        if (!unit) {
+                            return null;
+                        }
                         const attrMap = Object.fromEntries(unit.Attributes.map(attr => [attr.Key, attr.Value]));
                         return (
                             <TableRow key={unit.Name} className="group">
@@ -572,11 +696,7 @@ export const StorageUnitPage: FC = () => {
                                 <TableCell className="relative">
                                     <div className="flex gap-xs opacity-0 group-hover:opacity-100 transition-opacity">
                                         <Button
-                                            onClick={() => {
-                                                navigate(InternalRoutes.Dashboard.ExploreStorageUnit.path, {
-                                                    state: { unit },
-                                                });
-                                            }}
+                                            onClick={() => handleOpenUnit(unit)}
                                             data-testid="data-button"
                                             variant="secondary"
                                             size="sm"
@@ -642,11 +762,7 @@ export const StorageUnitPage: FC = () => {
                                     )}
                                     <div className="flex gap-sm mt-4">
                                         <Button
-                                            onClick={() => {
-                                                navigate(InternalRoutes.Dashboard.ExploreStorageUnit.path, {
-                                                    state: { unit },
-                                                });
-                                            }}
+                                            onClick={() => handleOpenUnit(unit)}
                                             data-testid="data-button"
                                             variant="secondary"
                                         >
@@ -669,10 +785,13 @@ export const StorageUnitPage: FC = () => {
     </InternalPage>
 }
 
-export const StorageUnitGraphCard: FC<IGraphCardProps<StorageUnit & { columns?: any[] }>> = ({ data }) => {
+type StorageUnitGraphCardData = GetGraphQuery['Graph'][number]['Unit'] & {
+    columns?: any[];
+    columnsLoading?: boolean;
+};
+
+export const StorageUnitGraphCard: FC<IGraphCardProps<StorageUnitGraphCardData>> = ({ data }) => {
     const navigate = useNavigate();
-    const schema = useAppSelector(state => state.database.schema);
-    const current = useAppSelector(state => state.auth.current);
     const { t } = useTranslation('pages/storage-unit');
 
     const handleNavigateTo = useCallback(() => {
@@ -690,6 +809,7 @@ export const StorageUnitGraphCard: FC<IGraphCardProps<StorageUnit & { columns?: 
     // Columns contains field definitions with FK/PK info for handles
     const metadataItems = data?.Attributes || [];
     const columnItems = data?.columns || [];
+    const columnsLoading = data?.columnsLoading || false;
 
     if (data == null) {
         return (<Card icon={<ArrowPathRoundedSquareIcon className="w-4 h-4" />}>
@@ -718,9 +838,16 @@ export const StorageUnitGraphCard: FC<IGraphCardProps<StorageUnit & { columns?: 
                                     );
                                 })
                             }
+                            {
+                                columnsLoading && (
+                                    <div className="py-4">
+                                        <Loading hideText={true} />
+                                    </div>
+                                )
+                            }
                             {/* Show columns with FK/PK handles */}
                             {
-                                columnItems.map((col: any, index: number) => {
+                                !columnsLoading && columnItems.map((col: any, index: number) => {
                                     const name = col.Name;
                                     const value = col.Type?.toLowerCase();
                                     const isFKColumn = col.IsForeignKey || false;

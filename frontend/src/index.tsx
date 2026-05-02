@@ -17,7 +17,7 @@
 import React, {useEffect, useState} from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import {ApolloProvider} from "@apollo/client";
+import {ApolloProvider} from "@apollo/client/react";
 import {graphqlClient} from './config/graphql-client';
 import {Provider} from "react-redux";
 import {reduxStore, reduxStorePersistor} from './store';
@@ -31,6 +31,7 @@ import {ThemeProvider} from '@clidey/ux'
 import {isDesktopApp} from './utils/external-links';
 import {PosthogConsentBanner} from './components/analytics/posthog-consent-banner';
 import {ErrorBoundary} from './components/error-boundary';
+import {getBasePath} from './utils/base-path';
 
 // Detect desktop Linux and add a class for CSS-based overrides (e.g., fonts)
 try {
@@ -76,22 +77,35 @@ const AppWithProviders = () => {
     return app;
 };
 
-// Use HashRouter for desktop app (avoids full page reloads)
-// Use BrowserRouter for web version
-const Router = isDesktopApp() ? HashRouter : BrowserRouter;
+const desktopApp = isDesktopApp();
+const browserBasePath = desktopApp ? undefined : (getBasePath() || undefined);
 
 root.render(
   <React.StrictMode>
-    <Router>
-      <ApolloProvider client={graphqlClient}>
-        <Provider store={reduxStore}>
-          <PersistGate loading={null} persistor={reduxStorePersistor}>
-            <ErrorBoundary>
-              <AppWithProviders />
-            </ErrorBoundary>
-          </PersistGate>
-        </Provider>
-      </ApolloProvider>
-    </Router>
+    {desktopApp ? (
+      <HashRouter>
+        <ApolloProvider client={graphqlClient}>
+          <Provider store={reduxStore}>
+            <PersistGate loading={null} persistor={reduxStorePersistor}>
+              <ErrorBoundary>
+                <AppWithProviders />
+              </ErrorBoundary>
+            </PersistGate>
+          </Provider>
+        </ApolloProvider>
+      </HashRouter>
+    ) : (
+      <BrowserRouter basename={browserBasePath}>
+        <ApolloProvider client={graphqlClient}>
+          <Provider store={reduxStore}>
+            <PersistGate loading={null} persistor={reduxStorePersistor}>
+              <ErrorBoundary>
+                <AppWithProviders />
+              </ErrorBoundary>
+            </PersistGate>
+          </Provider>
+        </ApolloProvider>
+      </BrowserRouter>
+    )}
   </React.StrictMode>
 );

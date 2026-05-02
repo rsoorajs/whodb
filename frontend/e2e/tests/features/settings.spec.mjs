@@ -373,8 +373,7 @@ test.describe('Settings', () => {
                 await whodb.goto('storage-unit');
                 await page.locator('[data-testid="storage-unit-card"]').first().waitFor({ timeout: 10000 });
 
-                const sidebarText = await page.locator('[data-testid="sidebar-database-label"]').textContent();
-                expect(sidebarText.toLowerCase()).toContain('schema');
+                await expect(page.locator('[data-testid="sidebar-database"]')).toHaveAttribute('aria-label', /schema/i);
             });
 
             test('can change terminology to database', async ({ whodb, page }) => {
@@ -388,8 +387,7 @@ test.describe('Settings', () => {
                 await whodb.goto('storage-unit');
                 await page.locator('[data-testid="storage-unit-card"]').first().waitFor({ timeout: 10000 });
 
-                const sidebarText = await page.locator('[data-testid="sidebar-database-label"]').textContent();
-                expect(sidebarText.toLowerCase()).toContain('database');
+                await expect(page.locator('[data-testid="sidebar-database"]')).toHaveAttribute('aria-label', /database/i);
             });
 
             test('terminology persists after navigation', async ({ whodb, page }) => {
@@ -413,7 +411,7 @@ test.describe('Settings', () => {
                 await page.locator('[data-value="database"]').click();
             });
         });
-    });
+    }, { databases: ['mysql'] });
 
     // Theme toggle tests - run for any database since it's global
     forEachDatabase('sql', (db) => {

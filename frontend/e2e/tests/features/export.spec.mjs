@@ -93,11 +93,11 @@ test.describe('Data Export', () => {
                 );
 
                 // Wait for table to stabilize after data load
-                await page.locator('table tbody tr').first().waitFor({ timeout: 5000 });
+                await whodb.dataRows().first().waitFor({ timeout: 5000 });
                 await page.waitForTimeout(1000); // Wait for any re-renders to complete
 
                 // Select a row via context menu - click on first visible data cell
-                const targetCell = page.locator('table tbody tr').first().locator('td').nth(1);
+                const targetCell = whodb.dataCell(0, 1);
                 await targetCell.scrollIntoViewIfNeeded();
                 await targetCell.click({ button: 'right', position: { x: 5, y: 5 } });
                 await page.waitForTimeout(500); // Wait for context menu animation
@@ -110,7 +110,7 @@ test.describe('Data Export', () => {
                 await page.locator('button', { hasText: 'Export 1 Selected' }).click();
 
                 await expect(page.locator('[role="dialog"]')).toBeVisible();
-                await expect(page.locator('text=You are about to export 1 selected rows.')).toBeVisible();
+                await expect(page.locator('text=You are about to export 1 selected row.')).toBeVisible();
 
                 // Ensure CSV format is selected
                 await whodb.selectExportFormat('csv');
@@ -141,11 +141,11 @@ test.describe('Data Export', () => {
                 await whodb.data(tableName);
 
                 // Wait for table to stabilize
-                await page.locator('table tbody tr').first().waitFor({ timeout: 5000 });
+                await whodb.dataRows().first().waitFor({ timeout: 5000 });
                 await page.waitForTimeout(1000);
 
                 // Select a row via context menu
-                const targetCell = page.locator('table tbody tr').first().locator('td').nth(1);
+                const targetCell = whodb.dataCell(0, 1);
                 await targetCell.scrollIntoViewIfNeeded();
                 await targetCell.click({ button: 'right', position: { x: 5, y: 5 } });
                 await page.waitForTimeout(500);
@@ -157,7 +157,7 @@ test.describe('Data Export', () => {
                 await expect(page.locator('button', { hasText: 'Export 1 Selected' })).toBeVisible();
 
                 // Now right-click again and choose "Export All as CSV"
-                await page.locator('table tbody tr').first().locator('td').nth(1).click({ button: 'right', position: { x: 5, y: 5 } });
+                await whodb.dataCell(0, 1).click({ button: 'right', position: { x: 5, y: 5 } });
                 await page.waitForTimeout(500);
                 await page.locator('[role="menu"]').locator('text=Export').click();
                 await expect(page.locator('text=Export All as CSV')).toBeVisible();

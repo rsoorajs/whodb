@@ -11,6 +11,10 @@ WhoDB's AI Chat Assistant is designed for interactive, contextual conversations 
 The AI assistant maintains full context throughout your conversation, allowing natural follow-up questions without repeating information
 </Tip>
 
+<Warning>
+Conversation features require a selected AI model. If the model dropdown is empty, configure a provider before testing chat history, generated SQL, or Move to Scratchpad.
+</Warning>
+
 ## Understanding Conversational Context
 
 Unlike traditional SQL editors where each query is independent, WhoDB's AI assistant maintains conversational context throughout your session. This enables a natural, iterative approach to data exploration and analysis.
@@ -363,7 +367,7 @@ For NoSQL databases, copy the generated query manually if needed for documentati
 
 ### Organizing Scratchpad Queries
 
-Develop a structure for organizing saved queries:
+Develop a structure for organizing Scratchpad pages and important SQL:
 
 **By Functionality**:
 - User Queries
@@ -389,11 +393,11 @@ Create descriptive page names that make it easy to find queries later
 
 ### Best Practices for Scratchpad
 
-1. **Save Before Modifying**: Move the AI-generated query to Scratchpad before making manual changes
-2. **Add Comments**: Document why the query was saved and what it accomplishes
-3. **Test Modifications**: When you modify a saved query, test it thoroughly
+1. **Move Before Modifying**: Move the AI-generated query to Scratchpad before making manual changes
+2. **Add Comments**: Document why the query matters and what it accomplishes
+3. **Test Modifications**: When you modify a query, test it thoroughly
 4. **Archive Old Queries**: Create an "Archive" page for queries you no longer use but want to keep
-5. **Share with Team**: Use descriptive names so teammates can understand saved queries
+5. **Share with Team**: Copy important SQL into your normal shared docs, runbooks, or repository
 
 ## Managing Conversation History
 
@@ -524,7 +528,7 @@ Use the provider dropdown to select the provider you want to remove.
 This ensures you're deleting the correct provider.
 </Step>
 <Step title="Click Delete Provider">
-Click the **Delete Provider** button next to the New Chat button.
+Click the **Delete Provider** button next to the New Chat button. This button is available for manually added providers.
 
 A confirmation dialog will appear.
 </Step>
@@ -541,6 +545,10 @@ The provider is removed from your configuration.
 If this was your only provider, you'll need to add a new one to continue using the AI assistant.
 </Step>
 </Steps>
+
+<Note>
+Environment-defined providers are managed by deployment configuration.
+</Note>
 
 ### Managing Multiple Providers
 
@@ -822,7 +830,7 @@ Use New Chat when switching topics or after long conversations
 Press <kbd>↑</kbd> to quickly access and modify previous questions
 </Card>
 <Card title="Organize Scratchpad" icon="folder">
-Create well-named pages to organize saved queries
+Create well-named pages to organize important SQL
 </Card>
 <Card title="Multiple Providers" icon="network-wired">
 Configure backup providers for reliability

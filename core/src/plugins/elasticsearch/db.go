@@ -29,6 +29,7 @@ import (
 	"github.com/clidey/whodb/core/src/common/ssl"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
+	elastictransport "github.com/elastic/elastic-transport-go/v8/elastictransport"
 	"github.com/elastic/go-elasticsearch/v8"
 )
 
@@ -73,6 +74,9 @@ func DB(config *engine.PluginConfig) (*elasticsearch.Client, error) {
 		Addresses: addresses,
 		Username:  config.Credentials.Username,
 		Password:  config.Credentials.Password,
+	}
+	if config.Credentials.Type == string(engine.DatabaseType_OpenSearch) {
+		cfg.Interceptors = []elastictransport.InterceptorFunc{opensearchProductHeaderInterceptor}
 	}
 
 	// Configure TLS if enabled
@@ -135,7 +139,7 @@ func DB(config *engine.PluginConfig) (*elasticsearch.Client, error) {
 	}
 
 	log.Debug("[ES DB] Pinging Elasticsearch server")
-	res, err := client.Info()
+	res, err := client.Info(client.Info.WithContext(config.OperationContext()))
 	if err != nil || res.IsError() {
 		errMsg := "no error"
 		if err != nil {
@@ -157,4 +161,14 @@ func DB(config *engine.PluginConfig) (*elasticsearch.Client, error) {
 
 	log.Debugf("[ES DB] Successfully connected to Elasticsearch at %s", addresses[0])
 	return client, nil
+}
+
+func opensearchProductHeaderInterceptor(next elastictransport.RoundTripFunc) elastictransport.RoundTripFunc {
+	return func(req *http.Request) (*http.Response, error) {
+		res, err := next(req)
+		if res != nil {
+			res.Header.Set("X-Elastic-Product", "Elasticsearch")
+		}
+		return res, err
+	}
 }

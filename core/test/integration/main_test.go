@@ -19,6 +19,7 @@
 package integration
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -26,6 +27,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/plugins/clickhouse"
 	"github.com/clidey/whodb/core/src/plugins/elasticsearch"
@@ -33,14 +35,18 @@ import (
 	"github.com/clidey/whodb/core/src/plugins/mysql"
 	"github.com/clidey/whodb/core/src/plugins/postgres"
 	"github.com/clidey/whodb/core/src/plugins/redis"
+	"github.com/clidey/whodb/core/src/source"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 type target struct {
-	name    string
-	plugin  *engine.Plugin
-	config  *engine.PluginConfig
-	schema  string
-	enabled bool
+	name             string
+	plugin           *engine.Plugin
+	config           *engine.PluginConfig
+	schema           string
+	enabled          bool
+	readySchema      string
+	readyStorageUnit string
 }
 
 var targets []target
@@ -55,6 +61,10 @@ func TestMain(m *testing.M) {
 
 	waitForServices()
 	initTargets()
+	if err := waitForSeededTargets(); err != nil {
+		fmt.Fprintf(os.Stderr, "seeded data did not become ready: %v\n", err)
+		os.Exit(1)
+	}
 
 	os.Exit(m.Run())
 }
@@ -97,8 +107,10 @@ func initTargets() {
 				Password: "jio53$*(@nfe)",
 				Database: "test_db",
 			}),
-			schema:  "public",
-			enabled: true,
+			schema:           "public",
+			enabled:          true,
+			readySchema:      "test_schema",
+			readyStorageUnit: "orders",
 		},
 		{
 			name:   "mysql",
@@ -110,8 +122,10 @@ func initTargets() {
 				Password: "password",
 				Database: "test_db",
 			}),
-			schema:  "test_db",
-			enabled: true,
+			schema:           "test_db",
+			enabled:          true,
+			readySchema:      "test_db",
+			readyStorageUnit: "orders",
 		},
 		{
 			name:   "mariadb",
@@ -124,8 +138,10 @@ func initTargets() {
 				Database: "test_db",
 				Advanced: []engine.Record{{Key: "Port", Value: "3307"}},
 			}),
-			schema:  "test_db",
-			enabled: true,
+			schema:           "test_db",
+			enabled:          true,
+			readySchema:      "test_db",
+			readyStorageUnit: "orders",
 		},
 		{
 			name:   "mysql842",
@@ -135,11 +151,13 @@ func initTargets() {
 				Hostname: "localhost",
 				Username: "user",
 				Password: "password",
-				Database: "test_db_842",
+				Database: "test_db",
 				Advanced: []engine.Record{{Key: "Port", Value: "3308"}},
 			}),
-			schema:  "test_db_842",
-			enabled: true,
+			schema:           "test_db",
+			enabled:          true,
+			readySchema:      "test_db",
+			readyStorageUnit: "orders",
 		},
 		{
 			name:   "clickhouse",
@@ -152,8 +170,10 @@ func initTargets() {
 				Database: "test_db",
 				Advanced: []engine.Record{{Key: "Port", Value: "9000"}},
 			}),
-			schema:  "test_db",
-			enabled: true,
+			schema:           "test_db",
+			enabled:          true,
+			readySchema:      "test_db",
+			readyStorageUnit: "orders",
 		},
 		{
 			name:   "mongo",
@@ -165,8 +185,10 @@ func initTargets() {
 				Password: "password",
 				Database: "test_db",
 			}),
-			schema:  "test_db",
-			enabled: true,
+			schema:           "test_db",
+			enabled:          true,
+			readySchema:      "test_db",
+			readyStorageUnit: "orders",
 		},
 		{
 			name:   "elasticsearch",
@@ -176,8 +198,9 @@ func initTargets() {
 				Hostname: "localhost",
 				Advanced: []engine.Record{{Key: "Port", Value: "9200"}},
 			}),
-			schema:  "",
-			enabled: true,
+			schema:           "",
+			enabled:          true,
+			readyStorageUnit: "orders",
 		},
 		{
 			name:   "redis",
@@ -189,8 +212,98 @@ func initTargets() {
 				Database: "0",
 				Advanced: []engine.Record{{Key: "Port", Value: "6379"}},
 			}),
-			schema:  "",
-			enabled: true,
+			schema:           "",
+			enabled:          true,
+			readyStorageUnit: "orders:recent",
 		},
 	}
+}
+
+func sessionMetadataForTarget(target target) *source.TypeSessionMetadata {
+	ids := []string{}
+	if target.config != nil && target.config.Credentials != nil {
+		ids = append(ids, target.config.Credentials.Type)
+	}
+	if target.plugin != nil {
+		ids = append(ids, string(target.plugin.Type))
+	}
+
+	metadata, ok := sourcecatalog.ResolveSessionMetadata(ids...)
+	if !ok {
+		return nil
+	}
+	return metadata
+}
+
+func engineTypeDefinition(td source.TypeDefinition) engine.TypeDefinition {
+	return engine.TypeDefinition{
+		ID:               td.ID,
+		Label:            td.Label,
+		HasLength:        td.HasLength,
+		HasPrecision:     td.HasPrecision,
+		DefaultLength:    td.DefaultLength,
+		DefaultPrecision: td.DefaultPrecision,
+		Category:         engine.TypeCategory(td.Category),
+		InsertFunc:       td.InsertFunc,
+		TableModel:       td.TableModel,
+		DDLSuffix:        td.DDLSuffix,
+	}
+}
+
+func waitForSeededTargets() error {
+	for _, target := range targets {
+		if !target.enabled {
+			continue
+		}
+		if err := waitForSeededTarget(target, 5*time.Minute); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func waitForSeededTarget(target target, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	var lastErr error
+	readySchema := target.readySchema
+	if readySchema == "" {
+		readySchema = target.schema
+	}
+
+	for time.Now().Before(deadline) {
+		if !target.plugin.IsAvailable(context.Background(), target.config) {
+			lastErr = fmt.Errorf("%s plugin is not available yet", target.name)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
+		if target.readyStorageUnit == "" {
+			return nil
+		}
+
+		exists, err := target.plugin.StorageUnitExists(target.config, readySchema, target.readyStorageUnit)
+		if err == nil && exists {
+			rows, rowsErr := target.plugin.GetRows(target.config, &engine.GetRowsRequest{
+				Schema:      readySchema,
+				StorageUnit: target.readyStorageUnit,
+				Sort:        []*model.SortCondition{},
+				PageSize:    1,
+			})
+			if rowsErr == nil && len(rows.Rows) > 0 {
+				return nil
+			}
+			if rowsErr != nil {
+				lastErr = rowsErr
+			}
+		} else if err != nil {
+			lastErr = err
+		}
+
+		time.Sleep(2 * time.Second)
+	}
+
+	if lastErr != nil {
+		return fmt.Errorf("%s readiness check failed: %w", target.name, lastErr)
+	}
+	return fmt.Errorf("%s readiness check timed out", target.name)
 }

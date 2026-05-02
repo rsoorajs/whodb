@@ -1,6 +1,9 @@
 # Cloud Provider Architecture
 
-This document describes the generic cloud provider architecture for WhoDB. Cloud providers auto-discover database resources from cloud accounts (AWS, GCP, Azure) and connect to them using existing database plugins.
+This document describes the generic cloud provider architecture for WhoDB.
+Cloud providers auto-discover source resources from cloud accounts (AWS, GCP,
+Azure) and connect to them using the existing source catalog and connector
+stack.
 
 ## Architecture Pattern: Interface + Union
 
@@ -78,7 +81,7 @@ interface CloudProvider {
 
 ### DiscoveredConnection Type
 
-Represents a database found by any provider:
+Represents a source found by any provider:
 
 ```graphql
 type DiscoveredConnection {
@@ -86,7 +89,7 @@ type DiscoveredConnection {
   ProviderType: CloudProviderType!
   ProviderID: String!
   Name: String!
-  DatabaseType: String!
+  SourceType: String!
   Region: String!
   Status: String!
   Metadata: [Record!]!
@@ -333,7 +336,9 @@ en:
 
 ## Connection Prefill Rules
 
-When a user selects a discovered cloud connection, the frontend prefills the login form with connection settings (hostname, port, SSL/TLS). These settings vary by database type.
+When a user selects a discovered cloud connection, the frontend prefills the
+login form with connection settings (hostname, port, SSL/TLS). These settings
+vary by source type.
 
 ### Architecture
 
@@ -343,16 +348,16 @@ When a user selects a discovered cloud connection, the frontend prefills the log
 ├─────────────────────────────────────────────────────────────────┤
 │  basePrefillRules (CE)                                           │
 │  ┌─────────────────────────────────────────────────────────────┐ │
-│  │ DatabaseTypeA → { "Setting": "value" }                      │ │
-│  │ DatabaseTypeB → { "TLS": "true" }   (conditional on meta)   │ │
+│  │ SourceTypeA → { "Setting": "value" }                        │ │
+│  │ SourceTypeB → { "TLS": "true" }   (conditional on meta)     │ │
 │  └─────────────────────────────────────────────────────────────┘ │
 │                         ▼                                        │
 │              merge at runtime (if extensions loaded)                     │
 │                         ▼                                        │
 │  extensionPrefillRules               │
 │  ┌─────────────────────────────────────────────────────────────┐ │
-│  │ ExtensionDatabaseTypeA → { "Custom Setting": "value" }                 │ │
-│  │ CustomDatabaseTypeB → { ... }                                   │ │
+│  │ ExtensionSourceTypeA → { "Custom Setting": "value" }           │ │
+│  │ CustomSourceTypeB → { ... }                                    │ │
 │  └─────────────────────────────────────────────────────────────┘ │
 │                         ▼                                        │
 │              prefillRules (combined)                             │
@@ -377,10 +382,10 @@ const basePrefillRules: Record<string, PrefillRule> = {
     // Existing rules...
 
     // Simple rule - always apply these settings
-    NewDatabaseType: () => ({ "Setting Name": "value" }),
+    NewSourceType: () => ({ "Setting Name": "value" }),
 
     // Conditional rule - check metadata from discovery
-    AnotherDatabaseType: (_, meta) =>
+    AnotherSourceType: (_, meta) =>
         meta("someMetadataKey") === "true" ? { "Conditional Setting": "value" } : {},
 };
 ```
@@ -390,7 +395,7 @@ const basePrefillRules: Record<string, PrefillRule> = {
 
 ```typescript
 export const eePrefillRules: Record<string, PrefillRule> = {
-    CustomDatabaseType: () => ({ "Custom Setting": "value" }),
+    CustomSourceType: () => ({ "Custom Setting": "value" }),
 
     // Conditional based on metadata
     AnotherEEType: (_, meta) => {
@@ -404,7 +409,7 @@ export const eePrefillRules: Record<string, PrefillRule> = {
 
 1. **Backend Discovery** - Provider discovers connections and populates `Metadata` map
 2. **GraphQL Response** - `DiscoveredConnection.Metadata` contains allowed keys (endpoint, port, etc.)
-3. **Frontend Prefill** - `buildConnectionPrefill(conn)` applies rules based on `DatabaseType`
+3. **Frontend Prefill** - `buildConnectionPrefill(conn)` applies rules based on `SourceType`
 4. **Login Form** - Receives prefill data and populates hostname, port, and advanced settings
 
 ### PrefillRule Function Signature
@@ -431,11 +436,11 @@ The backend exposes these metadata keys for prefill decisions:
 
 ### Design Principles
 
-1. **CE defines base rules** - Common database types in `basePrefillRules`
-2. **Extensions merge with base rules, don't replace
-3. **Rules are per-DatabaseType** - Each database type has explicit rules
+1. **CE defines base rules** - Common source types in `basePrefillRules`
+2. **Extensions merge with base rules, don't replace**
+3. **Rules are per source type** - Each source type has explicit rules
 4. **Metadata-driven** - Rules can inspect discovery metadata for conditional logic
-5. **No provider knowledge in rules** - Rules don't know about AWS/GCP, only DatabaseType
+5. **No provider knowledge in rules** - Rules don't know about AWS/GCP, only SourceType
 
 ## Related Documentation
 

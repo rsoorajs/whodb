@@ -44,18 +44,22 @@ import {
     StackListItem,
     toast,
 } from "@clidey/ux";
+import {skipToken, useLazyQuery, useMutation, useQuery} from "@apollo/client/react";
 import {
-    DatabaseType,
+    AddRowDocument,
+    ColumnsDocument,
+    DataShape,
+    GetSourceContentDocument,
+    GetStorageUnitRowsDocument,
+    GetStorageUnitsQuery,
     RecordInput,
+    RawExecuteDocument,
     RowsResult,
     SortCondition,
     SortDirection,
-    StorageUnit,
-    useAddRowMutation,
-    useColumnsLazyQuery,
-    useGetStorageUnitRowsLazyQuery,
-    useRawExecuteLazyQuery,
-    useUpdateStorageUnitMutation,
+    SourceAction,
+    type SourceObjectRefInput,
+    UpdateStorageUnitDocument,
     WhereCondition,
     WhereConditionType
 } from '@graphql';
@@ -78,10 +82,10 @@ import {SchemaViewer} from "../../components/schema-viewer";
 import {getColumnIcons, getInputPropsForColumnType, StorageUnitTable} from "../../components/table";
 import {Tip} from "../../components/tip";
 import {InternalRoutes} from "../../config/routes";
-import {useDatabaseTraits} from "../../hooks/useDatabaseTraits";
+import {useSourceContract} from "../../hooks/useSourceContract";
 import {useAppDispatch, useAppSelector} from "../../store/hooks";
 import {ExploreConditionsActions} from "../../store/explore-conditions";
-import {getDatabaseOperators} from "../../utils/database-operators";
+import {getSourceOperators} from "../../utils/source-operators";
 import {usePageSize} from "../../hooks/use-page-size";
 import {ExploreStorageUnitWhereCondition} from "./explore-storage-unit-where-condition";
 import {ExploreStorageUnitWhereConditionSheet} from "./explore-storage-unit-where-condition-sheet";
@@ -90,18 +94,16 @@ import {whereConditionToSql} from "../../utils/where-condition-to-sql";
 import {isDestructiveQuery} from "../../utils/query-utils";
 import {useContainerWidth} from "../../hooks/use-container-width";
 import {getComponent} from "../../config/component-registry";
+import { findSourceObjectType } from "../../config/source-types";
+import {buildSourceObjectRef, buildSourceParentObjectRef} from "../../utils/source-refs";
 
-// Extension query utilities — set via registerQueryUtils()
-let generateInitialQuery: ((databaseType: string | undefined, schema: string | undefined, tableName: string | undefined) => string) | undefined;
+type SourceBrowserObject = GetStorageUnitsQuery['StorageUnit'][number];
 
-/** Register extension query utilities. */
-export function registerQueryUtils(fns: {
-    generateInitialQuery?: (databaseType: string | undefined, schema: string | undefined, tableName: string | undefined) => string;
-}) {
-    if (fns.generateInitialQuery) {
-        generateInitialQuery = fns.generateInitialQuery;
-    }
-}
+type ExploreSourceState = {
+    unit?: SourceBrowserObject;
+    parentRef?: SourceObjectRefInput;
+    trail?: SourceBrowserObject[];
+};
 
 type EESearchBarProps = {
     columns: string[];
@@ -112,6 +114,7 @@ type EESearchBarProps = {
 };
 
 export const ExploreStorageUnit: FC = () => {
+    const location = useLocation();
     const defaultPageSize = useAppSelector(state => state.settings.defaultPageSize);
     const maxPageSize = useAppSelector(state => state.settings.maxPageSize);
     const pageSizeOptions = useMemo(() => ({ maxPageSize }), [maxPageSize]);
@@ -130,19 +133,41 @@ export const ExploreStorageUnit: FC = () => {
     let schema = useAppSelector(state => state.database.schema);
     const current = useAppSelector(state => state.auth.current);
     const {
+        item,
         isNoSQL,
         storageUnitLabel,
         supportsScratchpad,
         usesDatabaseInsteadOfSchema,
-    } = useDatabaseTraits(current?.Type);
+    } = useSourceContract(current?.Type);
     const whereConditionMode = useAppSelector(state => state.settings.whereConditionMode);
-    const unit: StorageUnit = useLocation().state?.unit;
+    const locationState = location.state as ExploreSourceState | undefined;
+    const unit = locationState?.unit;
+    const browserTrail = locationState?.trail ?? [];
     const navigate = useNavigate();
 
     // TODO: ClickHouse/MongoDB use database name as schema parameter since they lack traditional schemas
     if (usesDatabaseInsteadOfSchema && current?.Database) {
         schema = current.Database;
     }
+
+    const currentObjectType = useMemo(() => findSourceObjectType(item, unit?.Kind), [item, unit?.Kind]);
+    const currentObjectActions = unit?.Actions ?? currentObjectType?.Actions ?? [];
+    const canViewRows = currentObjectActions.includes(SourceAction.ViewRows);
+    const canViewContent = currentObjectActions.includes(SourceAction.ViewContent);
+    const isTabularObject = currentObjectType?.DataShape === DataShape.Tabular || currentObjectType?.DataShape === DataShape.Document || canViewRows;
+    const isContentObject = !isTabularObject && (currentObjectType?.DataShape === DataShape.Content || canViewContent);
+    const allowsInsertData = currentObjectActions.includes(SourceAction.InsertData);
+    const allowsUpdateData = currentObjectActions.includes(SourceAction.UpdateData);
+    const allowsDeleteData = currentObjectActions.includes(SourceAction.DeleteData);
+    const currentParentRef = useMemo(() => {
+        if (locationState?.parentRef) {
+            return locationState.parentRef;
+        }
+        if (!unit) {
+            return undefined;
+        }
+        return buildSourceParentObjectRef(item, unit.Ref);
+    }, [item, locationState?.parentRef, unit]);
 
     const dispatch = useAppDispatch();
     const conditionKey = useMemo(() => {
@@ -203,7 +228,7 @@ export const ExploreStorageUnit: FC = () => {
     const pageSizeInitialRef = useRef(true);
     const [tableHeight, setTableHeight] = useState<number>(500);
 
-    const [updateStorageUnit] = useUpdateStorageUnitMutation();
+    const [updateStorageUnit] = useMutation(UpdateStorageUnitDocument);
 
     // Load search bar extension from component registry
     useEffect(() => {
@@ -226,56 +251,61 @@ export const ExploreStorageUnit: FC = () => {
         };
     }, []);
 
-    const [getStorageUnitRows, { loading }] = useGetStorageUnitRowsLazyQuery({
+    const [getStorageUnitRows, { loading }] = useLazyQuery(GetStorageUnitRowsDocument, {
         fetchPolicy: "no-cache",
     });
-    const [getColumns] = useColumnsLazyQuery({
+    const [getColumns] = useLazyQuery(ColumnsDocument, {
         fetchPolicy: "network-only",
     });
-    const [addRow, { loading: adding }] = useAddRowMutation();
-    const [rawExecute, { data: rawExecuteData, error: rawExecuteError }] = useRawExecuteLazyQuery();
+    const [addRow, { loading: adding }] = useMutation(AddRowDocument);
+    const [rawExecute, { data: rawExecuteData, error: rawExecuteError }] = useLazyQuery(RawExecuteDocument);
 
     const unitName = useMemo(() => {
         return unit?.Name;
     }, [unit]);
+    const currentUnitRef = unit?.Ref;
+    const sourceContentQueryOptions = currentUnitRef && isContentObject
+        ? {
+            variables: { ref: currentUnitRef },
+            fetchPolicy: "cache-first" as const,
+        }
+        : skipToken;
+    const { data: sourceContentData, loading: sourceContentLoading } = useQuery(GetSourceContentDocument, sourceContentQueryOptions);
+    const sourceContent = sourceContentData?.Content;
+    const sourceContentLanguage = useMemo(() => {
+        if (!sourceContent?.Text) {
+            return undefined;
+        }
+        if (sourceContent.MIMEType.includes("json")) {
+            return "json" as const;
+        }
+        if (sourceContent.MIMEType.includes("markdown")) {
+            return "markdown" as const;
+        }
+        return undefined;
+    }, [sourceContent?.MIMEType, sourceContent?.Text]);
 
     const initialScratchpadQuery = useMemo(() => {
-        if (generateInitialQuery && current?.Type) {
-            return generateInitialQuery(current?.Type, schema, unitName);
-        }
         const qualified = schema ? `${schema}.${unitName}` : unitName;
         return `SELECT * FROM ${qualified} LIMIT 5`;
-    }, [schema, unitName, current?.Type, generateInitialQuery]);
+    }, [schema, unitName]);
 
     const scratchpadQueryWithConditions = useMemo(() => {
-        if (generateInitialQuery && current?.Type) {
-            const baseQuery = generateInitialQuery(current?.Type, schema, unitName);
-            const whereClause = whereConditionToSql(whereCondition);
-
-            if (!whereClause) {
-                return baseQuery;
-            }
-
-            // Insert WHERE clause before LIMIT if present
-            const limitMatch = baseQuery.match(/\s+LIMIT\s+\d+/i);
-            if (limitMatch) {
-                const beforeLimit = baseQuery.substring(0, limitMatch.index);
-                const limitPart = baseQuery.substring(limitMatch.index!);
-                return `${beforeLimit} WHERE ${whereClause}${limitPart}`;
-            }
-
-            return `${baseQuery} WHERE ${whereClause}`;
-        }
-
-        const qualified = schema ? `${schema}.${unitName}` : unitName;
         const whereClause = whereConditionToSql(whereCondition);
 
         if (!whereClause) {
-            return `SELECT * FROM ${qualified} LIMIT 5`;
+            return initialScratchpadQuery;
         }
 
-        return `SELECT * FROM ${qualified} WHERE ${whereClause} LIMIT 5`;
-    }, [schema, unitName, current?.Type, generateInitialQuery, whereCondition]);
+        const limitMatch = initialScratchpadQuery.match(/\s+LIMIT\s+\d+/i);
+        if (limitMatch) {
+            const beforeLimit = initialScratchpadQuery.substring(0, limitMatch.index);
+            const limitPart = initialScratchpadQuery.substring(limitMatch.index!);
+            return `${beforeLimit} WHERE ${whereClause}${limitPart}`;
+        }
+
+        return `${initialScratchpadQuery} WHERE ${whereClause}`;
+    }, [initialScratchpadQuery, whereCondition]);
 
     const [code, setCode] = useState(initialScratchpadQuery);
 
@@ -295,7 +325,7 @@ export const ExploreStorageUnit: FC = () => {
         if (!current?.Type) {
             return [];
         }
-        return getDatabaseOperators(current.Type);
+        return getSourceOperators(current.Type);
     }, [current?.Type]);
 
     // Compute where columns (handles NoSQL document types)
@@ -312,6 +342,9 @@ export const ExploreStorageUnit: FC = () => {
     }, [rows?.Columns, rows?.Rows, isNoSQL, columns, columnTypes]);
 
     const handleSubmitRequest = useCallback((pageOffset: number | null = null) => {
+        if (!isTabularObject) {
+            return;
+        }
         const tableNameToUse = unitName || currentTableName;
         if (tableNameToUse) {
             setCurrentTableName(tableNameToUse);
@@ -321,6 +354,12 @@ export const ExploreStorageUnit: FC = () => {
         const thisRequestId = latestRequestIdRef.current;
         // Use ref to always get the latest whereCondition (avoids stale closure issues)
         const currentWhereCondition = whereConditionRef.current;
+        const ref = tableNameToUse === unitName
+            ? currentUnitRef
+            : buildSourceObjectRef(item, current, schema, tableNameToUse);
+        if (!ref) {
+            return;
+        }
 
         // Merge EE search condition with user-defined where condition
         const mergedCondition = searchCondition && currentWhereCondition
@@ -329,8 +368,7 @@ export const ExploreStorageUnit: FC = () => {
 
         getStorageUnitRows({
             variables: {
-                schema,
-                storageUnit: tableNameToUse,
+                ref,
                 where: mergedCondition,
                 sort: sortConditions.length > 0 ? sortConditions : undefined,
                 pageSize,
@@ -342,11 +380,11 @@ export const ExploreStorageUnit: FC = () => {
                 setRows(result.data.Row);
             }
         });
-    }, [getStorageUnitRows, schema, unitName, currentTableName, sortConditions, pageSize, currentPage, searchCondition]);
+    }, [current, currentPage, currentTableName, currentUnitRef, getStorageUnitRows, isTabularObject, item, pageSize, schema, searchCondition, sortConditions, unitName]);
 
     const handleQuery = useCallback(() => {
-        handleSubmitRequest();
         setCurrentPage(1);
+        handleSubmitRequest(0);
     }, [handleSubmitRequest]);
 
     const handlePageChange = useCallback((page: number) => {
@@ -400,11 +438,13 @@ export const ExploreStorageUnit: FC = () => {
                     Key: col,
                     Value: row[col].toString(),
                 }));
+                if (!currentUnitRef) {
+                    return reject(new Error("Missing source object ref"));
+                }
 
                 updateStorageUnit({
                     variables: {
-                        schema,
-                        storageUnit: unitName,
+                        ref: currentUnitRef,
                         values,
                         updatedColumns: changedColumns,
                     },
@@ -420,7 +460,7 @@ export const ExploreStorageUnit: FC = () => {
                 });
             });
         },
-        [current, schema, unitName]
+        [current, currentUnitRef]
     );
 
     const totalCount = useMemo(() => {
@@ -455,28 +495,33 @@ export const ExploreStorageUnit: FC = () => {
         whereConditionRef.current = restoredWhere;
         setSortConditions(restoredSort);
 
-        // Fetch fresh data for the new table
-        handleSubmitRequest();
+        // Fetch fresh data for tabular objects only.
+        if (isTabularObject) {
+            handleSubmitRequest();
+        }
         setCode(initialScratchpadQuery);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [unit]);
+    }, [isTabularObject, unit]);
 
     useEffect(() => {
-        if (sortConditions.length > 0) {
+        if (isTabularObject && sortConditions.length > 0) {
             handleSubmitRequest();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [sortConditions]);
+    }, [isTabularObject, sortConditions]);
 
     useEffect(() => {
         if (pageSizeInitialRef.current) {
             pageSizeInitialRef.current = false;
             return;
         }
+        if (!isTabularObject) {
+            return;
+        }
         setCurrentPage(1);
         handleSubmitRequest(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pageSize]);
+    }, [isTabularObject, pageSize]);
 
     const routes = useMemo(() => {
         return [
@@ -640,8 +685,7 @@ export const ExploreStorageUnit: FC = () => {
         }
         addRow({
             variables: {
-                schema,
-                storageUnit: unit?.Name || unitName || currentTableName || "",
+                ref: currentUnitRef ?? buildSourceObjectRef(item, current, schema, unit?.Name || unitName || currentTableName || ""),
                 values,
             },
             onCompleted() {
@@ -657,7 +701,7 @@ export const ExploreStorageUnit: FC = () => {
                 toast.error(errorMessage);
             },
         });
-    }, [addRow, addRowData, currentTableName, handleSubmitRequest, isNoSQL, rows?.Columns, schema, t, unit?.Name, unitName]);
+    }, [addRow, addRowData, current, currentTableName, currentUnitRef, handleSubmitRequest, isNoSQL, item, rows?.Columns, schema, t, unit?.Name, unitName]);
 
     const [pendingScratchpadQuery, setPendingScratchpadQuery] = useState<string | null>(null);
 
@@ -718,57 +762,71 @@ export const ExploreStorageUnit: FC = () => {
             targetTable
         });
 
-        // First, fetch the target table's column metadata to find its primary key
-        getColumns({
-            variables: {
-                schema,
-                storageUnit: targetTable
-            },
-            onCompleted: (columnsData) => {
-                // Find the primary key column in the target table
-                const targetPrimaryKey = columnsData.Columns?.find(col => col.IsPrimary);
+        const targetTableRef = buildSourceObjectRef(item, current, schema, targetTable);
+        if (!targetTableRef) {
+            toast.error(t('couldNotDetermineTargetTable'));
+            return;
+        }
 
-                if (!targetPrimaryKey) {
-                    const errorMessage = t('noPrimaryKeyFound').replace('{table}', targetTable);
-                    toast.error(errorMessage);
-                    return;
+        // First, fetch the target table's column metadata to find its primary key
+        void getColumns({
+            variables: {
+                ref: targetTableRef,
+            },
+        }).then(({ data, error }) => {
+            if (error) {
+                throw error;
+            }
+
+            // Find the primary key column in the target table
+            const targetPrimaryKey = data?.Columns?.find(col => col.IsPrimary);
+
+            if (!targetPrimaryKey) {
+                const errorMessage = t('noPrimaryKeyFound').replace('{table}', targetTable);
+                toast.error(errorMessage);
+                return;
+            }
+
+            const primaryKeyName = targetPrimaryKey.Name;
+
+            // Now search for the entity using the correct primary key
+            void getStorageUnitRows({
+                variables: {
+                    ref: targetTableRef,
+                    where: {
+                        Type: WhereConditionType.Atomic,
+                        Atomic: {
+                            Key: primaryKeyName,
+                            Operator: "=",
+                            Value: value,
+                            ColumnType: "string"
+                        }
+                    },
+                    pageSize: 1,
+                    pageOffset: 0
+                },
+            }).then(({ data, error }) => {
+                if (error) {
+                    throw error;
                 }
 
-                const primaryKeyName = targetPrimaryKey.Name;
-
-                // Now search for the entity using the correct primary key
-                getStorageUnitRows({
-                    variables: {
-                        schema,
-                        storageUnit: targetTable,
-                        where: {
-                            Type: WhereConditionType.Atomic,
-                            Atomic: {
-                                Key: primaryKeyName,
-                                Operator: "=",
-                                Value: value,
-                                ColumnType: "string"
-                            }
-                        },
-                        pageSize: 1,
-                        pageOffset: 0
-                    },
-                    onCompleted: (data) => {
-                        setEntitySearchResults(data.Row);
-                        setShowEntitySearchSheet(true);
-                    },
-                    onError: (error) => {
-                        const errorMessage = t('failedToSearchEntity').replace('{error}', error.message);
-                        toast.error(errorMessage);
-                    }
-                });
-            },
-            onError: (error) => {
-                const errorMessage = t('failedToGetTargetTableStructure').replace('{error}', error.message);
+                setEntitySearchResults(data?.Row ?? null);
+                setShowEntitySearchSheet(true);
+            }).catch((error: unknown) => {
+                const errorMessage = t('failedToSearchEntity').replace(
+                    '{error}',
+                    error instanceof Error ? error.message : String((error as { message?: string }).message ?? '')
+                );
                 toast.error(errorMessage);
-            }
+            });
+        }).catch((error: unknown) => {
+            const errorMessage = t('failedToGetTargetTableStructure').replace(
+                '{error}',
+                error instanceof Error ? error.message : String((error as { message?: string }).message ?? '')
+            );
+            toast.error(errorMessage);
         });
-    }, [getColumns, getStorageUnitRows, getTargetTableName, schema, t]);
+    }, [current, getColumns, getStorageUnitRows, getTargetTableName, item, schema, t]);
 
     const handleCloseEntitySearchSheet = useCallback(() => {
         setShowEntitySearchSheet(false);
@@ -787,7 +845,58 @@ export const ExploreStorageUnit: FC = () => {
         </InternalPage>
     }
 
-    return <InternalPage routes={routes} className="relative" sidebar={<SchemaViewer />}>
+    if (isContentObject) {
+        return (
+            <InternalPage
+                routes={routes}
+                className="relative"
+                sidebar={<SchemaViewer parentRef={currentParentRef} selectedName={unit.Name} trail={browserTrail} />}
+            >
+                <div className="flex flex-col grow gap-lg h-[calc(100%-100px)]">
+                    <div className="flex items-center justify-between">
+                        <div className="flex gap-sm items-center">
+                            <h1 className="text-xl font-bold mr-4">{unitName}</h1>
+                        </div>
+                        {sourceContent?.MIMEType && (
+                            <div className="text-sm text-muted-foreground">{sourceContent.MIMEType}</div>
+                        )}
+                    </div>
+                    <StackList>
+                        {unit.Attributes.map(attribute => (
+                            <div key={attribute.Key} data-field-key={attribute.Key} data-field-value={attribute.Value?.toLowerCase()}>
+                                <StackListItem item={attribute.Key}>
+                                    {attribute.Value?.toLowerCase()}
+                                </StackListItem>
+                            </div>
+                        ))}
+                    </StackList>
+                    {sourceContentLoading ? (
+                        <div className="flex justify-center items-center grow">
+                            <Loading />
+                        </div>
+                    ) : sourceContent?.Text ? (
+                        sourceContentLanguage ? (
+                            <div className="grow min-h-[400px] border rounded-md overflow-hidden">
+                                <CodeEditor
+                                    language={sourceContentLanguage}
+                                    value={sourceContent.Text}
+                                    disabled={true}
+                                />
+                            </div>
+                        ) : (
+                            <div className="grow min-h-[400px] overflow-auto rounded-md border bg-background/40 p-4">
+                                <pre className="whitespace-pre-wrap break-words text-sm">{sourceContent.Text}</pre>
+                            </div>
+                        )
+                    ) : (
+                        <div className="grow rounded-md border bg-background/40" />
+                    )}
+                </div>
+            </InternalPage>
+        );
+    }
+
+    return <InternalPage routes={routes} className="relative" sidebar={<SchemaViewer parentRef={currentParentRef} selectedName={unit.Name} trail={browserTrail} />}>
         <div className="flex flex-col grow gap-lg h-[calc(100%-100px)]">
             <div className="flex items-center justify-between">
                 <div className="flex gap-sm items-center">
@@ -875,7 +984,7 @@ export const ExploreStorageUnit: FC = () => {
                                 )}
                             </div>
                         </div>
-                        {current?.Type !== DatabaseType.Redis && (
+                        {isTabularObject && (
                             whereConditionMode === 'sheet' ? (
                                 <ExploreStorageUnitWhereConditionSheet 
                                     defaultWhere={whereCondition} 
@@ -993,6 +1102,7 @@ export const ExploreStorageUnit: FC = () => {
                         columnIsForeignKey={columnIsForeignKey}
                         schema={schema}
                         storageUnit={unitName}
+                        objectRef={currentUnitRef}
                         onRefresh={handleSubmitRequest}
                         onColumnSort={handleColumnSort}
                         sortedColumns={sortedColumnsMap}
@@ -1008,13 +1118,15 @@ export const ExploreStorageUnit: FC = () => {
                         isValidForeignKey={isValidForeignKey}
                         onEntitySearch={handleEntitySearch}
                         databaseType={current?.Type}
+                        allowRowUpdate={allowsUpdateData}
+                        allowRowDelete={allowsDeleteData}
                         // Mock data control - disabled for views/materialized views
                         isMockDataGenerationAllowed={isMockDataGenerationAllowed}
                         // Import control - enabled for explore view
                         allowImport={true}
                         enableKeyboardShortcuts={true}
                     >
-                        {current?.Type !== DatabaseType.Memcached && <div className="flex gap-2">
+                        {allowsInsertData && <div className="flex gap-2">
                             <Button onClick={handleOpenAddSheet} disabled={adding} data-testid="add-row-button">
                                 <PlusCircleIcon className="w-4 h-4" /> {t('addRowButton')}
                             </Button>

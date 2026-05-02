@@ -31,16 +31,21 @@ export const TIMEOUT = Object.freeze({
     NAVIGATION:15_000,
     /** Slow operation — login completion, async DB mutations, mock data gen (30s) */
     SLOW:      30_000,
+    /** Graph metadata — CockroachDB column discovery can exceed slow waits (90s) */
+    GRAPH:     90_000,
     /** Login API — full auth flow including potential retries (60s) */
     LOGIN:     60_000,
 });
+
+let uniqueIdCounter = 0;
 
 /**
  * Generates a unique test identifier for this test run.
  * Uses timestamp to avoid conflicts within and across test runs.
  */
 export function getUniqueTestId() {
-    return `test_${Date.now()}`;
+    uniqueIdCounter += 1;
+    return `test_${Date.now()}_${uniqueIdCounter}`;
 }
 
 /**
@@ -57,9 +62,11 @@ export function getUniqueTestId() {
  * @returns {() => Promise<object>} Async function that awaits the response and asserts no errors. Returns parsed JSON.
  */
 export function waitForMutation(page, operationName) {
-    const responsePromise = page.waitForResponse(resp =>
-        resp.url().includes('/api/query') &&
-        resp.request().postDataJSON?.()?.operationName === operationName
+    const responsePromise = page.waitForResponse(
+        resp =>
+            resp.url().includes('/api/query') &&
+            resp.request().postDataJSON?.()?.operationName === operationName,
+        { timeout: TIMEOUT.SLOW }
     );
 
     return async () => {

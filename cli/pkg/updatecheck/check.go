@@ -25,13 +25,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/clidey/whodb/cli/pkg/identity"
 	goversion "github.com/hashicorp/go-version"
 )
 
 const (
-	githubReleasesURL = "https://api.github.com/repos/clidey/whodb/releases/latest"
-	cacheTTL          = 24 * time.Hour
-	httpTimeout       = 5 * time.Second
+	cacheTTL    = 24 * time.Hour
+	httpTimeout = 1500 * time.Millisecond
 )
 
 // Result holds the outcome of an update check.
@@ -64,7 +64,9 @@ func Check(currentVersion string) *Result {
 	cachePath := filepath.Join(cacheDir, "update-check.json")
 
 	// Try to read cache
-	if cached, err := readCache(cachePath); err == nil {
+	var cached *cacheFile
+	if currentCache, err := readCache(cachePath); err == nil {
+		cached = currentCache
 		if time.Since(cached.LastCheck) < cacheTTL {
 			return compareVersions(currentVersion, cached.LatestVersion)
 		}
@@ -72,6 +74,9 @@ func Check(currentVersion string) *Result {
 
 	// Cache miss or stale — fetch from GitHub
 	latestVersion := currentVersion
+	if cached != nil && cached.LatestVersion != "" {
+		latestVersion = cached.LatestVersion
+	}
 	if release, err := fetchLatestRelease(); err == nil {
 		latestVersion = release.TagName
 	}
@@ -111,11 +116,15 @@ func compareVersions(currentVersion, latestTag string) *Result {
 }
 
 func getCacheDir() string {
-	home, err := os.UserHomeDir()
+	cacheDir, err := identity.HomePath()
 	if err != nil {
-		return os.TempDir()
+		baseName := strings.TrimPrefix(identity.Current().HomeDirName, ".")
+		if baseName == "" {
+			return os.TempDir()
+		}
+		return filepath.Join(os.TempDir(), baseName)
 	}
-	return filepath.Join(home, ".whodb-cli")
+	return cacheDir
 }
 
 func readCache(path string) (*cacheFile, error) {
@@ -140,7 +149,7 @@ func writeCache(path string, c *cacheFile) error {
 
 func fetchLatestRelease() (*githubRelease, error) {
 	client := &http.Client{Timeout: httpTimeout}
-	resp, err := client.Get(githubReleasesURL)
+	resp, err := client.Get(identity.Current().UpdateCheckAPIURL)
 	if err != nil {
 		return nil, err
 	}

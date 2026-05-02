@@ -140,15 +140,6 @@ type AzureSubscription struct {
 	TenantID    string `json:"TenantID"`
 }
 
-type Capabilities struct {
-	SupportsScratchpad     bool `json:"supportsScratchpad"`
-	SupportsChat           bool `json:"supportsChat"`
-	SupportsGraph          bool `json:"supportsGraph"`
-	SupportsSchema         bool `json:"supportsSchema"`
-	SupportsDatabaseSwitch bool `json:"supportsDatabaseSwitch"`
-	SupportsModifiers      bool `json:"supportsModifiers"`
-}
-
 type ChatInput struct {
 	PreviousConversation string  `json:"PreviousConversation"`
 	Query                string  `json:"Query"`
@@ -168,63 +159,12 @@ type Column struct {
 	Scale            *int    `json:"Scale,omitempty"`
 }
 
-type ConnectableDatabase struct {
-	ID                          string                             `json:"id"`
-	Label                       string                             `json:"label"`
-	PluginType                  string                             `json:"pluginType"`
-	Extra                       []*Record                          `json:"extra"`
-	Fields                      *ConnectableDatabaseFields         `json:"fields"`
-	RequiredFields              *ConnectableDatabaseRequiredFields `json:"requiredFields"`
-	SupportsModifiers           bool                               `json:"supportsModifiers"`
-	SupportsScratchpad          bool                               `json:"supportsScratchpad"`
-	SupportsSchema              bool                               `json:"supportsSchema"`
-	SupportsDatabaseSwitching   bool                               `json:"supportsDatabaseSwitching"`
-	UsesSchemaForGraph          bool                               `json:"usesSchemaForGraph"`
-	UsesDatabaseInsteadOfSchema bool                               `json:"usesDatabaseInsteadOfSchema"`
-	SupportsMockData            bool                               `json:"supportsMockData"`
-	IsAWSManaged                bool                               `json:"isAwsManaged"`
-	SslModes                    []*ConnectableDatabaseSSLMode      `json:"sslModes"`
-}
-
-type ConnectableDatabaseFields struct {
-	Hostname   bool `json:"hostname"`
-	Username   bool `json:"username"`
-	Password   bool `json:"password"`
-	Database   bool `json:"database"`
-	SearchPath bool `json:"searchPath"`
-}
-
-type ConnectableDatabaseRequiredFields struct {
-	Hostname bool `json:"hostname"`
-	Username bool `json:"username"`
-	Password bool `json:"password"`
-	Database bool `json:"database"`
-}
-
-type ConnectableDatabaseSSLMode struct {
-	Value   string   `json:"value"`
-	Aliases []string `json:"aliases"`
-}
-
-type DatabaseMetadata struct {
-	DatabaseType    string            `json:"databaseType"`
-	TypeDefinitions []*TypeDefinition `json:"typeDefinitions"`
-	Operators       []string          `json:"operators"`
-	AliasMap        []*Record         `json:"aliasMap"`
-	Capabilities    *Capabilities     `json:"capabilities"`
-}
-
-type DatabaseQuerySuggestion struct {
-	Description string `json:"description"`
-	Category    string `json:"category"`
-}
-
 type DiscoveredConnection struct {
 	ID           string            `json:"Id"`
 	ProviderType CloudProviderType `json:"ProviderType"`
 	ProviderID   string            `json:"ProviderID"`
 	Name         string            `json:"Name"`
-	DatabaseType string            `json:"DatabaseType"`
+	SourceType   string            `json:"SourceType"`
 	Region       *string           `json:"Region,omitempty"`
 	Status       ConnectionStatus  `json:"Status"`
 	Metadata     []*Record         `json:"Metadata"`
@@ -285,7 +225,7 @@ type GenerateChatTitleResponse struct {
 }
 
 type GraphUnit struct {
-	Unit      *StorageUnit             `json:"Unit"`
+	Unit      *SourceObject            `json:"Unit"`
 	Relations []*GraphUnitRelationship `json:"Relations"`
 }
 
@@ -313,8 +253,7 @@ type ImportColumnMappingPreview struct {
 }
 
 type ImportFileInput struct {
-	Schema             string                 `json:"Schema"`
-	StorageUnit        string                 `json:"StorageUnit"`
+	Ref                *SourceObjectRefInput  `json:"Ref"`
 	Mode               ImportMode             `json:"Mode"`
 	Options            *ImportFileOptions     `json:"Options"`
 	File               graphql.Upload         `json:"File"`
@@ -366,33 +305,6 @@ type LocalGCPProject struct {
 	IsDefault bool   `json:"IsDefault"`
 }
 
-type LoginCredentials struct {
-	ID       *string        `json:"Id,omitempty"`
-	Type     string         `json:"Type"`
-	Hostname string         `json:"Hostname"`
-	Username string         `json:"Username"`
-	Password string         `json:"Password"`
-	Database string         `json:"Database"`
-	Advanced []*RecordInput `json:"Advanced,omitempty"`
-}
-
-type LoginProfile struct {
-	Alias                *string      `json:"Alias,omitempty"`
-	ID                   string       `json:"Id"`
-	Type                 DatabaseType `json:"Type"`
-	Hostname             *string      `json:"Hostname,omitempty"`
-	Database             *string      `json:"Database,omitempty"`
-	IsEnvironmentDefined bool         `json:"IsEnvironmentDefined"`
-	Source               string       `json:"Source"`
-	SSLConfigured        bool         `json:"SSLConfigured"`
-}
-
-type LoginProfileInput struct {
-	ID       string       `json:"Id"`
-	Type     DatabaseType `json:"Type"`
-	Database *string      `json:"Database,omitempty"`
-}
-
 type MockDataDependencyAnalysis struct {
 	GenerationOrder []string             `json:"GenerationOrder"`
 	Tables          []*MockDataTableInfo `json:"Tables"`
@@ -402,12 +314,11 @@ type MockDataDependencyAnalysis struct {
 }
 
 type MockDataGenerationInput struct {
-	Schema            string `json:"Schema"`
-	StorageUnit       string `json:"StorageUnit"`
-	RowCount          int    `json:"RowCount"`
-	Method            string `json:"Method"`
-	OverwriteExisting bool   `json:"OverwriteExisting"`
-	FkDensityRatio    *int   `json:"FkDensityRatio,omitempty"`
+	Ref               *SourceObjectRefInput `json:"Ref"`
+	RowCount          int                   `json:"RowCount"`
+	Method            string                `json:"Method"`
+	OverwriteExisting bool                  `json:"OverwriteExisting"`
+	FkDensityRatio    *int                  `json:"FkDensityRatio,omitempty"`
 }
 
 type MockDataGenerationStatus struct {
@@ -465,6 +376,7 @@ type SettingsConfig struct {
 	MetricsEnabled        *bool `json:"MetricsEnabled,omitempty"`
 	CloudProvidersEnabled bool  `json:"CloudProvidersEnabled"`
 	DisableCredentialForm bool  `json:"DisableCredentialForm"`
+	EnableNewUI           bool  `json:"EnableNewUI"`
 	MaxPageSize           int   `json:"MaxPageSize"`
 }
 
@@ -477,14 +389,174 @@ type SortCondition struct {
 	Direction SortDirection `json:"Direction"`
 }
 
-type StatusResponse struct {
-	Status bool `json:"Status"`
+type SourceConnectionField struct {
+	Key             string                       `json:"Key"`
+	Kind            SourceConnectionFieldKind    `json:"Kind"`
+	Section         SourceConnectionFieldSection `json:"Section"`
+	Required        bool                         `json:"Required"`
+	LabelKey        string                       `json:"LabelKey"`
+	PlaceholderKey  *string                      `json:"PlaceholderKey,omitempty"`
+	DefaultValue    *string                      `json:"DefaultValue,omitempty"`
+	SupportsOptions bool                         `json:"SupportsOptions"`
 }
 
-type StorageUnit struct {
-	Name                        string    `json:"Name"`
-	Attributes                  []*Record `json:"Attributes"`
-	IsMockDataGenerationAllowed bool      `json:"IsMockDataGenerationAllowed"`
+type SourceConnectionTraits struct {
+	Transport               SourceConnectionTransport `json:"Transport"`
+	HostInputMode           SourceHostInputMode       `json:"HostInputMode"`
+	HostInputURLParser      SourceHostInputURLParser  `json:"HostInputURLParser"`
+	SupportsCustomCAContent bool                      `json:"SupportsCustomCAContent"`
+}
+
+type SourceContent struct {
+	Text       *string `json:"Text,omitempty"`
+	MIMEType   string  `json:"MIMEType"`
+	IsBinary   bool    `json:"IsBinary"`
+	SizeBytes  string  `json:"SizeBytes"`
+	Truncated  bool    `json:"Truncated"`
+	FileName   string  `json:"FileName"`
+	ModifiedAt *string `json:"ModifiedAt,omitempty"`
+}
+
+type SourceContract struct {
+	Model             SourceModel         `json:"Model"`
+	Surfaces          []SourceSurface     `json:"Surfaces"`
+	RootActions       []SourceAction      `json:"RootActions"`
+	BrowsePath        []SourceObjectKind  `json:"BrowsePath"`
+	DefaultObjectKind SourceObjectKind    `json:"DefaultObjectKind"`
+	GraphScopeKind    *SourceObjectKind   `json:"GraphScopeKind,omitempty"`
+	ObjectTypes       []*SourceObjectType `json:"ObjectTypes"`
+}
+
+type SourceDiscoveryAdvancedDefault struct {
+	Key           string                              `json:"Key"`
+	Value         string                              `json:"Value"`
+	MetadataKey   string                              `json:"MetadataKey"`
+	DefaultValue  string                              `json:"DefaultValue"`
+	ProviderTypes []string                            `json:"ProviderTypes"`
+	Conditions    []*SourceDiscoveryMetadataCondition `json:"Conditions"`
+}
+
+type SourceDiscoveryMetadataCondition struct {
+	Key   string `json:"Key"`
+	Value string `json:"Value"`
+}
+
+type SourceDiscoveryPrefill struct {
+	AdvancedDefaults []*SourceDiscoveryAdvancedDefault `json:"AdvancedDefaults"`
+}
+
+type SourceLoginInput struct {
+	ID          *string        `json:"Id,omitempty"`
+	SourceType  string         `json:"SourceType"`
+	Values      []*RecordInput `json:"Values"`
+	AccessToken *string        `json:"AccessToken,omitempty"`
+}
+
+type SourceMockDataTraits struct {
+	SupportsRelationalDependencies bool `json:"SupportsRelationalDependencies"`
+}
+
+type SourceObject struct {
+	Ref         *SourceObjectRef `json:"Ref"`
+	Kind        SourceObjectKind `json:"Kind"`
+	Name        string           `json:"Name"`
+	Path        []string         `json:"Path"`
+	HasChildren bool             `json:"HasChildren"`
+	Actions     []SourceAction   `json:"Actions"`
+	Metadata    []*Record        `json:"Metadata"`
+}
+
+type SourceObjectColumns struct {
+	Ref     *SourceObjectRef `json:"Ref"`
+	Columns []*Column        `json:"Columns"`
+}
+
+type SourceObjectRef struct {
+	Kind    SourceObjectKind `json:"Kind"`
+	Locator string           `json:"Locator"`
+	Path    []string         `json:"Path"`
+}
+
+type SourceObjectRefInput struct {
+	Kind    SourceObjectKind `json:"Kind"`
+	Locator *string          `json:"Locator,omitempty"`
+	Path    []string         `json:"Path"`
+}
+
+type SourceObjectType struct {
+	Kind          SourceObjectKind `json:"Kind"`
+	DataShape     DataShape        `json:"DataShape"`
+	Actions       []SourceAction   `json:"Actions"`
+	Views         []SourceView     `json:"Views"`
+	SingularLabel string           `json:"SingularLabel"`
+	PluralLabel   string           `json:"PluralLabel"`
+}
+
+type SourcePresentationTraits struct {
+	ProfileLabelStrategy SourceProfileLabelStrategy `json:"ProfileLabelStrategy"`
+	SchemaFidelity       SourceSchemaFidelity       `json:"SchemaFidelity"`
+}
+
+type SourceProfile struct {
+	ID                   string    `json:"Id"`
+	DisplayName          string    `json:"DisplayName"`
+	SourceType           string    `json:"SourceType"`
+	Values               []*Record `json:"Values"`
+	IsEnvironmentDefined bool      `json:"IsEnvironmentDefined"`
+	Source               string    `json:"Source"`
+	SSLConfigured        bool      `json:"SSLConfigured"`
+}
+
+type SourceProfileLoginInput struct {
+	ID     string         `json:"Id"`
+	Values []*RecordInput `json:"Values,omitempty"`
+}
+
+type SourceQuerySuggestion struct {
+	Description string `json:"description"`
+	Category    string `json:"category"`
+}
+
+type SourceQueryTraits struct {
+	SupportsAnalyze bool                   `json:"SupportsAnalyze"`
+	ExplainMode     SourceQueryExplainMode `json:"ExplainMode"`
+}
+
+type SourceSSLMode struct {
+	Value   string   `json:"value"`
+	Aliases []string `json:"aliases"`
+}
+
+type SourceSessionMetadata struct {
+	SourceType      string            `json:"SourceType"`
+	QueryLanguages  []string          `json:"QueryLanguages"`
+	TypeDefinitions []*TypeDefinition `json:"TypeDefinitions"`
+	Operators       []string          `json:"Operators"`
+	AliasMap        []*Record         `json:"AliasMap"`
+}
+
+type SourceTraits struct {
+	Connection   *SourceConnectionTraits   `json:"Connection"`
+	Presentation *SourcePresentationTraits `json:"Presentation"`
+	Query        *SourceQueryTraits        `json:"Query"`
+	MockData     *SourceMockDataTraits     `json:"MockData"`
+}
+
+type SourceType struct {
+	ID               string                   `json:"Id"`
+	Label            string                   `json:"Label"`
+	Connector        string                   `json:"Connector"`
+	Category         SourceCategory           `json:"Category"`
+	Traits           *SourceTraits            `json:"Traits"`
+	ConnectionFields []*SourceConnectionField `json:"ConnectionFields"`
+	Contract         *SourceContract          `json:"Contract"`
+	DiscoveryPrefill *SourceDiscoveryPrefill  `json:"DiscoveryPrefill"`
+	IsAWSManaged     bool                     `json:"IsAWSManaged"`
+	SSLModes         []*SourceSSLMode         `json:"SSLModes"`
+}
+
+type StatusResponse struct {
+	Status bool `json:"Status"`
 }
 
 type StorageUnitColumns struct {
@@ -697,84 +769,54 @@ func (e ConnectionStatus) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-type DatabaseType string
+type DataShape string
 
 const (
-	DatabaseTypePostgres      DatabaseType = "Postgres"
-	DatabaseTypeMySQL         DatabaseType = "MySQL"
-	DatabaseTypeSqlite3       DatabaseType = "Sqlite3"
-	DatabaseTypeMongoDb       DatabaseType = "MongoDB"
-	DatabaseTypeRedis         DatabaseType = "Redis"
-	DatabaseTypeElasticSearch DatabaseType = "ElasticSearch"
-	DatabaseTypeMariaDb       DatabaseType = "MariaDB"
-	DatabaseTypeCockroachDb   DatabaseType = "CockroachDB"
-	DatabaseTypeClickHouse    DatabaseType = "ClickHouse"
-	DatabaseTypeDuckDb        DatabaseType = "DuckDB"
-	DatabaseTypeMemcached     DatabaseType = "Memcached"
-	DatabaseTypeTiDb          DatabaseType = "TiDB"
-	DatabaseTypeElastiCache   DatabaseType = "ElastiCache"
-	DatabaseTypeDocumentDb    DatabaseType = "DocumentDB"
-	DatabaseTypeValkey        DatabaseType = "Valkey"
-	DatabaseTypeDragonfly     DatabaseType = "Dragonfly"
-	DatabaseTypeOpenSearch    DatabaseType = "OpenSearch"
-	DatabaseTypeYugabyteDb    DatabaseType = "YugabyteDB"
-	DatabaseTypeQuestDb       DatabaseType = "QuestDB"
-	DatabaseTypeFerretDb      DatabaseType = "FerretDB"
+	DataShapeTabular  DataShape = "Tabular"
+	DataShapeDocument DataShape = "Document"
+	DataShapeContent  DataShape = "Content"
+	DataShapeGraph    DataShape = "Graph"
+	DataShapeMetadata DataShape = "Metadata"
 )
 
-var AllDatabaseType = []DatabaseType{
-	DatabaseTypePostgres,
-	DatabaseTypeMySQL,
-	DatabaseTypeSqlite3,
-	DatabaseTypeMongoDb,
-	DatabaseTypeRedis,
-	DatabaseTypeElasticSearch,
-	DatabaseTypeMariaDb,
-	DatabaseTypeCockroachDb,
-	DatabaseTypeClickHouse,
-	DatabaseTypeDuckDb,
-	DatabaseTypeMemcached,
-	DatabaseTypeTiDb,
-	DatabaseTypeElastiCache,
-	DatabaseTypeDocumentDb,
-	DatabaseTypeValkey,
-	DatabaseTypeDragonfly,
-	DatabaseTypeOpenSearch,
-	DatabaseTypeYugabyteDb,
-	DatabaseTypeQuestDb,
-	DatabaseTypeFerretDb,
+var AllDataShape = []DataShape{
+	DataShapeTabular,
+	DataShapeDocument,
+	DataShapeContent,
+	DataShapeGraph,
+	DataShapeMetadata,
 }
 
-func (e DatabaseType) IsValid() bool {
+func (e DataShape) IsValid() bool {
 	switch e {
-	case DatabaseTypePostgres, DatabaseTypeMySQL, DatabaseTypeSqlite3, DatabaseTypeMongoDb, DatabaseTypeRedis, DatabaseTypeElasticSearch, DatabaseTypeMariaDb, DatabaseTypeCockroachDb, DatabaseTypeClickHouse, DatabaseTypeDuckDb, DatabaseTypeMemcached, DatabaseTypeTiDb, DatabaseTypeElastiCache, DatabaseTypeDocumentDb, DatabaseTypeValkey, DatabaseTypeDragonfly, DatabaseTypeOpenSearch, DatabaseTypeYugabyteDb, DatabaseTypeQuestDb, DatabaseTypeFerretDb:
+	case DataShapeTabular, DataShapeDocument, DataShapeContent, DataShapeGraph, DataShapeMetadata:
 		return true
 	}
 	return false
 }
 
-func (e DatabaseType) String() string {
+func (e DataShape) String() string {
 	return string(e)
 }
 
-func (e *DatabaseType) UnmarshalGQL(v any) error {
+func (e *DataShape) UnmarshalGQL(v any) error {
 	str, ok := v.(string)
 	if !ok {
 		return fmt.Errorf("enums must be strings")
 	}
 
-	*e = DatabaseType(str)
+	*e = DataShape(str)
 	if !e.IsValid() {
-		return fmt.Errorf("%s is not a valid DatabaseType", str)
+		return fmt.Errorf("%s is not a valid DataShape", str)
 	}
 	return nil
 }
 
-func (e DatabaseType) MarshalGQL(w io.Writer) {
+func (e DataShape) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
-func (e *DatabaseType) UnmarshalJSON(b []byte) error {
+func (e *DataShape) UnmarshalJSON(b []byte) error {
 	s, err := strconv.Unquote(string(b))
 	if err != nil {
 		return err
@@ -782,7 +824,7 @@ func (e *DatabaseType) UnmarshalJSON(b []byte) error {
 	return e.UnmarshalGQL(s)
 }
 
-func (e DatabaseType) MarshalJSON() ([]byte, error) {
+func (e DataShape) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
@@ -1011,6 +1053,862 @@ func (e *SortDirection) UnmarshalJSON(b []byte) error {
 }
 
 func (e SortDirection) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SourceAction string
+
+const (
+	SourceActionBrowse           SourceAction = "Browse"
+	SourceActionInspect          SourceAction = "Inspect"
+	SourceActionViewRows         SourceAction = "ViewRows"
+	SourceActionViewContent      SourceAction = "ViewContent"
+	SourceActionViewDefinition   SourceAction = "ViewDefinition"
+	SourceActionCreateChild      SourceAction = "CreateChild"
+	SourceActionDelete           SourceAction = "Delete"
+	SourceActionInsertData       SourceAction = "InsertData"
+	SourceActionUpdateData       SourceAction = "UpdateData"
+	SourceActionDeleteData       SourceAction = "DeleteData"
+	SourceActionImportData       SourceAction = "ImportData"
+	SourceActionGenerateMockData SourceAction = "GenerateMockData"
+	SourceActionExecute          SourceAction = "Execute"
+	SourceActionViewGraph        SourceAction = "ViewGraph"
+)
+
+var AllSourceAction = []SourceAction{
+	SourceActionBrowse,
+	SourceActionInspect,
+	SourceActionViewRows,
+	SourceActionViewContent,
+	SourceActionViewDefinition,
+	SourceActionCreateChild,
+	SourceActionDelete,
+	SourceActionInsertData,
+	SourceActionUpdateData,
+	SourceActionDeleteData,
+	SourceActionImportData,
+	SourceActionGenerateMockData,
+	SourceActionExecute,
+	SourceActionViewGraph,
+}
+
+func (e SourceAction) IsValid() bool {
+	switch e {
+	case SourceActionBrowse, SourceActionInspect, SourceActionViewRows, SourceActionViewContent, SourceActionViewDefinition, SourceActionCreateChild, SourceActionDelete, SourceActionInsertData, SourceActionUpdateData, SourceActionDeleteData, SourceActionImportData, SourceActionGenerateMockData, SourceActionExecute, SourceActionViewGraph:
+		return true
+	}
+	return false
+}
+
+func (e SourceAction) String() string {
+	return string(e)
+}
+
+func (e *SourceAction) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SourceAction(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SourceAction", str)
+	}
+	return nil
+}
+
+func (e SourceAction) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SourceAction) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SourceAction) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SourceCategory string
+
+const (
+	SourceCategoryDatabase    SourceCategory = "Database"
+	SourceCategoryCache       SourceCategory = "Cache"
+	SourceCategorySearch      SourceCategory = "Search"
+	SourceCategoryObjectStore SourceCategory = "ObjectStore"
+	SourceCategoryFileStore   SourceCategory = "FileStore"
+)
+
+var AllSourceCategory = []SourceCategory{
+	SourceCategoryDatabase,
+	SourceCategoryCache,
+	SourceCategorySearch,
+	SourceCategoryObjectStore,
+	SourceCategoryFileStore,
+}
+
+func (e SourceCategory) IsValid() bool {
+	switch e {
+	case SourceCategoryDatabase, SourceCategoryCache, SourceCategorySearch, SourceCategoryObjectStore, SourceCategoryFileStore:
+		return true
+	}
+	return false
+}
+
+func (e SourceCategory) String() string {
+	return string(e)
+}
+
+func (e *SourceCategory) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SourceCategory(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SourceCategory", str)
+	}
+	return nil
+}
+
+func (e SourceCategory) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SourceCategory) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SourceCategory) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SourceConnectionFieldKind string
+
+const (
+	SourceConnectionFieldKindText     SourceConnectionFieldKind = "Text"
+	SourceConnectionFieldKindPassword SourceConnectionFieldKind = "Password"
+	SourceConnectionFieldKindFilePath SourceConnectionFieldKind = "FilePath"
+)
+
+var AllSourceConnectionFieldKind = []SourceConnectionFieldKind{
+	SourceConnectionFieldKindText,
+	SourceConnectionFieldKindPassword,
+	SourceConnectionFieldKindFilePath,
+}
+
+func (e SourceConnectionFieldKind) IsValid() bool {
+	switch e {
+	case SourceConnectionFieldKindText, SourceConnectionFieldKindPassword, SourceConnectionFieldKindFilePath:
+		return true
+	}
+	return false
+}
+
+func (e SourceConnectionFieldKind) String() string {
+	return string(e)
+}
+
+func (e *SourceConnectionFieldKind) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SourceConnectionFieldKind(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SourceConnectionFieldKind", str)
+	}
+	return nil
+}
+
+func (e SourceConnectionFieldKind) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SourceConnectionFieldKind) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SourceConnectionFieldKind) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SourceConnectionFieldSection string
+
+const (
+	SourceConnectionFieldSectionPrimary  SourceConnectionFieldSection = "Primary"
+	SourceConnectionFieldSectionAdvanced SourceConnectionFieldSection = "Advanced"
+)
+
+var AllSourceConnectionFieldSection = []SourceConnectionFieldSection{
+	SourceConnectionFieldSectionPrimary,
+	SourceConnectionFieldSectionAdvanced,
+}
+
+func (e SourceConnectionFieldSection) IsValid() bool {
+	switch e {
+	case SourceConnectionFieldSectionPrimary, SourceConnectionFieldSectionAdvanced:
+		return true
+	}
+	return false
+}
+
+func (e SourceConnectionFieldSection) String() string {
+	return string(e)
+}
+
+func (e *SourceConnectionFieldSection) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SourceConnectionFieldSection(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SourceConnectionFieldSection", str)
+	}
+	return nil
+}
+
+func (e SourceConnectionFieldSection) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SourceConnectionFieldSection) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SourceConnectionFieldSection) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SourceConnectionTransport string
+
+const (
+	SourceConnectionTransportNetwork SourceConnectionTransport = "Network"
+	SourceConnectionTransportFile    SourceConnectionTransport = "File"
+	SourceConnectionTransportBridge  SourceConnectionTransport = "Bridge"
+)
+
+var AllSourceConnectionTransport = []SourceConnectionTransport{
+	SourceConnectionTransportNetwork,
+	SourceConnectionTransportFile,
+	SourceConnectionTransportBridge,
+}
+
+func (e SourceConnectionTransport) IsValid() bool {
+	switch e {
+	case SourceConnectionTransportNetwork, SourceConnectionTransportFile, SourceConnectionTransportBridge:
+		return true
+	}
+	return false
+}
+
+func (e SourceConnectionTransport) String() string {
+	return string(e)
+}
+
+func (e *SourceConnectionTransport) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SourceConnectionTransport(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SourceConnectionTransport", str)
+	}
+	return nil
+}
+
+func (e SourceConnectionTransport) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SourceConnectionTransport) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SourceConnectionTransport) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SourceHostInputMode string
+
+const (
+	SourceHostInputModeNone          SourceHostInputMode = "None"
+	SourceHostInputModeHostname      SourceHostInputMode = "Hostname"
+	SourceHostInputModeHostnameOrURL SourceHostInputMode = "HostnameOrURL"
+)
+
+var AllSourceHostInputMode = []SourceHostInputMode{
+	SourceHostInputModeNone,
+	SourceHostInputModeHostname,
+	SourceHostInputModeHostnameOrURL,
+}
+
+func (e SourceHostInputMode) IsValid() bool {
+	switch e {
+	case SourceHostInputModeNone, SourceHostInputModeHostname, SourceHostInputModeHostnameOrURL:
+		return true
+	}
+	return false
+}
+
+func (e SourceHostInputMode) String() string {
+	return string(e)
+}
+
+func (e *SourceHostInputMode) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SourceHostInputMode(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SourceHostInputMode", str)
+	}
+	return nil
+}
+
+func (e SourceHostInputMode) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SourceHostInputMode) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SourceHostInputMode) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SourceHostInputURLParser string
+
+const (
+	SourceHostInputURLParserNone     SourceHostInputURLParser = "None"
+	SourceHostInputURLParserPostgres SourceHostInputURLParser = "Postgres"
+	SourceHostInputURLParserMongoSrv SourceHostInputURLParser = "MongoSRV"
+)
+
+var AllSourceHostInputURLParser = []SourceHostInputURLParser{
+	SourceHostInputURLParserNone,
+	SourceHostInputURLParserPostgres,
+	SourceHostInputURLParserMongoSrv,
+}
+
+func (e SourceHostInputURLParser) IsValid() bool {
+	switch e {
+	case SourceHostInputURLParserNone, SourceHostInputURLParserPostgres, SourceHostInputURLParserMongoSrv:
+		return true
+	}
+	return false
+}
+
+func (e SourceHostInputURLParser) String() string {
+	return string(e)
+}
+
+func (e *SourceHostInputURLParser) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SourceHostInputURLParser(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SourceHostInputURLParser", str)
+	}
+	return nil
+}
+
+func (e SourceHostInputURLParser) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SourceHostInputURLParser) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SourceHostInputURLParser) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SourceModel string
+
+const (
+	SourceModelRelational SourceModel = "Relational"
+	SourceModelDocument   SourceModel = "Document"
+	SourceModelKeyValue   SourceModel = "KeyValue"
+	SourceModelSearch     SourceModel = "Search"
+	SourceModelGraph      SourceModel = "Graph"
+	SourceModelObject     SourceModel = "Object"
+)
+
+var AllSourceModel = []SourceModel{
+	SourceModelRelational,
+	SourceModelDocument,
+	SourceModelKeyValue,
+	SourceModelSearch,
+	SourceModelGraph,
+	SourceModelObject,
+}
+
+func (e SourceModel) IsValid() bool {
+	switch e {
+	case SourceModelRelational, SourceModelDocument, SourceModelKeyValue, SourceModelSearch, SourceModelGraph, SourceModelObject:
+		return true
+	}
+	return false
+}
+
+func (e SourceModel) String() string {
+	return string(e)
+}
+
+func (e *SourceModel) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SourceModel(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SourceModel", str)
+	}
+	return nil
+}
+
+func (e SourceModel) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SourceModel) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SourceModel) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SourceObjectKind string
+
+const (
+	SourceObjectKindDatabase   SourceObjectKind = "Database"
+	SourceObjectKindSchema     SourceObjectKind = "Schema"
+	SourceObjectKindTable      SourceObjectKind = "Table"
+	SourceObjectKindView       SourceObjectKind = "View"
+	SourceObjectKindCollection SourceObjectKind = "Collection"
+	SourceObjectKindIndex      SourceObjectKind = "Index"
+	SourceObjectKindKey        SourceObjectKind = "Key"
+	SourceObjectKindItem       SourceObjectKind = "Item"
+	SourceObjectKindFunction   SourceObjectKind = "Function"
+	SourceObjectKindProcedure  SourceObjectKind = "Procedure"
+	SourceObjectKindTrigger    SourceObjectKind = "Trigger"
+	SourceObjectKindSequence   SourceObjectKind = "Sequence"
+)
+
+var AllSourceObjectKind = []SourceObjectKind{
+	SourceObjectKindDatabase,
+	SourceObjectKindSchema,
+	SourceObjectKindTable,
+	SourceObjectKindView,
+	SourceObjectKindCollection,
+	SourceObjectKindIndex,
+	SourceObjectKindKey,
+	SourceObjectKindItem,
+	SourceObjectKindFunction,
+	SourceObjectKindProcedure,
+	SourceObjectKindTrigger,
+	SourceObjectKindSequence,
+}
+
+func (e SourceObjectKind) IsValid() bool {
+	switch e {
+	case SourceObjectKindDatabase, SourceObjectKindSchema, SourceObjectKindTable, SourceObjectKindView, SourceObjectKindCollection, SourceObjectKindIndex, SourceObjectKindKey, SourceObjectKindItem, SourceObjectKindFunction, SourceObjectKindProcedure, SourceObjectKindTrigger, SourceObjectKindSequence:
+		return true
+	}
+	return false
+}
+
+func (e SourceObjectKind) String() string {
+	return string(e)
+}
+
+func (e *SourceObjectKind) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SourceObjectKind(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SourceObjectKind", str)
+	}
+	return nil
+}
+
+func (e SourceObjectKind) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SourceObjectKind) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SourceObjectKind) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SourceProfileLabelStrategy string
+
+const (
+	SourceProfileLabelStrategyDefault  SourceProfileLabelStrategy = "Default"
+	SourceProfileLabelStrategyHostname SourceProfileLabelStrategy = "Hostname"
+	SourceProfileLabelStrategyDatabase SourceProfileLabelStrategy = "Database"
+)
+
+var AllSourceProfileLabelStrategy = []SourceProfileLabelStrategy{
+	SourceProfileLabelStrategyDefault,
+	SourceProfileLabelStrategyHostname,
+	SourceProfileLabelStrategyDatabase,
+}
+
+func (e SourceProfileLabelStrategy) IsValid() bool {
+	switch e {
+	case SourceProfileLabelStrategyDefault, SourceProfileLabelStrategyHostname, SourceProfileLabelStrategyDatabase:
+		return true
+	}
+	return false
+}
+
+func (e SourceProfileLabelStrategy) String() string {
+	return string(e)
+}
+
+func (e *SourceProfileLabelStrategy) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SourceProfileLabelStrategy(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SourceProfileLabelStrategy", str)
+	}
+	return nil
+}
+
+func (e SourceProfileLabelStrategy) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SourceProfileLabelStrategy) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SourceProfileLabelStrategy) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SourceQueryExplainMode string
+
+const (
+	SourceQueryExplainModeNone            SourceQueryExplainMode = "None"
+	SourceQueryExplainModeExplain         SourceQueryExplainMode = "Explain"
+	SourceQueryExplainModeExplainAnalyze  SourceQueryExplainMode = "ExplainAnalyze"
+	SourceQueryExplainModeExplainPipeline SourceQueryExplainMode = "ExplainPipeline"
+)
+
+var AllSourceQueryExplainMode = []SourceQueryExplainMode{
+	SourceQueryExplainModeNone,
+	SourceQueryExplainModeExplain,
+	SourceQueryExplainModeExplainAnalyze,
+	SourceQueryExplainModeExplainPipeline,
+}
+
+func (e SourceQueryExplainMode) IsValid() bool {
+	switch e {
+	case SourceQueryExplainModeNone, SourceQueryExplainModeExplain, SourceQueryExplainModeExplainAnalyze, SourceQueryExplainModeExplainPipeline:
+		return true
+	}
+	return false
+}
+
+func (e SourceQueryExplainMode) String() string {
+	return string(e)
+}
+
+func (e *SourceQueryExplainMode) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SourceQueryExplainMode(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SourceQueryExplainMode", str)
+	}
+	return nil
+}
+
+func (e SourceQueryExplainMode) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SourceQueryExplainMode) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SourceQueryExplainMode) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SourceSchemaFidelity string
+
+const (
+	SourceSchemaFidelityExact   SourceSchemaFidelity = "Exact"
+	SourceSchemaFidelitySampled SourceSchemaFidelity = "Sampled"
+)
+
+var AllSourceSchemaFidelity = []SourceSchemaFidelity{
+	SourceSchemaFidelityExact,
+	SourceSchemaFidelitySampled,
+}
+
+func (e SourceSchemaFidelity) IsValid() bool {
+	switch e {
+	case SourceSchemaFidelityExact, SourceSchemaFidelitySampled:
+		return true
+	}
+	return false
+}
+
+func (e SourceSchemaFidelity) String() string {
+	return string(e)
+}
+
+func (e *SourceSchemaFidelity) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SourceSchemaFidelity(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SourceSchemaFidelity", str)
+	}
+	return nil
+}
+
+func (e SourceSchemaFidelity) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SourceSchemaFidelity) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SourceSchemaFidelity) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SourceSurface string
+
+const (
+	SourceSurfaceBrowser SourceSurface = "Browser"
+	SourceSurfaceQuery   SourceSurface = "Query"
+	SourceSurfaceGraph   SourceSurface = "Graph"
+	SourceSurfaceChat    SourceSurface = "Chat"
+)
+
+var AllSourceSurface = []SourceSurface{
+	SourceSurfaceBrowser,
+	SourceSurfaceQuery,
+	SourceSurfaceGraph,
+	SourceSurfaceChat,
+}
+
+func (e SourceSurface) IsValid() bool {
+	switch e {
+	case SourceSurfaceBrowser, SourceSurfaceQuery, SourceSurfaceGraph, SourceSurfaceChat:
+		return true
+	}
+	return false
+}
+
+func (e SourceSurface) String() string {
+	return string(e)
+}
+
+func (e *SourceSurface) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SourceSurface(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SourceSurface", str)
+	}
+	return nil
+}
+
+func (e SourceSurface) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SourceSurface) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SourceSurface) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SourceView string
+
+const (
+	SourceViewGrid     SourceView = "Grid"
+	SourceViewJSON     SourceView = "JSON"
+	SourceViewText     SourceView = "Text"
+	SourceViewSQL      SourceView = "SQL"
+	SourceViewBinary   SourceView = "Binary"
+	SourceViewMetadata SourceView = "Metadata"
+	SourceViewGraph    SourceView = "Graph"
+)
+
+var AllSourceView = []SourceView{
+	SourceViewGrid,
+	SourceViewJSON,
+	SourceViewText,
+	SourceViewSQL,
+	SourceViewBinary,
+	SourceViewMetadata,
+	SourceViewGraph,
+}
+
+func (e SourceView) IsValid() bool {
+	switch e {
+	case SourceViewGrid, SourceViewJSON, SourceViewText, SourceViewSQL, SourceViewBinary, SourceViewMetadata, SourceViewGraph:
+		return true
+	}
+	return false
+}
+
+func (e SourceView) String() string {
+	return string(e)
+}
+
+func (e *SourceView) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SourceView(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SourceView", str)
+	}
+	return nil
+}
+
+func (e SourceView) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SourceView) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SourceView) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

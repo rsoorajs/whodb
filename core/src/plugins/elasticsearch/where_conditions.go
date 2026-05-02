@@ -20,12 +20,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/clidey/whodb/core/graph/model"
+	"github.com/clidey/whodb/core/src/query"
 	"github.com/clidey/whodb/core/src/log"
 )
 
 // convertAtomicConditionToES converts an atomic where condition to an Elasticsearch query clause
-func convertAtomicConditionToES(atomic *model.AtomicWhereCondition) (map[string]any, error) {
+func convertAtomicConditionToES(atomic *query.AtomicWhereCondition) (map[string]any, error) {
 	if atomic == nil {
 		return nil, fmt.Errorf("atomic condition is nil")
 	}
@@ -236,13 +236,13 @@ func convertAtomicConditionToES(atomic *model.AtomicWhereCondition) (map[string]
 	}
 }
 
-func convertWhereConditionToES(where *model.WhereCondition) (map[string]any, error) {
+func convertWhereConditionToES(where *query.WhereCondition) (map[string]any, error) {
 	if where == nil {
 		return map[string]any{}, nil
 	}
 
 	switch where.Type {
-	case model.WhereConditionTypeAtomic:
+	case query.WhereConditionTypeAtomic:
 		if where.Atomic == nil {
 			err := fmt.Errorf("atomic condition must have an atomicwherecondition")
 			log.WithError(err).Error("Invalid atomic where condition: missing atomic condition")
@@ -259,14 +259,14 @@ func convertWhereConditionToES(where *model.WhereCondition) (map[string]any, err
 			"must": []map[string]any{clause},
 		}, nil
 
-	case model.WhereConditionTypeAnd:
+	case query.WhereConditionTypeAnd:
 		if where.And == nil || len(where.And.Children) == 0 {
 			return map[string]any{}, nil
 		}
 		mustClauses := []map[string]any{}
 		for _, child := range where.And.Children {
 			// Handle child conditions based on their type
-			if child.Type == model.WhereConditionTypeAtomic && child.Atomic != nil {
+			if child.Type == query.WhereConditionTypeAtomic && child.Atomic != nil {
 				// For atomic children, convert based on operator
 				clause, err := convertAtomicConditionToES(child.Atomic)
 				if err != nil {
@@ -289,14 +289,14 @@ func convertWhereConditionToES(where *model.WhereCondition) (map[string]any, err
 		}
 		return map[string]any{"must": mustClauses}, nil
 
-	case model.WhereConditionTypeOr:
+	case query.WhereConditionTypeOr:
 		if where.Or == nil || len(where.Or.Children) == 0 {
 			return map[string]any{}, nil
 		}
 		shouldClauses := []map[string]any{}
 		for _, child := range where.Or.Children {
 			// Handle child conditions based on their type
-			if child.Type == model.WhereConditionTypeAtomic && child.Atomic != nil {
+			if child.Type == query.WhereConditionTypeAtomic && child.Atomic != nil {
 				// For atomic children, convert based on operator
 				clause, err := convertAtomicConditionToES(child.Atomic)
 				if err != nil {

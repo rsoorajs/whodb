@@ -17,6 +17,7 @@
 import {Button} from "@clidey/ux";
 import {Component, type ErrorInfo, type ReactNode} from "react";
 import {captureException} from "../config/posthog";
+import {withBasePath} from "../utils/base-path";
 import {openExternalLink} from "../utils/external-links";
 
 interface ErrorBoundaryProps {
@@ -44,13 +45,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     }
 
     private handleGoHome = () => {
-        window.location.href = "/";
+        window.location.href = withBasePath("/");
     };
 
     render() {
         if (this.state.hasError) {
             return (
-                <div className="flex flex-col items-center justify-center min-h-screen gap-6 p-8">
+                <div className="flex flex-col items-center justify-center min-h-screen gap-6 p-8 bg-background text-foreground">
                     <h1 className="text-3xl font-bold text-foreground">
                         Whoops, something went wrong.
                     </h1>

@@ -19,7 +19,9 @@ package dbcatalog
 import (
 	"testing"
 
+	"github.com/clidey/whodb/core/src/common/ssl"
 	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/source"
 )
 
 func TestFindReturnsAliasPluginType(t *testing.T) {
@@ -30,6 +32,28 @@ func TestFindReturnsAliasPluginType(t *testing.T) {
 
 	if entry.PluginType != engine.DatabaseType_MongoDB {
 		t.Fatalf("expected FerretDB to resolve to MongoDB plugin, got %q", entry.PluginType)
+	}
+}
+
+func TestFindReturnsPromotedQuestDBPluginType(t *testing.T) {
+	entry, ok := Find("QuestDB")
+	if !ok {
+		t.Fatal("expected QuestDB catalog entry")
+	}
+
+	if entry.PluginType != engine.DatabaseType_QuestDB {
+		t.Fatalf("expected QuestDB to resolve to its own plugin, got %q", entry.PluginType)
+	}
+}
+
+func TestFindReturnsPromotedYugabyteDBPluginType(t *testing.T) {
+	entry, ok := Find("YugabyteDB")
+	if !ok {
+		t.Fatal("expected YugabyteDB catalog entry")
+	}
+
+	if entry.PluginType != engine.DatabaseType_YugabyteDB {
+		t.Fatalf("expected YugabyteDB to resolve to its own plugin, got %q", entry.PluginType)
 	}
 }
 
@@ -56,5 +80,94 @@ func TestManagedServiceEntryRetainsFlags(t *testing.T) {
 
 	if entry.Extra["TLS"] != "true" {
 		t.Fatalf("expected ElastiCache TLS default, got %q", entry.Extra["TLS"])
+	}
+}
+
+func TestRegisterClonesEntriesAndReturnedValuesAreDefensiveCopies(t *testing.T) {
+	originalRegisteredCatalog := registeredCatalog
+	registeredCatalog = nil
+	t.Cleanup(func() {
+		registeredCatalog = originalRegisteredCatalog
+	})
+
+	entry := ConnectableDatabase{
+		ID:         engine.DatabaseType("CustomDB"),
+		Label:      "Custom DB",
+		PluginType: engine.DatabaseType_Postgres,
+		Extra:      map[string]string{"Port": "15432"},
+		SSLModes: []source.SSLModeInfo{
+			{Value: string(ssl.SSLModeRequired), Label: "Required", Description: "Require TLS"},
+		},
+	}
+
+	Register(entry)
+
+	entry.Extra["Port"] = "9999"
+	entry.SSLModes[0].Label = "Mutated"
+
+	found, ok := Find("CustomDB")
+	if !ok {
+		t.Fatal("expected custom database to be found after registration")
+	}
+	if found.Extra["Port"] != "15432" {
+		t.Fatalf("expected Register to clone entry.Extra, got %#v", found.Extra)
+	}
+	if found.SSLModes[0].Label != "Required" {
+		t.Fatalf("expected Register to clone entry.SSLModes, got %#v", found.SSLModes)
+	}
+
+	found.Extra["Port"] = "1111"
+	found.SSLModes[0].Label = "Changed"
+
+	refetched, ok := Find("CustomDB")
+	if !ok {
+		t.Fatal("expected custom database to be refetchable")
+	}
+	if refetched.Extra["Port"] != "15432" {
+		t.Fatalf("expected Find to return defensive copies of Extra, got %#v", refetched.Extra)
+	}
+	if refetched.SSLModes[0].Label != "Required" {
+		t.Fatalf("expected Find to return defensive copies of SSL modes, got %#v", refetched.SSLModes)
+	}
+
+	all := All()
+	for i := range all {
+		if all[i].ID != engine.DatabaseType("CustomDB") {
+			continue
+		}
+		all[i].Extra["Port"] = "2222"
+		all[i].SSLModes[0].Label = "Changed Again"
+		break
+	}
+
+	refetched, ok = Find("CustomDB")
+	if !ok {
+		t.Fatal("expected custom database to still be available after All mutation")
+	}
+	if refetched.Extra["Port"] != "15432" {
+		t.Fatalf("expected All to return defensive copies of Extra, got %#v", refetched.Extra)
+	}
+	if refetched.SSLModes[0].Label != "Required" {
+		t.Fatalf("expected All to return defensive copies of SSL modes, got %#v", refetched.SSLModes)
+	}
+}
+
+func TestDefaultPortReturnsFalseWhenCatalogPortIsInvalid(t *testing.T) {
+	originalRegisteredCatalog := registeredCatalog
+	registeredCatalog = nil
+	t.Cleanup(func() {
+		registeredCatalog = originalRegisteredCatalog
+	})
+
+	const customID = engine.DatabaseType("CustomPortDB")
+	Register(ConnectableDatabase{
+		ID:         customID,
+		Label:      "Custom Port DB",
+		PluginType: customID,
+		Extra:      map[string]string{"Port": "invalid"},
+	})
+
+	if port, ok := DefaultPort(string(customID)); ok {
+		t.Fatalf("expected invalid catalog port to be rejected, got %d", port)
 	}
 }

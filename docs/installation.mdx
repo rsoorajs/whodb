@@ -130,11 +130,11 @@ cd frontend
 pnpm start
 ```
 
-The frontend dev server runs on `http://localhost:3000` and proxies API requests to the backend.
+The frontend dev server runs on `http://localhost:3000` and proxies its backend requests to the WhoDB server.
 
 ## Desktop App
 
-The desktop app lives in `desktop-ce/` and uses the same frontend and backend codepaths. See [Desktop App](/features/desktop-app) for the current behavior and [desktop-common/README.md](/Users/ah/Documents/whodb/desktop-common/README.md) for the build workflow used in this repository.
+The desktop app lives in `desktop-ce/` and uses the same frontend and backend codepaths. See [Desktop App](/features/desktop-app) for the current behavior.
 
 ## Common Environment Variables
 
@@ -147,8 +147,9 @@ The desktop app lives in `desktop-ce/` and uses the same frontend and backend co
 | `WHODB_LOG_FORMAT` | Log format: `text` or `json` | `text` |
 | `WHODB_LOG_FILE` | Redirect non-HTTP logs to a file. `default` means `/var/log/whodb/whodb.log` | unset |
 | `WHODB_ACCESS_LOG_FILE` | Redirect HTTP access logs to a file. `default` means `/var/log/whodb/whodb.access.log` | unset |
-| `WHODB_TOKENS` | Comma-separated static access tokens for gating the app/API | unset |
+| `WHODB_TOKENS` | Comma-separated static access tokens for gating the app and its internal backend endpoints | unset |
 | `WHODB_ALLOWED_ORIGINS` | Comma-separated CORS allowlist | unset |
+| `WHODB_BASE_PATH` | URL path prefix for bundled web deployments, such as `/whodb` | unset |
 | `WHODB_DISABLE_CREDENTIAL_FORM` | Hide the manual credential form and require managed profiles/providers | `false` |
 | `WHODB_MAX_PAGE_SIZE` | Maximum rows allowed per page request | `10000` |
 | `WHODB_DISABLE_MOCK_DATA_GENERATION` | Disable mock data globally or for named tables | unset |
@@ -156,6 +157,10 @@ The desktop app lives in `desktop-ce/` and uses the same frontend and backend co
 
 <Note>
 The `default` log paths write to `/var/log/whodb/`. That works naturally in Docker but usually requires a custom path for local development.
+</Note>
+
+<Note>
+`WHODB_BASE_PATH` only applies to production versions, such as the Docker image or a production binary build. It is intended for reverse-proxy subpath hosting like `/whodb/`, not split frontend/backend dev mode.
 </Note>
 
 ### AI Providers
@@ -272,12 +277,20 @@ Those provider-discovery paths are still not production-ready in the current CE 
 PORT=3000 ./whodb
 ```
 
-Or with Docker:
+To publish the default container listener on host port `3000`:
 
 ```bash
 docker run -d \
-  -p 3000:3000 \
+  -p 3000:8080 \
+  clidey/whodb:latest
+```
+
+If you intentionally change the internal listener with `PORT`, map the same internal port:
+
+```bash
+docker run -d \
   -e PORT=3000 \
+  -p 3000:3000 \
   clidey/whodb:latest
 ```
 

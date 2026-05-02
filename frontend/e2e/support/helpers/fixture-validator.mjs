@@ -22,9 +22,10 @@
 const REQUIRED_FIELDS = ["type", "category", "connection", "features"];
 
 const TEST_TABLE_REQUIRED_FIELDS = {
-  sql: ["name", "identifierField", "identifierColIndex", "testValues"],
-  document: ["name", "identifierField", "testValues"],
-  keyvalue: ["name", "identifierField", "testValues"],
+  sql: ["name", "identifierField", "identifierColIndex", "idField", "firstName", "searchTerm", "testValues"],
+  document: ["name", "identifierField", "firstName", "searchTerm", "testValues"],
+  keyvalue: ["name", "identifierField", "identifierColIndex", "firstName", "searchTerm", "testValues"],
+  cache: ["name", "identifierField", "identifierColIndex", "firstName", "searchTerm", "testValues"],
 };
 
 const TEST_VALUES_REQUIRED_FIELDS = ["original", "modified", "rowIndex"];
@@ -46,6 +47,7 @@ export const VALID_FEATURES = [
   "documentEdit",
   "scratchpadUpdate",
   "multiConditionFilter",
+  "schemaManagement",
   "typeCasting",
   "sslConnection",
   "import",
@@ -104,6 +106,12 @@ export function validateFixture(fixture, name) {
         }
       }
     }
+
+    if (["sql", "document"].includes(fixture.category)) {
+      if (!fixture.tables?.[fixture.testTable.name]) {
+        errors.push(`tables missing config for testTable: ${fixture.testTable.name}`);
+      }
+    }
   } else {
     errors.push(
       "Missing testTable config - required for feature-focused tests"
@@ -113,6 +121,65 @@ export function validateFixture(fixture, name) {
   if (fixture.connection) {
     if (typeof fixture.connection !== "object") {
       errors.push("connection must be an object");
+    }
+  }
+
+  if (fixture.category === "sql") {
+    if (!Array.isArray(fixture.expectedTables) || fixture.expectedTables.length === 0) {
+      errors.push("sql fixture must define non-empty expectedTables");
+    }
+    const table = fixture.tables?.[fixture.testTable?.name];
+    if (table) {
+      if (!Array.isArray(table.expectedColumns) || table.expectedColumns.length === 0) {
+        errors.push(`tables.${fixture.testTable.name}.expectedColumns must be a non-empty array`);
+      }
+      if (!Array.isArray(table.testData?.initial) || table.testData.initial.length === 0) {
+        errors.push(`tables.${fixture.testTable.name}.testData.initial must be a non-empty array`);
+      }
+    }
+  }
+
+  if (fixture.category === "document") {
+    const expectedObjects = fixture.expectedTables || fixture.expectedIndices;
+    if (!Array.isArray(expectedObjects) || expectedObjects.length === 0) {
+      errors.push("document fixture must define non-empty expectedTables or expectedIndices");
+    }
+    const table = fixture.tables?.[fixture.testTable?.name];
+    if (table) {
+      if (!Array.isArray(table.expectedColumns) || table.expectedColumns.length === 0) {
+        errors.push(`tables.${fixture.testTable.name}.expectedColumns must be a non-empty array`);
+      }
+      if (!Array.isArray(table.testData?.initial) || table.testData.initial.length === 0) {
+        errors.push(`tables.${fixture.testTable.name}.testData.initial must be a non-empty array`);
+      }
+    }
+  }
+
+  if (fixture.category === "keyvalue") {
+    if (!Array.isArray(fixture.expectedKeys) || fixture.expectedKeys.length === 0) {
+      errors.push("keyvalue fixture must define non-empty expectedKeys");
+    }
+    if (!fixture.keyTypes || typeof fixture.keyTypes !== "object") {
+      errors.push("keyvalue fixture must define keyTypes");
+    } else {
+      const testKey = fixture.testTable?.name;
+      if (testKey && !fixture.keyTypes[testKey]) {
+        errors.push(`keyTypes missing config for testTable key: ${testKey}`);
+      }
+      for (const [key, keyConfig] of Object.entries(fixture.keyTypes)) {
+        if (!keyConfig.type) {
+          errors.push(`keyTypes.${key} missing type`);
+        }
+        if (!Array.isArray(keyConfig.expectedColumns) || keyConfig.expectedColumns.length === 0) {
+          errors.push(`keyTypes.${key}.expectedColumns must be a non-empty array`);
+        }
+      }
+    }
+  }
+
+  if (fixture.category === "cache") {
+    if (!Array.isArray(fixture.expectedKeys) || fixture.expectedKeys.length === 0) {
+      errors.push("cache fixture must define non-empty expectedKeys");
     }
   }
 

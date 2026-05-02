@@ -1,15 +1,13 @@
 mutation ImportPreview(
   $file: Upload!
   $options: ImportFileOptions!
-  $schema: String
-  $storageUnit: String
+  $ref: SourceObjectRefInput
   $useHeaderMapping: Boolean
 ) {
   ImportPreview(
     file: $file
     options: $options
-    schema: $schema
-    storageUnit: $storageUnit
+    ref: $ref
     useHeaderMapping: $useHeaderMapping
   ) {
     Sheet

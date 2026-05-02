@@ -40,7 +40,7 @@ import path from "path";
 import {chromium, expect, test as base} from "@playwright/test";
 import {WhoDB} from "./whodb.mjs";
 import {TIMEOUT} from "./helpers/test-utils.mjs";
-import {getDatabaseId, getDatabasesByCategory, hasFeature,} from "./database-config.mjs";
+import {getConnectionAdvanced, getDatabaseId, getDatabasesByCategory, hasFeature,} from "./database-config.mjs";
 import {VALID_FEATURES} from "./helpers/fixture-validator.mjs";
 import {mockAIProviders} from "./helpers/mock-providers.mjs";
 
@@ -51,6 +51,8 @@ const NYC_OUTPUT_DIR = path.resolve(process.cwd(), ".nyc_output");
 const AUTH_DIR = path.resolve(process.cwd(), "e2e", ".auth");
 
 const CDP_ENDPOINT = process.env.CDP_ENDPOINT;
+
+const DIAGNOSTIC_RESOURCE_TYPES = new Set(["document", "fetch", "xhr"]);
 
 /**
  * Collect Istanbul code coverage from the browser after each test.
@@ -70,6 +72,70 @@ async function collectCoverage(page, testInfo) {
     }
   } catch {
     // Page may have closed or navigated away — skip silently
+  }
+}
+
+/**
+ * Record browser-side errors without failing the test.
+ */
+async function attachBrowserDiagnostics(page, use, testInfo) {
+  const diagnostics = [];
+
+  const record = (entry) => {
+    diagnostics.push({
+      ...entry,
+      timestamp: new Date().toISOString(),
+    });
+  };
+
+  const onConsole = (msg) => {
+    if (msg.type() !== "error") return;
+    record({
+      type: "console",
+      level: msg.type(),
+      text: msg.text(),
+      location: msg.location(),
+    });
+  };
+
+  const onPageError = (error) => {
+    record({
+      type: "pageerror",
+      message: error.message,
+      stack: error.stack,
+    });
+  };
+
+  const onRequestFailed = (request) => {
+    if (!DIAGNOSTIC_RESOURCE_TYPES.has(request.resourceType())) return;
+    const url = request.url();
+    if (!url.startsWith(BASE_URL) && !url.includes("/api/query") && !url.includes("/health")) return;
+    record({
+      type: "requestfailed",
+      url,
+      method: request.method(),
+      resourceType: request.resourceType(),
+      failure: request.failure()?.errorText || "",
+    });
+  };
+
+  page.on("console", onConsole);
+  page.on("pageerror", onPageError);
+  page.on("requestfailed", onRequestFailed);
+
+  try {
+    await use();
+  } finally {
+    page.off("console", onConsole);
+    page.off("pageerror", onPageError);
+    page.off("requestfailed", onRequestFailed);
+
+    if (diagnostics.length > 0) {
+      await testInfo.attach("browser-diagnostics.json", {
+        body: JSON.stringify(diagnostics, null, 2),
+        contentType: "application/json",
+      });
+    }
   }
 }
 
@@ -121,7 +187,7 @@ export const test = CDP_ENDPOINT
           }
         }, DESKTOP_STUB);
         await mockAIProviders(page);
-        await use(new WhoDB(page));
+        await attachBrowserDiagnostics(page, () => use(new WhoDB(page)), testInfo);
         await collectCoverage(page, testInfo);
       },
     })
@@ -139,7 +205,7 @@ export const test = CDP_ENDPOINT
           }
         }, DESKTOP_STUB);
         await mockAIProviders(page);
-        await use(new WhoDB(page));
+        await attachBrowserDiagnostics(page, () => use(new WhoDB(page)), testInfo);
         await collectCoverage(page, testInfo);
       },
     });
@@ -163,6 +229,7 @@ export { expect };
  * @param {boolean} options.logout - Ignored when login=true (no logout needed with storageState)
  * @param {boolean} options.navigateToStorageUnit - Navigate to storage-unit before each test (default: true)
  * @param {string[]} options.features - Required features; databases without them are skipped
+ * @param {string[]} options.databases - Optional database ids/types to include
  */
 export function forEachDatabase(categoryFilter, testFn, options = {}) {
   const {
@@ -170,6 +237,7 @@ export function forEachDatabase(categoryFilter, testFn, options = {}) {
     logout = true,
     navigateToStorageUnit = true,
     features = [],
+    databases: databaseFilter = null,
   } = options;
 
   // Validate requested features
@@ -191,6 +259,15 @@ export function forEachDatabase(categoryFilter, testFn, options = {}) {
     databases = databases.filter((db) =>
       features.every((f) => hasFeature(db, f))
     );
+  }
+
+  if (databaseFilter?.length > 0) {
+    const allowedDatabases = new Set(databaseFilter.map((db) => db.toLowerCase()));
+    databases = databases.filter((db) => {
+      const id = getDatabaseId(db).toLowerCase();
+      const type = db.type.toLowerCase();
+      return allowedDatabases.has(id) || allowedDatabases.has(type);
+    });
   }
 
   // If running specific database, filter to just that one
@@ -263,10 +340,13 @@ export async function loginToDatabase(whodb, dbConfig, options = {}) {
     conn.user ?? undefined,
     conn.password ?? undefined,
     conn.database ?? undefined,
-    conn.advanced || {},
+    getConnectionAdvanced(conn),
     null,
     dbConfig.loginForm || null
   );
+  if (dbConfig.defaultDatabase != null && dbConfig.sidebar?.showsDatabaseDropdown) {
+    await whodb.selectDatabase(dbConfig.defaultDatabase);
+  }
   if (dbConfig.schema && dbConfig.sidebar?.showsSchemaDropdown) {
     await whodb.selectSchema(dbConfig.schema);
   }

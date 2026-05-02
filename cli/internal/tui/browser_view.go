@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/clidey/whodb/cli/internal/sourcetypes"
 	"github.com/clidey/whodb/cli/pkg/styles"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/sahilm/fuzzy"
@@ -106,6 +107,14 @@ func (v *BrowserView) Update(msg tea.Msg) (*BrowserView, tea.Cmd) {
 		v.lastRefreshed = time.Now()
 		v.applyFilter()
 		v.selectedIndex = 0
+		if v.selectedTable != "" {
+			for i, table := range v.filteredTables {
+				if table.Name == v.selectedTable {
+					v.selectedIndex = i
+					break
+				}
+			}
+		}
 
 		// Find the index of currentSchema
 		for i, s := range v.schemas {
@@ -174,7 +183,7 @@ func (v *BrowserView) Update(msg tea.Msg) (*BrowserView, tea.Cmd) {
 					v.loading = true
 					if result.Save {
 						v.parent.config.SetPreferredTimeout(int(result.Timeout.Seconds()))
-						v.parent.config.Save()
+						return v, tea.Batch(v.parent.requestConfigSave(), v.loadTablesWithTimeout(result.Timeout))
 					}
 					return v, v.loadTablesWithTimeout(result.Timeout)
 				}
@@ -317,7 +326,7 @@ func (v *BrowserView) Update(msg tea.Msg) (*BrowserView, tea.Cmd) {
 					v.parent.connectionView.connecting = false
 					v.parent.connectionView.connError = nil
 					v.parent.connectionView.refreshList()
-					return v, v.parent.connectionView.pingAllConnections()
+					return v, tea.Batch(v.parent.connectionView.pingAllConnections(), v.parent.connectionView.loadDockerConnections())
 				}
 				// First press — show confirmation
 				v.escConfirm = true
@@ -343,9 +352,9 @@ func (v *BrowserView) View() string {
 
 	var b strings.Builder
 
-	// Build connection title — for file-based DBs (SQLite, DuckDB) show just the path
+	// Build connection title — file-backed sources should show their path directly.
 	var title string
-	isFileDB := conn.Host == conn.Database
+	isFileDB := sourcetypes.IsFileTransport(conn.Type) && conn.Database != ""
 	if conn.Name != "" {
 		if isFileDB {
 			title = fmt.Sprintf("Connected to: %s (%s)", conn.Name, conn.Database)
@@ -451,7 +460,7 @@ func (v *BrowserView) View() string {
 				Keys.Global.Back,
 			))
 		} else if v.filtering {
-			b.WriteString(RenderBindingHelpWidth(v.width,
+			b.WriteString(renderBindingHelpWidthNoHelp(v.width,
 				Keys.Filter.CancelFilter,
 				Keys.Filter.ApplyFilter,
 			))
@@ -471,6 +480,8 @@ func (v *BrowserView) View() string {
 				Keys.Browser.Editor,
 				Keys.Browser.AIChat,
 				Keys.Browser.History,
+				Keys.Global.SchemaDiff,
+				Keys.Global.ERDiagram,
 				Keys.Global.MockData,
 				Keys.Browser.Refresh,
 				Keys.Global.NextView,

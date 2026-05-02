@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-// Package ssl provides SSL/TLS configuration types and utilities for database connections.
-// It defines an extensible registry of SSL modes per database type, allowing extensions to register
-// additional modes without modifying CE code.
+// Package ssl provides SSL/TLS configuration types and source-backed
+// normalization helpers for database connections.
 package ssl
 
 import (
-	"slices"
+	"strings"
 
 	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 type SSLMode string
@@ -90,122 +90,79 @@ var (
 	ModeInfoInsecure       = SSLModeInfo{Value: SSLModeInsecure, Label: "Insecure", Description: "Enable TLS, skip certificate verification"}
 )
 
-// Alias mappings for database-native SSL mode names
-var (
-	postgresAliases = map[string]SSLMode{
-		"disable":     SSLModeDisabled,
-		"require":     SSLModeRequired,
-		"verify-full": SSLModeVerifyIdentity,
-	}
-	mysqlAliases = map[string]SSLMode{
-		"DISABLED":        SSLModeDisabled,
-		"PREFERRED":       SSLModePreferred,
-		"REQUIRED":        SSLModeRequired,
-		"VERIFY_CA":       SSLModeVerifyCA,
-		"VERIFY_IDENTITY": SSLModeVerifyIdentity,
-	}
-)
-
-// sslModeAliases maps database-native SSL mode names to our unified mode names.
-var sslModeAliases = map[engine.DatabaseType]map[string]SSLMode{
-	engine.DatabaseType_Postgres:    postgresAliases,
-	engine.DatabaseType_CockroachDB: postgresAliases,
-	engine.DatabaseType_MySQL:       mysqlAliases,
-	engine.DatabaseType_MariaDB:     mysqlAliases,
-}
-
-// Common mode sets for databases with similar SSL support
-var (
-	modesStandard      = []SSLModeInfo{ModeInfoDisabled, ModeInfoRequired, ModeInfoVerifyCA, ModeInfoVerifyIdentity}
-	modesWithPreferred = []SSLModeInfo{ModeInfoDisabled, ModeInfoPreferred, ModeInfoRequired, ModeInfoVerifyCA, ModeInfoVerifyIdentity}
-	modesSimple        = []SSLModeInfo{ModeInfoDisabled, ModeInfoEnabled, ModeInfoInsecure}
-)
-
-var (
-	// databaseSSLModes holds CE database SSL modes
-	databaseSSLModes = map[engine.DatabaseType][]SSLModeInfo{
-		engine.DatabaseType_Postgres:      modesStandard,
-		engine.DatabaseType_CockroachDB:   modesStandard,
-		engine.DatabaseType_MySQL:         modesWithPreferred,
-		engine.DatabaseType_MariaDB:       modesWithPreferred,
-		engine.DatabaseType_ClickHouse:    modesSimple,
-		engine.DatabaseType_MongoDB:       modesSimple,
-		engine.DatabaseType_Redis:         modesSimple,
-		engine.DatabaseType_Memcached:     modesSimple,
-		engine.DatabaseType_ElasticSearch: modesSimple,
-	}
-
-	// additionalSSLModes holds dynamically registered modes
-	additionalSSLModes = make(map[engine.DatabaseType][]SSLModeInfo)
-)
-
-// RegisterDatabaseSSLModes registers SSL modes for additional databases.
-func RegisterDatabaseSSLModes(dbType engine.DatabaseType, modes []SSLModeInfo) {
-	additionalSSLModes[dbType] = modes
-}
-
-// RegisterSSLModeAliases registers SSL mode aliases for additional databases.
-func RegisterSSLModeAliases(dbType engine.DatabaseType, aliases map[string]SSLMode) {
-	sslModeAliases[dbType] = aliases
-}
-
-// GetSSLModes returns available SSL modes for a database type.
-// Returns nil for database types that don't support SSL (e.g., Sqlite3).
+// GetSSLModes returns the source-declared SSL modes for a database type.
+// Returns nil for database types that do not expose SSL configuration.
 func GetSSLModes(dbType engine.DatabaseType) []SSLModeInfo {
-	// Check CE modes first
-	if modes, ok := databaseSSLModes[dbType]; ok {
-		return modes
+	spec, ok := sourcecatalog.Find(string(dbType))
+	if !ok || len(spec.SSLModes) == 0 {
+		return nil
 	}
 
-	// Check dynamically registered modes
-	if modes, ok := additionalSSLModes[dbType]; ok {
-		return modes
+	modes := make([]SSLModeInfo, 0, len(spec.SSLModes))
+	for _, mode := range spec.SSLModes {
+		modes = append(modes, SSLModeInfo{
+			Value:       SSLMode(mode.Value),
+			Label:       mode.Label,
+			Description: mode.Description,
+		})
 	}
-
-	return nil
+	return modes
 }
 
 // ValidateSSLMode checks if the given mode is valid for the database type.
 func ValidateSSLMode(dbType engine.DatabaseType, mode SSLMode) bool {
-	return slices.ContainsFunc(GetSSLModes(dbType), func(m SSLModeInfo) bool {
-		return m.Value == mode
-	})
+	for _, item := range GetSSLModes(dbType) {
+		if item.Value == mode {
+			return true
+		}
+	}
+	return false
 }
 
 // NormalizeSSLMode converts database-native SSL mode names to our unified names.
 // For example, PostgreSQL's "require" becomes "required", "verify-full" becomes "verify-identity".
 // If no alias exists, returns the original mode unchanged.
 func NormalizeSSLMode(dbType engine.DatabaseType, mode string) SSLMode {
-	if aliases, ok := sslModeAliases[dbType]; ok {
-		if normalized, found := aliases[mode]; found {
-			return normalized
+	trimmed := strings.TrimSpace(mode)
+	spec, ok := sourcecatalog.Find(string(dbType))
+	if !ok {
+		return SSLMode(trimmed)
+	}
+
+	for _, item := range spec.SSLModes {
+		if strings.EqualFold(trimmed, item.Value) {
+			return SSLMode(item.Value)
+		}
+		for _, alias := range item.Aliases {
+			if strings.EqualFold(trimmed, alias) {
+				return SSLMode(item.Value)
+			}
 		}
 	}
-	// No alias found, return as-is
-	return SSLMode(mode)
+
+	return SSLMode(trimmed)
 }
 
 // GetSSLModeAliases returns all accepted alias names for a specific SSL mode.
 // For example, for PostgreSQL's "required" mode, this returns ["require"].
 // This is used by the frontend to know which alternative names are accepted.
 func GetSSLModeAliases(dbType engine.DatabaseType, mode SSLMode) []string {
-	aliases, ok := sslModeAliases[dbType]
+	spec, ok := sourcecatalog.Find(string(dbType))
 	if !ok {
 		return nil
 	}
 
-	var result []string
-	for alias, normalizedMode := range aliases {
-		if normalizedMode == mode {
-			result = append(result, alias)
+	for _, item := range spec.SSLModes {
+		if item.Value == string(mode) {
+			return append([]string(nil), item.Aliases...)
 		}
 	}
-	return result
+	return nil
 }
 
 // HasSSLSupport returns true if the database type supports SSL configuration.
 func HasSSLSupport(dbType engine.DatabaseType) bool {
-	return GetSSLModes(dbType) != nil
+	return len(GetSSLModes(dbType)) > 0
 }
 
 // IsEnabled returns true if the SSL config has a non-disabled mode.

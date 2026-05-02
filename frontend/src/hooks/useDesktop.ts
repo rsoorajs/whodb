@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {useCallback, useEffect} from 'react';
+import {useCallback, useEffect, useRef} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import * as desktopService from '../services/desktop';
 import {isDesktopApp} from '../utils/external-links';
@@ -97,6 +97,11 @@ export const useDesktopMenu = () => {
   const { showConfirm } = useDesktopDialog();
   const currentAuth = useAppSelector(state => state.auth.current);
 
+  const currentAuthRef = useRef(currentAuth);
+  const locationRef = useRef(location);
+  currentAuthRef.current = currentAuth;
+  locationRef.current = location;
+
   useEffect(() => {
     if (!isDesktop) return;
 
@@ -134,7 +139,7 @@ export const useDesktopMenu = () => {
 
     const handlers = {
       'menu:toggle-sidebar-new-connection': safeHandler(() => {
-        if (currentAuth) {
+        if (currentAuthRef.current) {
           // User is logged in - emit event to open sidebar with add profile form
           window.dispatchEvent(new CustomEvent('menu:open-add-profile'));
         } else {
@@ -167,12 +172,12 @@ export const useDesktopMenu = () => {
       'menu:disconnect': safeHandler(async () => {
         const confirm = await showConfirm('Disconnect', 'Are you sure you want to disconnect from the current database?');
         if (confirm) {
-          navigate('/');
+          navigate(InternalRoutes.Logout.path);
         }
       }),
       'menu:new-scratchpad-page': safeHandler(() => {
         // Only allow creating new page if already on Scratchpad page
-        if (location.pathname === InternalRoutes.RawExecute.path) {
+        if (locationRef.current.pathname === InternalRoutes.RawExecute.path) {
           // Emit event that the Scratchpad page will listen to
           window.dispatchEvent(new CustomEvent('menu:new-scratchpad-page'));
         }

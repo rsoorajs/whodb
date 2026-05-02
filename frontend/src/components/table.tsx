@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import {useLazyQuery, useMutation, useQuery} from "@apollo/client/react";
 import {
     Alert,
     AlertDescription,
@@ -69,17 +70,18 @@ import {
     VirtualizedTableBody
 } from "@clidey/ux";
 import {
-    useAnalyzeMockDataDependenciesLazyQuery,
-    useDeleteRowMutation,
-    useGenerateMockDataMutation,
-    useMockDataMaxRowCountQuery
+    AnalyzeMockDataDependenciesDocument,
+    DeleteRowDocument,
+    GenerateMockDataDocument,
+    MockDataMaxRowCountDocument,
+    type SourceObjectRefInput,
 } from '@graphql';
 import {FC, Suspense, useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {Export} from "./export";
 import {ImportData} from "./import-data";
 import {useTranslation} from '@/hooks/use-translation';
 import {copyToClipboard} from '@/services/clipboard';
-import {useDatabaseTraits} from "@/hooks/useDatabaseTraits";
+import {useSourceContract} from "@/hooks/useSourceContract";
 import {
     ArrowDownCircleIcon,
     ArrowDownTrayIcon,
@@ -125,8 +127,8 @@ const EEExport = null;
 const DynamicExport: FC<{
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    schema: string;
     storageUnit: string;
+    objectRef?: SourceObjectRefInput;
     hasSelectedRows: boolean;
     selectedRowsData?: Record<string, any>[];
     checkedRowsCount: number;
@@ -287,9 +289,12 @@ interface TableProps {
     height?: number;
     onRowUpdate?: (row: Record<string, string | number>, originalRow?: Record<string, string | number>) => Promise<void>;
     disableEdit?: boolean;
+    allowRowUpdate?: boolean;
+    allowRowDelete?: boolean;
     limitContextMenu?: boolean;
     schema?: string;
     storageUnit?: string;
+    objectRef?: SourceObjectRefInput;
     onRefresh?: () => void;
     children?: React.ReactNode;
     onColumnSort?: (column: string) => void;
@@ -326,9 +331,12 @@ export const StorageUnitTable: FC<TableProps> = ({
     height = 500,
     onRowUpdate,
     disableEdit = false,
+    allowRowUpdate = true,
+    allowRowDelete = true,
     limitContextMenu = false,
     schema,
     storageUnit,
+    objectRef,
     onRefresh,
     children,
     onColumnSort,
@@ -378,11 +386,10 @@ export const StorageUnitTable: FC<TableProps> = ({
     const [mockDataOverwriteExisting, setMockDataOverwriteExisting] = useState("append");
     const [mockDataFkDensityRatio, setMockDataFkDensityRatio] = useState("20");
     const [showMockDataConfirmation, setShowMockDataConfirmation] = useState(false);
-    const { isNoSQL, supportsMockData } = useDatabaseTraits(databaseType);
+    const { isNoSQL, supportsImportData, supportsMockData, supportsMockDataRelations } = useSourceContract(databaseType);
     const isMockDataSupported = supportsMockData && isMockDataGenerationAllowed;
-    const isClickHouse = databaseType === "ClickHouse";
-    const isImportSupported = !isNoSQL;
-    const { data: maxRowData } = useMockDataMaxRowCountQuery();
+    const isImportSupported = supportsImportData;
+    const { data: maxRowData } = useQuery(MockDataMaxRowCountDocument);
     const maxRowCount = maxRowData?.MockDataMaxRowCount || 200;
     
     // Use server-side pagination
@@ -390,13 +397,18 @@ export const StorageUnitTable: FC<TableProps> = ({
     const totalRows = totalCount || 0;
     const totalPages = Math.ceil(totalRows / pageSize);
 
-    const [generateMockData, { loading: generatingMockData }] = useGenerateMockDataMutation();
-    const [analyzeDependencies, { data: depAnalysis, loading: analyzingDeps }] = useAnalyzeMockDataDependenciesLazyQuery();
-    const [deleteRow, ] = useDeleteRowMutation();
+    const [generateMockData, { loading: generatingMockData }] = useMutation(GenerateMockDataDocument);
+    const [analyzeDependencies, { data: depAnalysis, loading: analyzingDeps }] = useLazyQuery(AnalyzeMockDataDependenciesDocument);
+    const [deleteRow, ] = useMutation(DeleteRowDocument);
     const [containerWidth, setContainerWidth] = useState<number>(0);
     const lastSearchState = useRef<{ search: string; matchIdx: number }>({ search: '', matchIdx: 0 });
+    const canEditRows = !disableEdit && allowRowUpdate && onRowUpdate != null;
+    const canDeleteRows = !disableEdit && allowRowDelete && objectRef != null;
 
     const handleEdit = (index: number) => {
+        if (!canEditRows) {
+            return;
+        }
         setEditIndex(index);
         const rowData = [...rows[index]];
         setEditRow(rowData);
@@ -413,6 +425,9 @@ export const StorageUnitTable: FC<TableProps> = ({
     };
 
     const handleUpdate = useCallback(() => {
+        if (!canEditRows) {
+            return;
+        }
         if (editIndex !== null && editRow) {
             const updatedRow: Record<string, string | number> = {};
             columns.forEach((col, idx) => {
@@ -437,7 +452,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                     toast.error(t('errorUpdatingRow'));
                 });
         }
-    }, [editIndex, editRow, columns, onRowUpdate, rows, onRefresh, t]);
+    }, [canEditRows, editIndex, editRow, columns, onRowUpdate, rows, onRefresh, t]);
 
     // --- Export logic ---
     const hasSelectedRows = checked.length > 0;
@@ -473,6 +488,13 @@ export const StorageUnitTable: FC<TableProps> = ({
 
     // Delete logic, adapted from explore-storage-unit.tsx
     const doDeleteRows = useCallback(async (indexesToDelete: number[]) => {
+        if (!canDeleteRows) {
+            return;
+        }
+        if (!objectRef) {
+            toast.error(t('storageUnitRequired'));
+            return;
+        }
         let unableToDeleteAll = false;
         toast.info(t('deletingRows', { count: indexesToDelete.length }));
         for (const index of indexesToDelete) {
@@ -485,8 +507,7 @@ export const StorageUnitTable: FC<TableProps> = ({
             try {
                 await deleteRow({
                     variables: {
-                        schema: schema || '',
-                        storageUnit: storageUnit || '',
+                        ref: objectRef,
                         values,
                     },
                 });
@@ -500,9 +521,12 @@ export const StorageUnitTable: FC<TableProps> = ({
             toast.success(t('rowDeleted'));
         }
         onRefresh?.();
-    }, [deleteRow, schema, storageUnit, rows, columns, onRefresh, t]);
+    }, [canDeleteRows, columns, deleteRow, objectRef, onRefresh, rows, t]);
 
     const handleDeleteRow = useCallback((rowIndex: number) => {
+        if (!canDeleteRows) {
+            return;
+        }
         if (!rows || !columns) return;
         let indexesToDelete: number[] = [];
         if (Array.isArray(rowIndex)) {
@@ -515,7 +539,7 @@ export const StorageUnitTable: FC<TableProps> = ({
         }
         if (indexesToDelete.length === 0) return;
         setPendingDeleteIndexes(indexesToDelete);
-    }, [rows, columns, checked]);
+    }, [canDeleteRows, rows, columns, checked]);
 
     const handleConfirmDelete = useCallback(async () => {
         if (pendingDeleteIndexes) {
@@ -683,7 +707,7 @@ export const StorageUnitTable: FC<TableProps> = ({
 
     const handleMockDataGenerate = useCallback(async () => {
         // For databases without schemas (like SQLite), only storageUnit is required
-        if (!storageUnit) {
+        if (!storageUnit || !objectRef) {
             toast.error(t('storageUnitRequired'));
             return;
         }
@@ -710,8 +734,7 @@ export const StorageUnitTable: FC<TableProps> = ({
             const result = await generateMockData({
                 variables: {
                     input: {
-                        Schema: schema || "",  // Use empty string if schema is null/undefined (SQLite case)
-                        StorageUnit: storageUnit,
+                        Ref: objectRef,
                         RowCount: count,
                         Method: mockDataMethod,
                         OverwriteExisting: mockDataOverwriteExisting === "overwrite",
@@ -739,7 +762,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                 toast.error(t('mockDataFailed', { message: error.message }));
             }
         }
-    }, [generateMockData, schema, storageUnit, mockDataRowCount, mockDataMethod, mockDataOverwriteExisting, mockDataFkDensityRatio, showMockDataConfirmation, maxRowCount, onRefresh, t]);
+    }, [generateMockData, maxRowCount, mockDataFkDensityRatio, mockDataMethod, mockDataOverwriteExisting, mockDataRowCount, objectRef, onRefresh, showMockDataConfirmation, storageUnit, t]);
 
     const columnIcons = useMemo(() => getColumnIcons(columns, columnTypes, t), [columns, columnTypes, t]);
 
@@ -754,20 +777,19 @@ export const StorageUnitTable: FC<TableProps> = ({
 
     useEffect(() => {
         // Note: schema can be empty for SQLite which doesn't use schemas
-        if (showMockDataSheet && storageUnit) {
+        if (showMockDataSheet && objectRef) {
             const rowCount = parseInt(mockDataRowCount) || 100;
             if (rowCount > 0 && rowCount <= maxRowCount) {
                 analyzeDependencies({
                     variables: {
-                        schema: schema || "",
-                        storageUnit,
+                        ref: objectRef,
                         rowCount,
                         fkDensityRatio: null,
                     },
                 });
             }
         }
-    }, [showMockDataSheet, schema, storageUnit, mockDataRowCount, maxRowCount, analyzeDependencies]);
+    }, [analyzeDependencies, maxRowCount, mockDataRowCount, objectRef, showMockDataSheet]);
 
     const adjustedDepAnalysis = useMemo(() => {
         const analysis = depAnalysis?.AnalyzeMockDataDependencies;
@@ -968,14 +990,14 @@ export const StorageUnitTable: FC<TableProps> = ({
                 return;
             }
             if (matchesShortcut(event, SHORTCUTS.editRowAlt)) {
-                if (focusedRowIndex !== null && !disableEdit) {
+                if (focusedRowIndex !== null && canEditRows) {
                     event.preventDefault();
                     handleEdit(focusedRowIndex);
                 }
                 return;
             }
             if (matchesShortcut(event, SHORTCUTS.deleteRow) || matchesShortcut(event, SHORTCUTS.deleteRowAlt)) {
-                if (focusedRowIndex !== null && !disableEdit) {
+                if (focusedRowIndex !== null && canDeleteRows) {
                     event.preventDefault();
                     handleDeleteRow(focusedRowIndex);
                 }
@@ -1051,7 +1073,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                 return;
             }
             if (matchesShortcut(event, SHORTCUTS.editRow)) {
-                if (focusedRowIndex !== null && !disableEdit) {
+                if (focusedRowIndex !== null && canEditRows) {
                     event.preventDefault();
                     handleEdit(focusedRowIndex);
                 }
@@ -1066,7 +1088,7 @@ export const StorageUnitTable: FC<TableProps> = ({
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [enableKeyboardShortcuts, onRefresh, checked, paginatedRows, handleDeleteRow, handleEdit, focusedRowIndex, moveFocus, visibleRowCount, handleSelectRow, disableEdit, onPageChange, currentPage, totalPages, openExport]);
+    }, [enableKeyboardShortcuts, onRefresh, checked, paginatedRows, handleDeleteRow, handleEdit, focusedRowIndex, moveFocus, visibleRowCount, handleSelectRow, canEditRows, canDeleteRows, onPageChange, currentPage, totalPages, openExport]);
 
 
 
@@ -1302,7 +1324,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                         <ContextMenuShortcut>Space</ContextMenuShortcut>
                     </ContextMenuItem>
                 )}
-                {!limitContextMenu && (
+                {!limitContextMenu && canEditRows && (
                     <ContextMenuItem onSelect={() => handleEdit(index)} disabled={checked.length > 1} data-testid="context-menu-edit-row">
                         <PencilSquareIcon className="w-4 h-4" />
                         {t('editRow')}
@@ -1360,7 +1382,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                         <ContextMenuShortcut>{formatShortcut(SHORTCUTS.mockData.displayKeys)}</ContextMenuShortcut>
                     </ContextMenuItem>
                 )}
-                {!limitContextMenu && (
+                {!limitContextMenu && canDeleteRows && (
                     <ContextMenuItem
                         variant="destructive"
                         disabled={deleting}
@@ -1376,7 +1398,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                 )}
             </ContextMenuContent>
         </ContextMenu>
-    }, [checked, handleCellClick, handleEdit, handleSelectRow, handleDeleteRow, paginatedRows, disableEdit, limitContextMenu, onRefresh, t, contextMenuCellIdx, columns, columnIsForeignKey, columnIsPrimary, onEntitySearch, deleting, focusedRowIndex, isMockDataSupported, openExport]);
+    }, [checked, handleCellClick, handleEdit, handleSelectRow, handleDeleteRow, paginatedRows, disableEdit, limitContextMenu, onRefresh, t, contextMenuCellIdx, columns, columnIsForeignKey, columnIsPrimary, onEntitySearch, deleting, focusedRowIndex, isMockDataSupported, openExport, canEditRows, canDeleteRows]);
 
     return (
         <div ref={tableRef} className="flex min-w-0 w-full">
@@ -1769,7 +1791,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                                         <SelectItem value="overwrite" data-value="overwrite">{t('overwriteExisting')}</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                {!isClickHouse && (
+                                {supportsMockDataRelations && (
                                     <>
                                         <div>
                                             <Label>{t('fkVariety')}</Label>
@@ -1845,10 +1867,10 @@ export const StorageUnitTable: FC<TableProps> = ({
                         )}
                     </div>
                     <SheetFooter className="flex gap-sm px-0">
-                        <Alert variant={isClickHouse ? "default" : "info"} className="mb-4">
+                        <Alert variant={supportsMockDataRelations ? "info" : "default"} className="mb-4">
                             <AlertTitle>{t('mockDataNote')}</AlertTitle>
                             <AlertDescription>
-                                {isClickHouse ? t('mockDataWarningClickHouse') : t('mockDataWarning')}
+                                {supportsMockDataRelations ? t('mockDataWarning') : t('mockDataWarningClickHouse')}
                             </AlertDescription>
                         </Alert>
                         <Button
@@ -1875,8 +1897,8 @@ export const StorageUnitTable: FC<TableProps> = ({
                 <DynamicExport
                     open={showExportConfirm}
                     onOpenChange={setShowExportConfirm}
-                    schema={schema || ''}
                     storageUnit={rawQuery ? 'query_export' : (storageUnit || '')}
+                    objectRef={objectRef}
                     hasSelectedRows={hasSelectedRows}
                     selectedRowsData={selectedRowsData}
                     checkedRowsCount={checked.length}
@@ -1890,9 +1912,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                 <ImportData
                     open={showImport}
                     onOpenChange={setShowImport}
-                    schema={schema || ''}
-                    storageUnit={storageUnit || ''}
-                    columns={columns}
+                    objectRef={objectRef}
                     onImportSuccess={onRefresh}
                 />
             )}
@@ -1907,7 +1927,7 @@ export const StorageUnitTable: FC<TableProps> = ({
                     <AlertDialogFooter>
                         <AlertDialogCancel onClick={handleCancelDelete}>{t('cancel')}</AlertDialogCancel>
                         <AlertDialogAction asChild>
-                            <Button variant="destructive" onClick={handleConfirmDelete}>
+                            <Button variant="destructive" onClick={handleConfirmDelete} data-testid="confirm-delete-row-button">
                                 {t('deleteRow', { count: pendingDeleteIndexes?.length ?? 1 })}
                             </Button>
                         </AlertDialogAction>

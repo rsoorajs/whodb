@@ -18,7 +18,9 @@ package graph
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/clidey/whodb/core/graph/model"
@@ -38,8 +40,8 @@ func SetupHTTPServer(router chi.Router) {
 	router.Get("/api/ai-models", getAIModelsHandler)
 	router.Post("/api/ai-chat", aiChatHandler)
 	router.Post("/api/ai-chat/stream", aiChatStreamHandler)
-	router.Post("/api/sql-agent/stream", sqlAgentStreamHandler)
-	router.Post("/api/sql-agent/permit", sqlAgentPermitHandler)
+	router.Post("/api/agent/stream", agentStreamHandler)
+	router.Post("/api/agent/permit", agentPermitHandler)
 
 	router.Post("/api/storage-units", addStorageUnitHandler)
 	router.Post("/api/rows", addRowHandler)
@@ -50,10 +52,10 @@ func SetupHTTPServer(router chi.Router) {
 	// AI chat streaming endpoint is registered via build tags in http_ai_stream.go (!arm) / http_ai_stream_arm.go (arm)
 }
 
-var resolver = mutationResolver{}
+var resolver = Resolver{}
 
 func getProfilesHandler(w http.ResponseWriter, r *http.Request) {
-	profiles, err := resolver.Query().Profiles(r.Context())
+	profiles, err := resolver.Query().SourceProfiles(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -65,23 +67,44 @@ func getProfilesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getDatabasesHandler(w http.ResponseWriter, r *http.Request) {
-	typeArg := r.URL.Query().Get("type")
-	databases, err := resolver.Query().Database(r.Context(), typeArg)
+	sourceType := r.URL.Query().Get("sourceType")
+	if sourceType == "" {
+		http.Error(w, "missing required query parameter: sourceType", http.StatusBadRequest)
+		return
+	}
+
+	fieldKey := r.URL.Query().Get("fieldKey")
+	if fieldKey == "" {
+		fieldKey = "Database"
+	}
+
+	options, err := resolver.Query().SourceFieldOptions(r.Context(), sourceType, fieldKey, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = json.NewEncoder(w).Encode(databases)
+	err = json.NewEncoder(w).Encode(options)
 	if err != nil {
 		return
 	}
 }
 
 func getSchemaHandler(w http.ResponseWriter, r *http.Request) {
-	schemas, err := resolver.Query().Schema(r.Context())
+	parent, err := querySourceObjectRef(r.URL.Query(), "parentKind", "parentPath")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	objects, err := resolver.Query().SourceObjects(r.Context(), parent, []model.SourceObjectKind{model.SourceObjectKindSchema})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	schemas := make([]string, 0, len(objects))
+	for _, object := range objects {
+		schemas = append(schemas, object.Name)
 	}
 	err = json.NewEncoder(w).Encode(schemas)
 	if err != nil {
@@ -90,8 +113,13 @@ func getSchemaHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getStorageUnitsHandler(w http.ResponseWriter, r *http.Request) {
-	schema := r.URL.Query().Get("schema")
-	storageUnits, err := resolver.Query().StorageUnit(r.Context(), schema)
+	parent, err := querySourceObjectRef(r.URL.Query(), "parentKind", "parentPath")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	storageUnits, err := resolver.Query().SourceObjects(r.Context(), parent, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -103,13 +131,20 @@ func getStorageUnitsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getRowsHandler(w http.ResponseWriter, r *http.Request) {
-	schema := r.URL.Query().Get("schema")
-	storageUnit := r.URL.Query().Get("storageUnit")
 	pageSize := parseQueryParamToInt(r.URL.Query().Get("pageSize"))
 	pageOffset := parseQueryParamToInt(r.URL.Query().Get("pageOffset"))
+	ref, err := querySourceObjectRef(r.URL.Query(), "kind", "path")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if ref == nil {
+		http.Error(w, "missing required query parameter: kind", http.StatusBadRequest)
+		return
+	}
 
-	// TODO: Add where condition parsing from query params if needed
-	rowsResult, err := resolver.Query().Row(r.Context(), schema, storageUnit, nil, []*model.SortCondition{}, pageSize, pageOffset)
+	// TODO: Add where condition parsing from query params if needed.
+	rowsResult, err := resolver.Query().SourceRows(r.Context(), *ref, nil, []*model.SortCondition{}, pageSize, pageOffset)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -130,7 +165,7 @@ func rawExecuteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rowsResult, err := resolver.Query().RawExecute(r.Context(), req.Query)
+	rowsResult, err := resolver.Query().RunSourceQuery(r.Context(), req.Query)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -142,8 +177,13 @@ func rawExecuteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getGraphHandler(w http.ResponseWriter, r *http.Request) {
-	schema := r.URL.Query().Get("schema")
-	graphUnits, err := resolver.Query().Graph(r.Context(), schema)
+	ref, err := querySourceObjectRef(r.URL.Query(), "kind", "path")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	graphUnits, err := resolver.Query().SourceGraph(r.Context(), ref)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -170,12 +210,12 @@ func getAIModelsHandler(w http.ResponseWriter, r *http.Request) {
 
 func aiChatHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		ModelType string          `json:"modelType"`
-		Token     string          `json:"token"`
-		Model     string          `json:"model"`
-		Endpoint  string          `json:"endpoint"`
-		Schema    string          `json:"schema"`
-		Input     model.ChatInput `json:"input"`
+		ModelType string                      `json:"modelType"`
+		Token     string                      `json:"token"`
+		Model     string                      `json:"model"`
+		Endpoint  string                      `json:"endpoint"`
+		Ref       *model.SourceObjectRefInput `json:"ref"`
+		Input     model.ChatInput             `json:"input"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -183,13 +223,13 @@ func aiChatHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Copy top-level model to input.Model for GraphQL resolver compatibility
-	// Frontend sends model at top level (matching streaming endpoint format)
+	// Copy top-level model to input.Model for GraphQL resolver compatibility.
+	// Frontend sends model at top level (matching streaming endpoint format).
 	if req.Model != "" && req.Input.Model == "" {
 		req.Input.Model = req.Model
 	}
 
-	messages, err := resolver.Query().AIChat(r.Context(), nil, req.ModelType, &req.Token, req.Schema, req.Input)
+	messages, err := resolver.Query().AIChat(r.Context(), nil, req.ModelType, &req.Token, req.Ref, req.Input)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -203,9 +243,9 @@ func aiChatHandler(w http.ResponseWriter, r *http.Request) {
 
 func addStorageUnitHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Schema      string               `json:"schema"`
-		StorageUnit string               `json:"storageUnit"`
-		Fields      []*model.RecordInput `json:"fields"`
+		Parent *model.SourceObjectRefInput `json:"parent"`
+		Name   string                      `json:"name"`
+		Fields []*model.RecordInput        `json:"fields"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -213,7 +253,7 @@ func addStorageUnitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	status, err := resolver.Mutation().AddStorageUnit(r.Context(), req.Schema, req.StorageUnit, req.Fields)
+	status, err := resolver.Mutation().CreateSourceObject(r.Context(), req.Parent, req.Name, req.Fields)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -226,17 +266,20 @@ func addStorageUnitHandler(w http.ResponseWriter, r *http.Request) {
 
 func addRowHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Schema      string               `json:"schema"`
-		StorageUnit string               `json:"storageUnit"`
-		Values      []*model.RecordInput `json:"values"`
+		Ref    *model.SourceObjectRefInput `json:"ref"`
+		Values []*model.RecordInput        `json:"values"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	if req.Ref == nil {
+		http.Error(w, "missing required request field: ref", http.StatusBadRequest)
+		return
+	}
 
-	status, err := resolver.Mutation().AddRow(r.Context(), req.Schema, req.StorageUnit, req.Values)
+	status, err := resolver.Mutation().AddSourceRow(r.Context(), *req.Ref, req.Values)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -249,17 +292,20 @@ func addRowHandler(w http.ResponseWriter, r *http.Request) {
 
 func deleteRowHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Schema      string               `json:"schema"`
-		StorageUnit string               `json:"storageUnit"`
-		Values      []*model.RecordInput `json:"values"`
+		Ref    *model.SourceObjectRefInput `json:"ref"`
+		Values []*model.RecordInput        `json:"values"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	if req.Ref == nil {
+		http.Error(w, "missing required request field: ref", http.StatusBadRequest)
+		return
+	}
 
-	status, err := resolver.Mutation().DeleteRow(r.Context(), req.Schema, req.StorageUnit, req.Values)
+	status, err := resolver.Mutation().DeleteSourceRow(r.Context(), *req.Ref, req.Values)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -279,4 +325,20 @@ func parseQueryParamToInt(queryParam string) int {
 		return 0
 	}
 	return value
+}
+
+func querySourceObjectRef(values url.Values, kindKey string, pathKey string) (*model.SourceObjectRefInput, error) {
+	kind := values.Get(kindKey)
+	path := values[pathKey]
+	if kind == "" {
+		if len(path) == 0 {
+			return nil, nil
+		}
+		return nil, errors.New("missing required query parameter: " + kindKey)
+	}
+
+	return &model.SourceObjectRefInput{
+		Kind: model.SourceObjectKind(kind),
+		Path: path,
+	}, nil
 }

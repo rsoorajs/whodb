@@ -31,7 +31,7 @@
   },
   "connection": {
     "host": "localhost",
-    "port": 8123,
+    "port": 9000,
     "user": "user",
     "password": "password",
     "database": "test_db",

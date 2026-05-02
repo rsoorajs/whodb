@@ -88,11 +88,11 @@ func (v *ProfilesView) Update(msg tea.Msg) (*ProfilesView, tea.Cmd) {
 				if name == "" {
 					name = v.nextProfileName()
 				}
-				v.saveCurrentAsProfile(name)
+				saveCmd := v.saveCurrentAsProfile(name)
 				v.naming = false
 				v.nameInput.Blur()
 				v.nameInput.SetValue("")
-				return v, v.parent.SetStatus("Profile saved: " + name)
+				return v, tea.Batch(saveCmd, v.parent.SetStatus("Profile saved: "+name))
 			case "esc":
 				v.naming = false
 				v.nameInput.Blur()
@@ -141,11 +141,10 @@ func (v *ProfilesView) Update(msg tea.Msg) (*ProfilesView, tea.Cmd) {
 			if v.cursor >= 0 && v.cursor < len(profiles) {
 				name := profiles[v.cursor].Name
 				v.parent.config.DeleteProfile(name)
-				v.parent.config.Save()
 				if v.cursor >= len(v.parent.config.GetProfiles()) && v.cursor > 0 {
 					v.cursor--
 				}
-				return v, v.parent.SetStatus("Deleted: " + name)
+				return v, tea.Batch(v.parent.requestConfigSave(), v.parent.SetStatus("Deleted: "+name))
 			}
 			return v, nil
 		}
@@ -194,28 +193,30 @@ func (v *ProfilesView) applySelected() (*ProfilesView, tea.Cmd) {
 		v.parent.config.Query.TimeoutSeconds = profile.TimeoutSeconds
 	}
 
-	v.parent.config.Save()
+	saveCmd := v.parent.requestConfigSave()
 
 	// Connect to the profile's connection
 	if err := v.parent.dbManager.Connect(conn); err != nil {
 		v.parent.err = fmt.Errorf("profile %q: %w", profile.Name, err)
 		v.parent.mode = ViewConnection
-		return v, nil
+		return v, saveCmd
 	}
 
+	v.parent.currentProfileName = profile.Name
 	v.parent.mode = ViewBrowser
 	v.parent.initLayout()
 	return v, tea.Batch(
+		saveCmd,
 		v.parent.browserView.loadTables(),
 		v.parent.SetStatus("Profile applied: "+profile.Name),
 	)
 }
 
 // saveCurrentAsProfile saves the current connection and settings as a profile.
-func (v *ProfilesView) saveCurrentAsProfile(name string) {
+func (v *ProfilesView) saveCurrentAsProfile(name string) tea.Cmd {
 	conn := v.parent.dbManager.GetCurrentConnection()
 	if conn == nil {
-		return
+		return nil
 	}
 
 	// Use connection name if available; otherwise save the connection
@@ -237,7 +238,7 @@ func (v *ProfilesView) saveCurrentAsProfile(name string) {
 	}
 
 	v.parent.config.AddProfile(profile)
-	v.parent.config.Save()
+	return v.parent.requestConfigSave()
 }
 
 // nextProfileName generates an auto-incremented profile name.

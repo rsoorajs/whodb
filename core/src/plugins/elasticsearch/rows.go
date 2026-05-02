@@ -18,15 +18,14 @@ package elasticsearch
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"sort"
 
-	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src/common/graphutil"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
+	queryast "github.com/clidey/whodb/core/src/query"
 )
 
 func (p *ElasticSearchPlugin) GetRows(config *engine.PluginConfig, req *engine.GetRowsRequest) (*engine.GetRowsResult, error) {
@@ -62,7 +61,7 @@ func (p *ElasticSearchPlugin) GetRows(config *engine.PluginConfig, req *engine.G
 				continue
 			}
 			order := "asc"
-			if s.Direction == model.SortDirectionDesc {
+			if s.Direction == queryast.SortDirectionDesc {
 				order = "desc"
 			}
 			sortArray = append(sortArray, map[string]any{
@@ -83,7 +82,7 @@ func (p *ElasticSearchPlugin) GetRows(config *engine.PluginConfig, req *engine.G
 	}
 
 	res, err := client.Search(
-		client.Search.WithContext(context.Background()),
+		client.Search.WithContext(config.OperationContext()),
 		client.Search.WithIndex(collection),
 		client.Search.WithBody(&buf),
 		client.Search.WithTrackTotalHits(true),
@@ -145,7 +144,7 @@ func (p *ElasticSearchPlugin) GetRows(config *engine.PluginConfig, req *engine.G
 	return result, nil
 }
 
-func (p *ElasticSearchPlugin) GetRowCount(config *engine.PluginConfig, database, index string, where *model.WhereCondition) (int64, error) {
+func (p *ElasticSearchPlugin) GetRowCount(config *engine.PluginConfig, database, index string, where *queryast.WhereCondition) (int64, error) {
 	client, err := DB(config)
 	if err != nil {
 		return 0, err
@@ -168,7 +167,7 @@ func (p *ElasticSearchPlugin) GetRowCount(config *engine.PluginConfig, database,
 	}
 
 	res, err := client.Count(
-		client.Count.WithContext(context.Background()),
+		client.Count.WithContext(config.OperationContext()),
 		client.Count.WithIndex(index),
 		client.Count.WithBody(&buf),
 	)
@@ -216,7 +215,7 @@ func (p *ElasticSearchPlugin) GetColumnsForTable(config *engine.PluginConfig, sc
 	}
 
 	res, err := client.Search(
-		client.Search.WithContext(context.Background()),
+		client.Search.WithContext(config.OperationContext()),
 		client.Search.WithIndex(storageUnit),
 		client.Search.WithBody(&buf),
 	)

@@ -1,10 +1,12 @@
-query GetProfiles {
-  Profiles {
-    Alias
+query SourceProfiles {
+  SourceProfiles {
+    Alias: DisplayName
     Id
-    Type
-    Hostname
-    Database
+    Type: SourceType
+    Values {
+      Key
+      Value
+    }
     IsEnvironmentDefined
     Source
     SSLConfigured

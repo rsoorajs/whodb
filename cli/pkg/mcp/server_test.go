@@ -85,6 +85,11 @@ func TestDefaultInstructions_ContainsToolNames(t *testing.T) {
 		"whodb_tables",
 		"whodb_columns",
 		"whodb_connections",
+		"whodb_explain",
+		"whodb_diff",
+		"whodb_erd",
+		"whodb_audit",
+		"whodb_suggestions",
 	}
 
 	for _, tool := range expectedTools {
@@ -149,7 +154,7 @@ func TestBuildQueryDescription(t *testing.T) {
 func TestToolEnablement_AllEnabledByDefault(t *testing.T) {
 	te := &ToolEnablement{}
 
-	tools := []string{"query", "schemas", "tables", "columns", "connections", "confirm"}
+	tools := []string{"query", "schemas", "tables", "columns", "connections", "confirm", "pending", "explain", "diff", "erd", "audit", "suggestions"}
 	for _, tool := range tools {
 		if !te.isToolEnabled(tool) {
 			t.Errorf("Tool %s should be enabled by default", tool)

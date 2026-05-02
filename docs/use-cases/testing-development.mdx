@@ -58,7 +58,7 @@ WhoDB includes a powerful mock data generator for creating test datasets:
 
 <Steps>
 <Step title="Open Mock Data Dialog">
-Click the "Generate Mock Data" button in your table view.
+Open the table/header context menu and choose the mock data action, or press `Cmd/Ctrl + Shift + G` while the table has focus.
 
 ![Mock Data Dialog](/images/22-data-view-mock-data-dialog.png)
 
@@ -105,18 +105,18 @@ Use for:
 Example test: "Does pagination work with 100 rows?"
 </Accordion>
 
-<Accordion title="Large (500-1000+ rows)">
+<Accordion title="Larger datasets">
 Use for:
 - Load testing
 - Performance benchmarking
 - Testing query optimization
 - Realistic staging datasets
 
-Example test: "Does search still work with 10,000 rows?"
+Use repeated mock-data runs, imports, or database-native scripts when you need thousands of rows.
 </Accordion>
 </AccordionGroup>
 
-The UI enforces a 200-row limit for data safety, but you can run multiple generations to accumulate more data.
+The current backend limit is 200 rows per mock-data generation run.
 </Step>
 
 <Step title="Generate and Verify">
@@ -772,7 +772,7 @@ Document what mock data you generated and why. This helps team members understan
 </Accordion>
 
 <Accordion title="Automate Test Data Generation">
-Build scripts or use WhoDB API to automatically generate test data for CI/CD pipelines.
+Use `whodb-cli mock-data` or your own seed scripts to generate test data in CI/CD pipelines.
 </Accordion>
 
 <Accordion title="Use Realistic Data Volumes">

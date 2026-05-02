@@ -15,6 +15,7 @@
 package plugins
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -50,7 +51,11 @@ func TestWithConnectionCachesConnections(t *testing.T) {
 
 	var pointers []string
 	operation := func(db *gorm.DB) (string, error) {
-		pointers = append(pointers, fmt.Sprintf("%p", db))
+		sqlDB, err := db.DB()
+		if err != nil {
+			return "", err
+		}
+		pointers = append(pointers, fmt.Sprintf("%p", sqlDB))
 		return "ok", nil
 	}
 
@@ -92,6 +97,42 @@ func TestGetConnectionCacheKeyIgnoresPasswordButTracksAdvancedConfig(t *testing.
 	key3 := getConnectionCacheKey(cfg)
 	if key2 == key3 {
 		t.Fatalf("changing advanced config should alter cache key")
+	}
+}
+
+func TestWithConnectionAppliesOperationContext(t *testing.T) {
+	resetConnectionCache(t)
+	t.Cleanup(func() {
+		resetConnectionCache(t)
+	})
+
+	type ctxKey string
+
+	cfg := &engine.PluginConfig{
+		Credentials: &engine.Credentials{
+			Type:     "Sqlite3",
+			Hostname: "localhost",
+			Username: "user",
+			Password: "pass",
+			Database: "file::memory:?cache=shared",
+		},
+		Context: context.WithValue(context.Background(), ctxKey("request_id"), "ctx-123"),
+	}
+
+	createDB := func(*engine.PluginConfig) (*gorm.DB, error) {
+		return gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	}
+
+	if _, err := WithConnection(cfg, createDB, func(db *gorm.DB) (string, error) {
+		if db.Statement.Context == nil {
+			t.Fatal("expected gorm statement context to be set")
+		}
+		if got := db.Statement.Context.Value(ctxKey("request_id")); got != "ctx-123" {
+			t.Fatalf("expected propagated context value %q, got %v", "ctx-123", got)
+		}
+		return "ok", nil
+	}); err != nil {
+		t.Fatalf("WithConnection returned error: %v", err)
 	}
 }
 

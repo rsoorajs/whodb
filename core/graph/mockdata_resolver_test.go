@@ -13,7 +13,24 @@ import (
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/mockdata"
+	"github.com/clidey/whodb/core/src/source"
 )
+
+func testMockDataContext() context.Context {
+	return context.WithValue(context.Background(), auth.AuthKey_Source, &source.Credentials{
+		SourceType: "Postgres",
+		Values: map[string]string{
+			"Database": "app",
+		},
+	})
+}
+
+func testMockDataRef(name string) *model.SourceObjectRefInput {
+	return &model.SourceObjectRefInput{
+		Kind: model.SourceObjectKindTable,
+		Path: []string{"app", "public", name},
+	}
+}
 
 func TestGenerateMockDataRejectsWhenNotAllowed(t *testing.T) {
 	originalFlag := env.DisableMockDataGeneration
@@ -22,8 +39,7 @@ func TestGenerateMockDataRejectsWhenNotAllowed(t *testing.T) {
 
 	r := &mutationResolver{}
 	_, err := r.GenerateMockData(context.Background(), model.MockDataGenerationInput{
-		Schema:            "public",
-		StorageUnit:       "users",
+		Ref:               testMockDataRef("users"),
 		RowCount:          10,
 		Method:            "default",
 		OverwriteExisting: false,
@@ -35,20 +51,19 @@ func TestGenerateMockDataRejectsWhenNotAllowed(t *testing.T) {
 
 func TestGenerateMockDataHandlesSchemaAndConstraintErrors(t *testing.T) {
 	r := &mutationResolver{}
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	columnsCalled := false
 	mock.GetColumnsForTableFunc = func(_ *engine.PluginConfig, _, _ string) ([]engine.Column, error) {
 		columnsCalled = true
 		return nil, errors.New("failed to fetch columns")
 	}
 
-	ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"})
+	ctx := testMockDataContext()
 	src.MainEngine = &engine.Engine{}
 	src.MainEngine.RegistryPlugin(mock.AsPlugin())
 
 	_, err := r.GenerateMockData(ctx, model.MockDataGenerationInput{
-		Schema:            "public",
-		StorageUnit:       "orders",
+		Ref:               testMockDataRef("orders"),
 		RowCount:          5,
 		Method:            "default",
 		OverwriteExisting: false,
@@ -60,7 +75,7 @@ func TestGenerateMockDataHandlesSchemaAndConstraintErrors(t *testing.T) {
 
 func TestGenerateMockDataSucceedsForNoSQLPlugin(t *testing.T) {
 	r := &mutationResolver{}
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	mock.GetColumnsForTableFunc = func(_ *engine.PluginConfig, _, _ string) ([]engine.Column, error) {
 		return []engine.Column{{Name: "name", Type: "text"}}, nil
 	}
@@ -84,15 +99,14 @@ func TestGenerateMockDataSucceedsForNoSQLPlugin(t *testing.T) {
 		return true, nil
 	}
 
-	ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"})
+	ctx := testMockDataContext()
 	origEngine := src.MainEngine
 	src.MainEngine = &engine.Engine{}
 	src.MainEngine.RegistryPlugin(mock.AsPlugin())
 	t.Cleanup(func() { src.MainEngine = origEngine })
 
 	status, err := r.GenerateMockData(ctx, model.MockDataGenerationInput{
-		Schema:            "public",
-		StorageUnit:       "orders",
+		Ref:               testMockDataRef("orders"),
 		RowCount:          2,
 		Method:            "default",
 		OverwriteExisting: false,
@@ -110,7 +124,7 @@ func TestGenerateMockDataSucceedsForNoSQLPlugin(t *testing.T) {
 
 func TestGenerateMockDataStopsWhenExceedingMax(t *testing.T) {
 	r := &mutationResolver{}
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	mock.GetColumnsForTableFunc = func(_ *engine.PluginConfig, _, _ string) ([]engine.Column, error) {
 		return []engine.Column{{Name: "name", Type: "text"}}, nil
 	}
@@ -119,15 +133,14 @@ func TestGenerateMockDataStopsWhenExceedingMax(t *testing.T) {
 	}
 	mock.BulkAddRowsFunc = func(_ *engine.PluginConfig, _, _ string, _ [][]engine.Record) (bool, error) { return true, nil }
 
-	ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"})
+	ctx := testMockDataContext()
 	origEngine := src.MainEngine
 	src.MainEngine = &engine.Engine{}
 	src.MainEngine.RegistryPlugin(mock.AsPlugin())
 	t.Cleanup(func() { src.MainEngine = origEngine })
 
 	_, err := r.GenerateMockData(ctx, model.MockDataGenerationInput{
-		Schema:            "public",
-		StorageUnit:       "orders",
+		Ref:               testMockDataRef("orders"),
 		RowCount:          mockdata.GetMockDataGenerationMaxRowCount() + 1,
 		Method:            "default",
 		OverwriteExisting: false,
@@ -139,7 +152,7 @@ func TestGenerateMockDataStopsWhenExceedingMax(t *testing.T) {
 
 func TestGenerateMockDataFailsWhenClearTableFails(t *testing.T) {
 	r := &mutationResolver{}
-	mock := testutil.NewPluginMock(engine.DatabaseType("Test"))
+	mock := testutil.NewPluginMock(engine.DatabaseType("Postgres"))
 	mock.GetColumnsForTableFunc = func(_ *engine.PluginConfig, _, _ string) ([]engine.Column, error) {
 		return []engine.Column{{Name: "name", Type: "text"}}, nil
 	}
@@ -155,7 +168,7 @@ func TestGenerateMockDataFailsWhenClearTableFails(t *testing.T) {
 		return true, nil
 	}
 
-	ctx := context.WithValue(context.Background(), auth.AuthKey_Credentials, &engine.Credentials{Type: "Test"})
+	ctx := testMockDataContext()
 	origEngine := src.MainEngine
 	src.MainEngine = &engine.Engine{}
 	src.MainEngine.RegistryPlugin(mock.AsPlugin())
@@ -164,8 +177,7 @@ func TestGenerateMockDataFailsWhenClearTableFails(t *testing.T) {
 	// Overwrite mode requires clearing the table first
 	// If clear fails, the entire operation should fail to prevent duplicate data
 	_, err := r.GenerateMockData(ctx, model.MockDataGenerationInput{
-		Schema:            "public",
-		StorageUnit:       "orders",
+		Ref:               testMockDataRef("orders"),
 		RowCount:          1,
 		Method:            "default",
 		OverwriteExisting: true,

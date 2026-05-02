@@ -30,6 +30,7 @@ import {
   BanknotesIcon as BanknotesIconCE,
   BellAlertIcon as BellAlertIconCE,
   BookOpenIcon as BookOpenIconCE,
+  BuildingOffice2Icon as BuildingOffice2IconCE,
   BuildingStorefrontIcon as BuildingStorefrontIconCE,
   CalculatorIcon as CalculatorIconCE,
   CalendarIcon as CalendarIconCE,
@@ -67,6 +68,7 @@ import {
   LockClosedIcon as LockClosedIconCE,
   ListBulletIcon as ListBulletIconCE,
   MagnifyingGlassIcon as MagnifyingGlassIconCE,
+  PaperClipIcon as PaperClipIconCE,
   PencilIcon as PencilIconCE,
   PencilSquareIcon as PencilSquareIconCE,
   PlayIcon as PlayIconCE,
@@ -112,6 +114,7 @@ export const ArrowUpCircleIcon = iconOverrides.ArrowUpCircleIcon ?? ArrowUpCircl
 export const BanknotesIcon = iconOverrides.BanknotesIcon ?? BanknotesIconCE;
 export const BellAlertIcon = iconOverrides.BellAlertIcon ?? BellAlertIconCE;
 export const BookOpenIcon = iconOverrides.BookOpenIcon ?? BookOpenIconCE;
+export const BuildingOffice2Icon = iconOverrides.BuildingOffice2Icon ?? BuildingOffice2IconCE;
 export const BuildingStorefrontIcon = iconOverrides.BuildingStorefrontIcon ?? BuildingStorefrontIconCE;
 export const CalculatorIcon = iconOverrides.CalculatorIcon ?? CalculatorIconCE;
 export const CalendarIcon = iconOverrides.CalendarIcon ?? CalendarIconCE;
@@ -149,6 +152,7 @@ export const LinkIcon = iconOverrides.LinkIcon ?? LinkIconCE;
 export const LockClosedIcon = iconOverrides.LockClosedIcon ?? LockClosedIconCE;
 export const ListBulletIcon = iconOverrides.ListBulletIcon ?? ListBulletIconCE;
 export const MagnifyingGlassIcon = iconOverrides.MagnifyingGlassIcon ?? MagnifyingGlassIconCE;
+export const PaperClipIcon = iconOverrides.PaperClipIcon ?? PaperClipIconCE;
 export const PencilIcon = iconOverrides.PencilIcon ?? PencilIconCE;
 export const PencilSquareIcon = iconOverrides.PencilSquareIcon ?? PencilSquareIconCE;
 export const PlayIcon = iconOverrides.PlayIcon ?? PlayIconCE;

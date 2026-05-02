@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
+import { useMutation } from "@apollo/client/react";
 import { FC, useCallback, useMemo, useState } from "react";
 import { Badge, Button, cn, toast } from "@clidey/ux";
 import {
     CloudProviderStatus,
     CloudProviderType,
-    useRefreshCloudProviderMutation,
-    useRemoveCloudProviderMutation,
+    GetDiscoveredConnectionsDocument,
+    RefreshCloudProviderDocument,
+    RemoveCloudProviderDocument,
 } from "@graphql";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ProvidersActions, LocalCloudProvider } from "../../store/providers";
@@ -34,6 +36,7 @@ import {
     PlusIcon,
     TrashIcon,
 } from "../heroicons";
+import { removeCloudProviderCache, upsertCloudProviderCache } from "../../utils/apollo-provider-cache";
 
 /**
  * Returns the appropriate badge variant for a provider status.
@@ -77,8 +80,8 @@ export const GcpProvidersSection: FC = () => {
     }, [isModalOpen, editingProviderId, allProviders]);
 
     // GraphQL mutations
-    const [refreshProvider, { loading: refreshLoading }] = useRefreshCloudProviderMutation();
-    const [removeProvider, { loading: removeLoading }] = useRemoveCloudProviderMutation();
+    const [refreshProvider, { loading: refreshLoading }] = useMutation(RefreshCloudProviderDocument);
+    const [removeProvider, { loading: removeLoading }] = useMutation(RemoveCloudProviderDocument);
 
     // Track whether we initiated the add modal
     const [gcpAddMode, setGcpAddMode] = useState(false);
@@ -95,7 +98,13 @@ export const GcpProvidersSection: FC = () => {
 
     const handleRemoveProvider = useCallback(async (id: string, name: string) => {
         try {
-            const { data } = await removeProvider({ variables: { id } });
+            const { data } = await removeProvider({
+                variables: { id },
+                refetchQueries: [GetDiscoveredConnectionsDocument],
+                update(cache) {
+                    removeCloudProviderCache(cache, id);
+                },
+            });
             if (data?.RemoveCloudProvider?.Status) {
                 dispatch(ProvidersActions.removeCloudProvider({ id }));
                 toast.success(t('providerRemoved', { name }));
@@ -109,7 +118,15 @@ export const GcpProvidersSection: FC = () => {
     const handleRefreshProvider = useCallback(async (id: string) => {
         dispatch(ProvidersActions.setProviderStatus({ id, status: CloudProviderStatus.Discovering }));
         try {
-            const { data } = await refreshProvider({ variables: { id } });
+            const { data } = await refreshProvider({
+                variables: { id },
+                refetchQueries: [GetDiscoveredConnectionsDocument],
+                update(cache, result) {
+                    if (result.data?.RefreshCloudProvider) {
+                        upsertCloudProviderCache(cache, result.data.RefreshCloudProvider);
+                    }
+                },
+            });
             if (data?.RefreshCloudProvider) {
                 dispatch(ProvidersActions.updateCloudProvider(data.RefreshCloudProvider as LocalCloudProvider));
                 toast.success(t('refreshComplete', { count: data.RefreshCloudProvider.DiscoveredCount }));

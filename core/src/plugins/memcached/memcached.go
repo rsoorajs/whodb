@@ -19,34 +19,18 @@ package memcached
 import (
 	"context"
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
+	"github.com/clidey/whodb/core/src/query"
 )
 
 // MemcachedPlugin implements PluginFunctions for Memcached.
 type MemcachedPlugin struct {
 	engine.BasePlugin
-}
-
-var memcachedOperators = map[string]string{
-	"=":           "=",
-	"!=":          "!=",
-	"<>":          "!=",
-	">":           ">",
-	">=":          ">=",
-	"<":           "<",
-	"<=":          "<=",
-	"CONTAINS":    "CONTAINS",
-	"STARTS WITH": "STARTS WITH",
-	"ENDS WITH":   "ENDS WITH",
-	"IN":          "IN",
-	"NOT IN":      "NOT IN",
 }
 
 // IsAvailable checks if the Memcached server is reachable.
@@ -165,7 +149,7 @@ func (p *MemcachedPlugin) GetRows(
 }
 
 // GetRowCount returns the count of items for a key (always 0 or 1 for Memcached).
-func (p *MemcachedPlugin) GetRowCount(config *engine.PluginConfig, schema, storageUnit string, where *model.WhereCondition) (int64, error) {
+func (p *MemcachedPlugin) GetRowCount(config *engine.PluginConfig, schema, storageUnit string, where *query.WhereCondition) (int64, error) {
 	client, err := DB(config)
 	if err != nil {
 		return 0, err
@@ -195,22 +179,6 @@ func (p *MemcachedPlugin) FormatValue(val any) string {
 	return fmt.Sprintf("%v", val)
 }
 
-// GetDatabaseMetadata returns Memcached metadata for frontend configuration.
-func (p *MemcachedPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
-	ops := make([]string, 0, len(memcachedOperators))
-	for op := range memcachedOperators {
-		ops = append(ops, op)
-	}
-	sort.Strings(ops)
-	return &engine.DatabaseMetadata{
-		DatabaseType:    engine.DatabaseType_Memcached,
-		TypeDefinitions: []engine.TypeDefinition{},
-		Operators:       ops,
-		AliasMap:        map[string]string{},
-		Capabilities:    engine.Capabilities{},
-	}
-}
-
 func init() {
 	engine.RegisterPlugin(NewMemcachedPlugin())
 }
@@ -232,7 +200,7 @@ func memcachedColumns() []engine.Column {
 }
 
 // filterMemcachedRows applies a where condition to memcached rows.
-func filterMemcachedRows(rows [][]string, where *model.WhereCondition) [][]string {
+func filterMemcachedRows(rows [][]string, where *query.WhereCondition) [][]string {
 	condition, err := convertWhereCondition(where)
 	if err != nil {
 		return rows
@@ -268,13 +236,13 @@ type memcachedFilter struct {
 	Value    string
 }
 
-func convertWhereCondition(where *model.WhereCondition) (map[string]memcachedFilter, error) {
+func convertWhereCondition(where *query.WhereCondition) (map[string]memcachedFilter, error) {
 	if where == nil {
 		return nil, nil
 	}
 
 	switch where.Type {
-	case model.WhereConditionTypeAtomic:
+	case query.WhereConditionTypeAtomic:
 		if where.Atomic == nil {
 			return nil, fmt.Errorf("atomic condition must have an atomicwherecondition")
 		}

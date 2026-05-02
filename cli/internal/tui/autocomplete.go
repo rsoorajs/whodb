@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,56 @@ type tableInfo struct {
 const (
 	minSuggestionHeight = 3
 	maxSuggestionHeight = 12
+)
+
+var (
+	identifierTokenPattern = regexp.MustCompile(`[A-Za-z0-9_\.` + "`" + `]+$`)
+	fromTrailingPattern    = regexp.MustCompile(`\bFROM\s*$`)
+	joinTrailingPattern    = regexp.MustCompile(`\bJOIN\s*$`)
+	fromPartialPattern     = regexp.MustCompile(`\bFROM\s+\w*$`)
+	joinPartialPattern     = regexp.MustCompile(`\bJOIN\s+\w*$`)
+	operatorContextPattern = regexp.MustCompile(`(?i)\b(?:WHERE|AND|OR|ON)\s+[\w.]+\s+$`)
+	fromTablePattern       = regexp.MustCompile(`(?i)\bFROM\s+(?:` + "`" + `?(\w+)` + "`" + `?\.)?` + "`" + `?(\w+)` + "`" + `?(?:\s+(?:AS\s+)?` + "`" + `?(\w+)` + "`" + `?)?`)
+	joinTablePattern       = regexp.MustCompile(`(?i)\bJOIN\s+(?:` + "`" + `?(\w+)` + "`" + `?\.)?` + "`" + `?(\w+)` + "`" + `?(?:\s+(?:AS\s+)?` + "`" + `?(\w+)` + "`" + `?)?`)
+	sqlKeywordSet          = map[string]struct{}{
+		"SELECT": {}, "FROM": {}, "WHERE": {}, "AND": {}, "OR": {}, "JOIN": {},
+		"LEFT": {}, "RIGHT": {}, "INNER": {}, "OUTER": {}, "ON": {}, "AS": {},
+		"BY": {}, "ORDER": {}, "GROUP": {},
+	}
+	sqlKeywordSuggestions  = buildKeywordSuggestions()
+	sqlFunctionSuggestions = []suggestion{
+		{label: "COUNT", typ: suggestionTypeFunction, detail: "COUNT(expr)", apply: "COUNT()", priority: 3},
+		{label: "SUM", typ: suggestionTypeFunction, detail: "SUM(expr)", apply: "SUM()", priority: 3},
+		{label: "AVG", typ: suggestionTypeFunction, detail: "AVG(expr)", apply: "AVG()", priority: 3},
+		{label: "MIN", typ: suggestionTypeFunction, detail: "MIN(expr)", apply: "MIN()", priority: 3},
+		{label: "MAX", typ: suggestionTypeFunction, detail: "MAX(expr)", apply: "MAX()", priority: 3},
+		{label: "COALESCE", typ: suggestionTypeFunction, detail: "COALESCE(expr1, expr2)", apply: "COALESCE()", priority: 3},
+		{label: "CAST", typ: suggestionTypeFunction, detail: "CAST(expr AS type)", apply: "CAST()", priority: 3},
+		{label: "CONCAT", typ: suggestionTypeFunction, detail: "CONCAT(expr, ...)", apply: "CONCAT()", priority: 3},
+	}
+	sqlSnippetSuggestions = []suggestion{
+		{label: "JOIN ... ON ...", typ: suggestionTypeSnippet, detail: "Snippet: JOIN with ON", apply: "JOIN schema.table alias ON alias.column = other.column", priority: 5},
+		{label: "LEFT JOIN ... ON ...", typ: suggestionTypeSnippet, detail: "Snippet: LEFT JOIN with ON", apply: "LEFT JOIN schema.table alias ON alias.column = other.column", priority: 5},
+		{label: "WHERE IN (...)", typ: suggestionTypeSnippet, detail: "Snippet: WHERE IN", apply: "WHERE column IN (value1, value2)", priority: 5},
+		{label: "GROUP BY ...", typ: suggestionTypeSnippet, detail: "Snippet: GROUP BY", apply: "GROUP BY column1, column2", priority: 5},
+		{label: "SELECT DISTINCT ...", typ: suggestionTypeSnippet, detail: "Snippet: SELECT DISTINCT", apply: "SELECT DISTINCT column FROM schema.table", priority: 5},
+	}
+	sqlOperatorSuggestions = []suggestion{
+		{label: "=", typ: suggestionTypeOperator, detail: "Equal", apply: "= ", priority: 2},
+		{label: "!=", typ: suggestionTypeOperator, detail: "Not equal", apply: "!= ", priority: 2},
+		{label: "<>", typ: suggestionTypeOperator, detail: "Not equal", apply: "<> ", priority: 2},
+		{label: ">", typ: suggestionTypeOperator, detail: "Greater than", apply: "> ", priority: 2},
+		{label: "<", typ: suggestionTypeOperator, detail: "Less than", apply: "< ", priority: 2},
+		{label: ">=", typ: suggestionTypeOperator, detail: "Greater or equal", apply: ">= ", priority: 2},
+		{label: "<=", typ: suggestionTypeOperator, detail: "Less or equal", apply: "<= ", priority: 2},
+		{label: "LIKE", typ: suggestionTypeOperator, detail: "Pattern match", apply: "LIKE ", priority: 2},
+		{label: "NOT LIKE", typ: suggestionTypeOperator, detail: "Negated pattern", apply: "NOT LIKE ", priority: 2},
+		{label: "IN", typ: suggestionTypeOperator, detail: "In set", apply: "IN ()", priority: 2},
+		{label: "NOT IN", typ: suggestionTypeOperator, detail: "Not in set", apply: "NOT IN ()", priority: 2},
+		{label: "BETWEEN", typ: suggestionTypeOperator, detail: "Range", apply: "BETWEEN  AND ", priority: 2},
+		{label: "IS NULL", typ: suggestionTypeOperator, detail: "Is null", apply: "IS NULL", priority: 2},
+		{label: "IS NOT NULL", typ: suggestionTypeOperator, detail: "Is not null", apply: "IS NOT NULL", priority: 2},
+	}
 )
 
 // autocompleteDebounceDelay is the delay before triggering autocomplete after a keystroke.
@@ -152,8 +202,7 @@ func (v *EditorView) updateAutocomplete(text string, pos int) {
 	}
 
 	beforeCursor := text[:pos]
-	tokenMatch := regexp.MustCompile(`[A-Za-z0-9_\.` + "`" + `]+$`).FindString(beforeCursor)
-	token := tokenMatch
+	token := identifierTokenPattern.FindString(beforeCursor)
 
 	// Parse context first to understand what we're working with
 	ctx := v.parseSQLContext(text, pos)
@@ -187,7 +236,7 @@ func (v *EditorView) updateAutocomplete(text string, pos int) {
 
 // loadSuggestionsForContext loads all possible suggestions based on SQL context
 func (v *EditorView) loadSuggestionsForContext(ctx sqlContext, fullText string) {
-	v.allSuggestions = []suggestion{}
+	v.allSuggestions = v.allSuggestions[:0]
 
 	switch ctx.contextType {
 	case suggestionTypeSchema:
@@ -441,106 +490,19 @@ func (v *EditorView) addMixedSuggestions(ctx sqlContext, fullText string) {
 }
 
 func (v *EditorView) addKeywordSuggestions() {
-	keywords := []string{
-		"SELECT", "FROM", "WHERE", "JOIN", "INNER", "LEFT", "RIGHT", "OUTER", "FULL",
-		"ON", "AND", "OR", "NOT", "NULL", "TRUE", "FALSE", "ORDER", "BY", "GROUP",
-		"HAVING", "LIMIT", "OFFSET", "INSERT", "UPDATE", "DELETE", "CREATE", "DROP",
-		"ALTER", "TABLE", "INDEX", "VIEW", "DATABASE", "SCHEMA", "INTO", "VALUES",
-		"SET", "AS", "DISTINCT", "COUNT", "SUM", "AVG", "MAX", "MIN", "CASE", "WHEN",
-		"THEN", "ELSE", "END", "IF", "EXISTS", "LIKE", "IN", "BETWEEN", "IS", "ASC",
-		"DESC", "UNION", "ALL", "ANY", "SOME", "WITH", "RECURSIVE", "CASCADE",
-		"CONSTRAINT", "PRIMARY", "KEY", "FOREIGN", "REFERENCES", "UNIQUE", "CHECK",
-		"DEFAULT", "TRUNCATE", "EXPLAIN", "ANALYZE", "GRANT", "REVOKE", "COMMIT",
-		"ROLLBACK", "TRANSACTION", "BEGIN", "START",
-	}
-
-	for _, kw := range keywords {
-		v.allSuggestions = append(v.allSuggestions, suggestion{
-			label:  kw,
-			typ:    suggestionTypeKeyword,
-			detail: "SQL Keyword",
-			apply:  kw,
-		})
-	}
+	v.allSuggestions = append(v.allSuggestions, sqlKeywordSuggestions...)
 }
 
 func (v *EditorView) addFunctionSuggestions() {
-	functions := []struct {
-		name   string
-		detail string
-	}{
-		{"COUNT", "COUNT(expr)"},
-		{"SUM", "SUM(expr)"},
-		{"AVG", "AVG(expr)"},
-		{"MIN", "MIN(expr)"},
-		{"MAX", "MAX(expr)"},
-		{"COALESCE", "COALESCE(expr1, expr2)"},
-		{"CAST", "CAST(expr AS type)"},
-		{"CONCAT", "CONCAT(expr, ...)"},
-	}
-
-	for _, fn := range functions {
-		v.allSuggestions = append(v.allSuggestions, suggestion{
-			label:  fn.name,
-			typ:    suggestionTypeFunction,
-			detail: fn.detail,
-			apply:  fn.name + "()",
-		})
-	}
+	v.allSuggestions = append(v.allSuggestions, sqlFunctionSuggestions...)
 }
 
 func (v *EditorView) addSnippetSuggestions() {
-	snippets := []struct {
-		label  string
-		detail string
-		apply  string
-	}{
-		{"JOIN ... ON ...", "Snippet: JOIN with ON", "JOIN schema.table alias ON alias.column = other.column"},
-		{"LEFT JOIN ... ON ...", "Snippet: LEFT JOIN with ON", "LEFT JOIN schema.table alias ON alias.column = other.column"},
-		{"WHERE IN (...)", "Snippet: WHERE IN", "WHERE column IN (value1, value2)"},
-		{"GROUP BY ...", "Snippet: GROUP BY", "GROUP BY column1, column2"},
-		{"SELECT DISTINCT ...", "Snippet: SELECT DISTINCT", "SELECT DISTINCT column FROM schema.table"},
-	}
-
-	for _, snip := range snippets {
-		v.allSuggestions = append(v.allSuggestions, suggestion{
-			label:  snip.label,
-			typ:    suggestionTypeSnippet,
-			detail: snip.detail,
-			apply:  snip.apply,
-		})
-	}
+	v.allSuggestions = append(v.allSuggestions, sqlSnippetSuggestions...)
 }
 
 func (v *EditorView) addOperatorSuggestions() {
-	operators := []struct {
-		label  string
-		detail string
-		apply  string
-	}{
-		{"=", "Equal", "= "},
-		{"!=", "Not equal", "!= "},
-		{"<>", "Not equal", "<> "},
-		{">", "Greater than", "> "},
-		{"<", "Less than", "< "},
-		{">=", "Greater or equal", ">= "},
-		{"<=", "Less or equal", "<= "},
-		{"LIKE", "Pattern match", "LIKE "},
-		{"NOT LIKE", "Negated pattern", "NOT LIKE "},
-		{"IN", "In set", "IN ()"},
-		{"NOT IN", "Not in set", "NOT IN ()"},
-		{"BETWEEN", "Range", "BETWEEN  AND "},
-		{"IS NULL", "Is null", "IS NULL"},
-		{"IS NOT NULL", "Is not null", "IS NOT NULL"},
-	}
-	for _, op := range operators {
-		v.allSuggestions = append(v.allSuggestions, suggestion{
-			label:  op.label,
-			typ:    suggestionTypeOperator,
-			detail: op.detail,
-			apply:  op.apply,
-		})
-	}
+	v.allSuggestions = append(v.allSuggestions, sqlOperatorSuggestions...)
 }
 
 func (v *EditorView) getCurrentSchema() string {
@@ -559,10 +521,9 @@ func (v *EditorView) getCurrentSchema() string {
 
 func (v *EditorView) filterSuggestions(prefix string) {
 	if prefix == "" {
-		v.filteredSuggestions = make([]suggestion, len(v.allSuggestions))
-		copy(v.filteredSuggestions, v.allSuggestions)
+		v.filteredSuggestions = append(v.filteredSuggestions[:0], v.allSuggestions...)
 	} else {
-		v.filteredSuggestions = []suggestion{}
+		v.filteredSuggestions = v.filteredSuggestions[:0]
 		lowerPrefix := strings.ToLower(prefix)
 
 		for _, sug := range v.allSuggestions {
@@ -573,31 +534,16 @@ func (v *EditorView) filterSuggestions(prefix string) {
 			}
 
 			// For qualified names (table.column), also check the part after the dot
-			if strings.Contains(sug.label, ".") {
-				parts := strings.Split(sug.label, ".")
-				if len(parts) > 1 && strings.HasPrefix(strings.ToLower(parts[len(parts)-1]), lowerPrefix) {
-					v.filteredSuggestions = append(v.filteredSuggestions, sug)
-				}
+			if lastDot := strings.LastIndex(sug.label, "."); lastDot >= 0 &&
+				strings.HasPrefix(strings.ToLower(sug.label[lastDot+1:]), lowerPrefix) {
+				v.filteredSuggestions = append(v.filteredSuggestions, sug)
 			}
 		}
 	}
 
 	// Assign priority by type for sorting (lower = shown first)
 	for i := range v.filteredSuggestions {
-		switch v.filteredSuggestions[i].typ {
-		case suggestionTypeColumn:
-			v.filteredSuggestions[i].priority = 0
-		case suggestionTypeTable, suggestionTypeSchema:
-			v.filteredSuggestions[i].priority = 1
-		case suggestionTypeOperator:
-			v.filteredSuggestions[i].priority = 2
-		case suggestionTypeFunction:
-			v.filteredSuggestions[i].priority = 3
-		case suggestionTypeKeyword:
-			v.filteredSuggestions[i].priority = 4
-		case suggestionTypeSnippet:
-			v.filteredSuggestions[i].priority = 5
-		}
+		v.filteredSuggestions[i].priority = suggestionPriority(v.filteredSuggestions[i].typ)
 	}
 	sort.SliceStable(v.filteredSuggestions, func(i, j int) bool {
 		return v.filteredSuggestions[i].priority < v.filteredSuggestions[j].priority
@@ -674,7 +620,7 @@ func (v *EditorView) acceptSuggestion() {
 		afterCursor := text[v.cursorPos:]
 
 		// Find the token to replace before cursor
-		tokenMatch := regexp.MustCompile(`[A-Za-z0-9_\.` + "`" + `]+$`).FindString(beforeCursor)
+		tokenMatch := identifierTokenPattern.FindString(beforeCursor)
 
 		// Calculate replacement position and new cursor position
 		var newText string
@@ -721,7 +667,7 @@ func (v *EditorView) parseSQLContext(text string, pos int) sqlContext {
 	tablesInQuery := v.extractTablesAndAliases(text)
 
 	// Check for dot notation
-	tokenMatch := regexp.MustCompile(`[A-Za-z0-9_\.` + "`" + `]+$`).FindString(beforeCursor)
+	tokenMatch := identifierTokenPattern.FindString(beforeCursor)
 	if strings.Contains(tokenMatch, ".") {
 		parts := strings.Split(tokenMatch, ".")
 		if len(parts) >= 2 {
@@ -752,16 +698,16 @@ func (v *EditorView) parseSQLContext(text string, pos int) sqlContext {
 	}
 
 	// Check if after FROM or JOIN
-	if regexp.MustCompile(`\bFROM\s*$`).MatchString(beforeUpper) ||
-		regexp.MustCompile(`\bJOIN\s*$`).MatchString(beforeUpper) {
+	if fromTrailingPattern.MatchString(beforeUpper) ||
+		joinTrailingPattern.MatchString(beforeUpper) {
 		return sqlContext{
 			contextType:   suggestionTypeSchema,
 			tablesInQuery: tablesInQuery,
 		}
 	}
 
-	if regexp.MustCompile(`\bFROM\s+\w*$`).MatchString(beforeUpper) ||
-		regexp.MustCompile(`\bJOIN\s+\w*$`).MatchString(beforeUpper) {
+	if fromPartialPattern.MatchString(beforeUpper) ||
+		joinPartialPattern.MatchString(beforeUpper) {
 		return sqlContext{
 			contextType:   suggestionTypeTable,
 			tablesInQuery: tablesInQuery,
@@ -777,8 +723,7 @@ func (v *EditorView) parseSQLContext(text string, pos int) sqlContext {
 	if ((lastWhere > -1 && lastWhere > lastFrom) || (lastOn > -1)) && len(tablesInQuery) > 0 {
 		// Check if cursor is right after a column name (space after identifier)
 		// Pattern: "WHERE column_name " or "AND column_name " — suggest operators
-		operatorPattern := regexp.MustCompile(`(?i)\b(?:WHERE|AND|OR|ON)\s+[\w.]+\s+$`)
-		if operatorPattern.MatchString(beforeCursor) {
+		if operatorContextPattern.MatchString(beforeCursor) {
 			return sqlContext{
 				contextType:   suggestionTypeOperator,
 				tablesInQuery: tablesInQuery,
@@ -838,12 +783,7 @@ func (v *EditorView) parseSQLContext(text string, pos int) sqlContext {
 func (v *EditorView) extractTablesAndAliases(text string) []tableInfo {
 	tables := []tableInfo{}
 
-	patterns := []*regexp.Regexp{
-		regexp.MustCompile(`(?i)\bFROM\s+(?:` + "`" + `?(\w+)` + "`" + `?\.)?` + "`" + `?(\w+)` + "`" + `?(?:\s+(?:AS\s+)?` + "`" + `?(\w+)` + "`" + `?)?`),
-		regexp.MustCompile(`(?i)\bJOIN\s+(?:` + "`" + `?(\w+)` + "`" + `?\.)?` + "`" + `?(\w+)` + "`" + `?(?:\s+(?:AS\s+)?` + "`" + `?(\w+)` + "`" + `?)?`),
-	}
-
-	for _, pattern := range patterns {
+	for _, pattern := range []*regexp.Regexp{fromTablePattern, joinTablePattern} {
 		matches := pattern.FindAllStringSubmatch(text, -1)
 		for _, match := range matches {
 			if len(match) >= 3 {
@@ -869,12 +809,8 @@ func (v *EditorView) extractTablesAndAliases(text string) []tableInfo {
 }
 
 func (v *EditorView) isKeyword(word string) bool {
-	keywords := map[string]bool{
-		"SELECT": true, "FROM": true, "WHERE": true, "AND": true, "OR": true,
-		"JOIN": true, "LEFT": true, "RIGHT": true, "INNER": true, "OUTER": true,
-		"ON": true, "AS": true, "BY": true, "ORDER": true, "GROUP": true,
-	}
-	return keywords[strings.ToUpper(word)]
+	_, ok := sqlKeywordSet[strings.ToUpper(word)]
+	return ok
 }
 
 func getLastWord(text string) string {
@@ -907,4 +843,50 @@ func getLastWord(text string) string {
 	}
 
 	return strings.Trim(lastWord, "`")
+}
+
+func suggestionPriority(typ suggestionType) int {
+	switch typ {
+	case suggestionTypeColumn:
+		return 0
+	case suggestionTypeTable, suggestionTypeSchema:
+		return 1
+	case suggestionTypeOperator:
+		return 2
+	case suggestionTypeFunction:
+		return 3
+	case suggestionTypeKeyword:
+		return 4
+	case suggestionTypeSnippet:
+		return 5
+	default:
+		return 6
+	}
+}
+
+func buildKeywordSuggestions() []suggestion {
+	keywords := []string{
+		"SELECT", "FROM", "WHERE", "JOIN", "INNER", "LEFT", "RIGHT", "OUTER", "FULL",
+		"ON", "AND", "OR", "NOT", "NULL", "TRUE", "FALSE", "ORDER", "BY", "GROUP",
+		"HAVING", "LIMIT", "OFFSET", "INSERT", "UPDATE", "DELETE", "CREATE", "DROP",
+		"ALTER", "TABLE", "INDEX", "VIEW", "DATABASE", "SCHEMA", "INTO", "VALUES",
+		"SET", "AS", "DISTINCT", "COUNT", "SUM", "AVG", "MAX", "MIN", "CASE", "WHEN",
+		"THEN", "ELSE", "END", "IF", "EXISTS", "LIKE", "IN", "BETWEEN", "IS", "ASC",
+		"DESC", "UNION", "ALL", "ANY", "SOME", "WITH", "RECURSIVE", "CASCADE",
+		"CONSTRAINT", "PRIMARY", "KEY", "FOREIGN", "REFERENCES", "UNIQUE", "CHECK",
+		"DEFAULT", "TRUNCATE", "EXPLAIN", "ANALYZE", "GRANT", "REVOKE", "COMMIT",
+		"ROLLBACK", "TRANSACTION", "BEGIN", "START",
+	}
+
+	suggestions := make([]suggestion, 0, len(keywords))
+	for _, kw := range keywords {
+		suggestions = append(suggestions, suggestion{
+			label:    kw,
+			typ:      suggestionTypeKeyword,
+			detail:   "SQL Keyword",
+			apply:    kw,
+			priority: 4,
+		})
+	}
+	return suggestions
 }

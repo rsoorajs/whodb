@@ -351,6 +351,18 @@ func GetConfiguredChatProviders() []env.ChatProvider {
 	return providers
 }
 
+// SupplementalCredentialResolver resolves credentials for a provider ID not found in env config.
+// EE registers one at boot to look up platform-managed providers from the database.
+type SupplementalCredentialResolver func(providerId string) (token string, endpoint string, found bool)
+
+var supplementalResolver SupplementalCredentialResolver
+
+// RegisterSupplementalCredentialResolver allows EE to register a callback that resolves
+// credentials from the platform database when the provider is not in env config.
+func RegisterSupplementalCredentialResolver(fn SupplementalCredentialResolver) {
+	supplementalResolver = fn
+}
+
 // ResolveProviderCredentials looks up a provider by ID and resolves credentials.
 // Request-level values take precedence over environment-configured values.
 func ResolveProviderCredentials(providerId, requestToken, requestEndpoint, requestModelType string) env.ResolvedCredentials {
@@ -372,7 +384,16 @@ func ResolveProviderCredentials(providerId, requestToken, requestEndpoint, reque
 		if result.Endpoint == "" {
 			result.Endpoint = provider.Endpoint
 		}
-		break
+		return result
+	}
+	if result.Token == "" && supplementalResolver != nil {
+		token, endpoint, found := supplementalResolver(providerId)
+		if found {
+			result.Token = token
+			if result.Endpoint == "" {
+				result.Endpoint = endpoint
+			}
+		}
 	}
 	return result
 }

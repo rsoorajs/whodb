@@ -39,15 +39,14 @@ Let's start with an overview of the Scratchpad, WhoDB's powerful query editor:
 
 The Scratchpad provides:
 
-**Code Editor**: On the left, a full-featured SQL editor with:
+**Code Editor**: The SQL editor at the top of each cell includes:
 - Syntax highlighting for SQL keywords
 - Line numbers for easy reference
-- Automatic indentation
 - Multi-cell support for organizing complex analyses
 
 ![Scratchpad Code Editor](/images/28-scratchpad-code-editor.png)
 
-**Results Panel**: On the right, displaying query results:
+**Results Panel**: Results appear below the cell after execution:
 - Results shown in a paginated grid
 - Column headers and data types
 - Row counts and pagination controls
@@ -55,11 +54,11 @@ The Scratchpad provides:
 
 ![Scratchpad Query Results](/images/29-scratchpad-query-results.png)
 
-**Action Buttons**: Execute, save, and manage queries:
-- Run Query: Execute the selected SQL
-- Save Query: Store frequently-used queries
-- Clear: Reset the editor
-- Multiple cell support for batch operations
+**Cell Controls**: Use the visible cell controls to:
+- Run the current query
+- Add another cell
+- Clear the editor
+- Open query history for SQL already executed in that cell
 
 ## Step 1: Simple SELECT Statements
 
@@ -624,7 +623,7 @@ SELECT * FROM users WHERE id = 123;
 SELECT * FROM users WHERE phone_number = '555-1234';
 ```
 
-Check which columns have indexes in the Explore view. Filter on indexed columns for better performance.
+Use **Describe** on the Storage Unit card or query your database catalogs to check indexed columns. Filter on indexed columns for better performance.
 
 ### Avoid SELECT *
 
@@ -672,18 +671,18 @@ Create multiple cells for:
 
 Organize your analysis logically, making it reproducible and understandable.
 
-## Saving Frequently Used Queries
+## Reusing Frequently Used Queries
 
-The cell options menu lets you save queries:
+Scratchpad stores query history for each cell after you run SQL:
 
 ![Scratchpad Cell Options Menu](/images/32-scratchpad-cell-options-menu.png)
 
-Save queries you run repeatedly:
+Use history for queries you run repeatedly:
 - Common analysis queries
 - Troubleshooting queries
 - Performance monitoring queries
 
-Access saved queries from the history panel:
+Access previous queries from the history panel:
 
 ![Scratchpad Query History](/images/33-scratchpad-query-history.png)
 

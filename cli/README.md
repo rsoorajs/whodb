@@ -13,9 +13,21 @@ An interactive, production-ready command-line interface for WhoDB with a Claude 
 - **Responsive Data Viewer** - Paginated results with horizontal column scrolling
 - **Column Selection** - Choose which columns are visible in results
 - **Export Capabilities** - Export to CSV and Excel formats
+- **Schema Diff** - Compare schema metadata across environments in the CLI and TUI
+- **Cloud Discovery** - Inspect configured cloud providers and discovered cloud-managed resources from the CLI
+- **Discovered Connect** - Prefill connect/save flows directly from discovered cloud resources
+- **ERD Graph Output** - Inspect backend graph metadata from the CLI or TUI
+- **Explain Plans** - Run database-native `EXPLAIN` from the CLI or TUI
+- **Backend Query Suggestions** - Shared onboarding suggestions in the CLI and TUI editor
+- **Bookmarks and Profiles** - Shared saved queries and connection profiles across CLI and TUI
+- **Workspace Restore** - Resume your last reconnectable TUI session on startup
 - **Query History** - Persistent history with re-execution
 - **Shell Completion** - Bash/Zsh/Fish install plus PowerShell script generation
-- **Programmatic Mode** - JSON/CSV/plain output for scripting and automation
+- **Programmatic Mode** - JSON/NDJSON/CSV/plain output plus streamed query/export paths for scripting and automation
+- **Agent Manifest** - Machine-readable command, source, MCP, workflow, and safety metadata
+- **Database Doctor** - Redacted connection and metadata diagnostics for support and AI agents
+- **Built-in Runbooks** - Repeatable workflows for connection checks, schema audits, and schema diffs
+- **Assistant Integration Installer** - Install bundled WhoDB skills, agents, MCP configs, and rule files into local assistant directories
 - **MCP Server** - Model Context Protocol server for AI assistants (Claude, Cursor, etc.)
 
 ## Installation
@@ -138,6 +150,32 @@ printf "%s\n" "$PGPASSWORD" | whodb-cli connect \
   --password
 ```
 
+#### PostgreSQL with SSL
+
+```bash
+whodb-cli connect \
+  --type postgres \
+  --host localhost \
+  --port 5432 \
+  --user postgres \
+  --database mydb \
+  --ssl-mode verify-ca \
+  --ssl-ca ./ca.pem
+```
+
+#### Discovered Cloud Resource
+
+```bash
+# Open the TUI form prefilled from discovery
+whodb-cli connect --discovered aws-prod-us-west-2/prod-db
+
+# One-shot connect when you already know the missing credentials
+whodb-cli connect \
+  --discovered aws-prod-us-west-2/prod-db \
+  --user postgres \
+  --database app
+```
+
 #### MySQL
 
 ```bash
@@ -230,6 +268,11 @@ Flags:
 - `--schema`: Preferred schema (optional)
 - `--name`: Connection name (saves for later use)
 - `--password`: Read password from stdin when not using a TTY (pipe a single line)
+- `--ssl-mode`: SSL mode for the selected database type
+- `--ssl-ca`: Path to a CA certificate PEM file
+- `--ssl-cert`: Path to a client certificate PEM file
+- `--ssl-key`: Path to a client private key PEM file
+- `--ssl-server-name`: Override server name used for SSL hostname verification
 
 On a TTY, you will be prompted for the password with input hidden.
 
@@ -244,10 +287,28 @@ whodb-cli query "SQL" [flags]
 Flags:
 
 - `--connection, -c`: Connection name to use (optional; if omitted, the first available connection is used)
-- `--format, -f`: Output format: `auto`, `table`, `plain`, `json`, `csv`
+- `--format, -f`: Output format: `auto`, `table`, `plain`, `json`, `ndjson`, `csv`
+- `--stream`: Stream result rows incrementally (supported for `plain`, `json`, `ndjson`, and `csv`)
 - `--quiet, -q`: Suppress informational messages
 
 `auto` uses table output for terminals and plain output for pipes.
+`ndjson` writes one JSON object per result row.
+
+### suggestions
+
+Show backend-generated query suggestions for a connection.
+
+```bash
+whodb-cli suggestions --connection my-postgres
+whodb-cli suggestions --connection my-postgres --format json
+```
+
+Flags:
+
+- `--connection, -c`: Connection name to use
+- `--schema, -s`: Schema to use for suggestion generation
+- `--format, -f`: Output format: `table`, `plain`, `json`, `ndjson`, `csv`
+- `--quiet, -q`: Suppress informational messages
 
 ### completion
 
@@ -283,6 +344,145 @@ Install paths (bash/zsh rc files updated automatically):
 ## Programmatic Commands
 
 These commands output structured data for scripting, automation, and AI integration.
+
+- Query and list commands such as `query`, `schemas`, `tables`, `columns`, `connections list`, and `history list/search` keep their existing raw JSON array output.
+- Action and analysis commands such as `connections add/remove/test`, `history clear`, `audit`, `mock-data`, `diff`, `erd`, `bookmarks save/delete`, and `profiles save/delete` return a JSON envelope with `command`, `success`, and `data` when you pass `--format json`.
+- `query --stream` supports `plain`, `json`, `ndjson`, and `csv`. `export --stream` supports CSV only.
+
+### agent schema
+
+Emit a machine-readable manifest of WhoDB's agent-facing surface. The manifest includes source types, connection fields, programmatic commands, MCP tools, safety modes, and built-in workflows.
+
+```bash
+whodb-cli agent schema --format json
+```
+
+Flags:
+- `--format, -f`: Output format: `json`
+
+### doctor
+
+Run redacted connection, schema, and metadata diagnostics for one connection.
+
+```bash
+whodb-cli doctor --connection my-postgres
+whodb-cli doctor --connection my-postgres --schema public --format json
+```
+
+Flags:
+- `--connection, -c`: Connection name to inspect
+- `--schema, -s`: Schema override for metadata checks
+- `--format, -f`: Output format: `table` or `json`
+- `--quiet, -q`: Suppress informational messages
+
+### runbooks
+
+List, describe, and run built-in database workflows. Built-in runbooks are intentionally limited to WhoDB operations.
+
+```bash
+# List available workflows
+whodb-cli runbooks list
+
+# Inspect a workflow
+whodb-cli runbooks describe schema-audit
+
+# Show planned steps without executing
+whodb-cli runbooks run schema-audit --connection my-postgres --dry-run
+
+# Run a schema audit
+whodb-cli runbooks run schema-audit --connection my-postgres --schema public --format json
+
+# Compare two environments
+whodb-cli runbooks run schema-diff --from staging --to prod --format json
+```
+
+Built-in runbooks:
+- `connection-doctor`: Runs the same diagnostics as `doctor`
+- `schema-audit`: Loads storage units and runs data-quality checks
+- `schema-diff`: Compares schema metadata between two connections
+
+Flags:
+- `--format, -f`: Output format: `table` or `json`
+- `--quiet, -q`: Suppress informational messages
+- `run --connection, -c`: Connection name for `connection-doctor` and `schema-audit`
+- `run --schema, -s`: Schema override
+- `run --from`: Source connection for `schema-diff`
+- `run --to`: Target connection for `schema-diff`
+- `run --from-schema`: Source schema override for `schema-diff`
+- `run --to-schema`: Target schema override for `schema-diff`
+- `run --dry-run`: Show planned steps without executing
+
+### skills
+
+List bundled WhoDB assistant skills and install native assistant integrations.
+
+```bash
+# List bundled skills and agents
+whodb-cli skills list
+whodb-cli skills list --format json
+
+# Install all skills into an explicit skills directory
+whodb-cli skills install --target-dir ~/.codex/skills
+
+# Install one skill
+whodb-cli skills install query-builder --target-dir ~/.codex/skills
+
+# Install skills and bundled agents for Claude Code
+whodb-cli skills install --target claude-code --include-agents
+
+# Install native MCP configuration for an assistant
+whodb-cli skills install --target cursor
+whodb-cli skills install --target vscode
+whodb-cli skills install --target gemini-cli
+
+# Preview files without modifying disk
+whodb-cli skills install --target cursor --dry-run
+```
+
+Supported targets:
+
+| Target | Files installed |
+|--------|-----------------|
+| `codex` | Skills under `~/.codex/skills` |
+| `claude-code` | Skills under `~/.claude/skills`, plus Markdown agents under `~/.claude/agents` with `--include-agents` |
+| `cursor` | `~/.cursor/mcp.json` |
+| `vscode` | VS Code user `mcp.json` |
+| `github-copilot` | GitHub Copilot CLI `~/.copilot/mcp-config.json` |
+| `gemini-cli` | `~/.gemini/extensions/whodb/gemini-extension.json` and `GEMINI.md` |
+| `windsurf` | `~/.codeium/mcp_config.json` |
+| `opencode` | `~/.config/opencode/opencode.json` with `mcp.whodb` |
+| `cline` | Cline MCP settings plus `~/Documents/Cline/Rules/whodb.md` |
+| `zed` | `~/.config/zed/settings.json` with `context_servers.whodb` |
+| `continue` | `~/.continue/config.yaml` |
+| `aider` | `~/.aider.conf.yml` plus `~/.aider/whodb-conventions.md` |
+
+Existing JSON and JSONC configuration files are merged in place and rewritten as formatted JSON.
+Before an existing JSON or YAML assistant config is rewritten, the original file is saved beside it as `<filename>.whodb.bak`.
+Use `--dry-run` to preview created or updated files and any backup paths without writing changes.
+
+Flags:
+- `--format, -f`: Output format: `table` or `json`
+- `--quiet, -q`: Suppress informational messages
+- `install --target`: Assistant target to install. Supported values are listed above
+- `install --target-dir`: Directory where skills should be installed
+- `install --agents-dir`: Directory where agents should be installed
+- `install --include-agents`: Install bundled Markdown agents as well as skills. With `--target`, this is supported for `claude-code`; use `--agents-dir` for any custom agent destination
+- `install --force`: Overwrite existing installed files
+- `install --dry-run`: Show files that would be written without modifying disk
+
+### explain
+
+Run `EXPLAIN` using the current database plugin's native explain prefix.
+
+```bash
+whodb-cli explain --connection my-postgres "SELECT * FROM users"
+whodb-cli explain --connection my-postgres --format json "SELECT * FROM users"
+```
+
+Flags:
+- `--connection, -c`: Connection name to use
+- `--format, -f`: Output format: `auto`, `table`, `plain`, `json`, `ndjson`, `csv`
+- `--quiet, -q`: Suppress informational messages
 
 ### schemas
 
@@ -335,17 +535,89 @@ Manage saved connections.
 whodb-cli connections list --format json
 
 # Test a connection
-whodb-cli connections test my-postgres
+whodb-cli connections test my-postgres --format json
 
 # Add a connection
-whodb-cli connections add --name prod --type postgres --host db.example.com --port 5432 --user app --database mydb
+whodb-cli connections add --name prod --type postgres --host db.example.com --port 5432 --user app --database mydb --format json
 
 # Remove a connection
-whodb-cli connections remove prod
+whodb-cli connections remove prod --format json
 ```
 
 Flags (applies to all subcommands):
 - `--format, -f`: Output format: `auto`, `table`, `plain`, `json`, `csv`
+- `--quiet, -q`: Suppress informational messages
+
+### cloud
+
+Inspect configured cloud providers and discovered resources.
+
+Cloud provider support follows the shared provider flags:
+- `WHODB_ENABLE_AWS_PROVIDER=true`
+- `WHODB_ENABLE_AZURE_PROVIDER=true`
+- `WHODB_ENABLE_GCP_PROVIDER=true`
+
+```bash
+# List configured providers
+whodb-cli cloud providers list
+
+# Test or refresh providers
+whodb-cli cloud providers test aws-prod-us-west-2
+whodb-cli cloud providers refresh --all
+
+# List discovered resources
+whodb-cli cloud connections list
+whodb-cli cloud connections list --provider aws-prod-us-west-2
+
+# Use a discovered resource in the normal connect/save flows
+whodb-cli connect --discovered aws-prod-us-west-2/prod-db
+whodb-cli connections add --from-discovered aws-prod-us-west-2/prod-db --user alice --database app
+```
+
+### diff
+
+Compare schema metadata between two connections.
+
+By default, `diff` uses each connection's configured schema when one exists.
+For database-scoped connections such as MySQL and MariaDB, it uses the
+connection's configured database when no schema flag is provided.
+
+```bash
+# Compare two connections using their default schemas
+whodb-cli diff --from staging --to prod
+
+# Compare the same schema on both sides
+whodb-cli diff --from staging --to prod --schema public
+
+# Compare Postgres to MySQL using each connection's configured namespace
+whodb-cli diff --from dev-e2e_postgres-1 --to dev-e2e_mysql-1
+
+# Emit machine-readable JSON
+whodb-cli diff --from staging --to prod --format json
+```
+
+Flags:
+- `--from`: Source connection name (required)
+- `--to`: Target connection name (required)
+- `--schema`: Schema name to compare on both sides
+- `--from-schema`: Source schema name
+- `--to-schema`: Target schema name
+- `--format, -f`: Output format: `table` or `json`
+- `--quiet, -q`: Suppress informational messages
+
+### erd
+
+Render the same backend graph metadata used by the TUI ER diagram view.
+
+```bash
+whodb-cli erd --connection my-postgres
+whodb-cli erd --connection my-postgres --schema public --format json
+```
+
+Flags:
+- `--connection, -c`: Connection name to use
+- `--schema, -s`: Schema name
+- `--format, -f`: Output format: `text` or `json`
 - `--quiet, -q`: Suppress informational messages
 
 ### export
@@ -371,6 +643,7 @@ Flags:
 - `--format, -f`: Export format: `csv` or `excel` (auto-detected from filename if omitted)
 - `--output, -o`: Output file path (required)
 - `--delimiter, -d`: CSV delimiter (default: comma)
+- `--stream`: Stream CSV exports incrementally to the output file
 - `--quiet, -q`: Suppress informational messages
 
 ### history
@@ -385,13 +658,36 @@ whodb-cli history list --limit 20 --format json
 whodb-cli history search "SELECT.*users"
 
 # Clear history
-whodb-cli history clear
+whodb-cli history clear --format json
 ```
 
 Flags:
 - `--limit, -l`: Limit number of results (0 = no limit)
 - `--format, -f`: Output format: `auto`, `table`, `plain`, `json`, `csv`
 - `--quiet, -q`: Suppress informational messages
+
+### bookmarks
+
+Manage the same saved query bookmarks used by the TUI editor.
+
+```bash
+whodb-cli bookmarks list
+whodb-cli bookmarks save recent-users "SELECT * FROM users ORDER BY id DESC"
+whodb-cli bookmarks load recent-users
+whodb-cli bookmarks delete recent-users --format json
+```
+
+### profiles
+
+Manage the same saved connection profiles used by the TUI.
+
+```bash
+whodb-cli profiles list
+whodb-cli profiles save production --connection prod --theme Dracula --page-size 100 --timeout 30
+whodb-cli profiles show production --format json
+whodb-cli profiles delete production --format json
+whodb-cli --profile production
+```
 
 ## MCP Server
 
@@ -418,6 +714,18 @@ This starts an MCP server that exposes these tools:
 | `whodb_query` | Execute SQL queries (results include `column_types`) |
 | `whodb_confirm` | Confirm pending write operations (only when confirm-writes is enabled) |
 | `whodb_pending` | List pending write confirmations (only when confirm-writes is enabled) |
+| `whodb_explain` | Run database-native `EXPLAIN` for a SQL query |
+| `whodb_diff` | Compare schema metadata between two connections |
+| `whodb_erd` | Inspect backend graph/ERD metadata |
+| `whodb_audit` | Run data quality audits for a schema or table |
+| `whodb_suggestions` | Get backend-generated starter queries |
+
+It also exposes these resources:
+
+| Resource | Description |
+|----------|-------------|
+| `whodb://connections` | Available connection names |
+| `whodb://agent/schema` | Machine-readable WhoDB agent capability manifest |
 
 Write operations require confirmation by default. Use `--allow-write` to disable confirmations, or `--read-only` to block writes entirely.
 
@@ -852,6 +1160,10 @@ cli/
 │   ├── tables.go       # List tables
 │   ├── columns.go      # Describe columns
 │   ├── connections.go  # Connection management
+│   ├── agent.go        # Agent capability manifest
+│   ├── doctor.go       # Connection diagnostics
+│   ├── runbooks.go     # Built-in workflows
+│   ├── skills.go       # Skill and assistant integration installer
 │   ├── export.go       # Data export
 │   ├── history.go      # Query history
 │   ├── mcp.go          # MCP server command
@@ -870,8 +1182,12 @@ cli/
 │   │   ├── columns_view.go
 │   │   ├── schema_view.go
 │   │   └── messages.go
+│   ├── agentmanifest/  # Agent capability manifest builder
 │   ├── config/         # Unified config.json + keyring storage
 │   ├── database/       # Database manager
+│   ├── doctor/         # Connection diagnostics
+│   ├── runbooks/       # Built-in workflow execution
+│   ├── skillinstaller/ # Bundled skill and assistant integration installation
 │   └── history/        # Query history
 ├── pkg/
 │   ├── mcp/            # MCP server implementation

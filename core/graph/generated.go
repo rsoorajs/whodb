@@ -103,15 +103,6 @@ type ComplexityRoot struct {
 		TenantID    func(childComplexity int) int
 	}
 
-	Capabilities struct {
-		SupportsChat           func(childComplexity int) int
-		SupportsDatabaseSwitch func(childComplexity int) int
-		SupportsGraph          func(childComplexity int) int
-		SupportsModifiers      func(childComplexity int) int
-		SupportsSchema         func(childComplexity int) int
-		SupportsScratchpad     func(childComplexity int) int
-	}
-
 	Column struct {
 		IsForeignKey     func(childComplexity int) int
 		IsPrimary        func(childComplexity int) int
@@ -124,65 +115,14 @@ type ComplexityRoot struct {
 		Type             func(childComplexity int) int
 	}
 
-	ConnectableDatabase struct {
-		Extra                       func(childComplexity int) int
-		Fields                      func(childComplexity int) int
-		ID                          func(childComplexity int) int
-		IsAWSManaged                func(childComplexity int) int
-		Label                       func(childComplexity int) int
-		PluginType                  func(childComplexity int) int
-		RequiredFields              func(childComplexity int) int
-		SslModes                    func(childComplexity int) int
-		SupportsDatabaseSwitching   func(childComplexity int) int
-		SupportsMockData            func(childComplexity int) int
-		SupportsModifiers           func(childComplexity int) int
-		SupportsSchema              func(childComplexity int) int
-		SupportsScratchpad          func(childComplexity int) int
-		UsesDatabaseInsteadOfSchema func(childComplexity int) int
-		UsesSchemaForGraph          func(childComplexity int) int
-	}
-
-	ConnectableDatabaseFields struct {
-		Database   func(childComplexity int) int
-		Hostname   func(childComplexity int) int
-		Password   func(childComplexity int) int
-		SearchPath func(childComplexity int) int
-		Username   func(childComplexity int) int
-	}
-
-	ConnectableDatabaseRequiredFields struct {
-		Database func(childComplexity int) int
-		Hostname func(childComplexity int) int
-		Password func(childComplexity int) int
-		Username func(childComplexity int) int
-	}
-
-	ConnectableDatabaseSSLMode struct {
-		Aliases func(childComplexity int) int
-		Value   func(childComplexity int) int
-	}
-
-	DatabaseMetadata struct {
-		AliasMap        func(childComplexity int) int
-		Capabilities    func(childComplexity int) int
-		DatabaseType    func(childComplexity int) int
-		Operators       func(childComplexity int) int
-		TypeDefinitions func(childComplexity int) int
-	}
-
-	DatabaseQuerySuggestion struct {
-		Category    func(childComplexity int) int
-		Description func(childComplexity int) int
-	}
-
 	DiscoveredConnection struct {
-		DatabaseType func(childComplexity int) int
 		ID           func(childComplexity int) int
 		Metadata     func(childComplexity int) int
 		Name         func(childComplexity int) int
 		ProviderID   func(childComplexity int) int
 		ProviderType func(childComplexity int) int
 		Region       func(childComplexity int) int
+		SourceType   func(childComplexity int) int
 		Status       func(childComplexity int) int
 	}
 
@@ -265,17 +205,6 @@ type ComplexityRoot struct {
 		Source    func(childComplexity int) int
 	}
 
-	LoginProfile struct {
-		Alias                func(childComplexity int) int
-		Database             func(childComplexity int) int
-		Hostname             func(childComplexity int) int
-		ID                   func(childComplexity int) int
-		IsEnvironmentDefined func(childComplexity int) int
-		SSLConfigured        func(childComplexity int) int
-		Source               func(childComplexity int) int
-		Type                 func(childComplexity int) int
-	}
-
 	MockDataDependencyAnalysis struct {
 		Error           func(childComplexity int) int
 		GenerationOrder func(childComplexity int) int
@@ -306,20 +235,20 @@ type ComplexityRoot struct {
 		AddAWSProvider               func(childComplexity int, input model.AWSProviderInput) int
 		AddAzureProvider             func(childComplexity int, input model.AzureProviderInput) int
 		AddGCPProvider               func(childComplexity int, input model.GCPProviderInput) int
-		AddRow                       func(childComplexity int, schema string, storageUnit string, values []*model.RecordInput) int
-		AddStorageUnit               func(childComplexity int, schema string, storageUnit string, fields []*model.RecordInput) int
-		DeleteRow                    func(childComplexity int, schema string, storageUnit string, values []*model.RecordInput) int
+		AddSourceRow                 func(childComplexity int, ref model.SourceObjectRefInput, values []*model.RecordInput) int
+		CreateSourceObject           func(childComplexity int, parent *model.SourceObjectRefInput, name string, fields []*model.RecordInput) int
+		DeleteSourceRow              func(childComplexity int, ref model.SourceObjectRefInput, values []*model.RecordInput) int
 		ExecuteConfirmedSQL          func(childComplexity int, query string, operationType string) int
-		GenerateAzureADToken         func(childComplexity int, providerID string, databaseType string) int
+		GenerateAzureADToken         func(childComplexity int, providerID string, sourceType string) int
 		GenerateChatTitle            func(childComplexity int, input model.GenerateChatTitleInput) int
 		GenerateCloudSQLIAMAuthToken func(childComplexity int, providerID string, username string) int
 		GenerateMockData             func(childComplexity int, input model.MockDataGenerationInput) int
 		GenerateRDSAuthToken         func(childComplexity int, providerID string, endpoint string, port int, region string, username string) int
-		ImportPreview                func(childComplexity int, file graphql.Upload, options model.ImportFileOptions, schema *string, storageUnit *string, useHeaderMapping *bool) int
+		ImportPreview                func(childComplexity int, file graphql.Upload, options model.ImportFileOptions, ref *model.SourceObjectRefInput, useHeaderMapping *bool) int
 		ImportSQL                    func(childComplexity int, input model.ImportSQLInput) int
-		ImportTableFile              func(childComplexity int, input model.ImportFileInput) int
-		Login                        func(childComplexity int, credentials model.LoginCredentials) int
-		LoginWithProfile             func(childComplexity int, profile model.LoginProfileInput) int
+		ImportSourceObjectFile       func(childComplexity int, input model.ImportFileInput) int
+		LoginSource                  func(childComplexity int, credentials model.SourceLoginInput) int
+		LoginWithSourceProfile       func(childComplexity int, profile model.SourceProfileLoginInput) int
 		Logout                       func(childComplexity int) int
 		RefreshAzureProvider         func(childComplexity int, id string) int
 		RefreshCloudProvider         func(childComplexity int, id string) int
@@ -333,44 +262,45 @@ type ComplexityRoot struct {
 		UpdateAzureProvider          func(childComplexity int, id string, input model.AzureProviderInput) int
 		UpdateGCPProvider            func(childComplexity int, id string, input model.GCPProviderInput) int
 		UpdateSettings               func(childComplexity int, newSettings model.SettingsConfigInput) int
-		UpdateStorageUnit            func(childComplexity int, schema string, storageUnit string, values []*model.RecordInput, updatedColumns []string) int
+		UpdateSourceObject           func(childComplexity int, ref model.SourceObjectRefInput, values []*model.RecordInput, updatedColumns []string) int
 	}
 
 	Query struct {
-		AIChat                      func(childComplexity int, providerID *string, modelType string, token *string, schema string, input model.ChatInput) int
+		AIChat                      func(childComplexity int, providerID *string, modelType string, token *string, ref *model.SourceObjectRefInput, input model.ChatInput) int
 		AIModel                     func(childComplexity int, providerID *string, modelType string, token *string) int
 		AIProviders                 func(childComplexity int) int
 		AWSRegions                  func(childComplexity int) int
-		AnalyzeMockDataDependencies func(childComplexity int, schema string, storageUnit string, rowCount int, fkDensityRatio *int) int
+		AnalyzeMockDataDependencies func(childComplexity int, ref model.SourceObjectRefInput, rowCount int, fkDensityRatio *int) int
 		AzureProvider               func(childComplexity int, id string) int
 		AzureProviders              func(childComplexity int) int
 		AzureRegions                func(childComplexity int) int
 		AzureSubscriptions          func(childComplexity int) int
 		CloudProvider               func(childComplexity int, id string) int
 		CloudProviders              func(childComplexity int) int
-		Columns                     func(childComplexity int, schema string, storageUnit string) int
-		ColumnsBatch                func(childComplexity int, schema string, storageUnits []string) int
-		ConnectableDatabases        func(childComplexity int) int
-		Database                    func(childComplexity int, typeArg string) int
-		DatabaseMetadata            func(childComplexity int) int
-		DatabaseQuerySuggestions    func(childComplexity int, schema string) int
 		DiscoveredConnections       func(childComplexity int) int
 		GCPProvider                 func(childComplexity int, id string) int
 		GCPProviders                func(childComplexity int) int
 		GCPRegions                  func(childComplexity int) int
-		Graph                       func(childComplexity int, schema string) int
 		Health                      func(childComplexity int) int
 		LocalAWSProfiles            func(childComplexity int) int
 		LocalGCPProjects            func(childComplexity int) int
 		MockDataMaxRowCount         func(childComplexity int) int
-		Profiles                    func(childComplexity int) int
 		ProviderConnections         func(childComplexity int, providerID string) int
-		RawExecute                  func(childComplexity int, query string) int
-		Row                         func(childComplexity int, schema string, storageUnit string, where *model.WhereCondition, sort []*model.SortCondition, pageSize int, pageOffset int) int
+		RunSourceQuery              func(childComplexity int, query string) int
 		SSLStatus                   func(childComplexity int) int
-		Schema                      func(childComplexity int) int
 		SettingsConfig              func(childComplexity int) int
-		StorageUnit                 func(childComplexity int, schema string) int
+		SourceColumns               func(childComplexity int, ref model.SourceObjectRefInput) int
+		SourceColumnsBatch          func(childComplexity int, refs []*model.SourceObjectRefInput) int
+		SourceContent               func(childComplexity int, ref model.SourceObjectRefInput) int
+		SourceFieldOptions          func(childComplexity int, sourceType string, fieldKey string, values []*model.RecordInput) int
+		SourceGraph                 func(childComplexity int, ref *model.SourceObjectRefInput) int
+		SourceObject                func(childComplexity int, ref model.SourceObjectRefInput) int
+		SourceObjects               func(childComplexity int, parent *model.SourceObjectRefInput, kinds []model.SourceObjectKind) int
+		SourceProfiles              func(childComplexity int) int
+		SourceQuerySuggestions      func(childComplexity int, ref *model.SourceObjectRefInput) int
+		SourceRows                  func(childComplexity int, ref model.SourceObjectRefInput, where *model.WhereCondition, sort []*model.SortCondition, pageSize int, pageOffset int) int
+		SourceSessionMetadata       func(childComplexity int) int
+		SourceTypes                 func(childComplexity int) int
 		UpdateInfo                  func(childComplexity int) int
 		Version                     func(childComplexity int) int
 	}
@@ -395,18 +325,161 @@ type ComplexityRoot struct {
 	SettingsConfig struct {
 		CloudProvidersEnabled func(childComplexity int) int
 		DisableCredentialForm func(childComplexity int) int
+		EnableNewUI           func(childComplexity int) int
 		MaxPageSize           func(childComplexity int) int
 		MetricsEnabled        func(childComplexity int) int
 	}
 
-	StatusResponse struct {
-		Status func(childComplexity int) int
+	SourceConnectionField struct {
+		DefaultValue    func(childComplexity int) int
+		Key             func(childComplexity int) int
+		Kind            func(childComplexity int) int
+		LabelKey        func(childComplexity int) int
+		PlaceholderKey  func(childComplexity int) int
+		Required        func(childComplexity int) int
+		Section         func(childComplexity int) int
+		SupportsOptions func(childComplexity int) int
 	}
 
-	StorageUnit struct {
-		Attributes                  func(childComplexity int) int
-		IsMockDataGenerationAllowed func(childComplexity int) int
-		Name                        func(childComplexity int) int
+	SourceConnectionTraits struct {
+		HostInputMode           func(childComplexity int) int
+		HostInputURLParser      func(childComplexity int) int
+		SupportsCustomCAContent func(childComplexity int) int
+		Transport               func(childComplexity int) int
+	}
+
+	SourceContent struct {
+		FileName   func(childComplexity int) int
+		IsBinary   func(childComplexity int) int
+		MIMEType   func(childComplexity int) int
+		ModifiedAt func(childComplexity int) int
+		SizeBytes  func(childComplexity int) int
+		Text       func(childComplexity int) int
+		Truncated  func(childComplexity int) int
+	}
+
+	SourceContract struct {
+		BrowsePath        func(childComplexity int) int
+		DefaultObjectKind func(childComplexity int) int
+		GraphScopeKind    func(childComplexity int) int
+		Model             func(childComplexity int) int
+		ObjectTypes       func(childComplexity int) int
+		RootActions       func(childComplexity int) int
+		Surfaces          func(childComplexity int) int
+	}
+
+	SourceDiscoveryAdvancedDefault struct {
+		Conditions    func(childComplexity int) int
+		DefaultValue  func(childComplexity int) int
+		Key           func(childComplexity int) int
+		MetadataKey   func(childComplexity int) int
+		ProviderTypes func(childComplexity int) int
+		Value         func(childComplexity int) int
+	}
+
+	SourceDiscoveryMetadataCondition struct {
+		Key   func(childComplexity int) int
+		Value func(childComplexity int) int
+	}
+
+	SourceDiscoveryPrefill struct {
+		AdvancedDefaults func(childComplexity int) int
+	}
+
+	SourceMockDataTraits struct {
+		SupportsRelationalDependencies func(childComplexity int) int
+	}
+
+	SourceObject struct {
+		Actions     func(childComplexity int) int
+		HasChildren func(childComplexity int) int
+		Kind        func(childComplexity int) int
+		Metadata    func(childComplexity int) int
+		Name        func(childComplexity int) int
+		Path        func(childComplexity int) int
+		Ref         func(childComplexity int) int
+	}
+
+	SourceObjectColumns struct {
+		Columns func(childComplexity int) int
+		Ref     func(childComplexity int) int
+	}
+
+	SourceObjectRef struct {
+		Kind    func(childComplexity int) int
+		Locator func(childComplexity int) int
+		Path    func(childComplexity int) int
+	}
+
+	SourceObjectType struct {
+		Actions       func(childComplexity int) int
+		DataShape     func(childComplexity int) int
+		Kind          func(childComplexity int) int
+		PluralLabel   func(childComplexity int) int
+		SingularLabel func(childComplexity int) int
+		Views         func(childComplexity int) int
+	}
+
+	SourcePresentationTraits struct {
+		ProfileLabelStrategy func(childComplexity int) int
+		SchemaFidelity       func(childComplexity int) int
+	}
+
+	SourceProfile struct {
+		DisplayName          func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		IsEnvironmentDefined func(childComplexity int) int
+		SSLConfigured        func(childComplexity int) int
+		Source               func(childComplexity int) int
+		SourceType           func(childComplexity int) int
+		Values               func(childComplexity int) int
+	}
+
+	SourceQuerySuggestion struct {
+		Category    func(childComplexity int) int
+		Description func(childComplexity int) int
+	}
+
+	SourceQueryTraits struct {
+		ExplainMode     func(childComplexity int) int
+		SupportsAnalyze func(childComplexity int) int
+	}
+
+	SourceSSLMode struct {
+		Aliases func(childComplexity int) int
+		Value   func(childComplexity int) int
+	}
+
+	SourceSessionMetadata struct {
+		AliasMap        func(childComplexity int) int
+		Operators       func(childComplexity int) int
+		QueryLanguages  func(childComplexity int) int
+		SourceType      func(childComplexity int) int
+		TypeDefinitions func(childComplexity int) int
+	}
+
+	SourceTraits struct {
+		Connection   func(childComplexity int) int
+		MockData     func(childComplexity int) int
+		Presentation func(childComplexity int) int
+		Query        func(childComplexity int) int
+	}
+
+	SourceType struct {
+		Category         func(childComplexity int) int
+		ConnectionFields func(childComplexity int) int
+		Connector        func(childComplexity int) int
+		Contract         func(childComplexity int) int
+		DiscoveryPrefill func(childComplexity int) int
+		ID               func(childComplexity int) int
+		IsAWSManaged     func(childComplexity int) int
+		Label            func(childComplexity int) int
+		SSLModes         func(childComplexity int) int
+		Traits           func(childComplexity int) int
+	}
+
+	StatusResponse struct {
+		Status func(childComplexity int) int
 	}
 
 	StorageUnitColumns struct {
@@ -435,18 +508,18 @@ type ComplexityRoot struct {
 }
 
 type MutationResolver interface {
-	Login(ctx context.Context, credentials model.LoginCredentials) (*model.StatusResponse, error)
-	LoginWithProfile(ctx context.Context, profile model.LoginProfileInput) (*model.StatusResponse, error)
+	LoginSource(ctx context.Context, credentials model.SourceLoginInput) (*model.StatusResponse, error)
+	LoginWithSourceProfile(ctx context.Context, profile model.SourceProfileLoginInput) (*model.StatusResponse, error)
 	Logout(ctx context.Context) (*model.StatusResponse, error)
 	UpdateSettings(ctx context.Context, newSettings model.SettingsConfigInput) (*model.StatusResponse, error)
-	AddStorageUnit(ctx context.Context, schema string, storageUnit string, fields []*model.RecordInput) (*model.StatusResponse, error)
-	UpdateStorageUnit(ctx context.Context, schema string, storageUnit string, values []*model.RecordInput, updatedColumns []string) (*model.StatusResponse, error)
-	AddRow(ctx context.Context, schema string, storageUnit string, values []*model.RecordInput) (*model.StatusResponse, error)
-	DeleteRow(ctx context.Context, schema string, storageUnit string, values []*model.RecordInput) (*model.StatusResponse, error)
+	CreateSourceObject(ctx context.Context, parent *model.SourceObjectRefInput, name string, fields []*model.RecordInput) (*model.StatusResponse, error)
+	UpdateSourceObject(ctx context.Context, ref model.SourceObjectRefInput, values []*model.RecordInput, updatedColumns []string) (*model.StatusResponse, error)
+	AddSourceRow(ctx context.Context, ref model.SourceObjectRefInput, values []*model.RecordInput) (*model.StatusResponse, error)
+	DeleteSourceRow(ctx context.Context, ref model.SourceObjectRefInput, values []*model.RecordInput) (*model.StatusResponse, error)
 	GenerateMockData(ctx context.Context, input model.MockDataGenerationInput) (*model.MockDataGenerationStatus, error)
 	ImportSQL(ctx context.Context, input model.ImportSQLInput) (*model.ImportResult, error)
-	ImportPreview(ctx context.Context, file graphql.Upload, options model.ImportFileOptions, schema *string, storageUnit *string, useHeaderMapping *bool) (*model.ImportPreview, error)
-	ImportTableFile(ctx context.Context, input model.ImportFileInput) (*model.ImportResult, error)
+	ImportPreview(ctx context.Context, file graphql.Upload, options model.ImportFileOptions, ref *model.SourceObjectRefInput, useHeaderMapping *bool) (*model.ImportPreview, error)
+	ImportSourceObjectFile(ctx context.Context, input model.ImportFileInput) (*model.ImportResult, error)
 	ExecuteConfirmedSQL(ctx context.Context, query string, operationType string) (*model.AIChatMessage, error)
 	GenerateChatTitle(ctx context.Context, input model.GenerateChatTitleInput) (*model.GenerateChatTitleResponse, error)
 	AddAWSProvider(ctx context.Context, input model.AWSProviderInput) (*model.AWSProvider, error)
@@ -464,32 +537,33 @@ type MutationResolver interface {
 	UpdateAzureProvider(ctx context.Context, id string, input model.AzureProviderInput) (*model.AzureProvider, error)
 	TestAzureCredentials(ctx context.Context, input model.AzureProviderInput) (model.CloudProviderStatus, error)
 	RefreshAzureProvider(ctx context.Context, id string) (*model.AzureProvider, error)
-	GenerateAzureADToken(ctx context.Context, providerID string, databaseType string) (string, error)
+	GenerateAzureADToken(ctx context.Context, providerID string, sourceType string) (string, error)
 	GenerateCloudSQLIAMAuthToken(ctx context.Context, providerID string, username string) (string, error)
 }
 type QueryResolver interface {
 	Version(ctx context.Context) (string, error)
 	UpdateInfo(ctx context.Context) (*model.UpdateInfo, error)
 	Health(ctx context.Context) (*model.HealthStatus, error)
-	Profiles(ctx context.Context) ([]*model.LoginProfile, error)
-	Database(ctx context.Context, typeArg string) ([]string, error)
-	Schema(ctx context.Context) ([]string, error)
-	StorageUnit(ctx context.Context, schema string) ([]*model.StorageUnit, error)
-	Row(ctx context.Context, schema string, storageUnit string, where *model.WhereCondition, sort []*model.SortCondition, pageSize int, pageOffset int) (*model.RowsResult, error)
-	Columns(ctx context.Context, schema string, storageUnit string) ([]*model.Column, error)
-	ColumnsBatch(ctx context.Context, schema string, storageUnits []string) ([]*model.StorageUnitColumns, error)
-	RawExecute(ctx context.Context, query string) (*model.RowsResult, error)
-	Graph(ctx context.Context, schema string) ([]*model.GraphUnit, error)
+	SourceProfiles(ctx context.Context) ([]*model.SourceProfile, error)
+	SourceTypes(ctx context.Context) ([]*model.SourceType, error)
+	SourceFieldOptions(ctx context.Context, sourceType string, fieldKey string, values []*model.RecordInput) ([]string, error)
+	SourceSessionMetadata(ctx context.Context) (*model.SourceSessionMetadata, error)
+	SourceObjects(ctx context.Context, parent *model.SourceObjectRefInput, kinds []model.SourceObjectKind) ([]*model.SourceObject, error)
+	SourceObject(ctx context.Context, ref model.SourceObjectRefInput) (*model.SourceObject, error)
+	SourceRows(ctx context.Context, ref model.SourceObjectRefInput, where *model.WhereCondition, sort []*model.SortCondition, pageSize int, pageOffset int) (*model.RowsResult, error)
+	SourceContent(ctx context.Context, ref model.SourceObjectRefInput) (*model.SourceContent, error)
+	SourceColumns(ctx context.Context, ref model.SourceObjectRefInput) ([]*model.Column, error)
+	SourceColumnsBatch(ctx context.Context, refs []*model.SourceObjectRefInput) ([]*model.SourceObjectColumns, error)
+	RunSourceQuery(ctx context.Context, query string) (*model.RowsResult, error)
+	SourceGraph(ctx context.Context, ref *model.SourceObjectRefInput) ([]*model.GraphUnit, error)
 	AIProviders(ctx context.Context) ([]*model.AIProvider, error)
 	AIModel(ctx context.Context, providerID *string, modelType string, token *string) ([]string, error)
-	AIChat(ctx context.Context, providerID *string, modelType string, token *string, schema string, input model.ChatInput) ([]*model.AIChatMessage, error)
+	AIChat(ctx context.Context, providerID *string, modelType string, token *string, ref *model.SourceObjectRefInput, input model.ChatInput) ([]*model.AIChatMessage, error)
 	SettingsConfig(ctx context.Context) (*model.SettingsConfig, error)
 	MockDataMaxRowCount(ctx context.Context) (int, error)
-	AnalyzeMockDataDependencies(ctx context.Context, schema string, storageUnit string, rowCount int, fkDensityRatio *int) (*model.MockDataDependencyAnalysis, error)
-	ConnectableDatabases(ctx context.Context) ([]*model.ConnectableDatabase, error)
-	DatabaseMetadata(ctx context.Context) (*model.DatabaseMetadata, error)
+	AnalyzeMockDataDependencies(ctx context.Context, ref model.SourceObjectRefInput, rowCount int, fkDensityRatio *int) (*model.MockDataDependencyAnalysis, error)
 	SSLStatus(ctx context.Context) (*model.SSLStatus, error)
-	DatabaseQuerySuggestions(ctx context.Context, schema string) ([]*model.DatabaseQuerySuggestion, error)
+	SourceQuerySuggestions(ctx context.Context, ref *model.SourceObjectRefInput) ([]*model.SourceQuerySuggestion, error)
 	CloudProviders(ctx context.Context) ([]model.CloudProvider, error)
 	CloudProvider(ctx context.Context, id string) (model.CloudProvider, error)
 	DiscoveredConnections(ctx context.Context) ([]*model.DiscoveredConnection, error)
@@ -803,43 +877,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.AzureSubscription.TenantID(childComplexity), true
 
-	case "Capabilities.supportsChat":
-		if e.ComplexityRoot.Capabilities.SupportsChat == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Capabilities.SupportsChat(childComplexity), true
-	case "Capabilities.supportsDatabaseSwitch":
-		if e.ComplexityRoot.Capabilities.SupportsDatabaseSwitch == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Capabilities.SupportsDatabaseSwitch(childComplexity), true
-	case "Capabilities.supportsGraph":
-		if e.ComplexityRoot.Capabilities.SupportsGraph == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Capabilities.SupportsGraph(childComplexity), true
-	case "Capabilities.supportsModifiers":
-		if e.ComplexityRoot.Capabilities.SupportsModifiers == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Capabilities.SupportsModifiers(childComplexity), true
-	case "Capabilities.supportsSchema":
-		if e.ComplexityRoot.Capabilities.SupportsSchema == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Capabilities.SupportsSchema(childComplexity), true
-	case "Capabilities.supportsScratchpad":
-		if e.ComplexityRoot.Capabilities.SupportsScratchpad == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Capabilities.SupportsScratchpad(childComplexity), true
-
 	case "Column.IsForeignKey":
 		if e.ComplexityRoot.Column.IsForeignKey == nil {
 			break
@@ -895,216 +932,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Column.Type(childComplexity), true
 
-	case "ConnectableDatabase.extra":
-		if e.ComplexityRoot.ConnectableDatabase.Extra == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabase.Extra(childComplexity), true
-	case "ConnectableDatabase.fields":
-		if e.ComplexityRoot.ConnectableDatabase.Fields == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabase.Fields(childComplexity), true
-	case "ConnectableDatabase.id":
-		if e.ComplexityRoot.ConnectableDatabase.ID == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabase.ID(childComplexity), true
-	case "ConnectableDatabase.isAwsManaged":
-		if e.ComplexityRoot.ConnectableDatabase.IsAWSManaged == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabase.IsAWSManaged(childComplexity), true
-	case "ConnectableDatabase.label":
-		if e.ComplexityRoot.ConnectableDatabase.Label == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabase.Label(childComplexity), true
-	case "ConnectableDatabase.pluginType":
-		if e.ComplexityRoot.ConnectableDatabase.PluginType == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabase.PluginType(childComplexity), true
-	case "ConnectableDatabase.requiredFields":
-		if e.ComplexityRoot.ConnectableDatabase.RequiredFields == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabase.RequiredFields(childComplexity), true
-	case "ConnectableDatabase.sslModes":
-		if e.ComplexityRoot.ConnectableDatabase.SslModes == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabase.SslModes(childComplexity), true
-	case "ConnectableDatabase.supportsDatabaseSwitching":
-		if e.ComplexityRoot.ConnectableDatabase.SupportsDatabaseSwitching == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabase.SupportsDatabaseSwitching(childComplexity), true
-	case "ConnectableDatabase.supportsMockData":
-		if e.ComplexityRoot.ConnectableDatabase.SupportsMockData == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabase.SupportsMockData(childComplexity), true
-	case "ConnectableDatabase.supportsModifiers":
-		if e.ComplexityRoot.ConnectableDatabase.SupportsModifiers == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabase.SupportsModifiers(childComplexity), true
-	case "ConnectableDatabase.supportsSchema":
-		if e.ComplexityRoot.ConnectableDatabase.SupportsSchema == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabase.SupportsSchema(childComplexity), true
-	case "ConnectableDatabase.supportsScratchpad":
-		if e.ComplexityRoot.ConnectableDatabase.SupportsScratchpad == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabase.SupportsScratchpad(childComplexity), true
-	case "ConnectableDatabase.usesDatabaseInsteadOfSchema":
-		if e.ComplexityRoot.ConnectableDatabase.UsesDatabaseInsteadOfSchema == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabase.UsesDatabaseInsteadOfSchema(childComplexity), true
-	case "ConnectableDatabase.usesSchemaForGraph":
-		if e.ComplexityRoot.ConnectableDatabase.UsesSchemaForGraph == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabase.UsesSchemaForGraph(childComplexity), true
-
-	case "ConnectableDatabaseFields.database":
-		if e.ComplexityRoot.ConnectableDatabaseFields.Database == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabaseFields.Database(childComplexity), true
-	case "ConnectableDatabaseFields.hostname":
-		if e.ComplexityRoot.ConnectableDatabaseFields.Hostname == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabaseFields.Hostname(childComplexity), true
-	case "ConnectableDatabaseFields.password":
-		if e.ComplexityRoot.ConnectableDatabaseFields.Password == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabaseFields.Password(childComplexity), true
-	case "ConnectableDatabaseFields.searchPath":
-		if e.ComplexityRoot.ConnectableDatabaseFields.SearchPath == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabaseFields.SearchPath(childComplexity), true
-	case "ConnectableDatabaseFields.username":
-		if e.ComplexityRoot.ConnectableDatabaseFields.Username == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabaseFields.Username(childComplexity), true
-
-	case "ConnectableDatabaseRequiredFields.database":
-		if e.ComplexityRoot.ConnectableDatabaseRequiredFields.Database == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabaseRequiredFields.Database(childComplexity), true
-	case "ConnectableDatabaseRequiredFields.hostname":
-		if e.ComplexityRoot.ConnectableDatabaseRequiredFields.Hostname == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabaseRequiredFields.Hostname(childComplexity), true
-	case "ConnectableDatabaseRequiredFields.password":
-		if e.ComplexityRoot.ConnectableDatabaseRequiredFields.Password == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabaseRequiredFields.Password(childComplexity), true
-	case "ConnectableDatabaseRequiredFields.username":
-		if e.ComplexityRoot.ConnectableDatabaseRequiredFields.Username == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabaseRequiredFields.Username(childComplexity), true
-
-	case "ConnectableDatabaseSSLMode.aliases":
-		if e.ComplexityRoot.ConnectableDatabaseSSLMode.Aliases == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabaseSSLMode.Aliases(childComplexity), true
-	case "ConnectableDatabaseSSLMode.value":
-		if e.ComplexityRoot.ConnectableDatabaseSSLMode.Value == nil {
-			break
-		}
-
-		return e.ComplexityRoot.ConnectableDatabaseSSLMode.Value(childComplexity), true
-
-	case "DatabaseMetadata.aliasMap":
-		if e.ComplexityRoot.DatabaseMetadata.AliasMap == nil {
-			break
-		}
-
-		return e.ComplexityRoot.DatabaseMetadata.AliasMap(childComplexity), true
-	case "DatabaseMetadata.capabilities":
-		if e.ComplexityRoot.DatabaseMetadata.Capabilities == nil {
-			break
-		}
-
-		return e.ComplexityRoot.DatabaseMetadata.Capabilities(childComplexity), true
-	case "DatabaseMetadata.databaseType":
-		if e.ComplexityRoot.DatabaseMetadata.DatabaseType == nil {
-			break
-		}
-
-		return e.ComplexityRoot.DatabaseMetadata.DatabaseType(childComplexity), true
-	case "DatabaseMetadata.operators":
-		if e.ComplexityRoot.DatabaseMetadata.Operators == nil {
-			break
-		}
-
-		return e.ComplexityRoot.DatabaseMetadata.Operators(childComplexity), true
-	case "DatabaseMetadata.typeDefinitions":
-		if e.ComplexityRoot.DatabaseMetadata.TypeDefinitions == nil {
-			break
-		}
-
-		return e.ComplexityRoot.DatabaseMetadata.TypeDefinitions(childComplexity), true
-
-	case "DatabaseQuerySuggestion.category":
-		if e.ComplexityRoot.DatabaseQuerySuggestion.Category == nil {
-			break
-		}
-
-		return e.ComplexityRoot.DatabaseQuerySuggestion.Category(childComplexity), true
-	case "DatabaseQuerySuggestion.description":
-		if e.ComplexityRoot.DatabaseQuerySuggestion.Description == nil {
-			break
-		}
-
-		return e.ComplexityRoot.DatabaseQuerySuggestion.Description(childComplexity), true
-
-	case "DiscoveredConnection.DatabaseType":
-		if e.ComplexityRoot.DiscoveredConnection.DatabaseType == nil {
-			break
-		}
-
-		return e.ComplexityRoot.DiscoveredConnection.DatabaseType(childComplexity), true
 	case "DiscoveredConnection.Id":
 		if e.ComplexityRoot.DiscoveredConnection.ID == nil {
 			break
@@ -1141,6 +968,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.DiscoveredConnection.Region(childComplexity), true
+	case "DiscoveredConnection.SourceType":
+		if e.ComplexityRoot.DiscoveredConnection.SourceType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DiscoveredConnection.SourceType(childComplexity), true
 	case "DiscoveredConnection.Status":
 		if e.ComplexityRoot.DiscoveredConnection.Status == nil {
 			break
@@ -1435,55 +1268,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.LocalGCPProject.Source(childComplexity), true
 
-	case "LoginProfile.Alias":
-		if e.ComplexityRoot.LoginProfile.Alias == nil {
-			break
-		}
-
-		return e.ComplexityRoot.LoginProfile.Alias(childComplexity), true
-	case "LoginProfile.Database":
-		if e.ComplexityRoot.LoginProfile.Database == nil {
-			break
-		}
-
-		return e.ComplexityRoot.LoginProfile.Database(childComplexity), true
-	case "LoginProfile.Hostname":
-		if e.ComplexityRoot.LoginProfile.Hostname == nil {
-			break
-		}
-
-		return e.ComplexityRoot.LoginProfile.Hostname(childComplexity), true
-	case "LoginProfile.Id":
-		if e.ComplexityRoot.LoginProfile.ID == nil {
-			break
-		}
-
-		return e.ComplexityRoot.LoginProfile.ID(childComplexity), true
-	case "LoginProfile.IsEnvironmentDefined":
-		if e.ComplexityRoot.LoginProfile.IsEnvironmentDefined == nil {
-			break
-		}
-
-		return e.ComplexityRoot.LoginProfile.IsEnvironmentDefined(childComplexity), true
-	case "LoginProfile.SSLConfigured":
-		if e.ComplexityRoot.LoginProfile.SSLConfigured == nil {
-			break
-		}
-
-		return e.ComplexityRoot.LoginProfile.SSLConfigured(childComplexity), true
-	case "LoginProfile.Source":
-		if e.ComplexityRoot.LoginProfile.Source == nil {
-			break
-		}
-
-		return e.ComplexityRoot.LoginProfile.Source(childComplexity), true
-	case "LoginProfile.Type":
-		if e.ComplexityRoot.LoginProfile.Type == nil {
-			break
-		}
-
-		return e.ComplexityRoot.LoginProfile.Type(childComplexity), true
-
 	case "MockDataDependencyAnalysis.Error":
 		if e.ComplexityRoot.MockDataDependencyAnalysis.Error == nil {
 			break
@@ -1605,39 +1389,39 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.AddGCPProvider(childComplexity, args["input"].(model.GCPProviderInput)), true
-	case "Mutation.AddRow":
-		if e.ComplexityRoot.Mutation.AddRow == nil {
+	case "Mutation.AddSourceRow":
+		if e.ComplexityRoot.Mutation.AddSourceRow == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_AddRow_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_AddSourceRow_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.AddRow(childComplexity, args["schema"].(string), args["storageUnit"].(string), args["values"].([]*model.RecordInput)), true
-	case "Mutation.AddStorageUnit":
-		if e.ComplexityRoot.Mutation.AddStorageUnit == nil {
+		return e.ComplexityRoot.Mutation.AddSourceRow(childComplexity, args["ref"].(model.SourceObjectRefInput), args["values"].([]*model.RecordInput)), true
+	case "Mutation.CreateSourceObject":
+		if e.ComplexityRoot.Mutation.CreateSourceObject == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_AddStorageUnit_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_CreateSourceObject_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.AddStorageUnit(childComplexity, args["schema"].(string), args["storageUnit"].(string), args["fields"].([]*model.RecordInput)), true
-	case "Mutation.DeleteRow":
-		if e.ComplexityRoot.Mutation.DeleteRow == nil {
+		return e.ComplexityRoot.Mutation.CreateSourceObject(childComplexity, args["parent"].(*model.SourceObjectRefInput), args["name"].(string), args["fields"].([]*model.RecordInput)), true
+	case "Mutation.DeleteSourceRow":
+		if e.ComplexityRoot.Mutation.DeleteSourceRow == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_DeleteRow_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_DeleteSourceRow_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.DeleteRow(childComplexity, args["schema"].(string), args["storageUnit"].(string), args["values"].([]*model.RecordInput)), true
+		return e.ComplexityRoot.Mutation.DeleteSourceRow(childComplexity, args["ref"].(model.SourceObjectRefInput), args["values"].([]*model.RecordInput)), true
 	case "Mutation.ExecuteConfirmedSQL":
 		if e.ComplexityRoot.Mutation.ExecuteConfirmedSQL == nil {
 			break
@@ -1659,7 +1443,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.GenerateAzureADToken(childComplexity, args["providerID"].(string), args["databaseType"].(string)), true
+		return e.ComplexityRoot.Mutation.GenerateAzureADToken(childComplexity, args["providerID"].(string), args["sourceType"].(string)), true
 	case "Mutation.GenerateChatTitle":
 		if e.ComplexityRoot.Mutation.GenerateChatTitle == nil {
 			break
@@ -1714,7 +1498,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.ImportPreview(childComplexity, args["file"].(graphql.Upload), args["options"].(model.ImportFileOptions), args["schema"].(*string), args["storageUnit"].(*string), args["useHeaderMapping"].(*bool)), true
+		return e.ComplexityRoot.Mutation.ImportPreview(childComplexity, args["file"].(graphql.Upload), args["options"].(model.ImportFileOptions), args["ref"].(*model.SourceObjectRefInput), args["useHeaderMapping"].(*bool)), true
 	case "Mutation.ImportSQL":
 		if e.ComplexityRoot.Mutation.ImportSQL == nil {
 			break
@@ -1726,39 +1510,39 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ImportSQL(childComplexity, args["input"].(model.ImportSQLInput)), true
-	case "Mutation.ImportTableFile":
-		if e.ComplexityRoot.Mutation.ImportTableFile == nil {
+	case "Mutation.ImportSourceObjectFile":
+		if e.ComplexityRoot.Mutation.ImportSourceObjectFile == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_ImportTableFile_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_ImportSourceObjectFile_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.ImportTableFile(childComplexity, args["input"].(model.ImportFileInput)), true
-	case "Mutation.Login":
-		if e.ComplexityRoot.Mutation.Login == nil {
+		return e.ComplexityRoot.Mutation.ImportSourceObjectFile(childComplexity, args["input"].(model.ImportFileInput)), true
+	case "Mutation.LoginSource":
+		if e.ComplexityRoot.Mutation.LoginSource == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_Login_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_LoginSource_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.Login(childComplexity, args["credentials"].(model.LoginCredentials)), true
-	case "Mutation.LoginWithProfile":
-		if e.ComplexityRoot.Mutation.LoginWithProfile == nil {
+		return e.ComplexityRoot.Mutation.LoginSource(childComplexity, args["credentials"].(model.SourceLoginInput)), true
+	case "Mutation.LoginWithSourceProfile":
+		if e.ComplexityRoot.Mutation.LoginWithSourceProfile == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_LoginWithProfile_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_LoginWithSourceProfile_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.LoginWithProfile(childComplexity, args["profile"].(model.LoginProfileInput)), true
+		return e.ComplexityRoot.Mutation.LoginWithSourceProfile(childComplexity, args["profile"].(model.SourceProfileLoginInput)), true
 	case "Mutation.Logout":
 		if e.ComplexityRoot.Mutation.Logout == nil {
 			break
@@ -1897,17 +1681,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.UpdateSettings(childComplexity, args["newSettings"].(model.SettingsConfigInput)), true
-	case "Mutation.UpdateStorageUnit":
-		if e.ComplexityRoot.Mutation.UpdateStorageUnit == nil {
+	case "Mutation.UpdateSourceObject":
+		if e.ComplexityRoot.Mutation.UpdateSourceObject == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_UpdateStorageUnit_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_UpdateSourceObject_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.UpdateStorageUnit(childComplexity, args["schema"].(string), args["storageUnit"].(string), args["values"].([]*model.RecordInput), args["updatedColumns"].([]string)), true
+		return e.ComplexityRoot.Mutation.UpdateSourceObject(childComplexity, args["ref"].(model.SourceObjectRefInput), args["values"].([]*model.RecordInput), args["updatedColumns"].([]string)), true
 
 	case "Query.AIChat":
 		if e.ComplexityRoot.Query.AIChat == nil {
@@ -1919,7 +1703,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Query.AIChat(childComplexity, args["providerId"].(*string), args["modelType"].(string), args["token"].(*string), args["schema"].(string), args["input"].(model.ChatInput)), true
+		return e.ComplexityRoot.Query.AIChat(childComplexity, args["providerId"].(*string), args["modelType"].(string), args["token"].(*string), args["ref"].(*model.SourceObjectRefInput), args["input"].(model.ChatInput)), true
 	case "Query.AIModel":
 		if e.ComplexityRoot.Query.AIModel == nil {
 			break
@@ -1953,7 +1737,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Query.AnalyzeMockDataDependencies(childComplexity, args["schema"].(string), args["storageUnit"].(string), args["rowCount"].(int), args["fkDensityRatio"].(*int)), true
+		return e.ComplexityRoot.Query.AnalyzeMockDataDependencies(childComplexity, args["ref"].(model.SourceObjectRefInput), args["rowCount"].(int), args["fkDensityRatio"].(*int)), true
 	case "Query.AzureProvider":
 		if e.ComplexityRoot.Query.AzureProvider == nil {
 			break
@@ -2000,62 +1784,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.CloudProviders(childComplexity), true
-	case "Query.Columns":
-		if e.ComplexityRoot.Query.Columns == nil {
-			break
-		}
-
-		args, err := ec.field_Query_Columns_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.ComplexityRoot.Query.Columns(childComplexity, args["schema"].(string), args["storageUnit"].(string)), true
-	case "Query.ColumnsBatch":
-		if e.ComplexityRoot.Query.ColumnsBatch == nil {
-			break
-		}
-
-		args, err := ec.field_Query_ColumnsBatch_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.ComplexityRoot.Query.ColumnsBatch(childComplexity, args["schema"].(string), args["storageUnits"].([]string)), true
-	case "Query.ConnectableDatabases":
-		if e.ComplexityRoot.Query.ConnectableDatabases == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Query.ConnectableDatabases(childComplexity), true
-	case "Query.Database":
-		if e.ComplexityRoot.Query.Database == nil {
-			break
-		}
-
-		args, err := ec.field_Query_Database_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.ComplexityRoot.Query.Database(childComplexity, args["type"].(string)), true
-	case "Query.DatabaseMetadata":
-		if e.ComplexityRoot.Query.DatabaseMetadata == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Query.DatabaseMetadata(childComplexity), true
-	case "Query.DatabaseQuerySuggestions":
-		if e.ComplexityRoot.Query.DatabaseQuerySuggestions == nil {
-			break
-		}
-
-		args, err := ec.field_Query_DatabaseQuerySuggestions_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.ComplexityRoot.Query.DatabaseQuerySuggestions(childComplexity, args["schema"].(string)), true
 	case "Query.DiscoveredConnections":
 		if e.ComplexityRoot.Query.DiscoveredConnections == nil {
 			break
@@ -2085,17 +1813,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.GCPRegions(childComplexity), true
-	case "Query.Graph":
-		if e.ComplexityRoot.Query.Graph == nil {
-			break
-		}
-
-		args, err := ec.field_Query_Graph_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.ComplexityRoot.Query.Graph(childComplexity, args["schema"].(string)), true
 	case "Query.Health":
 		if e.ComplexityRoot.Query.Health == nil {
 			break
@@ -2121,12 +1838,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.MockDataMaxRowCount(childComplexity), true
-	case "Query.Profiles":
-		if e.ComplexityRoot.Query.Profiles == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Query.Profiles(childComplexity), true
 	case "Query.ProviderConnections":
 		if e.ComplexityRoot.Query.ProviderConnections == nil {
 			break
@@ -2138,57 +1849,146 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.ProviderConnections(childComplexity, args["providerID"].(string)), true
-	case "Query.RawExecute":
-		if e.ComplexityRoot.Query.RawExecute == nil {
+	case "Query.RunSourceQuery":
+		if e.ComplexityRoot.Query.RunSourceQuery == nil {
 			break
 		}
 
-		args, err := ec.field_Query_RawExecute_args(ctx, rawArgs)
+		args, err := ec.field_Query_RunSourceQuery_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Query.RawExecute(childComplexity, args["query"].(string)), true
-	case "Query.Row":
-		if e.ComplexityRoot.Query.Row == nil {
-			break
-		}
-
-		args, err := ec.field_Query_Row_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.ComplexityRoot.Query.Row(childComplexity, args["schema"].(string), args["storageUnit"].(string), args["where"].(*model.WhereCondition), args["sort"].([]*model.SortCondition), args["pageSize"].(int), args["pageOffset"].(int)), true
+		return e.ComplexityRoot.Query.RunSourceQuery(childComplexity, args["query"].(string)), true
 	case "Query.SSLStatus":
 		if e.ComplexityRoot.Query.SSLStatus == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Query.SSLStatus(childComplexity), true
-	case "Query.Schema":
-		if e.ComplexityRoot.Query.Schema == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Query.Schema(childComplexity), true
 	case "Query.SettingsConfig":
 		if e.ComplexityRoot.Query.SettingsConfig == nil {
 			break
 		}
 
 		return e.ComplexityRoot.Query.SettingsConfig(childComplexity), true
-	case "Query.StorageUnit":
-		if e.ComplexityRoot.Query.StorageUnit == nil {
+	case "Query.SourceColumns":
+		if e.ComplexityRoot.Query.SourceColumns == nil {
 			break
 		}
 
-		args, err := ec.field_Query_StorageUnit_args(ctx, rawArgs)
+		args, err := ec.field_Query_SourceColumns_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Query.StorageUnit(childComplexity, args["schema"].(string)), true
+		return e.ComplexityRoot.Query.SourceColumns(childComplexity, args["ref"].(model.SourceObjectRefInput)), true
+	case "Query.SourceColumnsBatch":
+		if e.ComplexityRoot.Query.SourceColumnsBatch == nil {
+			break
+		}
+
+		args, err := ec.field_Query_SourceColumnsBatch_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.SourceColumnsBatch(childComplexity, args["refs"].([]*model.SourceObjectRefInput)), true
+	case "Query.SourceContent":
+		if e.ComplexityRoot.Query.SourceContent == nil {
+			break
+		}
+
+		args, err := ec.field_Query_SourceContent_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.SourceContent(childComplexity, args["ref"].(model.SourceObjectRefInput)), true
+	case "Query.SourceFieldOptions":
+		if e.ComplexityRoot.Query.SourceFieldOptions == nil {
+			break
+		}
+
+		args, err := ec.field_Query_SourceFieldOptions_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.SourceFieldOptions(childComplexity, args["sourceType"].(string), args["fieldKey"].(string), args["values"].([]*model.RecordInput)), true
+	case "Query.SourceGraph":
+		if e.ComplexityRoot.Query.SourceGraph == nil {
+			break
+		}
+
+		args, err := ec.field_Query_SourceGraph_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.SourceGraph(childComplexity, args["ref"].(*model.SourceObjectRefInput)), true
+	case "Query.SourceObject":
+		if e.ComplexityRoot.Query.SourceObject == nil {
+			break
+		}
+
+		args, err := ec.field_Query_SourceObject_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.SourceObject(childComplexity, args["ref"].(model.SourceObjectRefInput)), true
+	case "Query.SourceObjects":
+		if e.ComplexityRoot.Query.SourceObjects == nil {
+			break
+		}
+
+		args, err := ec.field_Query_SourceObjects_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.SourceObjects(childComplexity, args["parent"].(*model.SourceObjectRefInput), args["kinds"].([]model.SourceObjectKind)), true
+	case "Query.SourceProfiles":
+		if e.ComplexityRoot.Query.SourceProfiles == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.SourceProfiles(childComplexity), true
+	case "Query.SourceQuerySuggestions":
+		if e.ComplexityRoot.Query.SourceQuerySuggestions == nil {
+			break
+		}
+
+		args, err := ec.field_Query_SourceQuerySuggestions_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.SourceQuerySuggestions(childComplexity, args["ref"].(*model.SourceObjectRefInput)), true
+	case "Query.SourceRows":
+		if e.ComplexityRoot.Query.SourceRows == nil {
+			break
+		}
+
+		args, err := ec.field_Query_SourceRows_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.SourceRows(childComplexity, args["ref"].(model.SourceObjectRefInput), args["where"].(*model.WhereCondition), args["sort"].([]*model.SortCondition), args["pageSize"].(int), args["pageOffset"].(int)), true
+	case "Query.SourceSessionMetadata":
+		if e.ComplexityRoot.Query.SourceSessionMetadata == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.SourceSessionMetadata(childComplexity), true
+	case "Query.SourceTypes":
+		if e.ComplexityRoot.Query.SourceTypes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.SourceTypes(childComplexity), true
 	case "Query.UpdateInfo":
 		if e.ComplexityRoot.Query.UpdateInfo == nil {
 			break
@@ -2265,6 +2065,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.SettingsConfig.DisableCredentialForm(childComplexity), true
+	case "SettingsConfig.EnableNewUI":
+		if e.ComplexityRoot.SettingsConfig.EnableNewUI == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SettingsConfig.EnableNewUI(childComplexity), true
 	case "SettingsConfig.MaxPageSize":
 		if e.ComplexityRoot.SettingsConfig.MaxPageSize == nil {
 			break
@@ -2278,31 +2084,560 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.SettingsConfig.MetricsEnabled(childComplexity), true
 
+	case "SourceConnectionField.DefaultValue":
+		if e.ComplexityRoot.SourceConnectionField.DefaultValue == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceConnectionField.DefaultValue(childComplexity), true
+	case "SourceConnectionField.Key":
+		if e.ComplexityRoot.SourceConnectionField.Key == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceConnectionField.Key(childComplexity), true
+	case "SourceConnectionField.Kind":
+		if e.ComplexityRoot.SourceConnectionField.Kind == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceConnectionField.Kind(childComplexity), true
+	case "SourceConnectionField.LabelKey":
+		if e.ComplexityRoot.SourceConnectionField.LabelKey == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceConnectionField.LabelKey(childComplexity), true
+	case "SourceConnectionField.PlaceholderKey":
+		if e.ComplexityRoot.SourceConnectionField.PlaceholderKey == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceConnectionField.PlaceholderKey(childComplexity), true
+	case "SourceConnectionField.Required":
+		if e.ComplexityRoot.SourceConnectionField.Required == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceConnectionField.Required(childComplexity), true
+	case "SourceConnectionField.Section":
+		if e.ComplexityRoot.SourceConnectionField.Section == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceConnectionField.Section(childComplexity), true
+	case "SourceConnectionField.SupportsOptions":
+		if e.ComplexityRoot.SourceConnectionField.SupportsOptions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceConnectionField.SupportsOptions(childComplexity), true
+
+	case "SourceConnectionTraits.HostInputMode":
+		if e.ComplexityRoot.SourceConnectionTraits.HostInputMode == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceConnectionTraits.HostInputMode(childComplexity), true
+	case "SourceConnectionTraits.HostInputURLParser":
+		if e.ComplexityRoot.SourceConnectionTraits.HostInputURLParser == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceConnectionTraits.HostInputURLParser(childComplexity), true
+	case "SourceConnectionTraits.SupportsCustomCAContent":
+		if e.ComplexityRoot.SourceConnectionTraits.SupportsCustomCAContent == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceConnectionTraits.SupportsCustomCAContent(childComplexity), true
+	case "SourceConnectionTraits.Transport":
+		if e.ComplexityRoot.SourceConnectionTraits.Transport == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceConnectionTraits.Transport(childComplexity), true
+
+	case "SourceContent.FileName":
+		if e.ComplexityRoot.SourceContent.FileName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceContent.FileName(childComplexity), true
+	case "SourceContent.IsBinary":
+		if e.ComplexityRoot.SourceContent.IsBinary == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceContent.IsBinary(childComplexity), true
+	case "SourceContent.MIMEType":
+		if e.ComplexityRoot.SourceContent.MIMEType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceContent.MIMEType(childComplexity), true
+	case "SourceContent.ModifiedAt":
+		if e.ComplexityRoot.SourceContent.ModifiedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceContent.ModifiedAt(childComplexity), true
+	case "SourceContent.SizeBytes":
+		if e.ComplexityRoot.SourceContent.SizeBytes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceContent.SizeBytes(childComplexity), true
+	case "SourceContent.Text":
+		if e.ComplexityRoot.SourceContent.Text == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceContent.Text(childComplexity), true
+	case "SourceContent.Truncated":
+		if e.ComplexityRoot.SourceContent.Truncated == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceContent.Truncated(childComplexity), true
+
+	case "SourceContract.BrowsePath":
+		if e.ComplexityRoot.SourceContract.BrowsePath == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceContract.BrowsePath(childComplexity), true
+	case "SourceContract.DefaultObjectKind":
+		if e.ComplexityRoot.SourceContract.DefaultObjectKind == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceContract.DefaultObjectKind(childComplexity), true
+	case "SourceContract.GraphScopeKind":
+		if e.ComplexityRoot.SourceContract.GraphScopeKind == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceContract.GraphScopeKind(childComplexity), true
+	case "SourceContract.Model":
+		if e.ComplexityRoot.SourceContract.Model == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceContract.Model(childComplexity), true
+	case "SourceContract.ObjectTypes":
+		if e.ComplexityRoot.SourceContract.ObjectTypes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceContract.ObjectTypes(childComplexity), true
+	case "SourceContract.RootActions":
+		if e.ComplexityRoot.SourceContract.RootActions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceContract.RootActions(childComplexity), true
+	case "SourceContract.Surfaces":
+		if e.ComplexityRoot.SourceContract.Surfaces == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceContract.Surfaces(childComplexity), true
+
+	case "SourceDiscoveryAdvancedDefault.Conditions":
+		if e.ComplexityRoot.SourceDiscoveryAdvancedDefault.Conditions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceDiscoveryAdvancedDefault.Conditions(childComplexity), true
+	case "SourceDiscoveryAdvancedDefault.DefaultValue":
+		if e.ComplexityRoot.SourceDiscoveryAdvancedDefault.DefaultValue == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceDiscoveryAdvancedDefault.DefaultValue(childComplexity), true
+	case "SourceDiscoveryAdvancedDefault.Key":
+		if e.ComplexityRoot.SourceDiscoveryAdvancedDefault.Key == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceDiscoveryAdvancedDefault.Key(childComplexity), true
+	case "SourceDiscoveryAdvancedDefault.MetadataKey":
+		if e.ComplexityRoot.SourceDiscoveryAdvancedDefault.MetadataKey == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceDiscoveryAdvancedDefault.MetadataKey(childComplexity), true
+	case "SourceDiscoveryAdvancedDefault.ProviderTypes":
+		if e.ComplexityRoot.SourceDiscoveryAdvancedDefault.ProviderTypes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceDiscoveryAdvancedDefault.ProviderTypes(childComplexity), true
+	case "SourceDiscoveryAdvancedDefault.Value":
+		if e.ComplexityRoot.SourceDiscoveryAdvancedDefault.Value == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceDiscoveryAdvancedDefault.Value(childComplexity), true
+
+	case "SourceDiscoveryMetadataCondition.Key":
+		if e.ComplexityRoot.SourceDiscoveryMetadataCondition.Key == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceDiscoveryMetadataCondition.Key(childComplexity), true
+	case "SourceDiscoveryMetadataCondition.Value":
+		if e.ComplexityRoot.SourceDiscoveryMetadataCondition.Value == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceDiscoveryMetadataCondition.Value(childComplexity), true
+
+	case "SourceDiscoveryPrefill.AdvancedDefaults":
+		if e.ComplexityRoot.SourceDiscoveryPrefill.AdvancedDefaults == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceDiscoveryPrefill.AdvancedDefaults(childComplexity), true
+
+	case "SourceMockDataTraits.SupportsRelationalDependencies":
+		if e.ComplexityRoot.SourceMockDataTraits.SupportsRelationalDependencies == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceMockDataTraits.SupportsRelationalDependencies(childComplexity), true
+
+	case "SourceObject.Actions":
+		if e.ComplexityRoot.SourceObject.Actions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceObject.Actions(childComplexity), true
+	case "SourceObject.HasChildren":
+		if e.ComplexityRoot.SourceObject.HasChildren == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceObject.HasChildren(childComplexity), true
+	case "SourceObject.Kind":
+		if e.ComplexityRoot.SourceObject.Kind == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceObject.Kind(childComplexity), true
+	case "SourceObject.Metadata":
+		if e.ComplexityRoot.SourceObject.Metadata == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceObject.Metadata(childComplexity), true
+	case "SourceObject.Name":
+		if e.ComplexityRoot.SourceObject.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceObject.Name(childComplexity), true
+	case "SourceObject.Path":
+		if e.ComplexityRoot.SourceObject.Path == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceObject.Path(childComplexity), true
+	case "SourceObject.Ref":
+		if e.ComplexityRoot.SourceObject.Ref == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceObject.Ref(childComplexity), true
+
+	case "SourceObjectColumns.Columns":
+		if e.ComplexityRoot.SourceObjectColumns.Columns == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceObjectColumns.Columns(childComplexity), true
+	case "SourceObjectColumns.Ref":
+		if e.ComplexityRoot.SourceObjectColumns.Ref == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceObjectColumns.Ref(childComplexity), true
+
+	case "SourceObjectRef.Kind":
+		if e.ComplexityRoot.SourceObjectRef.Kind == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceObjectRef.Kind(childComplexity), true
+	case "SourceObjectRef.Locator":
+		if e.ComplexityRoot.SourceObjectRef.Locator == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceObjectRef.Locator(childComplexity), true
+	case "SourceObjectRef.Path":
+		if e.ComplexityRoot.SourceObjectRef.Path == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceObjectRef.Path(childComplexity), true
+
+	case "SourceObjectType.Actions":
+		if e.ComplexityRoot.SourceObjectType.Actions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceObjectType.Actions(childComplexity), true
+	case "SourceObjectType.DataShape":
+		if e.ComplexityRoot.SourceObjectType.DataShape == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceObjectType.DataShape(childComplexity), true
+	case "SourceObjectType.Kind":
+		if e.ComplexityRoot.SourceObjectType.Kind == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceObjectType.Kind(childComplexity), true
+	case "SourceObjectType.PluralLabel":
+		if e.ComplexityRoot.SourceObjectType.PluralLabel == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceObjectType.PluralLabel(childComplexity), true
+	case "SourceObjectType.SingularLabel":
+		if e.ComplexityRoot.SourceObjectType.SingularLabel == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceObjectType.SingularLabel(childComplexity), true
+	case "SourceObjectType.Views":
+		if e.ComplexityRoot.SourceObjectType.Views == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceObjectType.Views(childComplexity), true
+
+	case "SourcePresentationTraits.ProfileLabelStrategy":
+		if e.ComplexityRoot.SourcePresentationTraits.ProfileLabelStrategy == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourcePresentationTraits.ProfileLabelStrategy(childComplexity), true
+	case "SourcePresentationTraits.SchemaFidelity":
+		if e.ComplexityRoot.SourcePresentationTraits.SchemaFidelity == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourcePresentationTraits.SchemaFidelity(childComplexity), true
+
+	case "SourceProfile.DisplayName":
+		if e.ComplexityRoot.SourceProfile.DisplayName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceProfile.DisplayName(childComplexity), true
+	case "SourceProfile.Id":
+		if e.ComplexityRoot.SourceProfile.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceProfile.ID(childComplexity), true
+	case "SourceProfile.IsEnvironmentDefined":
+		if e.ComplexityRoot.SourceProfile.IsEnvironmentDefined == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceProfile.IsEnvironmentDefined(childComplexity), true
+	case "SourceProfile.SSLConfigured":
+		if e.ComplexityRoot.SourceProfile.SSLConfigured == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceProfile.SSLConfigured(childComplexity), true
+	case "SourceProfile.Source":
+		if e.ComplexityRoot.SourceProfile.Source == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceProfile.Source(childComplexity), true
+	case "SourceProfile.SourceType":
+		if e.ComplexityRoot.SourceProfile.SourceType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceProfile.SourceType(childComplexity), true
+	case "SourceProfile.Values":
+		if e.ComplexityRoot.SourceProfile.Values == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceProfile.Values(childComplexity), true
+
+	case "SourceQuerySuggestion.category":
+		if e.ComplexityRoot.SourceQuerySuggestion.Category == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceQuerySuggestion.Category(childComplexity), true
+	case "SourceQuerySuggestion.description":
+		if e.ComplexityRoot.SourceQuerySuggestion.Description == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceQuerySuggestion.Description(childComplexity), true
+
+	case "SourceQueryTraits.ExplainMode":
+		if e.ComplexityRoot.SourceQueryTraits.ExplainMode == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceQueryTraits.ExplainMode(childComplexity), true
+	case "SourceQueryTraits.SupportsAnalyze":
+		if e.ComplexityRoot.SourceQueryTraits.SupportsAnalyze == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceQueryTraits.SupportsAnalyze(childComplexity), true
+
+	case "SourceSSLMode.aliases":
+		if e.ComplexityRoot.SourceSSLMode.Aliases == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceSSLMode.Aliases(childComplexity), true
+	case "SourceSSLMode.value":
+		if e.ComplexityRoot.SourceSSLMode.Value == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceSSLMode.Value(childComplexity), true
+
+	case "SourceSessionMetadata.AliasMap":
+		if e.ComplexityRoot.SourceSessionMetadata.AliasMap == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceSessionMetadata.AliasMap(childComplexity), true
+	case "SourceSessionMetadata.Operators":
+		if e.ComplexityRoot.SourceSessionMetadata.Operators == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceSessionMetadata.Operators(childComplexity), true
+	case "SourceSessionMetadata.QueryLanguages":
+		if e.ComplexityRoot.SourceSessionMetadata.QueryLanguages == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceSessionMetadata.QueryLanguages(childComplexity), true
+	case "SourceSessionMetadata.SourceType":
+		if e.ComplexityRoot.SourceSessionMetadata.SourceType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceSessionMetadata.SourceType(childComplexity), true
+	case "SourceSessionMetadata.TypeDefinitions":
+		if e.ComplexityRoot.SourceSessionMetadata.TypeDefinitions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceSessionMetadata.TypeDefinitions(childComplexity), true
+
+	case "SourceTraits.Connection":
+		if e.ComplexityRoot.SourceTraits.Connection == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceTraits.Connection(childComplexity), true
+	case "SourceTraits.MockData":
+		if e.ComplexityRoot.SourceTraits.MockData == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceTraits.MockData(childComplexity), true
+	case "SourceTraits.Presentation":
+		if e.ComplexityRoot.SourceTraits.Presentation == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceTraits.Presentation(childComplexity), true
+	case "SourceTraits.Query":
+		if e.ComplexityRoot.SourceTraits.Query == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceTraits.Query(childComplexity), true
+
+	case "SourceType.Category":
+		if e.ComplexityRoot.SourceType.Category == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceType.Category(childComplexity), true
+	case "SourceType.ConnectionFields":
+		if e.ComplexityRoot.SourceType.ConnectionFields == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceType.ConnectionFields(childComplexity), true
+	case "SourceType.Connector":
+		if e.ComplexityRoot.SourceType.Connector == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceType.Connector(childComplexity), true
+	case "SourceType.Contract":
+		if e.ComplexityRoot.SourceType.Contract == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceType.Contract(childComplexity), true
+	case "SourceType.DiscoveryPrefill":
+		if e.ComplexityRoot.SourceType.DiscoveryPrefill == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceType.DiscoveryPrefill(childComplexity), true
+	case "SourceType.Id":
+		if e.ComplexityRoot.SourceType.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceType.ID(childComplexity), true
+	case "SourceType.IsAWSManaged":
+		if e.ComplexityRoot.SourceType.IsAWSManaged == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceType.IsAWSManaged(childComplexity), true
+	case "SourceType.Label":
+		if e.ComplexityRoot.SourceType.Label == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceType.Label(childComplexity), true
+	case "SourceType.SSLModes":
+		if e.ComplexityRoot.SourceType.SSLModes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceType.SSLModes(childComplexity), true
+	case "SourceType.Traits":
+		if e.ComplexityRoot.SourceType.Traits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SourceType.Traits(childComplexity), true
+
 	case "StatusResponse.Status":
 		if e.ComplexityRoot.StatusResponse.Status == nil {
 			break
 		}
 
 		return e.ComplexityRoot.StatusResponse.Status(childComplexity), true
-
-	case "StorageUnit.Attributes":
-		if e.ComplexityRoot.StorageUnit.Attributes == nil {
-			break
-		}
-
-		return e.ComplexityRoot.StorageUnit.Attributes(childComplexity), true
-	case "StorageUnit.IsMockDataGenerationAllowed":
-		if e.ComplexityRoot.StorageUnit.IsMockDataGenerationAllowed == nil {
-			break
-		}
-
-		return e.ComplexityRoot.StorageUnit.IsMockDataGenerationAllowed(childComplexity), true
-	case "StorageUnit.Name":
-		if e.ComplexityRoot.StorageUnit.Name == nil {
-			break
-		}
-
-		return e.ComplexityRoot.StorageUnit.Name(childComplexity), true
 
 	case "StorageUnitColumns.Columns":
 		if e.ComplexityRoot.StorageUnitColumns.Columns == nil {
@@ -2415,13 +2750,14 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputImportFileInput,
 		ec.unmarshalInputImportFileOptions,
 		ec.unmarshalInputImportSQLInput,
-		ec.unmarshalInputLoginCredentials,
-		ec.unmarshalInputLoginProfileInput,
 		ec.unmarshalInputMockDataGenerationInput,
 		ec.unmarshalInputOperationWhereCondition,
 		ec.unmarshalInputRecordInput,
 		ec.unmarshalInputSettingsConfigInput,
 		ec.unmarshalInputSortCondition,
+		ec.unmarshalInputSourceLoginInput,
+		ec.unmarshalInputSourceObjectRefInput,
+		ec.unmarshalInputSourceProfileLoginInput,
 		ec.unmarshalInputWhereCondition,
 	)
 	first := true
@@ -2550,40 +2886,35 @@ func (ec *executionContext) field_Mutation_AddGCPProvider_args(ctx context.Conte
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_AddRow_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_AddSourceRow_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "schema", ec.unmarshalNString2string)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "ref", ec.unmarshalNSourceObjectRefInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput)
 	if err != nil {
 		return nil, err
 	}
-	args["schema"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "storageUnit", ec.unmarshalNString2string)
+	args["ref"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "values", ec.unmarshalNRecordInput2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRecordInputᚄ)
 	if err != nil {
 		return nil, err
 	}
-	args["storageUnit"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "values", ec.unmarshalNRecordInput2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRecordInputᚄ)
-	if err != nil {
-		return nil, err
-	}
-	args["values"] = arg2
+	args["values"] = arg1
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_AddStorageUnit_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_CreateSourceObject_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "schema", ec.unmarshalNString2string)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "parent", ec.unmarshalOSourceObjectRefInput2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput)
 	if err != nil {
 		return nil, err
 	}
-	args["schema"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "storageUnit", ec.unmarshalNString2string)
+	args["parent"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "name", ec.unmarshalNString2string)
 	if err != nil {
 		return nil, err
 	}
-	args["storageUnit"] = arg1
+	args["name"] = arg1
 	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "fields", ec.unmarshalNRecordInput2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRecordInputᚄ)
 	if err != nil {
 		return nil, err
@@ -2592,24 +2923,19 @@ func (ec *executionContext) field_Mutation_AddStorageUnit_args(ctx context.Conte
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_DeleteRow_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_DeleteSourceRow_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "schema", ec.unmarshalNString2string)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "ref", ec.unmarshalNSourceObjectRefInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput)
 	if err != nil {
 		return nil, err
 	}
-	args["schema"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "storageUnit", ec.unmarshalNString2string)
+	args["ref"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "values", ec.unmarshalNRecordInput2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRecordInputᚄ)
 	if err != nil {
 		return nil, err
 	}
-	args["storageUnit"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "values", ec.unmarshalNRecordInput2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRecordInputᚄ)
-	if err != nil {
-		return nil, err
-	}
-	args["values"] = arg2
+	args["values"] = arg1
 	return args, nil
 }
 
@@ -2637,11 +2963,11 @@ func (ec *executionContext) field_Mutation_GenerateAzureADToken_args(ctx context
 		return nil, err
 	}
 	args["providerID"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "databaseType", ec.unmarshalNString2string)
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "sourceType", ec.unmarshalNString2string)
 	if err != nil {
 		return nil, err
 	}
-	args["databaseType"] = arg1
+	args["sourceType"] = arg1
 	return args, nil
 }
 
@@ -2727,21 +3053,16 @@ func (ec *executionContext) field_Mutation_ImportPreview_args(ctx context.Contex
 		return nil, err
 	}
 	args["options"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "schema", ec.unmarshalOString2ᚖstring)
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "ref", ec.unmarshalOSourceObjectRefInput2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput)
 	if err != nil {
 		return nil, err
 	}
-	args["schema"] = arg2
-	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "storageUnit", ec.unmarshalOString2ᚖstring)
+	args["ref"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "useHeaderMapping", ec.unmarshalOBoolean2ᚖbool)
 	if err != nil {
 		return nil, err
 	}
-	args["storageUnit"] = arg3
-	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "useHeaderMapping", ec.unmarshalOBoolean2ᚖbool)
-	if err != nil {
-		return nil, err
-	}
-	args["useHeaderMapping"] = arg4
+	args["useHeaderMapping"] = arg3
 	return args, nil
 }
 
@@ -2756,7 +3077,7 @@ func (ec *executionContext) field_Mutation_ImportSQL_args(ctx context.Context, r
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_ImportTableFile_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_ImportSourceObjectFile_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNImportFileInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐImportFileInput)
@@ -2767,25 +3088,25 @@ func (ec *executionContext) field_Mutation_ImportTableFile_args(ctx context.Cont
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_LoginWithProfile_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_LoginSource_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "profile", ec.unmarshalNLoginProfileInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐLoginProfileInput)
-	if err != nil {
-		return nil, err
-	}
-	args["profile"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_Login_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "credentials", ec.unmarshalNLoginCredentials2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐLoginCredentials)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "credentials", ec.unmarshalNSourceLoginInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceLoginInput)
 	if err != nil {
 		return nil, err
 	}
 	args["credentials"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_LoginWithSourceProfile_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "profile", ec.unmarshalNSourceProfileLoginInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceProfileLoginInput)
+	if err != nil {
+		return nil, err
+	}
+	args["profile"] = arg0
 	return args, nil
 }
 
@@ -2936,29 +3257,24 @@ func (ec *executionContext) field_Mutation_UpdateSettings_args(ctx context.Conte
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_UpdateStorageUnit_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_UpdateSourceObject_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "schema", ec.unmarshalNString2string)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "ref", ec.unmarshalNSourceObjectRefInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput)
 	if err != nil {
 		return nil, err
 	}
-	args["schema"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "storageUnit", ec.unmarshalNString2string)
+	args["ref"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "values", ec.unmarshalNRecordInput2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRecordInputᚄ)
 	if err != nil {
 		return nil, err
 	}
-	args["storageUnit"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "values", ec.unmarshalNRecordInput2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRecordInputᚄ)
+	args["values"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "updatedColumns", ec.unmarshalNString2ᚕstringᚄ)
 	if err != nil {
 		return nil, err
 	}
-	args["values"] = arg2
-	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "updatedColumns", ec.unmarshalNString2ᚕstringᚄ)
-	if err != nil {
-		return nil, err
-	}
-	args["updatedColumns"] = arg3
+	args["updatedColumns"] = arg2
 	return args, nil
 }
 
@@ -2980,11 +3296,11 @@ func (ec *executionContext) field_Query_AIChat_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["token"] = arg2
-	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "schema", ec.unmarshalNString2string)
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "ref", ec.unmarshalOSourceObjectRefInput2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput)
 	if err != nil {
 		return nil, err
 	}
-	args["schema"] = arg3
+	args["ref"] = arg3
 	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNChatInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐChatInput)
 	if err != nil {
 		return nil, err
@@ -3017,26 +3333,21 @@ func (ec *executionContext) field_Query_AIModel_args(ctx context.Context, rawArg
 func (ec *executionContext) field_Query_AnalyzeMockDataDependencies_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "schema", ec.unmarshalNString2string)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "ref", ec.unmarshalNSourceObjectRefInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput)
 	if err != nil {
 		return nil, err
 	}
-	args["schema"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "storageUnit", ec.unmarshalNString2string)
+	args["ref"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "rowCount", ec.unmarshalNInt2int)
 	if err != nil {
 		return nil, err
 	}
-	args["storageUnit"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "rowCount", ec.unmarshalNInt2int)
+	args["rowCount"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "fkDensityRatio", ec.unmarshalOInt2ᚖint)
 	if err != nil {
 		return nil, err
 	}
-	args["rowCount"] = arg2
-	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "fkDensityRatio", ec.unmarshalOInt2ᚖint)
-	if err != nil {
-		return nil, err
-	}
-	args["fkDensityRatio"] = arg3
+	args["fkDensityRatio"] = arg2
 	return args, nil
 }
 
@@ -3062,60 +3373,6 @@ func (ec *executionContext) field_Query_CloudProvider_args(ctx context.Context, 
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_ColumnsBatch_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "schema", ec.unmarshalNString2string)
-	if err != nil {
-		return nil, err
-	}
-	args["schema"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "storageUnits", ec.unmarshalNString2ᚕstringᚄ)
-	if err != nil {
-		return nil, err
-	}
-	args["storageUnits"] = arg1
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_Columns_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "schema", ec.unmarshalNString2string)
-	if err != nil {
-		return nil, err
-	}
-	args["schema"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "storageUnit", ec.unmarshalNString2string)
-	if err != nil {
-		return nil, err
-	}
-	args["storageUnit"] = arg1
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_DatabaseQuerySuggestions_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "schema", ec.unmarshalNString2string)
-	if err != nil {
-		return nil, err
-	}
-	args["schema"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_Database_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "type", ec.unmarshalNString2string)
-	if err != nil {
-		return nil, err
-	}
-	args["type"] = arg0
-	return args, nil
-}
-
 func (ec *executionContext) field_Query_GCPProvider_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -3124,17 +3381,6 @@ func (ec *executionContext) field_Query_GCPProvider_args(ctx context.Context, ra
 		return nil, err
 	}
 	args["id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_Graph_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "schema", ec.unmarshalNString2string)
-	if err != nil {
-		return nil, err
-	}
-	args["schema"] = arg0
 	return args, nil
 }
 
@@ -3149,7 +3395,7 @@ func (ec *executionContext) field_Query_ProviderConnections_args(ctx context.Con
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_RawExecute_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Query_RunSourceQuery_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "query", ec.unmarshalNString2string)
@@ -3160,50 +3406,137 @@ func (ec *executionContext) field_Query_RawExecute_args(ctx context.Context, raw
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_Row_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Query_SourceColumnsBatch_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "schema", ec.unmarshalNString2string)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "refs", ec.unmarshalNSourceObjectRefInput2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInputᚄ)
 	if err != nil {
 		return nil, err
 	}
-	args["schema"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "storageUnit", ec.unmarshalNString2string)
-	if err != nil {
-		return nil, err
-	}
-	args["storageUnit"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "where", ec.unmarshalOWhereCondition2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐWhereCondition)
-	if err != nil {
-		return nil, err
-	}
-	args["where"] = arg2
-	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "sort", ec.unmarshalOSortCondition2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSortConditionᚄ)
-	if err != nil {
-		return nil, err
-	}
-	args["sort"] = arg3
-	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "pageSize", ec.unmarshalNInt2int)
-	if err != nil {
-		return nil, err
-	}
-	args["pageSize"] = arg4
-	arg5, err := graphql.ProcessArgField(ctx, rawArgs, "pageOffset", ec.unmarshalNInt2int)
-	if err != nil {
-		return nil, err
-	}
-	args["pageOffset"] = arg5
+	args["refs"] = arg0
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_StorageUnit_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Query_SourceColumns_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "schema", ec.unmarshalNString2string)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "ref", ec.unmarshalNSourceObjectRefInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput)
 	if err != nil {
 		return nil, err
 	}
-	args["schema"] = arg0
+	args["ref"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_SourceContent_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "ref", ec.unmarshalNSourceObjectRefInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput)
+	if err != nil {
+		return nil, err
+	}
+	args["ref"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_SourceFieldOptions_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "sourceType", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["sourceType"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "fieldKey", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["fieldKey"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "values", ec.unmarshalORecordInput2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRecordInputᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["values"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_SourceGraph_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "ref", ec.unmarshalOSourceObjectRefInput2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput)
+	if err != nil {
+		return nil, err
+	}
+	args["ref"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_SourceObject_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "ref", ec.unmarshalNSourceObjectRefInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput)
+	if err != nil {
+		return nil, err
+	}
+	args["ref"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_SourceObjects_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "parent", ec.unmarshalOSourceObjectRefInput2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput)
+	if err != nil {
+		return nil, err
+	}
+	args["parent"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "kinds", ec.unmarshalOSourceObjectKind2ᚕgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKindᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["kinds"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_SourceQuerySuggestions_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "ref", ec.unmarshalOSourceObjectRefInput2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput)
+	if err != nil {
+		return nil, err
+	}
+	args["ref"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_SourceRows_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "ref", ec.unmarshalNSourceObjectRefInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput)
+	if err != nil {
+		return nil, err
+	}
+	args["ref"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "where", ec.unmarshalOWhereCondition2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐWhereCondition)
+	if err != nil {
+		return nil, err
+	}
+	args["where"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "sort", ec.unmarshalOSortCondition2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSortConditionᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["sort"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "pageSize", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["pageSize"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "pageOffset", ec.unmarshalNInt2int)
+	if err != nil {
+		return nil, err
+	}
+	args["pageOffset"] = arg4
 	return args, nil
 }
 
@@ -4614,180 +4947,6 @@ func (ec *executionContext) fieldContext_AzureSubscription_TenantID(_ context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _Capabilities_supportsScratchpad(ctx context.Context, field graphql.CollectedField, obj *model.Capabilities) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Capabilities_supportsScratchpad,
-		func(ctx context.Context) (any, error) {
-			return obj.SupportsScratchpad, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Capabilities_supportsScratchpad(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Capabilities",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Capabilities_supportsChat(ctx context.Context, field graphql.CollectedField, obj *model.Capabilities) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Capabilities_supportsChat,
-		func(ctx context.Context) (any, error) {
-			return obj.SupportsChat, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Capabilities_supportsChat(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Capabilities",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Capabilities_supportsGraph(ctx context.Context, field graphql.CollectedField, obj *model.Capabilities) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Capabilities_supportsGraph,
-		func(ctx context.Context) (any, error) {
-			return obj.SupportsGraph, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Capabilities_supportsGraph(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Capabilities",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Capabilities_supportsSchema(ctx context.Context, field graphql.CollectedField, obj *model.Capabilities) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Capabilities_supportsSchema,
-		func(ctx context.Context) (any, error) {
-			return obj.SupportsSchema, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Capabilities_supportsSchema(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Capabilities",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Capabilities_supportsDatabaseSwitch(ctx context.Context, field graphql.CollectedField, obj *model.Capabilities) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Capabilities_supportsDatabaseSwitch,
-		func(ctx context.Context) (any, error) {
-			return obj.SupportsDatabaseSwitch, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Capabilities_supportsDatabaseSwitch(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Capabilities",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Capabilities_supportsModifiers(ctx context.Context, field graphql.CollectedField, obj *model.Capabilities) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Capabilities_supportsModifiers,
-		func(ctx context.Context) (any, error) {
-			return obj.SupportsModifiers, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Capabilities_supportsModifiers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Capabilities",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Column_Type(ctx context.Context, field graphql.CollectedField, obj *model.Column) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5049,1037 +5208,6 @@ func (ec *executionContext) fieldContext_Column_Scale(_ context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _ConnectableDatabase_id(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabase_id,
-		func(ctx context.Context) (any, error) {
-			return obj.ID, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabase_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabase",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabase_label(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabase_label,
-		func(ctx context.Context) (any, error) {
-			return obj.Label, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabase_label(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabase",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabase_pluginType(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabase_pluginType,
-		func(ctx context.Context) (any, error) {
-			return obj.PluginType, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabase_pluginType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabase",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabase_extra(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabase_extra,
-		func(ctx context.Context) (any, error) {
-			return obj.Extra, nil
-		},
-		nil,
-		ec.marshalNRecord2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRecordᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabase_extra(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabase",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "Key":
-				return ec.fieldContext_Record_Key(ctx, field)
-			case "Value":
-				return ec.fieldContext_Record_Value(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Record", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabase_fields(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabase_fields,
-		func(ctx context.Context) (any, error) {
-			return obj.Fields, nil
-		},
-		nil,
-		ec.marshalNConnectableDatabaseFields2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseFields,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabase_fields(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabase",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "hostname":
-				return ec.fieldContext_ConnectableDatabaseFields_hostname(ctx, field)
-			case "username":
-				return ec.fieldContext_ConnectableDatabaseFields_username(ctx, field)
-			case "password":
-				return ec.fieldContext_ConnectableDatabaseFields_password(ctx, field)
-			case "database":
-				return ec.fieldContext_ConnectableDatabaseFields_database(ctx, field)
-			case "searchPath":
-				return ec.fieldContext_ConnectableDatabaseFields_searchPath(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ConnectableDatabaseFields", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabase_requiredFields(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabase_requiredFields,
-		func(ctx context.Context) (any, error) {
-			return obj.RequiredFields, nil
-		},
-		nil,
-		ec.marshalNConnectableDatabaseRequiredFields2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseRequiredFields,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabase_requiredFields(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabase",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "hostname":
-				return ec.fieldContext_ConnectableDatabaseRequiredFields_hostname(ctx, field)
-			case "username":
-				return ec.fieldContext_ConnectableDatabaseRequiredFields_username(ctx, field)
-			case "password":
-				return ec.fieldContext_ConnectableDatabaseRequiredFields_password(ctx, field)
-			case "database":
-				return ec.fieldContext_ConnectableDatabaseRequiredFields_database(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ConnectableDatabaseRequiredFields", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabase_supportsModifiers(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabase_supportsModifiers,
-		func(ctx context.Context) (any, error) {
-			return obj.SupportsModifiers, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabase_supportsModifiers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabase",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabase_supportsScratchpad(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabase_supportsScratchpad,
-		func(ctx context.Context) (any, error) {
-			return obj.SupportsScratchpad, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabase_supportsScratchpad(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabase",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabase_supportsSchema(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabase_supportsSchema,
-		func(ctx context.Context) (any, error) {
-			return obj.SupportsSchema, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabase_supportsSchema(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabase",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabase_supportsDatabaseSwitching(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabase_supportsDatabaseSwitching,
-		func(ctx context.Context) (any, error) {
-			return obj.SupportsDatabaseSwitching, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabase_supportsDatabaseSwitching(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabase",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabase_usesSchemaForGraph(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabase_usesSchemaForGraph,
-		func(ctx context.Context) (any, error) {
-			return obj.UsesSchemaForGraph, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabase_usesSchemaForGraph(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabase",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabase_usesDatabaseInsteadOfSchema(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabase_usesDatabaseInsteadOfSchema,
-		func(ctx context.Context) (any, error) {
-			return obj.UsesDatabaseInsteadOfSchema, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabase_usesDatabaseInsteadOfSchema(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabase",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabase_supportsMockData(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabase_supportsMockData,
-		func(ctx context.Context) (any, error) {
-			return obj.SupportsMockData, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabase_supportsMockData(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabase",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabase_isAwsManaged(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabase_isAwsManaged,
-		func(ctx context.Context) (any, error) {
-			return obj.IsAWSManaged, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabase_isAwsManaged(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabase",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabase_sslModes(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabase) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabase_sslModes,
-		func(ctx context.Context) (any, error) {
-			return obj.SslModes, nil
-		},
-		nil,
-		ec.marshalNConnectableDatabaseSSLMode2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseSSLModeᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabase_sslModes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabase",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "value":
-				return ec.fieldContext_ConnectableDatabaseSSLMode_value(ctx, field)
-			case "aliases":
-				return ec.fieldContext_ConnectableDatabaseSSLMode_aliases(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ConnectableDatabaseSSLMode", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabaseFields_hostname(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseFields) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabaseFields_hostname,
-		func(ctx context.Context) (any, error) {
-			return obj.Hostname, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabaseFields_hostname(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabaseFields",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabaseFields_username(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseFields) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabaseFields_username,
-		func(ctx context.Context) (any, error) {
-			return obj.Username, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabaseFields_username(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabaseFields",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabaseFields_password(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseFields) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabaseFields_password,
-		func(ctx context.Context) (any, error) {
-			return obj.Password, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabaseFields_password(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabaseFields",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabaseFields_database(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseFields) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabaseFields_database,
-		func(ctx context.Context) (any, error) {
-			return obj.Database, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabaseFields_database(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabaseFields",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabaseFields_searchPath(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseFields) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabaseFields_searchPath,
-		func(ctx context.Context) (any, error) {
-			return obj.SearchPath, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabaseFields_searchPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabaseFields",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabaseRequiredFields_hostname(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseRequiredFields) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabaseRequiredFields_hostname,
-		func(ctx context.Context) (any, error) {
-			return obj.Hostname, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabaseRequiredFields_hostname(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabaseRequiredFields",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabaseRequiredFields_username(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseRequiredFields) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabaseRequiredFields_username,
-		func(ctx context.Context) (any, error) {
-			return obj.Username, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabaseRequiredFields_username(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabaseRequiredFields",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabaseRequiredFields_password(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseRequiredFields) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabaseRequiredFields_password,
-		func(ctx context.Context) (any, error) {
-			return obj.Password, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabaseRequiredFields_password(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabaseRequiredFields",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabaseRequiredFields_database(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseRequiredFields) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabaseRequiredFields_database,
-		func(ctx context.Context) (any, error) {
-			return obj.Database, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabaseRequiredFields_database(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabaseRequiredFields",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabaseSSLMode_value(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseSSLMode) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabaseSSLMode_value,
-		func(ctx context.Context) (any, error) {
-			return obj.Value, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabaseSSLMode_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabaseSSLMode",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ConnectableDatabaseSSLMode_aliases(ctx context.Context, field graphql.CollectedField, obj *model.ConnectableDatabaseSSLMode) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_ConnectableDatabaseSSLMode_aliases,
-		func(ctx context.Context) (any, error) {
-			return obj.Aliases, nil
-		},
-		nil,
-		ec.marshalNString2ᚕstringᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_ConnectableDatabaseSSLMode_aliases(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ConnectableDatabaseSSLMode",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _DatabaseMetadata_databaseType(ctx context.Context, field graphql.CollectedField, obj *model.DatabaseMetadata) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_DatabaseMetadata_databaseType,
-		func(ctx context.Context) (any, error) {
-			return obj.DatabaseType, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_DatabaseMetadata_databaseType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "DatabaseMetadata",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _DatabaseMetadata_typeDefinitions(ctx context.Context, field graphql.CollectedField, obj *model.DatabaseMetadata) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_DatabaseMetadata_typeDefinitions,
-		func(ctx context.Context) (any, error) {
-			return obj.TypeDefinitions, nil
-		},
-		nil,
-		ec.marshalNTypeDefinition2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐTypeDefinitionᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_DatabaseMetadata_typeDefinitions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "DatabaseMetadata",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_TypeDefinition_id(ctx, field)
-			case "label":
-				return ec.fieldContext_TypeDefinition_label(ctx, field)
-			case "hasLength":
-				return ec.fieldContext_TypeDefinition_hasLength(ctx, field)
-			case "hasPrecision":
-				return ec.fieldContext_TypeDefinition_hasPrecision(ctx, field)
-			case "defaultLength":
-				return ec.fieldContext_TypeDefinition_defaultLength(ctx, field)
-			case "defaultPrecision":
-				return ec.fieldContext_TypeDefinition_defaultPrecision(ctx, field)
-			case "category":
-				return ec.fieldContext_TypeDefinition_category(ctx, field)
-			case "insertFunc":
-				return ec.fieldContext_TypeDefinition_insertFunc(ctx, field)
-			case "tableModel":
-				return ec.fieldContext_TypeDefinition_tableModel(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type TypeDefinition", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _DatabaseMetadata_operators(ctx context.Context, field graphql.CollectedField, obj *model.DatabaseMetadata) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_DatabaseMetadata_operators,
-		func(ctx context.Context) (any, error) {
-			return obj.Operators, nil
-		},
-		nil,
-		ec.marshalNString2ᚕstringᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_DatabaseMetadata_operators(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "DatabaseMetadata",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _DatabaseMetadata_aliasMap(ctx context.Context, field graphql.CollectedField, obj *model.DatabaseMetadata) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_DatabaseMetadata_aliasMap,
-		func(ctx context.Context) (any, error) {
-			return obj.AliasMap, nil
-		},
-		nil,
-		ec.marshalNRecord2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRecordᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_DatabaseMetadata_aliasMap(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "DatabaseMetadata",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "Key":
-				return ec.fieldContext_Record_Key(ctx, field)
-			case "Value":
-				return ec.fieldContext_Record_Value(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Record", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _DatabaseMetadata_capabilities(ctx context.Context, field graphql.CollectedField, obj *model.DatabaseMetadata) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_DatabaseMetadata_capabilities,
-		func(ctx context.Context) (any, error) {
-			return obj.Capabilities, nil
-		},
-		nil,
-		ec.marshalNCapabilities2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐCapabilities,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_DatabaseMetadata_capabilities(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "DatabaseMetadata",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "supportsScratchpad":
-				return ec.fieldContext_Capabilities_supportsScratchpad(ctx, field)
-			case "supportsChat":
-				return ec.fieldContext_Capabilities_supportsChat(ctx, field)
-			case "supportsGraph":
-				return ec.fieldContext_Capabilities_supportsGraph(ctx, field)
-			case "supportsSchema":
-				return ec.fieldContext_Capabilities_supportsSchema(ctx, field)
-			case "supportsDatabaseSwitch":
-				return ec.fieldContext_Capabilities_supportsDatabaseSwitch(ctx, field)
-			case "supportsModifiers":
-				return ec.fieldContext_Capabilities_supportsModifiers(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Capabilities", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _DatabaseQuerySuggestion_description(ctx context.Context, field graphql.CollectedField, obj *model.DatabaseQuerySuggestion) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_DatabaseQuerySuggestion_description,
-		func(ctx context.Context) (any, error) {
-			return obj.Description, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_DatabaseQuerySuggestion_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "DatabaseQuerySuggestion",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _DatabaseQuerySuggestion_category(ctx context.Context, field graphql.CollectedField, obj *model.DatabaseQuerySuggestion) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_DatabaseQuerySuggestion_category,
-		func(ctx context.Context) (any, error) {
-			return obj.Category, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_DatabaseQuerySuggestion_category(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "DatabaseQuerySuggestion",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _DiscoveredConnection_Id(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredConnection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -6196,14 +5324,14 @@ func (ec *executionContext) fieldContext_DiscoveredConnection_Name(_ context.Con
 	return fc, nil
 }
 
-func (ec *executionContext) _DiscoveredConnection_DatabaseType(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredConnection) (ret graphql.Marshaler) {
+func (ec *executionContext) _DiscoveredConnection_SourceType(ctx context.Context, field graphql.CollectedField, obj *model.DiscoveredConnection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_DiscoveredConnection_DatabaseType,
+		ec.fieldContext_DiscoveredConnection_SourceType,
 		func(ctx context.Context) (any, error) {
-			return obj.DatabaseType, nil
+			return obj.SourceType, nil
 		},
 		nil,
 		ec.marshalNString2string,
@@ -6212,7 +5340,7 @@ func (ec *executionContext) _DiscoveredConnection_DatabaseType(ctx context.Conte
 	)
 }
 
-func (ec *executionContext) fieldContext_DiscoveredConnection_DatabaseType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_DiscoveredConnection_SourceType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "DiscoveredConnection",
 		Field:      field,
@@ -6792,7 +5920,7 @@ func (ec *executionContext) _GraphUnit_Unit(ctx context.Context, field graphql.C
 			return obj.Unit, nil
 		},
 		nil,
-		ec.marshalNStorageUnit2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐStorageUnit,
+		ec.marshalNSourceObject2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObject,
 		true,
 		true,
 	)
@@ -6806,14 +5934,22 @@ func (ec *executionContext) fieldContext_GraphUnit_Unit(_ context.Context, field
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "Ref":
+				return ec.fieldContext_SourceObject_Ref(ctx, field)
+			case "Kind":
+				return ec.fieldContext_SourceObject_Kind(ctx, field)
 			case "Name":
-				return ec.fieldContext_StorageUnit_Name(ctx, field)
-			case "Attributes":
-				return ec.fieldContext_StorageUnit_Attributes(ctx, field)
-			case "IsMockDataGenerationAllowed":
-				return ec.fieldContext_StorageUnit_IsMockDataGenerationAllowed(ctx, field)
+				return ec.fieldContext_SourceObject_Name(ctx, field)
+			case "Path":
+				return ec.fieldContext_SourceObject_Path(ctx, field)
+			case "HasChildren":
+				return ec.fieldContext_SourceObject_HasChildren(ctx, field)
+			case "Actions":
+				return ec.fieldContext_SourceObject_Actions(ctx, field)
+			case "Metadata":
+				return ec.fieldContext_SourceObject_Metadata(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type StorageUnit", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type SourceObject", field.Name)
 		},
 	}
 	return fc, nil
@@ -7676,238 +6812,6 @@ func (ec *executionContext) fieldContext_LocalGCPProject_IsDefault(_ context.Con
 	return fc, nil
 }
 
-func (ec *executionContext) _LoginProfile_Alias(ctx context.Context, field graphql.CollectedField, obj *model.LoginProfile) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_LoginProfile_Alias,
-		func(ctx context.Context) (any, error) {
-			return obj.Alias, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_LoginProfile_Alias(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LoginProfile",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LoginProfile_Id(ctx context.Context, field graphql.CollectedField, obj *model.LoginProfile) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_LoginProfile_Id,
-		func(ctx context.Context) (any, error) {
-			return obj.ID, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_LoginProfile_Id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LoginProfile",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LoginProfile_Type(ctx context.Context, field graphql.CollectedField, obj *model.LoginProfile) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_LoginProfile_Type,
-		func(ctx context.Context) (any, error) {
-			return obj.Type, nil
-		},
-		nil,
-		ec.marshalNDatabaseType2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐDatabaseType,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_LoginProfile_Type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LoginProfile",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type DatabaseType does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LoginProfile_Hostname(ctx context.Context, field graphql.CollectedField, obj *model.LoginProfile) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_LoginProfile_Hostname,
-		func(ctx context.Context) (any, error) {
-			return obj.Hostname, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_LoginProfile_Hostname(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LoginProfile",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LoginProfile_Database(ctx context.Context, field graphql.CollectedField, obj *model.LoginProfile) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_LoginProfile_Database,
-		func(ctx context.Context) (any, error) {
-			return obj.Database, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_LoginProfile_Database(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LoginProfile",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LoginProfile_IsEnvironmentDefined(ctx context.Context, field graphql.CollectedField, obj *model.LoginProfile) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_LoginProfile_IsEnvironmentDefined,
-		func(ctx context.Context) (any, error) {
-			return obj.IsEnvironmentDefined, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_LoginProfile_IsEnvironmentDefined(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LoginProfile",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LoginProfile_Source(ctx context.Context, field graphql.CollectedField, obj *model.LoginProfile) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_LoginProfile_Source,
-		func(ctx context.Context) (any, error) {
-			return obj.Source, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_LoginProfile_Source(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LoginProfile",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _LoginProfile_SSLConfigured(ctx context.Context, field graphql.CollectedField, obj *model.LoginProfile) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_LoginProfile_SSLConfigured,
-		func(ctx context.Context) (any, error) {
-			return obj.SSLConfigured, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_LoginProfile_SSLConfigured(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "LoginProfile",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _MockDataDependencyAnalysis_GenerationOrder(ctx context.Context, field graphql.CollectedField, obj *model.MockDataDependencyAnalysis) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -8332,15 +7236,15 @@ func (ec *executionContext) fieldContext_MockDataTableInfo_UsesExistingData(_ co
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_Login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_LoginSource(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_Login,
+		ec.fieldContext_Mutation_LoginSource,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().Login(ctx, fc.Args["credentials"].(model.LoginCredentials))
+			return ec.Resolvers.Mutation().LoginSource(ctx, fc.Args["credentials"].(model.SourceLoginInput))
 		},
 		nil,
 		ec.marshalNStatusResponse2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐStatusResponse,
@@ -8349,7 +7253,7 @@ func (ec *executionContext) _Mutation_Login(ctx context.Context, field graphql.C
 	)
 }
 
-func (ec *executionContext) fieldContext_Mutation_Login(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_LoginSource(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -8370,22 +7274,22 @@ func (ec *executionContext) fieldContext_Mutation_Login(ctx context.Context, fie
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_Login_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_LoginSource_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_LoginWithProfile(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_LoginWithSourceProfile(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_LoginWithProfile,
+		ec.fieldContext_Mutation_LoginWithSourceProfile,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().LoginWithProfile(ctx, fc.Args["profile"].(model.LoginProfileInput))
+			return ec.Resolvers.Mutation().LoginWithSourceProfile(ctx, fc.Args["profile"].(model.SourceProfileLoginInput))
 		},
 		nil,
 		ec.marshalNStatusResponse2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐStatusResponse,
@@ -8394,7 +7298,7 @@ func (ec *executionContext) _Mutation_LoginWithProfile(ctx context.Context, fiel
 	)
 }
 
-func (ec *executionContext) fieldContext_Mutation_LoginWithProfile(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_LoginWithSourceProfile(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -8415,7 +7319,7 @@ func (ec *executionContext) fieldContext_Mutation_LoginWithProfile(ctx context.C
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_LoginWithProfile_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_LoginWithSourceProfile_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -8500,15 +7404,15 @@ func (ec *executionContext) fieldContext_Mutation_UpdateSettings(ctx context.Con
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_AddStorageUnit(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_CreateSourceObject(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_AddStorageUnit,
+		ec.fieldContext_Mutation_CreateSourceObject,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().AddStorageUnit(ctx, fc.Args["schema"].(string), fc.Args["storageUnit"].(string), fc.Args["fields"].([]*model.RecordInput))
+			return ec.Resolvers.Mutation().CreateSourceObject(ctx, fc.Args["parent"].(*model.SourceObjectRefInput), fc.Args["name"].(string), fc.Args["fields"].([]*model.RecordInput))
 		},
 		nil,
 		ec.marshalNStatusResponse2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐStatusResponse,
@@ -8517,7 +7421,7 @@ func (ec *executionContext) _Mutation_AddStorageUnit(ctx context.Context, field 
 	)
 }
 
-func (ec *executionContext) fieldContext_Mutation_AddStorageUnit(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_CreateSourceObject(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -8538,22 +7442,22 @@ func (ec *executionContext) fieldContext_Mutation_AddStorageUnit(ctx context.Con
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_AddStorageUnit_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_CreateSourceObject_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_UpdateStorageUnit(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_UpdateSourceObject(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_UpdateStorageUnit,
+		ec.fieldContext_Mutation_UpdateSourceObject,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().UpdateStorageUnit(ctx, fc.Args["schema"].(string), fc.Args["storageUnit"].(string), fc.Args["values"].([]*model.RecordInput), fc.Args["updatedColumns"].([]string))
+			return ec.Resolvers.Mutation().UpdateSourceObject(ctx, fc.Args["ref"].(model.SourceObjectRefInput), fc.Args["values"].([]*model.RecordInput), fc.Args["updatedColumns"].([]string))
 		},
 		nil,
 		ec.marshalNStatusResponse2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐStatusResponse,
@@ -8562,7 +7466,7 @@ func (ec *executionContext) _Mutation_UpdateStorageUnit(ctx context.Context, fie
 	)
 }
 
-func (ec *executionContext) fieldContext_Mutation_UpdateStorageUnit(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_UpdateSourceObject(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -8583,22 +7487,22 @@ func (ec *executionContext) fieldContext_Mutation_UpdateStorageUnit(ctx context.
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_UpdateStorageUnit_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_UpdateSourceObject_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_AddRow(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_AddSourceRow(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_AddRow,
+		ec.fieldContext_Mutation_AddSourceRow,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().AddRow(ctx, fc.Args["schema"].(string), fc.Args["storageUnit"].(string), fc.Args["values"].([]*model.RecordInput))
+			return ec.Resolvers.Mutation().AddSourceRow(ctx, fc.Args["ref"].(model.SourceObjectRefInput), fc.Args["values"].([]*model.RecordInput))
 		},
 		nil,
 		ec.marshalNStatusResponse2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐStatusResponse,
@@ -8607,7 +7511,7 @@ func (ec *executionContext) _Mutation_AddRow(ctx context.Context, field graphql.
 	)
 }
 
-func (ec *executionContext) fieldContext_Mutation_AddRow(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_AddSourceRow(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -8628,22 +7532,22 @@ func (ec *executionContext) fieldContext_Mutation_AddRow(ctx context.Context, fi
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_AddRow_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_AddSourceRow_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_DeleteRow(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_DeleteSourceRow(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_DeleteRow,
+		ec.fieldContext_Mutation_DeleteSourceRow,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().DeleteRow(ctx, fc.Args["schema"].(string), fc.Args["storageUnit"].(string), fc.Args["values"].([]*model.RecordInput))
+			return ec.Resolvers.Mutation().DeleteSourceRow(ctx, fc.Args["ref"].(model.SourceObjectRefInput), fc.Args["values"].([]*model.RecordInput))
 		},
 		nil,
 		ec.marshalNStatusResponse2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐStatusResponse,
@@ -8652,7 +7556,7 @@ func (ec *executionContext) _Mutation_DeleteRow(ctx context.Context, field graph
 	)
 }
 
-func (ec *executionContext) fieldContext_Mutation_DeleteRow(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_DeleteSourceRow(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -8673,7 +7577,7 @@ func (ec *executionContext) fieldContext_Mutation_DeleteRow(ctx context.Context,
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_DeleteRow_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_DeleteSourceRow_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -8784,7 +7688,7 @@ func (ec *executionContext) _Mutation_ImportPreview(ctx context.Context, field g
 		ec.fieldContext_Mutation_ImportPreview,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().ImportPreview(ctx, fc.Args["file"].(graphql.Upload), fc.Args["options"].(model.ImportFileOptions), fc.Args["schema"].(*string), fc.Args["storageUnit"].(*string), fc.Args["useHeaderMapping"].(*bool))
+			return ec.Resolvers.Mutation().ImportPreview(ctx, fc.Args["file"].(graphql.Upload), fc.Args["options"].(model.ImportFileOptions), fc.Args["ref"].(*model.SourceObjectRefInput), fc.Args["useHeaderMapping"].(*bool))
 		},
 		nil,
 		ec.marshalNImportPreview2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐImportPreview,
@@ -8835,15 +7739,15 @@ func (ec *executionContext) fieldContext_Mutation_ImportPreview(ctx context.Cont
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_ImportTableFile(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_ImportSourceObjectFile(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_ImportTableFile,
+		ec.fieldContext_Mutation_ImportSourceObjectFile,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().ImportTableFile(ctx, fc.Args["input"].(model.ImportFileInput))
+			return ec.Resolvers.Mutation().ImportSourceObjectFile(ctx, fc.Args["input"].(model.ImportFileInput))
 		},
 		nil,
 		ec.marshalNImportResult2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐImportResult,
@@ -8852,7 +7756,7 @@ func (ec *executionContext) _Mutation_ImportTableFile(ctx context.Context, field
 	)
 }
 
-func (ec *executionContext) fieldContext_Mutation_ImportTableFile(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_ImportSourceObjectFile(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -8877,7 +7781,7 @@ func (ec *executionContext) fieldContext_Mutation_ImportTableFile(ctx context.Co
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_ImportTableFile_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_ImportSourceObjectFile_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -9839,7 +8743,7 @@ func (ec *executionContext) _Mutation_GenerateAzureADToken(ctx context.Context, 
 		ec.fieldContext_Mutation_GenerateAzureADToken,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().GenerateAzureADToken(ctx, fc.Args["providerID"].(string), fc.Args["databaseType"].(string))
+			return ec.Resolvers.Mutation().GenerateAzureADToken(ctx, fc.Args["providerID"].(string), fc.Args["sourceType"].(string))
 		},
 		nil,
 		ec.marshalNString2string,
@@ -10016,23 +8920,23 @@ func (ec *executionContext) fieldContext_Query_Health(_ context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_Profiles(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_SourceProfiles(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Query_Profiles,
+		ec.fieldContext_Query_SourceProfiles,
 		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Query().Profiles(ctx)
+			return ec.Resolvers.Query().SourceProfiles(ctx)
 		},
 		nil,
-		ec.marshalNLoginProfile2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐLoginProfileᚄ,
+		ec.marshalNSourceProfile2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceProfileᚄ,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_Profiles(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_SourceProfiles(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -10040,117 +8944,44 @@ func (ec *executionContext) fieldContext_Query_Profiles(_ context.Context, field
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "Alias":
-				return ec.fieldContext_LoginProfile_Alias(ctx, field)
 			case "Id":
-				return ec.fieldContext_LoginProfile_Id(ctx, field)
-			case "Type":
-				return ec.fieldContext_LoginProfile_Type(ctx, field)
-			case "Hostname":
-				return ec.fieldContext_LoginProfile_Hostname(ctx, field)
-			case "Database":
-				return ec.fieldContext_LoginProfile_Database(ctx, field)
+				return ec.fieldContext_SourceProfile_Id(ctx, field)
+			case "DisplayName":
+				return ec.fieldContext_SourceProfile_DisplayName(ctx, field)
+			case "SourceType":
+				return ec.fieldContext_SourceProfile_SourceType(ctx, field)
+			case "Values":
+				return ec.fieldContext_SourceProfile_Values(ctx, field)
 			case "IsEnvironmentDefined":
-				return ec.fieldContext_LoginProfile_IsEnvironmentDefined(ctx, field)
+				return ec.fieldContext_SourceProfile_IsEnvironmentDefined(ctx, field)
 			case "Source":
-				return ec.fieldContext_LoginProfile_Source(ctx, field)
+				return ec.fieldContext_SourceProfile_Source(ctx, field)
 			case "SSLConfigured":
-				return ec.fieldContext_LoginProfile_SSLConfigured(ctx, field)
+				return ec.fieldContext_SourceProfile_SSLConfigured(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type LoginProfile", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type SourceProfile", field.Name)
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_Database(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_SourceTypes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Query_Database,
+		ec.fieldContext_Query_SourceTypes,
 		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().Database(ctx, fc.Args["type"].(string))
+			return ec.Resolvers.Query().SourceTypes(ctx)
 		},
 		nil,
-		ec.marshalNString2ᚕstringᚄ,
+		ec.marshalNSourceType2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceTypeᚄ,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_Database(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_Database_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_Schema(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Query_Schema,
-		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Query().Schema(ctx)
-		},
-		nil,
-		ec.marshalNString2ᚕstringᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Query_Schema(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_StorageUnit(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Query_StorageUnit,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().StorageUnit(ctx, fc.Args["schema"].(string))
-		},
-		nil,
-		ec.marshalNStorageUnit2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐStorageUnitᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Query_StorageUnit(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_SourceTypes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -10158,14 +8989,58 @@ func (ec *executionContext) fieldContext_Query_StorageUnit(ctx context.Context, 
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "Name":
-				return ec.fieldContext_StorageUnit_Name(ctx, field)
-			case "Attributes":
-				return ec.fieldContext_StorageUnit_Attributes(ctx, field)
-			case "IsMockDataGenerationAllowed":
-				return ec.fieldContext_StorageUnit_IsMockDataGenerationAllowed(ctx, field)
+			case "Id":
+				return ec.fieldContext_SourceType_Id(ctx, field)
+			case "Label":
+				return ec.fieldContext_SourceType_Label(ctx, field)
+			case "Connector":
+				return ec.fieldContext_SourceType_Connector(ctx, field)
+			case "Category":
+				return ec.fieldContext_SourceType_Category(ctx, field)
+			case "Traits":
+				return ec.fieldContext_SourceType_Traits(ctx, field)
+			case "ConnectionFields":
+				return ec.fieldContext_SourceType_ConnectionFields(ctx, field)
+			case "Contract":
+				return ec.fieldContext_SourceType_Contract(ctx, field)
+			case "DiscoveryPrefill":
+				return ec.fieldContext_SourceType_DiscoveryPrefill(ctx, field)
+			case "IsAWSManaged":
+				return ec.fieldContext_SourceType_IsAWSManaged(ctx, field)
+			case "SSLModes":
+				return ec.fieldContext_SourceType_SSLModes(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type StorageUnit", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type SourceType", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_SourceFieldOptions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_SourceFieldOptions,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().SourceFieldOptions(ctx, fc.Args["sourceType"].(string), fc.Args["fieldKey"].(string), fc.Args["values"].([]*model.RecordInput))
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_SourceFieldOptions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	defer func() {
@@ -10175,22 +9050,177 @@ func (ec *executionContext) fieldContext_Query_StorageUnit(ctx context.Context, 
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_StorageUnit_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_SourceFieldOptions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_Row(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_SourceSessionMetadata(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Query_Row,
+		ec.fieldContext_Query_SourceSessionMetadata,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().SourceSessionMetadata(ctx)
+		},
+		nil,
+		ec.marshalOSourceSessionMetadata2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSessionMetadata,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_SourceSessionMetadata(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "SourceType":
+				return ec.fieldContext_SourceSessionMetadata_SourceType(ctx, field)
+			case "QueryLanguages":
+				return ec.fieldContext_SourceSessionMetadata_QueryLanguages(ctx, field)
+			case "TypeDefinitions":
+				return ec.fieldContext_SourceSessionMetadata_TypeDefinitions(ctx, field)
+			case "Operators":
+				return ec.fieldContext_SourceSessionMetadata_Operators(ctx, field)
+			case "AliasMap":
+				return ec.fieldContext_SourceSessionMetadata_AliasMap(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceSessionMetadata", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_SourceObjects(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_SourceObjects,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().Row(ctx, fc.Args["schema"].(string), fc.Args["storageUnit"].(string), fc.Args["where"].(*model.WhereCondition), fc.Args["sort"].([]*model.SortCondition), fc.Args["pageSize"].(int), fc.Args["pageOffset"].(int))
+			return ec.Resolvers.Query().SourceObjects(ctx, fc.Args["parent"].(*model.SourceObjectRefInput), fc.Args["kinds"].([]model.SourceObjectKind))
+		},
+		nil,
+		ec.marshalNSourceObject2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_SourceObjects(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Ref":
+				return ec.fieldContext_SourceObject_Ref(ctx, field)
+			case "Kind":
+				return ec.fieldContext_SourceObject_Kind(ctx, field)
+			case "Name":
+				return ec.fieldContext_SourceObject_Name(ctx, field)
+			case "Path":
+				return ec.fieldContext_SourceObject_Path(ctx, field)
+			case "HasChildren":
+				return ec.fieldContext_SourceObject_HasChildren(ctx, field)
+			case "Actions":
+				return ec.fieldContext_SourceObject_Actions(ctx, field)
+			case "Metadata":
+				return ec.fieldContext_SourceObject_Metadata(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceObject", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_SourceObjects_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_SourceObject(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_SourceObject,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().SourceObject(ctx, fc.Args["ref"].(model.SourceObjectRefInput))
+		},
+		nil,
+		ec.marshalOSourceObject2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObject,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_SourceObject(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Ref":
+				return ec.fieldContext_SourceObject_Ref(ctx, field)
+			case "Kind":
+				return ec.fieldContext_SourceObject_Kind(ctx, field)
+			case "Name":
+				return ec.fieldContext_SourceObject_Name(ctx, field)
+			case "Path":
+				return ec.fieldContext_SourceObject_Path(ctx, field)
+			case "HasChildren":
+				return ec.fieldContext_SourceObject_HasChildren(ctx, field)
+			case "Actions":
+				return ec.fieldContext_SourceObject_Actions(ctx, field)
+			case "Metadata":
+				return ec.fieldContext_SourceObject_Metadata(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceObject", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_SourceObject_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_SourceRows(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_SourceRows,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().SourceRows(ctx, fc.Args["ref"].(model.SourceObjectRefInput), fc.Args["where"].(*model.WhereCondition), fc.Args["sort"].([]*model.SortCondition), fc.Args["pageSize"].(int), fc.Args["pageOffset"].(int))
 		},
 		nil,
 		ec.marshalNRowsResult2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRowsResult,
@@ -10199,7 +9229,7 @@ func (ec *executionContext) _Query_Row(ctx context.Context, field graphql.Collec
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_Row(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_SourceRows(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -10226,22 +9256,79 @@ func (ec *executionContext) fieldContext_Query_Row(ctx context.Context, field gr
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_Row_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_SourceRows_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_Columns(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_SourceContent(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Query_Columns,
+		ec.fieldContext_Query_SourceContent,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().Columns(ctx, fc.Args["schema"].(string), fc.Args["storageUnit"].(string))
+			return ec.Resolvers.Query().SourceContent(ctx, fc.Args["ref"].(model.SourceObjectRefInput))
+		},
+		nil,
+		ec.marshalOSourceContent2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceContent,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_SourceContent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Text":
+				return ec.fieldContext_SourceContent_Text(ctx, field)
+			case "MIMEType":
+				return ec.fieldContext_SourceContent_MIMEType(ctx, field)
+			case "IsBinary":
+				return ec.fieldContext_SourceContent_IsBinary(ctx, field)
+			case "SizeBytes":
+				return ec.fieldContext_SourceContent_SizeBytes(ctx, field)
+			case "Truncated":
+				return ec.fieldContext_SourceContent_Truncated(ctx, field)
+			case "FileName":
+				return ec.fieldContext_SourceContent_FileName(ctx, field)
+			case "ModifiedAt":
+				return ec.fieldContext_SourceContent_ModifiedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceContent", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_SourceContent_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_SourceColumns(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_SourceColumns,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().SourceColumns(ctx, fc.Args["ref"].(model.SourceObjectRefInput))
 		},
 		nil,
 		ec.marshalNColumn2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐColumnᚄ,
@@ -10250,7 +9337,7 @@ func (ec *executionContext) _Query_Columns(ctx context.Context, field graphql.Co
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_Columns(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_SourceColumns(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -10287,31 +9374,31 @@ func (ec *executionContext) fieldContext_Query_Columns(ctx context.Context, fiel
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_Columns_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_SourceColumns_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_ColumnsBatch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_SourceColumnsBatch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Query_ColumnsBatch,
+		ec.fieldContext_Query_SourceColumnsBatch,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().ColumnsBatch(ctx, fc.Args["schema"].(string), fc.Args["storageUnits"].([]string))
+			return ec.Resolvers.Query().SourceColumnsBatch(ctx, fc.Args["refs"].([]*model.SourceObjectRefInput))
 		},
 		nil,
-		ec.marshalNStorageUnitColumns2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐStorageUnitColumnsᚄ,
+		ec.marshalNSourceObjectColumns2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectColumnsᚄ,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_ColumnsBatch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_SourceColumnsBatch(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -10319,12 +9406,12 @@ func (ec *executionContext) fieldContext_Query_ColumnsBatch(ctx context.Context,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "StorageUnit":
-				return ec.fieldContext_StorageUnitColumns_StorageUnit(ctx, field)
+			case "Ref":
+				return ec.fieldContext_SourceObjectColumns_Ref(ctx, field)
 			case "Columns":
-				return ec.fieldContext_StorageUnitColumns_Columns(ctx, field)
+				return ec.fieldContext_SourceObjectColumns_Columns(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type StorageUnitColumns", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type SourceObjectColumns", field.Name)
 		},
 	}
 	defer func() {
@@ -10334,22 +9421,22 @@ func (ec *executionContext) fieldContext_Query_ColumnsBatch(ctx context.Context,
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_ColumnsBatch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_SourceColumnsBatch_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_RawExecute(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_RunSourceQuery(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Query_RawExecute,
+		ec.fieldContext_Query_RunSourceQuery,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().RawExecute(ctx, fc.Args["query"].(string))
+			return ec.Resolvers.Query().RunSourceQuery(ctx, fc.Args["query"].(string))
 		},
 		nil,
 		ec.marshalNRowsResult2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRowsResult,
@@ -10358,7 +9445,7 @@ func (ec *executionContext) _Query_RawExecute(ctx context.Context, field graphql
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_RawExecute(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_RunSourceQuery(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -10385,22 +9472,22 @@ func (ec *executionContext) fieldContext_Query_RawExecute(ctx context.Context, f
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_RawExecute_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_RunSourceQuery_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_Graph(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_SourceGraph(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Query_Graph,
+		ec.fieldContext_Query_SourceGraph,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().Graph(ctx, fc.Args["schema"].(string))
+			return ec.Resolvers.Query().SourceGraph(ctx, fc.Args["ref"].(*model.SourceObjectRefInput))
 		},
 		nil,
 		ec.marshalNGraphUnit2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐGraphUnitᚄ,
@@ -10409,7 +9496,7 @@ func (ec *executionContext) _Query_Graph(ctx context.Context, field graphql.Coll
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_Graph(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_SourceGraph(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -10432,7 +9519,7 @@ func (ec *executionContext) fieldContext_Query_Graph(ctx context.Context, field 
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_Graph_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_SourceGraph_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -10529,7 +9616,7 @@ func (ec *executionContext) _Query_AIChat(ctx context.Context, field graphql.Col
 		ec.fieldContext_Query_AIChat,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().AIChat(ctx, fc.Args["providerId"].(*string), fc.Args["modelType"].(string), fc.Args["token"].(*string), fc.Args["schema"].(string), fc.Args["input"].(model.ChatInput))
+			return ec.Resolvers.Query().AIChat(ctx, fc.Args["providerId"].(*string), fc.Args["modelType"].(string), fc.Args["token"].(*string), fc.Args["ref"].(*model.SourceObjectRefInput), fc.Args["input"].(model.ChatInput))
 		},
 		nil,
 		ec.marshalNAIChatMessage2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐAIChatMessageᚄ,
@@ -10602,6 +9689,8 @@ func (ec *executionContext) fieldContext_Query_SettingsConfig(_ context.Context,
 				return ec.fieldContext_SettingsConfig_CloudProvidersEnabled(ctx, field)
 			case "DisableCredentialForm":
 				return ec.fieldContext_SettingsConfig_DisableCredentialForm(ctx, field)
+			case "EnableNewUI":
+				return ec.fieldContext_SettingsConfig_EnableNewUI(ctx, field)
 			case "MaxPageSize":
 				return ec.fieldContext_SettingsConfig_MaxPageSize(ctx, field)
 			}
@@ -10648,7 +9737,7 @@ func (ec *executionContext) _Query_AnalyzeMockDataDependencies(ctx context.Conte
 		ec.fieldContext_Query_AnalyzeMockDataDependencies,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().AnalyzeMockDataDependencies(ctx, fc.Args["schema"].(string), fc.Args["storageUnit"].(string), fc.Args["rowCount"].(int), fc.Args["fkDensityRatio"].(*int))
+			return ec.Resolvers.Query().AnalyzeMockDataDependencies(ctx, fc.Args["ref"].(model.SourceObjectRefInput), fc.Args["rowCount"].(int), fc.Args["fkDensityRatio"].(*int))
 		},
 		nil,
 		ec.marshalNMockDataDependencyAnalysis2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐMockDataDependencyAnalysis,
@@ -10693,108 +9782,6 @@ func (ec *executionContext) fieldContext_Query_AnalyzeMockDataDependencies(ctx c
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_ConnectableDatabases(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Query_ConnectableDatabases,
-		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Query().ConnectableDatabases(ctx)
-		},
-		nil,
-		ec.marshalNConnectableDatabase2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Query_ConnectableDatabases(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_ConnectableDatabase_id(ctx, field)
-			case "label":
-				return ec.fieldContext_ConnectableDatabase_label(ctx, field)
-			case "pluginType":
-				return ec.fieldContext_ConnectableDatabase_pluginType(ctx, field)
-			case "extra":
-				return ec.fieldContext_ConnectableDatabase_extra(ctx, field)
-			case "fields":
-				return ec.fieldContext_ConnectableDatabase_fields(ctx, field)
-			case "requiredFields":
-				return ec.fieldContext_ConnectableDatabase_requiredFields(ctx, field)
-			case "supportsModifiers":
-				return ec.fieldContext_ConnectableDatabase_supportsModifiers(ctx, field)
-			case "supportsScratchpad":
-				return ec.fieldContext_ConnectableDatabase_supportsScratchpad(ctx, field)
-			case "supportsSchema":
-				return ec.fieldContext_ConnectableDatabase_supportsSchema(ctx, field)
-			case "supportsDatabaseSwitching":
-				return ec.fieldContext_ConnectableDatabase_supportsDatabaseSwitching(ctx, field)
-			case "usesSchemaForGraph":
-				return ec.fieldContext_ConnectableDatabase_usesSchemaForGraph(ctx, field)
-			case "usesDatabaseInsteadOfSchema":
-				return ec.fieldContext_ConnectableDatabase_usesDatabaseInsteadOfSchema(ctx, field)
-			case "supportsMockData":
-				return ec.fieldContext_ConnectableDatabase_supportsMockData(ctx, field)
-			case "isAwsManaged":
-				return ec.fieldContext_ConnectableDatabase_isAwsManaged(ctx, field)
-			case "sslModes":
-				return ec.fieldContext_ConnectableDatabase_sslModes(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type ConnectableDatabase", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_DatabaseMetadata(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Query_DatabaseMetadata,
-		func(ctx context.Context) (any, error) {
-			return ec.Resolvers.Query().DatabaseMetadata(ctx)
-		},
-		nil,
-		ec.marshalODatabaseMetadata2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐDatabaseMetadata,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Query_DatabaseMetadata(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "databaseType":
-				return ec.fieldContext_DatabaseMetadata_databaseType(ctx, field)
-			case "typeDefinitions":
-				return ec.fieldContext_DatabaseMetadata_typeDefinitions(ctx, field)
-			case "operators":
-				return ec.fieldContext_DatabaseMetadata_operators(ctx, field)
-			case "aliasMap":
-				return ec.fieldContext_DatabaseMetadata_aliasMap(ctx, field)
-			case "capabilities":
-				return ec.fieldContext_DatabaseMetadata_capabilities(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type DatabaseMetadata", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Query_SSLStatus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -10830,24 +9817,24 @@ func (ec *executionContext) fieldContext_Query_SSLStatus(_ context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_DatabaseQuerySuggestions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_SourceQuerySuggestions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Query_DatabaseQuerySuggestions,
+		ec.fieldContext_Query_SourceQuerySuggestions,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().DatabaseQuerySuggestions(ctx, fc.Args["schema"].(string))
+			return ec.Resolvers.Query().SourceQuerySuggestions(ctx, fc.Args["ref"].(*model.SourceObjectRefInput))
 		},
 		nil,
-		ec.marshalNDatabaseQuerySuggestion2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐDatabaseQuerySuggestionᚄ,
+		ec.marshalNSourceQuerySuggestion2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceQuerySuggestionᚄ,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_DatabaseQuerySuggestions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_SourceQuerySuggestions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -10856,11 +9843,11 @@ func (ec *executionContext) fieldContext_Query_DatabaseQuerySuggestions(ctx cont
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "description":
-				return ec.fieldContext_DatabaseQuerySuggestion_description(ctx, field)
+				return ec.fieldContext_SourceQuerySuggestion_description(ctx, field)
 			case "category":
-				return ec.fieldContext_DatabaseQuerySuggestion_category(ctx, field)
+				return ec.fieldContext_SourceQuerySuggestion_category(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type DatabaseQuerySuggestion", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type SourceQuerySuggestion", field.Name)
 		},
 	}
 	defer func() {
@@ -10870,7 +9857,7 @@ func (ec *executionContext) fieldContext_Query_DatabaseQuerySuggestions(ctx cont
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_DatabaseQuerySuggestions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_SourceQuerySuggestions_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -10979,8 +9966,8 @@ func (ec *executionContext) fieldContext_Query_DiscoveredConnections(_ context.C
 				return ec.fieldContext_DiscoveredConnection_ProviderID(ctx, field)
 			case "Name":
 				return ec.fieldContext_DiscoveredConnection_Name(ctx, field)
-			case "DatabaseType":
-				return ec.fieldContext_DiscoveredConnection_DatabaseType(ctx, field)
+			case "SourceType":
+				return ec.fieldContext_DiscoveredConnection_SourceType(ctx, field)
 			case "Region":
 				return ec.fieldContext_DiscoveredConnection_Region(ctx, field)
 			case "Status":
@@ -11027,8 +10014,8 @@ func (ec *executionContext) fieldContext_Query_ProviderConnections(ctx context.C
 				return ec.fieldContext_DiscoveredConnection_ProviderID(ctx, field)
 			case "Name":
 				return ec.fieldContext_DiscoveredConnection_Name(ctx, field)
-			case "DatabaseType":
-				return ec.fieldContext_DiscoveredConnection_DatabaseType(ctx, field)
+			case "SourceType":
+				return ec.fieldContext_DiscoveredConnection_SourceType(ctx, field)
 			case "Region":
 				return ec.fieldContext_DiscoveredConnection_Region(ctx, field)
 			case "Status":
@@ -11988,6 +10975,35 @@ func (ec *executionContext) fieldContext_SettingsConfig_DisableCredentialForm(_ 
 	return fc, nil
 }
 
+func (ec *executionContext) _SettingsConfig_EnableNewUI(ctx context.Context, field graphql.CollectedField, obj *model.SettingsConfig) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SettingsConfig_EnableNewUI,
+		func(ctx context.Context) (any, error) {
+			return obj.EnableNewUI, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SettingsConfig_EnableNewUI(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SettingsConfig",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _SettingsConfig_MaxPageSize(ctx context.Context, field graphql.CollectedField, obj *model.SettingsConfig) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -12017,6 +11033,2746 @@ func (ec *executionContext) fieldContext_SettingsConfig_MaxPageSize(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _SourceConnectionField_Key(ctx context.Context, field graphql.CollectedField, obj *model.SourceConnectionField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceConnectionField_Key,
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceConnectionField_Key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceConnectionField",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceConnectionField_Kind(ctx context.Context, field graphql.CollectedField, obj *model.SourceConnectionField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceConnectionField_Kind,
+		func(ctx context.Context) (any, error) {
+			return obj.Kind, nil
+		},
+		nil,
+		ec.marshalNSourceConnectionFieldKind2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionFieldKind,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceConnectionField_Kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceConnectionField",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceConnectionFieldKind does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceConnectionField_Section(ctx context.Context, field graphql.CollectedField, obj *model.SourceConnectionField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceConnectionField_Section,
+		func(ctx context.Context) (any, error) {
+			return obj.Section, nil
+		},
+		nil,
+		ec.marshalNSourceConnectionFieldSection2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionFieldSection,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceConnectionField_Section(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceConnectionField",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceConnectionFieldSection does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceConnectionField_Required(ctx context.Context, field graphql.CollectedField, obj *model.SourceConnectionField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceConnectionField_Required,
+		func(ctx context.Context) (any, error) {
+			return obj.Required, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceConnectionField_Required(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceConnectionField",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceConnectionField_LabelKey(ctx context.Context, field graphql.CollectedField, obj *model.SourceConnectionField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceConnectionField_LabelKey,
+		func(ctx context.Context) (any, error) {
+			return obj.LabelKey, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceConnectionField_LabelKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceConnectionField",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceConnectionField_PlaceholderKey(ctx context.Context, field graphql.CollectedField, obj *model.SourceConnectionField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceConnectionField_PlaceholderKey,
+		func(ctx context.Context) (any, error) {
+			return obj.PlaceholderKey, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceConnectionField_PlaceholderKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceConnectionField",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceConnectionField_DefaultValue(ctx context.Context, field graphql.CollectedField, obj *model.SourceConnectionField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceConnectionField_DefaultValue,
+		func(ctx context.Context) (any, error) {
+			return obj.DefaultValue, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceConnectionField_DefaultValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceConnectionField",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceConnectionField_SupportsOptions(ctx context.Context, field graphql.CollectedField, obj *model.SourceConnectionField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceConnectionField_SupportsOptions,
+		func(ctx context.Context) (any, error) {
+			return obj.SupportsOptions, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceConnectionField_SupportsOptions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceConnectionField",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceConnectionTraits_Transport(ctx context.Context, field graphql.CollectedField, obj *model.SourceConnectionTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceConnectionTraits_Transport,
+		func(ctx context.Context) (any, error) {
+			return obj.Transport, nil
+		},
+		nil,
+		ec.marshalNSourceConnectionTransport2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionTransport,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceConnectionTraits_Transport(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceConnectionTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceConnectionTransport does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceConnectionTraits_HostInputMode(ctx context.Context, field graphql.CollectedField, obj *model.SourceConnectionTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceConnectionTraits_HostInputMode,
+		func(ctx context.Context) (any, error) {
+			return obj.HostInputMode, nil
+		},
+		nil,
+		ec.marshalNSourceHostInputMode2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceHostInputMode,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceConnectionTraits_HostInputMode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceConnectionTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceHostInputMode does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceConnectionTraits_HostInputURLParser(ctx context.Context, field graphql.CollectedField, obj *model.SourceConnectionTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceConnectionTraits_HostInputURLParser,
+		func(ctx context.Context) (any, error) {
+			return obj.HostInputURLParser, nil
+		},
+		nil,
+		ec.marshalNSourceHostInputURLParser2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceHostInputURLParser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceConnectionTraits_HostInputURLParser(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceConnectionTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceHostInputURLParser does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceConnectionTraits_SupportsCustomCAContent(ctx context.Context, field graphql.CollectedField, obj *model.SourceConnectionTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceConnectionTraits_SupportsCustomCAContent,
+		func(ctx context.Context) (any, error) {
+			return obj.SupportsCustomCAContent, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceConnectionTraits_SupportsCustomCAContent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceConnectionTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceContent_Text(ctx context.Context, field graphql.CollectedField, obj *model.SourceContent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceContent_Text,
+		func(ctx context.Context) (any, error) {
+			return obj.Text, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceContent_Text(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceContent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceContent_MIMEType(ctx context.Context, field graphql.CollectedField, obj *model.SourceContent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceContent_MIMEType,
+		func(ctx context.Context) (any, error) {
+			return obj.MIMEType, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceContent_MIMEType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceContent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceContent_IsBinary(ctx context.Context, field graphql.CollectedField, obj *model.SourceContent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceContent_IsBinary,
+		func(ctx context.Context) (any, error) {
+			return obj.IsBinary, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceContent_IsBinary(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceContent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceContent_SizeBytes(ctx context.Context, field graphql.CollectedField, obj *model.SourceContent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceContent_SizeBytes,
+		func(ctx context.Context) (any, error) {
+			return obj.SizeBytes, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceContent_SizeBytes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceContent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceContent_Truncated(ctx context.Context, field graphql.CollectedField, obj *model.SourceContent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceContent_Truncated,
+		func(ctx context.Context) (any, error) {
+			return obj.Truncated, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceContent_Truncated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceContent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceContent_FileName(ctx context.Context, field graphql.CollectedField, obj *model.SourceContent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceContent_FileName,
+		func(ctx context.Context) (any, error) {
+			return obj.FileName, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceContent_FileName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceContent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceContent_ModifiedAt(ctx context.Context, field graphql.CollectedField, obj *model.SourceContent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceContent_ModifiedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.ModifiedAt, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceContent_ModifiedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceContent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceContract_Model(ctx context.Context, field graphql.CollectedField, obj *model.SourceContract) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceContract_Model,
+		func(ctx context.Context) (any, error) {
+			return obj.Model, nil
+		},
+		nil,
+		ec.marshalNSourceModel2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceModel,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceContract_Model(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceContract",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceModel does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceContract_Surfaces(ctx context.Context, field graphql.CollectedField, obj *model.SourceContract) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceContract_Surfaces,
+		func(ctx context.Context) (any, error) {
+			return obj.Surfaces, nil
+		},
+		nil,
+		ec.marshalNSourceSurface2ᚕgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSurfaceᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceContract_Surfaces(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceContract",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceSurface does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceContract_RootActions(ctx context.Context, field graphql.CollectedField, obj *model.SourceContract) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceContract_RootActions,
+		func(ctx context.Context) (any, error) {
+			return obj.RootActions, nil
+		},
+		nil,
+		ec.marshalNSourceAction2ᚕgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceActionᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceContract_RootActions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceContract",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceAction does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceContract_BrowsePath(ctx context.Context, field graphql.CollectedField, obj *model.SourceContract) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceContract_BrowsePath,
+		func(ctx context.Context) (any, error) {
+			return obj.BrowsePath, nil
+		},
+		nil,
+		ec.marshalNSourceObjectKind2ᚕgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKindᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceContract_BrowsePath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceContract",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceObjectKind does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceContract_DefaultObjectKind(ctx context.Context, field graphql.CollectedField, obj *model.SourceContract) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceContract_DefaultObjectKind,
+		func(ctx context.Context) (any, error) {
+			return obj.DefaultObjectKind, nil
+		},
+		nil,
+		ec.marshalNSourceObjectKind2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKind,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceContract_DefaultObjectKind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceContract",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceObjectKind does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceContract_GraphScopeKind(ctx context.Context, field graphql.CollectedField, obj *model.SourceContract) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceContract_GraphScopeKind,
+		func(ctx context.Context) (any, error) {
+			return obj.GraphScopeKind, nil
+		},
+		nil,
+		ec.marshalOSourceObjectKind2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKind,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceContract_GraphScopeKind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceContract",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceObjectKind does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceContract_ObjectTypes(ctx context.Context, field graphql.CollectedField, obj *model.SourceContract) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceContract_ObjectTypes,
+		func(ctx context.Context) (any, error) {
+			return obj.ObjectTypes, nil
+		},
+		nil,
+		ec.marshalNSourceObjectType2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectTypeᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceContract_ObjectTypes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceContract",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Kind":
+				return ec.fieldContext_SourceObjectType_Kind(ctx, field)
+			case "DataShape":
+				return ec.fieldContext_SourceObjectType_DataShape(ctx, field)
+			case "Actions":
+				return ec.fieldContext_SourceObjectType_Actions(ctx, field)
+			case "Views":
+				return ec.fieldContext_SourceObjectType_Views(ctx, field)
+			case "SingularLabel":
+				return ec.fieldContext_SourceObjectType_SingularLabel(ctx, field)
+			case "PluralLabel":
+				return ec.fieldContext_SourceObjectType_PluralLabel(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceObjectType", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceDiscoveryAdvancedDefault_Key(ctx context.Context, field graphql.CollectedField, obj *model.SourceDiscoveryAdvancedDefault) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceDiscoveryAdvancedDefault_Key,
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceDiscoveryAdvancedDefault_Key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceDiscoveryAdvancedDefault",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceDiscoveryAdvancedDefault_Value(ctx context.Context, field graphql.CollectedField, obj *model.SourceDiscoveryAdvancedDefault) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceDiscoveryAdvancedDefault_Value,
+		func(ctx context.Context) (any, error) {
+			return obj.Value, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceDiscoveryAdvancedDefault_Value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceDiscoveryAdvancedDefault",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceDiscoveryAdvancedDefault_MetadataKey(ctx context.Context, field graphql.CollectedField, obj *model.SourceDiscoveryAdvancedDefault) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceDiscoveryAdvancedDefault_MetadataKey,
+		func(ctx context.Context) (any, error) {
+			return obj.MetadataKey, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceDiscoveryAdvancedDefault_MetadataKey(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceDiscoveryAdvancedDefault",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceDiscoveryAdvancedDefault_DefaultValue(ctx context.Context, field graphql.CollectedField, obj *model.SourceDiscoveryAdvancedDefault) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceDiscoveryAdvancedDefault_DefaultValue,
+		func(ctx context.Context) (any, error) {
+			return obj.DefaultValue, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceDiscoveryAdvancedDefault_DefaultValue(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceDiscoveryAdvancedDefault",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceDiscoveryAdvancedDefault_ProviderTypes(ctx context.Context, field graphql.CollectedField, obj *model.SourceDiscoveryAdvancedDefault) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceDiscoveryAdvancedDefault_ProviderTypes,
+		func(ctx context.Context) (any, error) {
+			return obj.ProviderTypes, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceDiscoveryAdvancedDefault_ProviderTypes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceDiscoveryAdvancedDefault",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceDiscoveryAdvancedDefault_Conditions(ctx context.Context, field graphql.CollectedField, obj *model.SourceDiscoveryAdvancedDefault) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceDiscoveryAdvancedDefault_Conditions,
+		func(ctx context.Context) (any, error) {
+			return obj.Conditions, nil
+		},
+		nil,
+		ec.marshalNSourceDiscoveryMetadataCondition2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceDiscoveryMetadataConditionᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceDiscoveryAdvancedDefault_Conditions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceDiscoveryAdvancedDefault",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Key":
+				return ec.fieldContext_SourceDiscoveryMetadataCondition_Key(ctx, field)
+			case "Value":
+				return ec.fieldContext_SourceDiscoveryMetadataCondition_Value(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceDiscoveryMetadataCondition", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceDiscoveryMetadataCondition_Key(ctx context.Context, field graphql.CollectedField, obj *model.SourceDiscoveryMetadataCondition) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceDiscoveryMetadataCondition_Key,
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceDiscoveryMetadataCondition_Key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceDiscoveryMetadataCondition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceDiscoveryMetadataCondition_Value(ctx context.Context, field graphql.CollectedField, obj *model.SourceDiscoveryMetadataCondition) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceDiscoveryMetadataCondition_Value,
+		func(ctx context.Context) (any, error) {
+			return obj.Value, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceDiscoveryMetadataCondition_Value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceDiscoveryMetadataCondition",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceDiscoveryPrefill_AdvancedDefaults(ctx context.Context, field graphql.CollectedField, obj *model.SourceDiscoveryPrefill) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceDiscoveryPrefill_AdvancedDefaults,
+		func(ctx context.Context) (any, error) {
+			return obj.AdvancedDefaults, nil
+		},
+		nil,
+		ec.marshalNSourceDiscoveryAdvancedDefault2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceDiscoveryAdvancedDefaultᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceDiscoveryPrefill_AdvancedDefaults(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceDiscoveryPrefill",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Key":
+				return ec.fieldContext_SourceDiscoveryAdvancedDefault_Key(ctx, field)
+			case "Value":
+				return ec.fieldContext_SourceDiscoveryAdvancedDefault_Value(ctx, field)
+			case "MetadataKey":
+				return ec.fieldContext_SourceDiscoveryAdvancedDefault_MetadataKey(ctx, field)
+			case "DefaultValue":
+				return ec.fieldContext_SourceDiscoveryAdvancedDefault_DefaultValue(ctx, field)
+			case "ProviderTypes":
+				return ec.fieldContext_SourceDiscoveryAdvancedDefault_ProviderTypes(ctx, field)
+			case "Conditions":
+				return ec.fieldContext_SourceDiscoveryAdvancedDefault_Conditions(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceDiscoveryAdvancedDefault", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceMockDataTraits_SupportsRelationalDependencies(ctx context.Context, field graphql.CollectedField, obj *model.SourceMockDataTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceMockDataTraits_SupportsRelationalDependencies,
+		func(ctx context.Context) (any, error) {
+			return obj.SupportsRelationalDependencies, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceMockDataTraits_SupportsRelationalDependencies(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceMockDataTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceObject_Ref(ctx context.Context, field graphql.CollectedField, obj *model.SourceObject) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceObject_Ref,
+		func(ctx context.Context) (any, error) {
+			return obj.Ref, nil
+		},
+		nil,
+		ec.marshalNSourceObjectRef2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRef,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceObject_Ref(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceObject",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Kind":
+				return ec.fieldContext_SourceObjectRef_Kind(ctx, field)
+			case "Locator":
+				return ec.fieldContext_SourceObjectRef_Locator(ctx, field)
+			case "Path":
+				return ec.fieldContext_SourceObjectRef_Path(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceObjectRef", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceObject_Kind(ctx context.Context, field graphql.CollectedField, obj *model.SourceObject) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceObject_Kind,
+		func(ctx context.Context) (any, error) {
+			return obj.Kind, nil
+		},
+		nil,
+		ec.marshalNSourceObjectKind2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKind,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceObject_Kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceObject",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceObjectKind does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceObject_Name(ctx context.Context, field graphql.CollectedField, obj *model.SourceObject) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceObject_Name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceObject_Name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceObject",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceObject_Path(ctx context.Context, field graphql.CollectedField, obj *model.SourceObject) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceObject_Path,
+		func(ctx context.Context) (any, error) {
+			return obj.Path, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceObject_Path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceObject",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceObject_HasChildren(ctx context.Context, field graphql.CollectedField, obj *model.SourceObject) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceObject_HasChildren,
+		func(ctx context.Context) (any, error) {
+			return obj.HasChildren, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceObject_HasChildren(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceObject",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceObject_Actions(ctx context.Context, field graphql.CollectedField, obj *model.SourceObject) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceObject_Actions,
+		func(ctx context.Context) (any, error) {
+			return obj.Actions, nil
+		},
+		nil,
+		ec.marshalNSourceAction2ᚕgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceActionᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceObject_Actions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceObject",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceAction does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceObject_Metadata(ctx context.Context, field graphql.CollectedField, obj *model.SourceObject) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceObject_Metadata,
+		func(ctx context.Context) (any, error) {
+			return obj.Metadata, nil
+		},
+		nil,
+		ec.marshalNRecord2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRecordᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceObject_Metadata(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceObject",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Key":
+				return ec.fieldContext_Record_Key(ctx, field)
+			case "Value":
+				return ec.fieldContext_Record_Value(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Record", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceObjectColumns_Ref(ctx context.Context, field graphql.CollectedField, obj *model.SourceObjectColumns) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceObjectColumns_Ref,
+		func(ctx context.Context) (any, error) {
+			return obj.Ref, nil
+		},
+		nil,
+		ec.marshalNSourceObjectRef2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRef,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceObjectColumns_Ref(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceObjectColumns",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Kind":
+				return ec.fieldContext_SourceObjectRef_Kind(ctx, field)
+			case "Locator":
+				return ec.fieldContext_SourceObjectRef_Locator(ctx, field)
+			case "Path":
+				return ec.fieldContext_SourceObjectRef_Path(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceObjectRef", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceObjectColumns_Columns(ctx context.Context, field graphql.CollectedField, obj *model.SourceObjectColumns) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceObjectColumns_Columns,
+		func(ctx context.Context) (any, error) {
+			return obj.Columns, nil
+		},
+		nil,
+		ec.marshalNColumn2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐColumnᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceObjectColumns_Columns(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceObjectColumns",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Type":
+				return ec.fieldContext_Column_Type(ctx, field)
+			case "Name":
+				return ec.fieldContext_Column_Name(ctx, field)
+			case "IsPrimary":
+				return ec.fieldContext_Column_IsPrimary(ctx, field)
+			case "IsForeignKey":
+				return ec.fieldContext_Column_IsForeignKey(ctx, field)
+			case "ReferencedTable":
+				return ec.fieldContext_Column_ReferencedTable(ctx, field)
+			case "ReferencedColumn":
+				return ec.fieldContext_Column_ReferencedColumn(ctx, field)
+			case "Length":
+				return ec.fieldContext_Column_Length(ctx, field)
+			case "Precision":
+				return ec.fieldContext_Column_Precision(ctx, field)
+			case "Scale":
+				return ec.fieldContext_Column_Scale(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Column", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceObjectRef_Kind(ctx context.Context, field graphql.CollectedField, obj *model.SourceObjectRef) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceObjectRef_Kind,
+		func(ctx context.Context) (any, error) {
+			return obj.Kind, nil
+		},
+		nil,
+		ec.marshalNSourceObjectKind2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKind,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceObjectRef_Kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceObjectRef",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceObjectKind does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceObjectRef_Locator(ctx context.Context, field graphql.CollectedField, obj *model.SourceObjectRef) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceObjectRef_Locator,
+		func(ctx context.Context) (any, error) {
+			return obj.Locator, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceObjectRef_Locator(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceObjectRef",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceObjectRef_Path(ctx context.Context, field graphql.CollectedField, obj *model.SourceObjectRef) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceObjectRef_Path,
+		func(ctx context.Context) (any, error) {
+			return obj.Path, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceObjectRef_Path(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceObjectRef",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceObjectType_Kind(ctx context.Context, field graphql.CollectedField, obj *model.SourceObjectType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceObjectType_Kind,
+		func(ctx context.Context) (any, error) {
+			return obj.Kind, nil
+		},
+		nil,
+		ec.marshalNSourceObjectKind2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKind,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceObjectType_Kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceObjectType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceObjectKind does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceObjectType_DataShape(ctx context.Context, field graphql.CollectedField, obj *model.SourceObjectType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceObjectType_DataShape,
+		func(ctx context.Context) (any, error) {
+			return obj.DataShape, nil
+		},
+		nil,
+		ec.marshalNDataShape2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐDataShape,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceObjectType_DataShape(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceObjectType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DataShape does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceObjectType_Actions(ctx context.Context, field graphql.CollectedField, obj *model.SourceObjectType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceObjectType_Actions,
+		func(ctx context.Context) (any, error) {
+			return obj.Actions, nil
+		},
+		nil,
+		ec.marshalNSourceAction2ᚕgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceActionᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceObjectType_Actions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceObjectType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceAction does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceObjectType_Views(ctx context.Context, field graphql.CollectedField, obj *model.SourceObjectType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceObjectType_Views,
+		func(ctx context.Context) (any, error) {
+			return obj.Views, nil
+		},
+		nil,
+		ec.marshalNSourceView2ᚕgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceViewᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceObjectType_Views(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceObjectType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceView does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceObjectType_SingularLabel(ctx context.Context, field graphql.CollectedField, obj *model.SourceObjectType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceObjectType_SingularLabel,
+		func(ctx context.Context) (any, error) {
+			return obj.SingularLabel, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceObjectType_SingularLabel(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceObjectType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceObjectType_PluralLabel(ctx context.Context, field graphql.CollectedField, obj *model.SourceObjectType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceObjectType_PluralLabel,
+		func(ctx context.Context) (any, error) {
+			return obj.PluralLabel, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceObjectType_PluralLabel(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceObjectType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourcePresentationTraits_ProfileLabelStrategy(ctx context.Context, field graphql.CollectedField, obj *model.SourcePresentationTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourcePresentationTraits_ProfileLabelStrategy,
+		func(ctx context.Context) (any, error) {
+			return obj.ProfileLabelStrategy, nil
+		},
+		nil,
+		ec.marshalNSourceProfileLabelStrategy2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceProfileLabelStrategy,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourcePresentationTraits_ProfileLabelStrategy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourcePresentationTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceProfileLabelStrategy does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourcePresentationTraits_SchemaFidelity(ctx context.Context, field graphql.CollectedField, obj *model.SourcePresentationTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourcePresentationTraits_SchemaFidelity,
+		func(ctx context.Context) (any, error) {
+			return obj.SchemaFidelity, nil
+		},
+		nil,
+		ec.marshalNSourceSchemaFidelity2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSchemaFidelity,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourcePresentationTraits_SchemaFidelity(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourcePresentationTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceSchemaFidelity does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceProfile_Id(ctx context.Context, field graphql.CollectedField, obj *model.SourceProfile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceProfile_Id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceProfile_Id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceProfile_DisplayName(ctx context.Context, field graphql.CollectedField, obj *model.SourceProfile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceProfile_DisplayName,
+		func(ctx context.Context) (any, error) {
+			return obj.DisplayName, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceProfile_DisplayName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceProfile_SourceType(ctx context.Context, field graphql.CollectedField, obj *model.SourceProfile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceProfile_SourceType,
+		func(ctx context.Context) (any, error) {
+			return obj.SourceType, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceProfile_SourceType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceProfile_Values(ctx context.Context, field graphql.CollectedField, obj *model.SourceProfile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceProfile_Values,
+		func(ctx context.Context) (any, error) {
+			return obj.Values, nil
+		},
+		nil,
+		ec.marshalNRecord2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRecordᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceProfile_Values(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Key":
+				return ec.fieldContext_Record_Key(ctx, field)
+			case "Value":
+				return ec.fieldContext_Record_Value(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Record", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceProfile_IsEnvironmentDefined(ctx context.Context, field graphql.CollectedField, obj *model.SourceProfile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceProfile_IsEnvironmentDefined,
+		func(ctx context.Context) (any, error) {
+			return obj.IsEnvironmentDefined, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceProfile_IsEnvironmentDefined(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceProfile_Source(ctx context.Context, field graphql.CollectedField, obj *model.SourceProfile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceProfile_Source,
+		func(ctx context.Context) (any, error) {
+			return obj.Source, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceProfile_Source(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceProfile_SSLConfigured(ctx context.Context, field graphql.CollectedField, obj *model.SourceProfile) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceProfile_SSLConfigured,
+		func(ctx context.Context) (any, error) {
+			return obj.SSLConfigured, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceProfile_SSLConfigured(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceProfile",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceQuerySuggestion_description(ctx context.Context, field graphql.CollectedField, obj *model.SourceQuerySuggestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceQuerySuggestion_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceQuerySuggestion_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceQuerySuggestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceQuerySuggestion_category(ctx context.Context, field graphql.CollectedField, obj *model.SourceQuerySuggestion) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceQuerySuggestion_category,
+		func(ctx context.Context) (any, error) {
+			return obj.Category, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceQuerySuggestion_category(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceQuerySuggestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceQueryTraits_SupportsAnalyze(ctx context.Context, field graphql.CollectedField, obj *model.SourceQueryTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceQueryTraits_SupportsAnalyze,
+		func(ctx context.Context) (any, error) {
+			return obj.SupportsAnalyze, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceQueryTraits_SupportsAnalyze(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceQueryTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceQueryTraits_ExplainMode(ctx context.Context, field graphql.CollectedField, obj *model.SourceQueryTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceQueryTraits_ExplainMode,
+		func(ctx context.Context) (any, error) {
+			return obj.ExplainMode, nil
+		},
+		nil,
+		ec.marshalNSourceQueryExplainMode2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceQueryExplainMode,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceQueryTraits_ExplainMode(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceQueryTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceQueryExplainMode does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceSSLMode_value(ctx context.Context, field graphql.CollectedField, obj *model.SourceSSLMode) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceSSLMode_value,
+		func(ctx context.Context) (any, error) {
+			return obj.Value, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceSSLMode_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceSSLMode",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceSSLMode_aliases(ctx context.Context, field graphql.CollectedField, obj *model.SourceSSLMode) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceSSLMode_aliases,
+		func(ctx context.Context) (any, error) {
+			return obj.Aliases, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceSSLMode_aliases(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceSSLMode",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceSessionMetadata_SourceType(ctx context.Context, field graphql.CollectedField, obj *model.SourceSessionMetadata) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceSessionMetadata_SourceType,
+		func(ctx context.Context) (any, error) {
+			return obj.SourceType, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceSessionMetadata_SourceType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceSessionMetadata",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceSessionMetadata_QueryLanguages(ctx context.Context, field graphql.CollectedField, obj *model.SourceSessionMetadata) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceSessionMetadata_QueryLanguages,
+		func(ctx context.Context) (any, error) {
+			return obj.QueryLanguages, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceSessionMetadata_QueryLanguages(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceSessionMetadata",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceSessionMetadata_TypeDefinitions(ctx context.Context, field graphql.CollectedField, obj *model.SourceSessionMetadata) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceSessionMetadata_TypeDefinitions,
+		func(ctx context.Context) (any, error) {
+			return obj.TypeDefinitions, nil
+		},
+		nil,
+		ec.marshalNTypeDefinition2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐTypeDefinitionᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceSessionMetadata_TypeDefinitions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceSessionMetadata",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TypeDefinition_id(ctx, field)
+			case "label":
+				return ec.fieldContext_TypeDefinition_label(ctx, field)
+			case "hasLength":
+				return ec.fieldContext_TypeDefinition_hasLength(ctx, field)
+			case "hasPrecision":
+				return ec.fieldContext_TypeDefinition_hasPrecision(ctx, field)
+			case "defaultLength":
+				return ec.fieldContext_TypeDefinition_defaultLength(ctx, field)
+			case "defaultPrecision":
+				return ec.fieldContext_TypeDefinition_defaultPrecision(ctx, field)
+			case "category":
+				return ec.fieldContext_TypeDefinition_category(ctx, field)
+			case "insertFunc":
+				return ec.fieldContext_TypeDefinition_insertFunc(ctx, field)
+			case "tableModel":
+				return ec.fieldContext_TypeDefinition_tableModel(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TypeDefinition", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceSessionMetadata_Operators(ctx context.Context, field graphql.CollectedField, obj *model.SourceSessionMetadata) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceSessionMetadata_Operators,
+		func(ctx context.Context) (any, error) {
+			return obj.Operators, nil
+		},
+		nil,
+		ec.marshalNString2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceSessionMetadata_Operators(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceSessionMetadata",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceSessionMetadata_AliasMap(ctx context.Context, field graphql.CollectedField, obj *model.SourceSessionMetadata) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceSessionMetadata_AliasMap,
+		func(ctx context.Context) (any, error) {
+			return obj.AliasMap, nil
+		},
+		nil,
+		ec.marshalNRecord2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRecordᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceSessionMetadata_AliasMap(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceSessionMetadata",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Key":
+				return ec.fieldContext_Record_Key(ctx, field)
+			case "Value":
+				return ec.fieldContext_Record_Value(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Record", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceTraits_Connection(ctx context.Context, field graphql.CollectedField, obj *model.SourceTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceTraits_Connection,
+		func(ctx context.Context) (any, error) {
+			return obj.Connection, nil
+		},
+		nil,
+		ec.marshalNSourceConnectionTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionTraits,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceTraits_Connection(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Transport":
+				return ec.fieldContext_SourceConnectionTraits_Transport(ctx, field)
+			case "HostInputMode":
+				return ec.fieldContext_SourceConnectionTraits_HostInputMode(ctx, field)
+			case "HostInputURLParser":
+				return ec.fieldContext_SourceConnectionTraits_HostInputURLParser(ctx, field)
+			case "SupportsCustomCAContent":
+				return ec.fieldContext_SourceConnectionTraits_SupportsCustomCAContent(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceConnectionTraits", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceTraits_Presentation(ctx context.Context, field graphql.CollectedField, obj *model.SourceTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceTraits_Presentation,
+		func(ctx context.Context) (any, error) {
+			return obj.Presentation, nil
+		},
+		nil,
+		ec.marshalNSourcePresentationTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourcePresentationTraits,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceTraits_Presentation(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "ProfileLabelStrategy":
+				return ec.fieldContext_SourcePresentationTraits_ProfileLabelStrategy(ctx, field)
+			case "SchemaFidelity":
+				return ec.fieldContext_SourcePresentationTraits_SchemaFidelity(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourcePresentationTraits", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceTraits_Query(ctx context.Context, field graphql.CollectedField, obj *model.SourceTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceTraits_Query,
+		func(ctx context.Context) (any, error) {
+			return obj.Query, nil
+		},
+		nil,
+		ec.marshalNSourceQueryTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceQueryTraits,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceTraits_Query(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "SupportsAnalyze":
+				return ec.fieldContext_SourceQueryTraits_SupportsAnalyze(ctx, field)
+			case "ExplainMode":
+				return ec.fieldContext_SourceQueryTraits_ExplainMode(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceQueryTraits", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceTraits_MockData(ctx context.Context, field graphql.CollectedField, obj *model.SourceTraits) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceTraits_MockData,
+		func(ctx context.Context) (any, error) {
+			return obj.MockData, nil
+		},
+		nil,
+		ec.marshalNSourceMockDataTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceMockDataTraits,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceTraits_MockData(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceTraits",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "SupportsRelationalDependencies":
+				return ec.fieldContext_SourceMockDataTraits_SupportsRelationalDependencies(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceMockDataTraits", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceType_Id(ctx context.Context, field graphql.CollectedField, obj *model.SourceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceType_Id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceType_Id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceType_Label(ctx context.Context, field graphql.CollectedField, obj *model.SourceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceType_Label,
+		func(ctx context.Context) (any, error) {
+			return obj.Label, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceType_Label(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceType_Connector(ctx context.Context, field graphql.CollectedField, obj *model.SourceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceType_Connector,
+		func(ctx context.Context) (any, error) {
+			return obj.Connector, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceType_Connector(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceType_Category(ctx context.Context, field graphql.CollectedField, obj *model.SourceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceType_Category,
+		func(ctx context.Context) (any, error) {
+			return obj.Category, nil
+		},
+		nil,
+		ec.marshalNSourceCategory2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceCategory,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceType_Category(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SourceCategory does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceType_Traits(ctx context.Context, field graphql.CollectedField, obj *model.SourceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceType_Traits,
+		func(ctx context.Context) (any, error) {
+			return obj.Traits, nil
+		},
+		nil,
+		ec.marshalNSourceTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceTraits,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceType_Traits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Connection":
+				return ec.fieldContext_SourceTraits_Connection(ctx, field)
+			case "Presentation":
+				return ec.fieldContext_SourceTraits_Presentation(ctx, field)
+			case "Query":
+				return ec.fieldContext_SourceTraits_Query(ctx, field)
+			case "MockData":
+				return ec.fieldContext_SourceTraits_MockData(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceTraits", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceType_ConnectionFields(ctx context.Context, field graphql.CollectedField, obj *model.SourceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceType_ConnectionFields,
+		func(ctx context.Context) (any, error) {
+			return obj.ConnectionFields, nil
+		},
+		nil,
+		ec.marshalNSourceConnectionField2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionFieldᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceType_ConnectionFields(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Key":
+				return ec.fieldContext_SourceConnectionField_Key(ctx, field)
+			case "Kind":
+				return ec.fieldContext_SourceConnectionField_Kind(ctx, field)
+			case "Section":
+				return ec.fieldContext_SourceConnectionField_Section(ctx, field)
+			case "Required":
+				return ec.fieldContext_SourceConnectionField_Required(ctx, field)
+			case "LabelKey":
+				return ec.fieldContext_SourceConnectionField_LabelKey(ctx, field)
+			case "PlaceholderKey":
+				return ec.fieldContext_SourceConnectionField_PlaceholderKey(ctx, field)
+			case "DefaultValue":
+				return ec.fieldContext_SourceConnectionField_DefaultValue(ctx, field)
+			case "SupportsOptions":
+				return ec.fieldContext_SourceConnectionField_SupportsOptions(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceConnectionField", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceType_Contract(ctx context.Context, field graphql.CollectedField, obj *model.SourceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceType_Contract,
+		func(ctx context.Context) (any, error) {
+			return obj.Contract, nil
+		},
+		nil,
+		ec.marshalNSourceContract2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceContract,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceType_Contract(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "Model":
+				return ec.fieldContext_SourceContract_Model(ctx, field)
+			case "Surfaces":
+				return ec.fieldContext_SourceContract_Surfaces(ctx, field)
+			case "RootActions":
+				return ec.fieldContext_SourceContract_RootActions(ctx, field)
+			case "BrowsePath":
+				return ec.fieldContext_SourceContract_BrowsePath(ctx, field)
+			case "DefaultObjectKind":
+				return ec.fieldContext_SourceContract_DefaultObjectKind(ctx, field)
+			case "GraphScopeKind":
+				return ec.fieldContext_SourceContract_GraphScopeKind(ctx, field)
+			case "ObjectTypes":
+				return ec.fieldContext_SourceContract_ObjectTypes(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceContract", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceType_DiscoveryPrefill(ctx context.Context, field graphql.CollectedField, obj *model.SourceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceType_DiscoveryPrefill,
+		func(ctx context.Context) (any, error) {
+			return obj.DiscoveryPrefill, nil
+		},
+		nil,
+		ec.marshalNSourceDiscoveryPrefill2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceDiscoveryPrefill,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceType_DiscoveryPrefill(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "AdvancedDefaults":
+				return ec.fieldContext_SourceDiscoveryPrefill_AdvancedDefaults(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceDiscoveryPrefill", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceType_IsAWSManaged(ctx context.Context, field graphql.CollectedField, obj *model.SourceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceType_IsAWSManaged,
+		func(ctx context.Context) (any, error) {
+			return obj.IsAWSManaged, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceType_IsAWSManaged(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SourceType_SSLModes(ctx context.Context, field graphql.CollectedField, obj *model.SourceType) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SourceType_SSLModes,
+		func(ctx context.Context) (any, error) {
+			return obj.SSLModes, nil
+		},
+		nil,
+		ec.marshalNSourceSSLMode2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSSLModeᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SourceType_SSLModes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SourceType",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "value":
+				return ec.fieldContext_SourceSSLMode_value(ctx, field)
+			case "aliases":
+				return ec.fieldContext_SourceSSLMode_aliases(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SourceSSLMode", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _StatusResponse_Status(ctx context.Context, field graphql.CollectedField, obj *model.StatusResponse) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -12036,99 +13792,6 @@ func (ec *executionContext) _StatusResponse_Status(ctx context.Context, field gr
 func (ec *executionContext) fieldContext_StatusResponse_Status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "StatusResponse",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _StorageUnit_Name(ctx context.Context, field graphql.CollectedField, obj *model.StorageUnit) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_StorageUnit_Name,
-		func(ctx context.Context) (any, error) {
-			return obj.Name, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_StorageUnit_Name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "StorageUnit",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _StorageUnit_Attributes(ctx context.Context, field graphql.CollectedField, obj *model.StorageUnit) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_StorageUnit_Attributes,
-		func(ctx context.Context) (any, error) {
-			return obj.Attributes, nil
-		},
-		nil,
-		ec.marshalNRecord2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRecordᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_StorageUnit_Attributes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "StorageUnit",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "Key":
-				return ec.fieldContext_Record_Key(ctx, field)
-			case "Value":
-				return ec.fieldContext_Record_Value(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Record", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _StorageUnit_IsMockDataGenerationAllowed(ctx context.Context, field graphql.CollectedField, obj *model.StorageUnit) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_StorageUnit_IsMockDataGenerationAllowed,
-		func(ctx context.Context) (any, error) {
-			return obj.IsMockDataGenerationAllowed, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_StorageUnit_IsMockDataGenerationAllowed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "StorageUnit",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -14499,27 +16162,20 @@ func (ec *executionContext) unmarshalInputImportFileInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"Schema", "StorageUnit", "Mode", "Options", "File", "Mapping", "AllowAutoGenerated"}
+	fieldsInOrder := [...]string{"Ref", "Mode", "Options", "File", "Mapping", "AllowAutoGenerated"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "Schema":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Schema"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+		case "Ref":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Ref"))
+			data, err := ec.unmarshalNSourceObjectRefInput2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Schema = data
-		case "StorageUnit":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("StorageUnit"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.StorageUnit = data
+			it.Ref = data
 		case "Mode":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Mode"))
 			data, err := ec.unmarshalNImportMode2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐImportMode(ctx, v)
@@ -14648,122 +16304,6 @@ func (ec *executionContext) unmarshalInputImportSQLInput(ctx context.Context, ob
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputLoginCredentials(ctx context.Context, obj any) (model.LoginCredentials, error) {
-	var it model.LoginCredentials
-	if obj == nil {
-		return it, nil
-	}
-
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"Id", "Type", "Hostname", "Username", "Password", "Database", "Advanced"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "Id":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Id"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ID = data
-		case "Type":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Type"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Type = data
-		case "Hostname":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Hostname"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Hostname = data
-		case "Username":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Username"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Username = data
-		case "Password":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Password"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Password = data
-		case "Database":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Database"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Database = data
-		case "Advanced":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Advanced"))
-			data, err := ec.unmarshalORecordInput2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRecordInputᚄ(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Advanced = data
-		}
-	}
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputLoginProfileInput(ctx context.Context, obj any) (model.LoginProfileInput, error) {
-	var it model.LoginProfileInput
-	if obj == nil {
-		return it, nil
-	}
-
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"Id", "Type", "Database"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "Id":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Id"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.ID = data
-		case "Type":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Type"))
-			data, err := ec.unmarshalNDatabaseType2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐDatabaseType(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Type = data
-		case "Database":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Database"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Database = data
-		}
-	}
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputMockDataGenerationInput(ctx context.Context, obj any) (model.MockDataGenerationInput, error) {
 	var it model.MockDataGenerationInput
 	if obj == nil {
@@ -14775,27 +16315,20 @@ func (ec *executionContext) unmarshalInputMockDataGenerationInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"Schema", "StorageUnit", "RowCount", "Method", "OverwriteExisting", "FkDensityRatio"}
+	fieldsInOrder := [...]string{"Ref", "RowCount", "Method", "OverwriteExisting", "FkDensityRatio"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "Schema":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Schema"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+		case "Ref":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Ref"))
+			data, err := ec.unmarshalNSourceObjectRefInput2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Schema = data
-		case "StorageUnit":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("StorageUnit"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.StorageUnit = data
+			it.Ref = data
 		case "RowCount":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("RowCount"))
 			data, err := ec.unmarshalNInt2int(ctx, v)
@@ -14965,6 +16498,138 @@ func (ec *executionContext) unmarshalInputSortCondition(ctx context.Context, obj
 				return it, err
 			}
 			it.Direction = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSourceLoginInput(ctx context.Context, obj any) (model.SourceLoginInput, error) {
+	var it model.SourceLoginInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"Id", "SourceType", "Values", "AccessToken"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "Id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Id"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "SourceType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("SourceType"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SourceType = data
+		case "Values":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Values"))
+			data, err := ec.unmarshalNRecordInput2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRecordInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Values = data
+		case "AccessToken":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("AccessToken"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccessToken = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSourceObjectRefInput(ctx context.Context, obj any) (model.SourceObjectRefInput, error) {
+	var it model.SourceObjectRefInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"Kind", "Locator", "Path"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "Kind":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Kind"))
+			data, err := ec.unmarshalNSourceObjectKind2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKind(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Kind = data
+		case "Locator":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Locator"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Locator = data
+		case "Path":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Path"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Path = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSourceProfileLoginInput(ctx context.Context, obj any) (model.SourceProfileLoginInput, error) {
+	var it model.SourceProfileLoginInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"Id", "Values"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "Id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Id"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "Values":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Values"))
+			data, err := ec.unmarshalORecordInput2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐRecordInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Values = data
 		}
 	}
 	return it, nil
@@ -15507,70 +17172,6 @@ func (ec *executionContext) _AzureSubscription(ctx context.Context, sel ast.Sele
 	return out
 }
 
-var capabilitiesImplementors = []string{"Capabilities"}
-
-func (ec *executionContext) _Capabilities(ctx context.Context, sel ast.SelectionSet, obj *model.Capabilities) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, capabilitiesImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("Capabilities")
-		case "supportsScratchpad":
-			out.Values[i] = ec._Capabilities_supportsScratchpad(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "supportsChat":
-			out.Values[i] = ec._Capabilities_supportsChat(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "supportsGraph":
-			out.Values[i] = ec._Capabilities_supportsGraph(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "supportsSchema":
-			out.Values[i] = ec._Capabilities_supportsSchema(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "supportsDatabaseSwitch":
-			out.Values[i] = ec._Capabilities_supportsDatabaseSwitch(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "supportsModifiers":
-			out.Values[i] = ec._Capabilities_supportsModifiers(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var columnImplementors = []string{"Column"}
 
 func (ec *executionContext) _Column(ctx context.Context, sel ast.SelectionSet, obj *model.Column) graphql.Marshaler {
@@ -15635,375 +17236,6 @@ func (ec *executionContext) _Column(ctx context.Context, sel ast.SelectionSet, o
 	return out
 }
 
-var connectableDatabaseImplementors = []string{"ConnectableDatabase"}
-
-func (ec *executionContext) _ConnectableDatabase(ctx context.Context, sel ast.SelectionSet, obj *model.ConnectableDatabase) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, connectableDatabaseImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("ConnectableDatabase")
-		case "id":
-			out.Values[i] = ec._ConnectableDatabase_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "label":
-			out.Values[i] = ec._ConnectableDatabase_label(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "pluginType":
-			out.Values[i] = ec._ConnectableDatabase_pluginType(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "extra":
-			out.Values[i] = ec._ConnectableDatabase_extra(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "fields":
-			out.Values[i] = ec._ConnectableDatabase_fields(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "requiredFields":
-			out.Values[i] = ec._ConnectableDatabase_requiredFields(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "supportsModifiers":
-			out.Values[i] = ec._ConnectableDatabase_supportsModifiers(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "supportsScratchpad":
-			out.Values[i] = ec._ConnectableDatabase_supportsScratchpad(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "supportsSchema":
-			out.Values[i] = ec._ConnectableDatabase_supportsSchema(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "supportsDatabaseSwitching":
-			out.Values[i] = ec._ConnectableDatabase_supportsDatabaseSwitching(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "usesSchemaForGraph":
-			out.Values[i] = ec._ConnectableDatabase_usesSchemaForGraph(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "usesDatabaseInsteadOfSchema":
-			out.Values[i] = ec._ConnectableDatabase_usesDatabaseInsteadOfSchema(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "supportsMockData":
-			out.Values[i] = ec._ConnectableDatabase_supportsMockData(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "isAwsManaged":
-			out.Values[i] = ec._ConnectableDatabase_isAwsManaged(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "sslModes":
-			out.Values[i] = ec._ConnectableDatabase_sslModes(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var connectableDatabaseFieldsImplementors = []string{"ConnectableDatabaseFields"}
-
-func (ec *executionContext) _ConnectableDatabaseFields(ctx context.Context, sel ast.SelectionSet, obj *model.ConnectableDatabaseFields) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, connectableDatabaseFieldsImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("ConnectableDatabaseFields")
-		case "hostname":
-			out.Values[i] = ec._ConnectableDatabaseFields_hostname(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "username":
-			out.Values[i] = ec._ConnectableDatabaseFields_username(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "password":
-			out.Values[i] = ec._ConnectableDatabaseFields_password(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "database":
-			out.Values[i] = ec._ConnectableDatabaseFields_database(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "searchPath":
-			out.Values[i] = ec._ConnectableDatabaseFields_searchPath(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var connectableDatabaseRequiredFieldsImplementors = []string{"ConnectableDatabaseRequiredFields"}
-
-func (ec *executionContext) _ConnectableDatabaseRequiredFields(ctx context.Context, sel ast.SelectionSet, obj *model.ConnectableDatabaseRequiredFields) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, connectableDatabaseRequiredFieldsImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("ConnectableDatabaseRequiredFields")
-		case "hostname":
-			out.Values[i] = ec._ConnectableDatabaseRequiredFields_hostname(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "username":
-			out.Values[i] = ec._ConnectableDatabaseRequiredFields_username(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "password":
-			out.Values[i] = ec._ConnectableDatabaseRequiredFields_password(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "database":
-			out.Values[i] = ec._ConnectableDatabaseRequiredFields_database(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var connectableDatabaseSSLModeImplementors = []string{"ConnectableDatabaseSSLMode"}
-
-func (ec *executionContext) _ConnectableDatabaseSSLMode(ctx context.Context, sel ast.SelectionSet, obj *model.ConnectableDatabaseSSLMode) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, connectableDatabaseSSLModeImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("ConnectableDatabaseSSLMode")
-		case "value":
-			out.Values[i] = ec._ConnectableDatabaseSSLMode_value(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "aliases":
-			out.Values[i] = ec._ConnectableDatabaseSSLMode_aliases(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var databaseMetadataImplementors = []string{"DatabaseMetadata"}
-
-func (ec *executionContext) _DatabaseMetadata(ctx context.Context, sel ast.SelectionSet, obj *model.DatabaseMetadata) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, databaseMetadataImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("DatabaseMetadata")
-		case "databaseType":
-			out.Values[i] = ec._DatabaseMetadata_databaseType(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "typeDefinitions":
-			out.Values[i] = ec._DatabaseMetadata_typeDefinitions(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "operators":
-			out.Values[i] = ec._DatabaseMetadata_operators(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "aliasMap":
-			out.Values[i] = ec._DatabaseMetadata_aliasMap(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "capabilities":
-			out.Values[i] = ec._DatabaseMetadata_capabilities(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var databaseQuerySuggestionImplementors = []string{"DatabaseQuerySuggestion"}
-
-func (ec *executionContext) _DatabaseQuerySuggestion(ctx context.Context, sel ast.SelectionSet, obj *model.DatabaseQuerySuggestion) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, databaseQuerySuggestionImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("DatabaseQuerySuggestion")
-		case "description":
-			out.Values[i] = ec._DatabaseQuerySuggestion_description(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "category":
-			out.Values[i] = ec._DatabaseQuerySuggestion_category(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var discoveredConnectionImplementors = []string{"DiscoveredConnection"}
 
 func (ec *executionContext) _DiscoveredConnection(ctx context.Context, sel ast.SelectionSet, obj *model.DiscoveredConnection) graphql.Marshaler {
@@ -16035,8 +17267,8 @@ func (ec *executionContext) _DiscoveredConnection(ctx context.Context, sel ast.S
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "DatabaseType":
-			out.Values[i] = ec._DiscoveredConnection_DatabaseType(ctx, field, obj)
+		case "SourceType":
+			out.Values[i] = ec._DiscoveredConnection_SourceType(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -16649,71 +17881,6 @@ func (ec *executionContext) _LocalGCPProject(ctx context.Context, sel ast.Select
 	return out
 }
 
-var loginProfileImplementors = []string{"LoginProfile"}
-
-func (ec *executionContext) _LoginProfile(ctx context.Context, sel ast.SelectionSet, obj *model.LoginProfile) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, loginProfileImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("LoginProfile")
-		case "Alias":
-			out.Values[i] = ec._LoginProfile_Alias(ctx, field, obj)
-		case "Id":
-			out.Values[i] = ec._LoginProfile_Id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "Type":
-			out.Values[i] = ec._LoginProfile_Type(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "Hostname":
-			out.Values[i] = ec._LoginProfile_Hostname(ctx, field, obj)
-		case "Database":
-			out.Values[i] = ec._LoginProfile_Database(ctx, field, obj)
-		case "IsEnvironmentDefined":
-			out.Values[i] = ec._LoginProfile_IsEnvironmentDefined(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "Source":
-			out.Values[i] = ec._LoginProfile_Source(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "SSLConfigured":
-			out.Values[i] = ec._LoginProfile_SSLConfigured(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var mockDataDependencyAnalysisImplementors = []string{"MockDataDependencyAnalysis"}
 
 func (ec *executionContext) _MockDataDependencyAnalysis(ctx context.Context, sel ast.SelectionSet, obj *model.MockDataDependencyAnalysis) graphql.Marshaler {
@@ -16933,16 +18100,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
-		case "Login":
+		case "LoginSource":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_Login(ctx, field)
+				return ec._Mutation_LoginSource(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "LoginWithProfile":
+		case "LoginWithSourceProfile":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_LoginWithProfile(ctx, field)
+				return ec._Mutation_LoginWithSourceProfile(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -16961,30 +18128,30 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "AddStorageUnit":
+		case "CreateSourceObject":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_AddStorageUnit(ctx, field)
+				return ec._Mutation_CreateSourceObject(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "UpdateStorageUnit":
+		case "UpdateSourceObject":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_UpdateStorageUnit(ctx, field)
+				return ec._Mutation_UpdateSourceObject(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "AddRow":
+		case "AddSourceRow":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_AddRow(ctx, field)
+				return ec._Mutation_AddSourceRow(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "DeleteRow":
+		case "DeleteSourceRow":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_DeleteRow(ctx, field)
+				return ec._Mutation_DeleteSourceRow(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -17010,9 +18177,9 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "ImportTableFile":
+		case "ImportSourceObjectFile":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_ImportTableFile(ctx, field)
+				return ec._Mutation_ImportSourceObjectFile(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -17258,7 +18425,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "Profiles":
+		case "SourceProfiles":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -17267,7 +18434,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_Profiles(ctx, field)
+				res = ec._Query_SourceProfiles(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -17280,7 +18447,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "Database":
+		case "SourceTypes":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -17289,7 +18456,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_Database(ctx, field)
+				res = ec._Query_SourceTypes(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -17302,7 +18469,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "Schema":
+		case "SourceFieldOptions":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -17311,7 +18478,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_Schema(ctx, field)
+				res = ec._Query_SourceFieldOptions(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -17324,7 +18491,26 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "StorageUnit":
+		case "SourceSessionMetadata":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_SourceSessionMetadata(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "SourceObjects":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -17333,7 +18519,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_StorageUnit(ctx, field)
+				res = ec._Query_SourceObjects(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -17346,7 +18532,26 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "Row":
+		case "SourceObject":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_SourceObject(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "SourceRows":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -17355,7 +18560,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_Row(ctx, field)
+				res = ec._Query_SourceRows(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -17368,7 +18573,26 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "Columns":
+		case "SourceContent":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_SourceContent(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "SourceColumns":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -17377,7 +18601,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_Columns(ctx, field)
+				res = ec._Query_SourceColumns(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -17390,7 +18614,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "ColumnsBatch":
+		case "SourceColumnsBatch":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -17399,7 +18623,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_ColumnsBatch(ctx, field)
+				res = ec._Query_SourceColumnsBatch(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -17412,7 +18636,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "RawExecute":
+		case "RunSourceQuery":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -17421,7 +18645,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_RawExecute(ctx, field)
+				res = ec._Query_RunSourceQuery(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -17434,7 +18658,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "Graph":
+		case "SourceGraph":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -17443,7 +18667,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_Graph(ctx, field)
+				res = ec._Query_SourceGraph(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -17588,47 +18812,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "ConnectableDatabases":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_ConnectableDatabases(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "DatabaseMetadata":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_DatabaseMetadata(ctx, field)
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "SSLStatus":
 			field := field
 
@@ -17648,7 +18831,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "DatabaseQuerySuggestions":
+		case "SourceQuerySuggestions":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -17657,7 +18840,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_DatabaseQuerySuggestions(ctx, field)
+				res = ec._Query_SourceQuerySuggestions(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -18165,8 +19348,1118 @@ func (ec *executionContext) _SettingsConfig(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "EnableNewUI":
+			out.Values[i] = ec._SettingsConfig_EnableNewUI(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "MaxPageSize":
 			out.Values[i] = ec._SettingsConfig_MaxPageSize(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceConnectionFieldImplementors = []string{"SourceConnectionField"}
+
+func (ec *executionContext) _SourceConnectionField(ctx context.Context, sel ast.SelectionSet, obj *model.SourceConnectionField) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceConnectionFieldImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceConnectionField")
+		case "Key":
+			out.Values[i] = ec._SourceConnectionField_Key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Kind":
+			out.Values[i] = ec._SourceConnectionField_Kind(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Section":
+			out.Values[i] = ec._SourceConnectionField_Section(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Required":
+			out.Values[i] = ec._SourceConnectionField_Required(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "LabelKey":
+			out.Values[i] = ec._SourceConnectionField_LabelKey(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "PlaceholderKey":
+			out.Values[i] = ec._SourceConnectionField_PlaceholderKey(ctx, field, obj)
+		case "DefaultValue":
+			out.Values[i] = ec._SourceConnectionField_DefaultValue(ctx, field, obj)
+		case "SupportsOptions":
+			out.Values[i] = ec._SourceConnectionField_SupportsOptions(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceConnectionTraitsImplementors = []string{"SourceConnectionTraits"}
+
+func (ec *executionContext) _SourceConnectionTraits(ctx context.Context, sel ast.SelectionSet, obj *model.SourceConnectionTraits) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceConnectionTraitsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceConnectionTraits")
+		case "Transport":
+			out.Values[i] = ec._SourceConnectionTraits_Transport(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "HostInputMode":
+			out.Values[i] = ec._SourceConnectionTraits_HostInputMode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "HostInputURLParser":
+			out.Values[i] = ec._SourceConnectionTraits_HostInputURLParser(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "SupportsCustomCAContent":
+			out.Values[i] = ec._SourceConnectionTraits_SupportsCustomCAContent(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceContentImplementors = []string{"SourceContent"}
+
+func (ec *executionContext) _SourceContent(ctx context.Context, sel ast.SelectionSet, obj *model.SourceContent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceContentImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceContent")
+		case "Text":
+			out.Values[i] = ec._SourceContent_Text(ctx, field, obj)
+		case "MIMEType":
+			out.Values[i] = ec._SourceContent_MIMEType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "IsBinary":
+			out.Values[i] = ec._SourceContent_IsBinary(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "SizeBytes":
+			out.Values[i] = ec._SourceContent_SizeBytes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Truncated":
+			out.Values[i] = ec._SourceContent_Truncated(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "FileName":
+			out.Values[i] = ec._SourceContent_FileName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ModifiedAt":
+			out.Values[i] = ec._SourceContent_ModifiedAt(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceContractImplementors = []string{"SourceContract"}
+
+func (ec *executionContext) _SourceContract(ctx context.Context, sel ast.SelectionSet, obj *model.SourceContract) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceContractImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceContract")
+		case "Model":
+			out.Values[i] = ec._SourceContract_Model(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Surfaces":
+			out.Values[i] = ec._SourceContract_Surfaces(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "RootActions":
+			out.Values[i] = ec._SourceContract_RootActions(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "BrowsePath":
+			out.Values[i] = ec._SourceContract_BrowsePath(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "DefaultObjectKind":
+			out.Values[i] = ec._SourceContract_DefaultObjectKind(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "GraphScopeKind":
+			out.Values[i] = ec._SourceContract_GraphScopeKind(ctx, field, obj)
+		case "ObjectTypes":
+			out.Values[i] = ec._SourceContract_ObjectTypes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceDiscoveryAdvancedDefaultImplementors = []string{"SourceDiscoveryAdvancedDefault"}
+
+func (ec *executionContext) _SourceDiscoveryAdvancedDefault(ctx context.Context, sel ast.SelectionSet, obj *model.SourceDiscoveryAdvancedDefault) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceDiscoveryAdvancedDefaultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceDiscoveryAdvancedDefault")
+		case "Key":
+			out.Values[i] = ec._SourceDiscoveryAdvancedDefault_Key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Value":
+			out.Values[i] = ec._SourceDiscoveryAdvancedDefault_Value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "MetadataKey":
+			out.Values[i] = ec._SourceDiscoveryAdvancedDefault_MetadataKey(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "DefaultValue":
+			out.Values[i] = ec._SourceDiscoveryAdvancedDefault_DefaultValue(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ProviderTypes":
+			out.Values[i] = ec._SourceDiscoveryAdvancedDefault_ProviderTypes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Conditions":
+			out.Values[i] = ec._SourceDiscoveryAdvancedDefault_Conditions(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceDiscoveryMetadataConditionImplementors = []string{"SourceDiscoveryMetadataCondition"}
+
+func (ec *executionContext) _SourceDiscoveryMetadataCondition(ctx context.Context, sel ast.SelectionSet, obj *model.SourceDiscoveryMetadataCondition) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceDiscoveryMetadataConditionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceDiscoveryMetadataCondition")
+		case "Key":
+			out.Values[i] = ec._SourceDiscoveryMetadataCondition_Key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Value":
+			out.Values[i] = ec._SourceDiscoveryMetadataCondition_Value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceDiscoveryPrefillImplementors = []string{"SourceDiscoveryPrefill"}
+
+func (ec *executionContext) _SourceDiscoveryPrefill(ctx context.Context, sel ast.SelectionSet, obj *model.SourceDiscoveryPrefill) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceDiscoveryPrefillImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceDiscoveryPrefill")
+		case "AdvancedDefaults":
+			out.Values[i] = ec._SourceDiscoveryPrefill_AdvancedDefaults(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceMockDataTraitsImplementors = []string{"SourceMockDataTraits"}
+
+func (ec *executionContext) _SourceMockDataTraits(ctx context.Context, sel ast.SelectionSet, obj *model.SourceMockDataTraits) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceMockDataTraitsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceMockDataTraits")
+		case "SupportsRelationalDependencies":
+			out.Values[i] = ec._SourceMockDataTraits_SupportsRelationalDependencies(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceObjectImplementors = []string{"SourceObject"}
+
+func (ec *executionContext) _SourceObject(ctx context.Context, sel ast.SelectionSet, obj *model.SourceObject) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceObjectImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceObject")
+		case "Ref":
+			out.Values[i] = ec._SourceObject_Ref(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Kind":
+			out.Values[i] = ec._SourceObject_Kind(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Name":
+			out.Values[i] = ec._SourceObject_Name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Path":
+			out.Values[i] = ec._SourceObject_Path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "HasChildren":
+			out.Values[i] = ec._SourceObject_HasChildren(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Actions":
+			out.Values[i] = ec._SourceObject_Actions(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Metadata":
+			out.Values[i] = ec._SourceObject_Metadata(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceObjectColumnsImplementors = []string{"SourceObjectColumns"}
+
+func (ec *executionContext) _SourceObjectColumns(ctx context.Context, sel ast.SelectionSet, obj *model.SourceObjectColumns) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceObjectColumnsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceObjectColumns")
+		case "Ref":
+			out.Values[i] = ec._SourceObjectColumns_Ref(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Columns":
+			out.Values[i] = ec._SourceObjectColumns_Columns(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceObjectRefImplementors = []string{"SourceObjectRef"}
+
+func (ec *executionContext) _SourceObjectRef(ctx context.Context, sel ast.SelectionSet, obj *model.SourceObjectRef) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceObjectRefImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceObjectRef")
+		case "Kind":
+			out.Values[i] = ec._SourceObjectRef_Kind(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Locator":
+			out.Values[i] = ec._SourceObjectRef_Locator(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Path":
+			out.Values[i] = ec._SourceObjectRef_Path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceObjectTypeImplementors = []string{"SourceObjectType"}
+
+func (ec *executionContext) _SourceObjectType(ctx context.Context, sel ast.SelectionSet, obj *model.SourceObjectType) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceObjectTypeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceObjectType")
+		case "Kind":
+			out.Values[i] = ec._SourceObjectType_Kind(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "DataShape":
+			out.Values[i] = ec._SourceObjectType_DataShape(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Actions":
+			out.Values[i] = ec._SourceObjectType_Actions(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Views":
+			out.Values[i] = ec._SourceObjectType_Views(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "SingularLabel":
+			out.Values[i] = ec._SourceObjectType_SingularLabel(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "PluralLabel":
+			out.Values[i] = ec._SourceObjectType_PluralLabel(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourcePresentationTraitsImplementors = []string{"SourcePresentationTraits"}
+
+func (ec *executionContext) _SourcePresentationTraits(ctx context.Context, sel ast.SelectionSet, obj *model.SourcePresentationTraits) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourcePresentationTraitsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourcePresentationTraits")
+		case "ProfileLabelStrategy":
+			out.Values[i] = ec._SourcePresentationTraits_ProfileLabelStrategy(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "SchemaFidelity":
+			out.Values[i] = ec._SourcePresentationTraits_SchemaFidelity(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceProfileImplementors = []string{"SourceProfile"}
+
+func (ec *executionContext) _SourceProfile(ctx context.Context, sel ast.SelectionSet, obj *model.SourceProfile) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceProfileImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceProfile")
+		case "Id":
+			out.Values[i] = ec._SourceProfile_Id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "DisplayName":
+			out.Values[i] = ec._SourceProfile_DisplayName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "SourceType":
+			out.Values[i] = ec._SourceProfile_SourceType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Values":
+			out.Values[i] = ec._SourceProfile_Values(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "IsEnvironmentDefined":
+			out.Values[i] = ec._SourceProfile_IsEnvironmentDefined(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Source":
+			out.Values[i] = ec._SourceProfile_Source(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "SSLConfigured":
+			out.Values[i] = ec._SourceProfile_SSLConfigured(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceQuerySuggestionImplementors = []string{"SourceQuerySuggestion"}
+
+func (ec *executionContext) _SourceQuerySuggestion(ctx context.Context, sel ast.SelectionSet, obj *model.SourceQuerySuggestion) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceQuerySuggestionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceQuerySuggestion")
+		case "description":
+			out.Values[i] = ec._SourceQuerySuggestion_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "category":
+			out.Values[i] = ec._SourceQuerySuggestion_category(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceQueryTraitsImplementors = []string{"SourceQueryTraits"}
+
+func (ec *executionContext) _SourceQueryTraits(ctx context.Context, sel ast.SelectionSet, obj *model.SourceQueryTraits) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceQueryTraitsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceQueryTraits")
+		case "SupportsAnalyze":
+			out.Values[i] = ec._SourceQueryTraits_SupportsAnalyze(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ExplainMode":
+			out.Values[i] = ec._SourceQueryTraits_ExplainMode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceSSLModeImplementors = []string{"SourceSSLMode"}
+
+func (ec *executionContext) _SourceSSLMode(ctx context.Context, sel ast.SelectionSet, obj *model.SourceSSLMode) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceSSLModeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceSSLMode")
+		case "value":
+			out.Values[i] = ec._SourceSSLMode_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "aliases":
+			out.Values[i] = ec._SourceSSLMode_aliases(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceSessionMetadataImplementors = []string{"SourceSessionMetadata"}
+
+func (ec *executionContext) _SourceSessionMetadata(ctx context.Context, sel ast.SelectionSet, obj *model.SourceSessionMetadata) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceSessionMetadataImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceSessionMetadata")
+		case "SourceType":
+			out.Values[i] = ec._SourceSessionMetadata_SourceType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "QueryLanguages":
+			out.Values[i] = ec._SourceSessionMetadata_QueryLanguages(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "TypeDefinitions":
+			out.Values[i] = ec._SourceSessionMetadata_TypeDefinitions(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Operators":
+			out.Values[i] = ec._SourceSessionMetadata_Operators(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "AliasMap":
+			out.Values[i] = ec._SourceSessionMetadata_AliasMap(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceTraitsImplementors = []string{"SourceTraits"}
+
+func (ec *executionContext) _SourceTraits(ctx context.Context, sel ast.SelectionSet, obj *model.SourceTraits) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceTraitsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceTraits")
+		case "Connection":
+			out.Values[i] = ec._SourceTraits_Connection(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Presentation":
+			out.Values[i] = ec._SourceTraits_Presentation(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Query":
+			out.Values[i] = ec._SourceTraits_Query(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "MockData":
+			out.Values[i] = ec._SourceTraits_MockData(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var sourceTypeImplementors = []string{"SourceType"}
+
+func (ec *executionContext) _SourceType(ctx context.Context, sel ast.SelectionSet, obj *model.SourceType) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sourceTypeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SourceType")
+		case "Id":
+			out.Values[i] = ec._SourceType_Id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Label":
+			out.Values[i] = ec._SourceType_Label(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Connector":
+			out.Values[i] = ec._SourceType_Connector(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Category":
+			out.Values[i] = ec._SourceType_Category(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Traits":
+			out.Values[i] = ec._SourceType_Traits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ConnectionFields":
+			out.Values[i] = ec._SourceType_ConnectionFields(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "Contract":
+			out.Values[i] = ec._SourceType_Contract(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "DiscoveryPrefill":
+			out.Values[i] = ec._SourceType_DiscoveryPrefill(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "IsAWSManaged":
+			out.Values[i] = ec._SourceType_IsAWSManaged(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "SSLModes":
+			out.Values[i] = ec._SourceType_SSLModes(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -18206,55 +20499,6 @@ func (ec *executionContext) _StatusResponse(ctx context.Context, sel ast.Selecti
 			out.Values[i] = graphql.MarshalString("StatusResponse")
 		case "Status":
 			out.Values[i] = ec._StatusResponse_Status(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var storageUnitImplementors = []string{"StorageUnit"}
-
-func (ec *executionContext) _StorageUnit(ctx context.Context, sel ast.SelectionSet, obj *model.StorageUnit) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, storageUnitImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("StorageUnit")
-		case "Name":
-			out.Values[i] = ec._StorageUnit_Name(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "Attributes":
-			out.Values[i] = ec._StorageUnit_Attributes(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "IsMockDataGenerationAllowed":
-			out.Values[i] = ec._StorageUnit_IsMockDataGenerationAllowed(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -18985,16 +21229,6 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) marshalNCapabilities2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐCapabilities(ctx context.Context, sel ast.SelectionSet, v *model.Capabilities) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._Capabilities(ctx, sel, v)
-}
-
 func (ec *executionContext) unmarshalNChatInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐChatInput(ctx context.Context, v any) (model.ChatInput, error) {
 	res, err := ec.unmarshalInputChatInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -19072,78 +21306,6 @@ func (ec *executionContext) marshalNColumn2ᚖgithubᚗcomᚋclideyᚋwhodbᚋco
 	return ec._Column(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNConnectableDatabase2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ConnectableDatabase) graphql.Marshaler {
-	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
-		fc := graphql.GetFieldContext(ctx)
-		fc.Result = &v[i]
-		return ec.marshalNConnectableDatabase2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabase(ctx, sel, v[i])
-	})
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNConnectableDatabase2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabase(ctx context.Context, sel ast.SelectionSet, v *model.ConnectableDatabase) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._ConnectableDatabase(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNConnectableDatabaseFields2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseFields(ctx context.Context, sel ast.SelectionSet, v *model.ConnectableDatabaseFields) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._ConnectableDatabaseFields(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNConnectableDatabaseRequiredFields2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseRequiredFields(ctx context.Context, sel ast.SelectionSet, v *model.ConnectableDatabaseRequiredFields) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._ConnectableDatabaseRequiredFields(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNConnectableDatabaseSSLMode2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseSSLModeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ConnectableDatabaseSSLMode) graphql.Marshaler {
-	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
-		fc := graphql.GetFieldContext(ctx)
-		fc.Result = &v[i]
-		return ec.marshalNConnectableDatabaseSSLMode2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseSSLMode(ctx, sel, v[i])
-	})
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNConnectableDatabaseSSLMode2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectableDatabaseSSLMode(ctx context.Context, sel ast.SelectionSet, v *model.ConnectableDatabaseSSLMode) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._ConnectableDatabaseSSLMode(ctx, sel, v)
-}
-
 func (ec *executionContext) unmarshalNConnectionStatus2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐConnectionStatus(ctx context.Context, v any) (model.ConnectionStatus, error) {
 	var res model.ConnectionStatus
 	err := res.UnmarshalGQL(v)
@@ -19154,39 +21316,13 @@ func (ec *executionContext) marshalNConnectionStatus2githubᚗcomᚋclideyᚋwho
 	return v
 }
 
-func (ec *executionContext) marshalNDatabaseQuerySuggestion2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐDatabaseQuerySuggestionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.DatabaseQuerySuggestion) graphql.Marshaler {
-	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
-		fc := graphql.GetFieldContext(ctx)
-		fc.Result = &v[i]
-		return ec.marshalNDatabaseQuerySuggestion2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐDatabaseQuerySuggestion(ctx, sel, v[i])
-	})
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNDatabaseQuerySuggestion2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐDatabaseQuerySuggestion(ctx context.Context, sel ast.SelectionSet, v *model.DatabaseQuerySuggestion) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._DatabaseQuerySuggestion(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNDatabaseType2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐDatabaseType(ctx context.Context, v any) (model.DatabaseType, error) {
-	var res model.DatabaseType
+func (ec *executionContext) unmarshalNDataShape2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐDataShape(ctx context.Context, v any) (model.DataShape, error) {
+	var res model.DataShape
 	err := res.UnmarshalGQL(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNDatabaseType2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐDatabaseType(ctx context.Context, sel ast.SelectionSet, v model.DatabaseType) graphql.Marshaler {
+func (ec *executionContext) marshalNDataShape2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐDataShape(ctx context.Context, sel ast.SelectionSet, v model.DataShape) graphql.Marshaler {
 	return v
 }
 
@@ -19554,42 +21690,6 @@ func (ec *executionContext) marshalNLocalGCPProject2ᚖgithubᚗcomᚋclideyᚋw
 	return ec._LocalGCPProject(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNLoginCredentials2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐLoginCredentials(ctx context.Context, v any) (model.LoginCredentials, error) {
-	res, err := ec.unmarshalInputLoginCredentials(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNLoginProfile2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐLoginProfileᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.LoginProfile) graphql.Marshaler {
-	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
-		fc := graphql.GetFieldContext(ctx)
-		fc.Result = &v[i]
-		return ec.marshalNLoginProfile2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐLoginProfile(ctx, sel, v[i])
-	})
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNLoginProfile2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐLoginProfile(ctx context.Context, sel ast.SelectionSet, v *model.LoginProfile) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._LoginProfile(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNLoginProfileInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐLoginProfileInput(ctx context.Context, v any) (model.LoginProfileInput, error) {
-	res, err := ec.unmarshalInputLoginProfileInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) marshalNMockDataDependencyAnalysis2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐMockDataDependencyAnalysis(ctx context.Context, sel ast.SelectionSet, v model.MockDataDependencyAnalysis) graphql.Marshaler {
 	return ec._MockDataDependencyAnalysis(ctx, sel, &v)
 }
@@ -19753,6 +21853,645 @@ func (ec *executionContext) marshalNSortDirection2githubᚗcomᚋclideyᚋwhodb�
 	return v
 }
 
+func (ec *executionContext) unmarshalNSourceAction2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceAction(ctx context.Context, v any) (model.SourceAction, error) {
+	var res model.SourceAction
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceAction2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceAction(ctx context.Context, sel ast.SelectionSet, v model.SourceAction) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNSourceAction2ᚕgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceActionᚄ(ctx context.Context, v any) ([]model.SourceAction, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]model.SourceAction, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNSourceAction2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceAction(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNSourceAction2ᚕgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceActionᚄ(ctx context.Context, sel ast.SelectionSet, v []model.SourceAction) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSourceAction2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceAction(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalNSourceCategory2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceCategory(ctx context.Context, v any) (model.SourceCategory, error) {
+	var res model.SourceCategory
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceCategory2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceCategory(ctx context.Context, sel ast.SelectionSet, v model.SourceCategory) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNSourceConnectionField2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionFieldᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SourceConnectionField) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSourceConnectionField2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionField(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSourceConnectionField2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionField(ctx context.Context, sel ast.SelectionSet, v *model.SourceConnectionField) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceConnectionField(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSourceConnectionFieldKind2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionFieldKind(ctx context.Context, v any) (model.SourceConnectionFieldKind, error) {
+	var res model.SourceConnectionFieldKind
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceConnectionFieldKind2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionFieldKind(ctx context.Context, sel ast.SelectionSet, v model.SourceConnectionFieldKind) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNSourceConnectionFieldSection2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionFieldSection(ctx context.Context, v any) (model.SourceConnectionFieldSection, error) {
+	var res model.SourceConnectionFieldSection
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceConnectionFieldSection2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionFieldSection(ctx context.Context, sel ast.SelectionSet, v model.SourceConnectionFieldSection) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNSourceConnectionTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionTraits(ctx context.Context, sel ast.SelectionSet, v *model.SourceConnectionTraits) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceConnectionTraits(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSourceConnectionTransport2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionTransport(ctx context.Context, v any) (model.SourceConnectionTransport, error) {
+	var res model.SourceConnectionTransport
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceConnectionTransport2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceConnectionTransport(ctx context.Context, sel ast.SelectionSet, v model.SourceConnectionTransport) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNSourceContract2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceContract(ctx context.Context, sel ast.SelectionSet, v *model.SourceContract) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceContract(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSourceDiscoveryAdvancedDefault2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceDiscoveryAdvancedDefaultᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SourceDiscoveryAdvancedDefault) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSourceDiscoveryAdvancedDefault2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceDiscoveryAdvancedDefault(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSourceDiscoveryAdvancedDefault2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceDiscoveryAdvancedDefault(ctx context.Context, sel ast.SelectionSet, v *model.SourceDiscoveryAdvancedDefault) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceDiscoveryAdvancedDefault(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSourceDiscoveryMetadataCondition2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceDiscoveryMetadataConditionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SourceDiscoveryMetadataCondition) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSourceDiscoveryMetadataCondition2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceDiscoveryMetadataCondition(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSourceDiscoveryMetadataCondition2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceDiscoveryMetadataCondition(ctx context.Context, sel ast.SelectionSet, v *model.SourceDiscoveryMetadataCondition) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceDiscoveryMetadataCondition(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSourceDiscoveryPrefill2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceDiscoveryPrefill(ctx context.Context, sel ast.SelectionSet, v *model.SourceDiscoveryPrefill) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceDiscoveryPrefill(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSourceHostInputMode2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceHostInputMode(ctx context.Context, v any) (model.SourceHostInputMode, error) {
+	var res model.SourceHostInputMode
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceHostInputMode2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceHostInputMode(ctx context.Context, sel ast.SelectionSet, v model.SourceHostInputMode) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNSourceHostInputURLParser2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceHostInputURLParser(ctx context.Context, v any) (model.SourceHostInputURLParser, error) {
+	var res model.SourceHostInputURLParser
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceHostInputURLParser2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceHostInputURLParser(ctx context.Context, sel ast.SelectionSet, v model.SourceHostInputURLParser) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNSourceLoginInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceLoginInput(ctx context.Context, v any) (model.SourceLoginInput, error) {
+	res, err := ec.unmarshalInputSourceLoginInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceMockDataTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceMockDataTraits(ctx context.Context, sel ast.SelectionSet, v *model.SourceMockDataTraits) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceMockDataTraits(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSourceModel2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceModel(ctx context.Context, v any) (model.SourceModel, error) {
+	var res model.SourceModel
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceModel2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceModel(ctx context.Context, sel ast.SelectionSet, v model.SourceModel) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNSourceObject2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SourceObject) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSourceObject2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObject(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSourceObject2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObject(ctx context.Context, sel ast.SelectionSet, v *model.SourceObject) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceObject(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSourceObjectColumns2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectColumnsᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SourceObjectColumns) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSourceObjectColumns2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectColumns(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSourceObjectColumns2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectColumns(ctx context.Context, sel ast.SelectionSet, v *model.SourceObjectColumns) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceObjectColumns(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSourceObjectKind2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKind(ctx context.Context, v any) (model.SourceObjectKind, error) {
+	var res model.SourceObjectKind
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceObjectKind2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKind(ctx context.Context, sel ast.SelectionSet, v model.SourceObjectKind) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNSourceObjectKind2ᚕgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKindᚄ(ctx context.Context, v any) ([]model.SourceObjectKind, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]model.SourceObjectKind, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNSourceObjectKind2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKind(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNSourceObjectKind2ᚕgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKindᚄ(ctx context.Context, sel ast.SelectionSet, v []model.SourceObjectKind) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSourceObjectKind2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKind(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSourceObjectRef2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRef(ctx context.Context, sel ast.SelectionSet, v *model.SourceObjectRef) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceObjectRef(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSourceObjectRefInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput(ctx context.Context, v any) (model.SourceObjectRefInput, error) {
+	res, err := ec.unmarshalInputSourceObjectRefInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNSourceObjectRefInput2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInputᚄ(ctx context.Context, v any) ([]*model.SourceObjectRefInput, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*model.SourceObjectRefInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNSourceObjectRefInput2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNSourceObjectRefInput2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput(ctx context.Context, v any) (*model.SourceObjectRefInput, error) {
+	res, err := ec.unmarshalInputSourceObjectRefInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceObjectType2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SourceObjectType) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSourceObjectType2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectType(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSourceObjectType2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectType(ctx context.Context, sel ast.SelectionSet, v *model.SourceObjectType) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceObjectType(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSourcePresentationTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourcePresentationTraits(ctx context.Context, sel ast.SelectionSet, v *model.SourcePresentationTraits) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourcePresentationTraits(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSourceProfile2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceProfileᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SourceProfile) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSourceProfile2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceProfile(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSourceProfile2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceProfile(ctx context.Context, sel ast.SelectionSet, v *model.SourceProfile) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceProfile(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSourceProfileLabelStrategy2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceProfileLabelStrategy(ctx context.Context, v any) (model.SourceProfileLabelStrategy, error) {
+	var res model.SourceProfileLabelStrategy
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceProfileLabelStrategy2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceProfileLabelStrategy(ctx context.Context, sel ast.SelectionSet, v model.SourceProfileLabelStrategy) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNSourceProfileLoginInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceProfileLoginInput(ctx context.Context, v any) (model.SourceProfileLoginInput, error) {
+	res, err := ec.unmarshalInputSourceProfileLoginInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNSourceQueryExplainMode2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceQueryExplainMode(ctx context.Context, v any) (model.SourceQueryExplainMode, error) {
+	var res model.SourceQueryExplainMode
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceQueryExplainMode2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceQueryExplainMode(ctx context.Context, sel ast.SelectionSet, v model.SourceQueryExplainMode) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNSourceQuerySuggestion2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceQuerySuggestionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SourceQuerySuggestion) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSourceQuerySuggestion2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceQuerySuggestion(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSourceQuerySuggestion2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceQuerySuggestion(ctx context.Context, sel ast.SelectionSet, v *model.SourceQuerySuggestion) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceQuerySuggestion(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSourceQueryTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceQueryTraits(ctx context.Context, sel ast.SelectionSet, v *model.SourceQueryTraits) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceQueryTraits(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSourceSSLMode2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSSLModeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SourceSSLMode) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSourceSSLMode2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSSLMode(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSourceSSLMode2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSSLMode(ctx context.Context, sel ast.SelectionSet, v *model.SourceSSLMode) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceSSLMode(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSourceSchemaFidelity2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSchemaFidelity(ctx context.Context, v any) (model.SourceSchemaFidelity, error) {
+	var res model.SourceSchemaFidelity
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceSchemaFidelity2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSchemaFidelity(ctx context.Context, sel ast.SelectionSet, v model.SourceSchemaFidelity) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNSourceSurface2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSurface(ctx context.Context, v any) (model.SourceSurface, error) {
+	var res model.SourceSurface
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceSurface2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSurface(ctx context.Context, sel ast.SelectionSet, v model.SourceSurface) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNSourceSurface2ᚕgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSurfaceᚄ(ctx context.Context, v any) ([]model.SourceSurface, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]model.SourceSurface, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNSourceSurface2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSurface(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNSourceSurface2ᚕgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSurfaceᚄ(ctx context.Context, sel ast.SelectionSet, v []model.SourceSurface) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSourceSurface2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSurface(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSourceTraits2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceTraits(ctx context.Context, sel ast.SelectionSet, v *model.SourceTraits) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceTraits(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSourceType2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceTypeᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SourceType) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSourceType2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceType(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSourceType2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceType(ctx context.Context, sel ast.SelectionSet, v *model.SourceType) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SourceType(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSourceView2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceView(ctx context.Context, v any) (model.SourceView, error) {
+	var res model.SourceView
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSourceView2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceView(ctx context.Context, sel ast.SelectionSet, v model.SourceView) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNSourceView2ᚕgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceViewᚄ(ctx context.Context, v any) ([]model.SourceView, error) {
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]model.SourceView, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNSourceView2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceView(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNSourceView2ᚕgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceViewᚄ(ctx context.Context, sel ast.SelectionSet, v []model.SourceView) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSourceView2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceView(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) marshalNStatusResponse2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐStatusResponse(ctx context.Context, sel ast.SelectionSet, v model.StatusResponse) graphql.Marshaler {
 	return ec._StatusResponse(ctx, sel, &v)
 }
@@ -19765,58 +22504,6 @@ func (ec *executionContext) marshalNStatusResponse2ᚖgithubᚗcomᚋclideyᚋwh
 		return graphql.Null
 	}
 	return ec._StatusResponse(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNStorageUnit2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐStorageUnitᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.StorageUnit) graphql.Marshaler {
-	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
-		fc := graphql.GetFieldContext(ctx)
-		fc.Result = &v[i]
-		return ec.marshalNStorageUnit2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐStorageUnit(ctx, sel, v[i])
-	})
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNStorageUnit2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐStorageUnit(ctx context.Context, sel ast.SelectionSet, v *model.StorageUnit) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._StorageUnit(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNStorageUnitColumns2ᚕᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐStorageUnitColumnsᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.StorageUnitColumns) graphql.Marshaler {
-	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
-		fc := graphql.GetFieldContext(ctx)
-		fc.Result = &v[i]
-		return ec.marshalNStorageUnitColumns2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐStorageUnitColumns(ctx, sel, v[i])
-	})
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNStorageUnitColumns2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐStorageUnitColumns(ctx context.Context, sel ast.SelectionSet, v *model.StorageUnitColumns) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._StorageUnitColumns(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {
@@ -20184,13 +22871,6 @@ func (ec *executionContext) marshalOCloudProvider2githubᚗcomᚋclideyᚋwhodb�
 	return ec._CloudProvider(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalODatabaseMetadata2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐDatabaseMetadata(ctx context.Context, sel ast.SelectionSet, v *model.DatabaseMetadata) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._DatabaseMetadata(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalOGCPProvider2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐGCPProvider(ctx context.Context, sel ast.SelectionSet, v *model.GCPProvider) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -20310,6 +22990,88 @@ func (ec *executionContext) unmarshalOSortCondition2ᚕᚖgithubᚗcomᚋclidey�
 		}
 	}
 	return res, nil
+}
+
+func (ec *executionContext) marshalOSourceContent2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceContent(ctx context.Context, sel ast.SelectionSet, v *model.SourceContent) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._SourceContent(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOSourceObject2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObject(ctx context.Context, sel ast.SelectionSet, v *model.SourceObject) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._SourceObject(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOSourceObjectKind2ᚕgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKindᚄ(ctx context.Context, v any) ([]model.SourceObjectKind, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]model.SourceObjectKind, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNSourceObjectKind2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKind(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOSourceObjectKind2ᚕgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKindᚄ(ctx context.Context, sel ast.SelectionSet, v []model.SourceObjectKind) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSourceObjectKind2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKind(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) unmarshalOSourceObjectKind2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKind(ctx context.Context, v any) (*model.SourceObjectKind, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.SourceObjectKind)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOSourceObjectKind2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectKind(ctx context.Context, sel ast.SelectionSet, v *model.SourceObjectKind) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalOSourceObjectRefInput2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceObjectRefInput(ctx context.Context, v any) (*model.SourceObjectRefInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputSourceObjectRefInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOSourceSessionMetadata2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceSessionMetadata(ctx context.Context, sel ast.SelectionSet, v *model.SourceSessionMetadata) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._SourceSessionMetadata(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import classNames from "classnames";
 import {AnimatePresence, motion} from "framer-motion";
 import {FC, ReactNode} from "react";
 import {twMerge} from "tailwind-merge";
-import {IInternalRoute} from "../config/routes";
+import type {IInternalRoute} from "../config/routes";
 import {useAppSelector} from "../store/hooks";
 import {Breadcrumb} from "./breadcrumbs";
 import {Loading} from "./loading";
@@ -28,7 +28,7 @@ import {useTranslation} from "@/hooks/use-translation";
 import {MagnifyingGlassIcon, QuestionMarkCircleIcon} from "./heroicons";
 import {getKeyDisplay} from "@/utils/platform";
 import {useEffectiveIsMac} from "@/hooks/useEffectiveIsMac";
-import {useDatabaseMetadata} from "@/hooks/useDatabaseMetadata";
+import {useSourceSessionMetadata} from "@/hooks/useSourceSessionMetadata";
 
 type IPageProps = {
     wrapperClassName?: string;
@@ -129,9 +129,9 @@ const KeyboardShortcutsHint: FC = () => {
 export const InternalPage: FC<IInternalPageProps> = (props) => {
     const current = useAppSelector(state => state.auth.current);
 
-    // Fetch database metadata when logged in - this populates Redux store
-    // for utilities like getDatabaseOperators and getDatabaseTypeDefinitions
-    useDatabaseMetadata();
+    // Fetch source session metadata when logged in so Apollo state is ready
+    // for source-operator and column-type helpers.
+    useSourceSessionMetadata();
 
     return (
         <Container>

@@ -78,14 +78,18 @@ func (a *App) Startup(ctx context.Context) {
 
 // Shutdown is called when the app is closing
 func (a *App) Shutdown(ctx context.Context) {
-	if err := a.SaveWindowState(); err != nil {
-		log.Warnf("Failed to save window state: %v", err)
-	}
-
 	// Track desktop app shutdown
 	analytics.Capture(ctx, "desktop_app_closed", map[string]any{
 		"edition": a.edition,
 	})
+}
+
+func (a *App) beforeClose(ctx context.Context) bool {
+	// Save window geometry before Wails tears down the Linux frontend.
+	if err := a.SaveWindowState(); err != nil {
+		log.Warnf("Failed to save window state: %v", err)
+	}
+	return false
 }
 
 // DomReady is called when the frontend is loaded

@@ -473,7 +473,7 @@ func (v *WhereView) View() string {
 		b.WriteString("  " + addLabel)
 		b.WriteString("\n\n")
 
-		b.WriteString(RenderBindingHelpWidth(v.width,
+		b.WriteString(renderBindingHelpWidthNoHelp(v.width,
 			Keys.WhereAdd.Prev,
 			Keys.WhereAdd.Next,
 			Keys.WhereAdd.Change,
@@ -482,7 +482,7 @@ func (v *WhereView) View() string {
 		))
 	} else {
 		b.WriteString("\n")
-		b.WriteString(RenderBindingHelpWidth(v.width,
+		b.WriteString(renderBindingHelpWidthNoHelp(v.width,
 			Keys.WhereList.Up,
 			Keys.WhereList.Down,
 			Keys.WhereList.Add,

@@ -3,28 +3,29 @@ package engine
 import (
 	"errors"
 	"testing"
+
+	"github.com/clidey/whodb/core/src/source"
 )
 
 func TestValidateColumnTypeAllowsWhenMetadataMissing(t *testing.T) {
-	if err := ValidateColumnType("NOT_A_REAL_TYPE", nil); err != nil {
+	if err := ValidateColumnType("NOT_A_REAL_TYPE", "TestDB", nil); err != nil {
 		t.Fatalf("expected nil error when metadata is nil, got %v", err)
 	}
 
-	if err := ValidateColumnType("NOT_A_REAL_TYPE", &DatabaseMetadata{}); err != nil {
+	if err := ValidateColumnType("NOT_A_REAL_TYPE", "TestDB", &source.TypeSessionMetadata{}); err != nil {
 		t.Fatalf("expected nil error when metadata has no type definitions, got %v", err)
 	}
 }
 
 func TestValidateColumnTypeRejectsUnsupported(t *testing.T) {
-	meta := &DatabaseMetadata{
-		DatabaseType: "TestDB",
+	meta := &source.TypeSessionMetadata{
 		TypeDefinitions: []TypeDefinition{
 			{ID: "INTEGER"},
 		},
 		AliasMap: map[string]string{},
 	}
 
-	err := ValidateColumnType("NOT_A_REAL_TYPE", meta)
+	err := ValidateColumnType("NOT_A_REAL_TYPE", "TestDB", meta)
 	var unsupported *UnsupportedTypeError
 	if err == nil || !errors.As(err, &unsupported) {
 		t.Fatalf("expected UnsupportedTypeError, got %v", err)
@@ -38,8 +39,7 @@ func TestValidateColumnTypeRejectsUnsupported(t *testing.T) {
 }
 
 func TestValidateColumnTypeResolvesAliases(t *testing.T) {
-	meta := &DatabaseMetadata{
-		DatabaseType: "TestDB",
+	meta := &source.TypeSessionMetadata{
 		TypeDefinitions: []TypeDefinition{
 			{ID: "INTEGER"},
 			{ID: "VARCHAR", HasLength: true},
@@ -49,11 +49,11 @@ func TestValidateColumnTypeResolvesAliases(t *testing.T) {
 		},
 	}
 
-	if err := ValidateColumnType("int", meta); err != nil {
+	if err := ValidateColumnType("int", "TestDB", meta); err != nil {
 		t.Fatalf("expected alias INT -> INTEGER to validate, got %v", err)
 	}
 
-	if err := ValidateColumnType("VARCHAR(255)", meta); err != nil {
+	if err := ValidateColumnType("VARCHAR(255)", "TestDB", meta); err != nil {
 		t.Fatalf("expected parametrized type to validate, got %v", err)
 	}
 }

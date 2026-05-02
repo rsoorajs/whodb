@@ -37,6 +37,7 @@
   "mockData": {
     "supportedTable": "products",
     "tableWithFKs": "orders",
+    "dataTypesRowCount": 20,
     "fkRelationships": {
       "orders": {
         "parentTable": "users",
@@ -312,9 +313,13 @@
           "col_json": {
             "type": "JSON",
             "addValue": "{\"test\":\"new\"}",
+            "displayAddValue": "{\"test\": \"new\"}",
             "deleteValue": "{\"delete\":\"test\"}",
-            "originalValue": "{\"key\":\"value\"}",
-            "updateValue": "{\"test\":\"updated\"}"
+            "displayDeleteValue": "{\"delete\": \"test\"}",
+            "originalValue": "{\"key\": \"value\"}",
+            "inputOriginalValue": "{\"key\":\"value\"}",
+            "updateValue": "{\"test\":\"updated\"}",
+            "displayUpdateValue": "{\"test\": \"updated\"}"
           },
           "col_jsonb": {
             "type": "JSONB",

@@ -1,5 +1,5 @@
-mutation DeleteRow($schema: String!, $storageUnit:String!, $values: [RecordInput!]!) {
-  DeleteRow(schema: $schema, storageUnit: $storageUnit, values: $values) {
+mutation DeleteRow($ref: SourceObjectRefInput!, $values: [RecordInput!]!) {
+  DeleteRow: DeleteSourceRow(ref: $ref, values: $values) {
     Status
   }
 }

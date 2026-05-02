@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 
 import {FC} from "react";
-import {Container} from "./page";
 
 import {Spinner} from "@clidey/ux";
 import {useTranslation} from "@/hooks/use-translation";
@@ -54,7 +53,7 @@ export const Loading: FC<ILoadingProps> = ({className, size = "md", hideText = t
 
 
 export const LoadingPage: FC = () => {
-  return <Container className="flex justify-center items-center h-full w-full">
+  return <div className="flex justify-center items-center h-full w-full">
     <Loading size="lg" />
-  </Container>
+  </div>
 }

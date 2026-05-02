@@ -23,7 +23,7 @@ Find and open the table containing the data you want to analyze.
 
 ![Data View](/images/09-data-view-users-table.png)
 
-The data grid shows your data in a familiar spreadsheet-like format, with all your records visible.
+The data grid shows the current page of rows in a familiar spreadsheet-like format. Use page size, pagination, and WHERE conditions to control how much data is loaded.
 </Step>
 
 <Step title="Apply Basic Filters">
@@ -231,11 +231,11 @@ Iteration is key to effective analysis.
 </Step>
 
 <Step title="Save for Later">
-All queries are automatically saved to history.
+Executed queries are available in the current cell's history.
 
 ![Query History](/images/33-scratchpad-query-history.png)
 
-Access your saved queries anytime. Frequently used analysis queries can be bookmarked for quick access later.
+For important analysis SQL, keep a copy in your team's normal documentation or repository. If you work in the CLI, use CLI bookmarks for named reusable queries.
 </Step>
 </Steps>
 
@@ -338,16 +338,16 @@ Window functions let you see individual records alongside aggregate metrics—pe
 Once you have your analysis, export the data for sharing or further processing:
 
 <Steps>
-<Step title="Select Data to Export">
-You have three options:
+<Step title="Choose The Export Entry Point">
+Choose the entry point that matches what you want to download:
 
 ![Export Dialog](/images/20-data-view-export-dialog.png)
 
-- **Export All**: All rows in the table (after filters applied)
-- **Export Selected**: Only rows you've selected
-- **Export Filtered**: Only rows matching your current filters and search
+- **Export All**: Export from the table or header context menu
+- **Export Selected**: Select loaded rows first, then export selected rows
+- **Filtered export**: Apply WHERE conditions before exporting
 
-For analysis, usually "Export Filtered" is most useful.
+For analysis, apply the WHERE conditions first so the exported rows match the dataset you reviewed.
 </Step>
 
 <Step title="Choose Export Format">
@@ -375,25 +375,16 @@ Best for:
 Provides a more polished deliverable.
 </Accordion>
 
-<Accordion title="JSON">
+<Accordion title="JSON Lines">
 Best for:
 - API integration
 - NoSQL databases
 - JavaScript/web applications
 - Preserving nested data structures
 
-JSON preserves data types and relationships better than CSV.
+JSON Lines is available for records from sources like MongoDB when supported.
 </Accordion>
 
-<Accordion title="SQL">
-Best for:
-- Backup and restore
-- Sharing data with other databases
-- Version control of specific datasets
-- Reproducibility
-
-SQL INSERT statements are human-readable and executable.
-</Accordion>
 </AccordionGroup>
 </Step>
 

@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
+import { useMutation } from '@apollo/client/react';
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@clidey/ux';
-import { DatabaseType, useLoginMutation, useLoginWithProfileMutation } from '@graphql';
+import { LoginSourceDocument, LoginWithSourceProfileDocument } from '@graphql';
 import { useAppDispatch } from '@/store/hooks';
 import { AuthActions, LocalLoginProfile } from '@/store/auth';
 import { DatabaseActions } from '@/store/database';
 import { updateProfileLastAccessed } from '@/components/profile-info-tooltip';
 import { InternalRoutes } from '@/config/routes';
+import { clearGraphqlStore } from '@/config/graphql-client';
 
 interface UseProfileSwitchOptions {
     onSuccess?: () => void;
@@ -34,16 +36,16 @@ interface UseProfileSwitchOptions {
  * Shared hook for switching between profiles.
  * Handles both backend-known profiles (saved/environment-defined) and local profiles.
  *
- * Backend-known profiles: Uses LoginWithProfile mutation (AWS, config, env vars)
- * Local profiles: Uses Login mutation with full credentials
+ * Backend-known profiles: Uses LoginWithSourceProfile mutation (AWS, config, env vars)
+ * Local profiles: Uses LoginSource mutation with full credentials
  */
 export const useProfileSwitch = (options?: UseProfileSwitchOptions) => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const [login, { loading: loginLoading }] = useLoginMutation();
-    const [loginWithProfile, { loading: loginWithProfileLoading }] = useLoginWithProfileMutation();
+    const [login, { loading: loginLoading }] = useMutation(LoginSourceDocument);
+    const [loginWithSourceProfile, { loading: loginWithSourceProfileLoading }] = useMutation(LoginWithSourceProfileDocument);
 
-    const loading = loginLoading || loginWithProfileLoading;
+    const loading = loginLoading || loginWithSourceProfileLoading;
 
     const switchProfile = useCallback(async (profile: LocalLoginProfile, database?: string) => {
         const targetDatabase = database ?? profile.Database;
@@ -51,75 +53,62 @@ export const useProfileSwitch = (options?: UseProfileSwitchOptions) => {
         // Clear schema before switching
         dispatch(DatabaseActions.setSchema(""));
 
-        // Use LoginWithProfile for saved/environment-defined profiles (backend knows about them)
-        // Use Login for local profiles (only stored in frontend)
-        if (profile.Saved || profile.IsEnvironmentDefined) {
-            await loginWithProfile({
-                variables: {
-                    profile: {
-                        Id: profile.Id,
-                        Type: profile.Type as DatabaseType,
-                        Database: targetDatabase,
-                    }
-                },
-                onCompleted(data) {
-                    if (data.LoginWithProfile.Status) {
-                        updateProfileLastAccessed(profile.Id);
-                        if (database) {
-                            dispatch(AuthActions.setLoginProfileDatabase({ id: profile.Id, database }));
+        // Use LoginWithSourceProfile for saved/environment-defined profiles (backend knows about them)
+        // Use LoginSource for local profiles (only stored in frontend)
+        try {
+            const switchSucceeded = profile.Saved || profile.IsEnvironmentDefined
+                ? (await loginWithSourceProfile({
+                    variables: {
+                        profile: {
+                            Id: profile.Id,
+                            Values: targetDatabase ? [{ Key: "Database", Value: targetDatabase }] : [],
                         }
-                        dispatch(DatabaseActions.setSchema(""));
-                        dispatch(AuthActions.switch({ id: profile.Id }));
-                        navigate(InternalRoutes.Dashboard.StorageUnit.path);
-                        options?.onSuccess?.();
-                    } else {
-                        const errorMsg = options?.errorMessage ?? 'Failed to switch profile';
-                        toast.error(errorMsg);
-                        options?.onError?.(errorMsg);
-                    }
-                },
-                onError(error) {
-                    const errorMsg = `${options?.errorMessage ?? 'Failed to switch profile'}: ${error.message}`;
-                    toast.error(errorMsg);
-                    options?.onError?.(error.message);
-                }
-            });
-        } else {
-            await login({
-                variables: {
-                    credentials: {
-                        Type: profile.Type,
-                        Database: targetDatabase,
-                        Hostname: profile.Hostname,
-                        Password: profile.Password,
-                        Username: profile.Username,
-                        Advanced: profile.Advanced,
-                    }
-                },
-                onCompleted(data) {
-                    if (data.Login.Status) {
-                        updateProfileLastAccessed(profile.Id);
-                        if (database) {
-                            dispatch(AuthActions.setLoginProfileDatabase({ id: profile.Id, database }));
+                    },
+                })).data?.LoginWithSourceProfile.Status
+                : (await login({
+                    variables: {
+                        credentials: {
+                            Id: profile.Id,
+                            SourceType: profile.SourceType,
+                            Values: profile.Database === targetDatabase
+                                ? profile.Values
+                                : profile.Values.map(value =>
+                                    value.Key === "Database" ? { ...value, Value: targetDatabase } : value
+                                  ).concat(
+                                    profile.Values.some(value => value.Key === "Database")
+                                      ? []
+                                      : [{ Key: "Database", Value: targetDatabase }]
+                                  ),
+                            AccessToken: profile.AccessToken,
                         }
-                        dispatch(DatabaseActions.setSchema(""));
-                        dispatch(AuthActions.switch({ id: profile.Id }));
-                        navigate(InternalRoutes.Dashboard.StorageUnit.path);
-                        options?.onSuccess?.();
-                    } else {
-                        const errorMsg = options?.errorMessage ?? 'Failed to switch profile';
-                        toast.error(errorMsg);
-                        options?.onError?.(errorMsg);
-                    }
-                },
-                onError(error) {
-                    const errorMsg = `${options?.errorMessage ?? 'Failed to switch profile'}: ${error.message}`;
-                    toast.error(errorMsg);
-                    options?.onError?.(error.message);
-                }
+                    },
+                })).data?.LoginSource.Status;
+
+            if (!switchSucceeded) {
+                const errorMsg = options?.errorMessage ?? 'Failed to switch profile';
+                toast.error(errorMsg);
+                options?.onError?.(errorMsg);
+                return;
+            }
+
+            updateProfileLastAccessed(profile.Id);
+            if (database) {
+                dispatch(AuthActions.setLoginProfileDatabase({ id: profile.Id, database }));
+            }
+            await clearGraphqlStore();
+            dispatch(DatabaseActions.setSchema(""));
+            dispatch(AuthActions.switch({ id: profile.Id }));
+            navigate(InternalRoutes.Dashboard.StorageUnit.path, {
+                state: {},
             });
+            options?.onSuccess?.();
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorMsg = `${options?.errorMessage ?? 'Failed to switch profile'}: ${errorMessage}`;
+            toast.error(errorMsg);
+            options?.onError?.(errorMessage);
         }
-    }, [login, loginWithProfile, dispatch, navigate, options]);
+    }, [dispatch, login, loginWithSourceProfile, navigate, options]);
 
     return {
         switchProfile,

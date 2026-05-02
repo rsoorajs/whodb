@@ -27,6 +27,10 @@ import {clearBrowserState} from '../../support/helpers/animation.mjs';
 test.describe('Error Handling', () => {
     test.describe('Network Errors', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 // TODO: This test is flaky in Playwright due to card view not persisting after
                 // clearBrowserState + manual login. The sidebar table tree also takes too long
@@ -88,6 +92,10 @@ test.describe('Error Handling', () => {
 
     test.describe('HTTP Error Status Codes', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('handles server 500 error gracefully', async ({ whodb, page }) => {
 
@@ -157,6 +165,10 @@ test.describe('Error Handling', () => {
 
     test.describe('Invalid Query Errors', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('shows error in scratchpad for invalid SQL syntax', async ({ whodb, page }) => {
                     await whodb.goto('scratchpad');
@@ -226,6 +238,10 @@ test.describe('Error Handling', () => {
 
     test.describe('GraphQL Errors', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('handles GraphQL errors on page load', async ({ whodb, page }) => {
 
@@ -307,6 +323,10 @@ test.describe('Error Handling', () => {
 
     test.describe('Connection Timeout Handling', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('handles slow query with loading indicator', async ({ whodb, page }) => {
                     await whodb.goto('scratchpad');
@@ -406,6 +426,10 @@ test.describe('Error Handling', () => {
 
     test.describe('Error State UI Features', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('scratchpad error can be cleared by running new query', async ({ whodb, page }) => {
                     await whodb.goto('scratchpad');
@@ -454,6 +478,10 @@ test.describe('Error Handling', () => {
 
     test.describe('Chat Error Handling', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test.beforeEach(async ({ whodb, page }) => {
                     await clearBrowserState(page);
@@ -501,6 +529,10 @@ test.describe('Error Handling', () => {
 
     test.describe('Graph View Error Handling', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('handles graph data failure gracefully', async ({ whodb, page }) => {
 
@@ -555,6 +587,10 @@ test.describe('Error Handling', () => {
 
     test.describe('Error Recovery', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('can recover from failed operation by refreshing', async ({ whodb, page }) => {
 

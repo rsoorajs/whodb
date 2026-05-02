@@ -204,6 +204,65 @@ func TestERDLayout_CompactBox(t *testing.T) {
 	}
 }
 
+func TestBuildERDTablesFromGraph_UsesGraphForeignKeyMetadata(t *testing.T) {
+	graphUnits := []engine.GraphUnit{
+		{
+			Unit: engine.StorageUnit{Name: "users"},
+			Relations: []engine.GraphUnitRelationship{
+				{
+					Name:             "orders",
+					RelationshipType: "OneToMany",
+					SourceColumn:     strPtr("user_id"),
+					TargetColumn:     strPtr("id"),
+				},
+			},
+		},
+		{
+			Unit: engine.StorageUnit{Name: "orders"},
+		},
+	}
+
+	columnsByTable := map[string][]engine.Column{
+		"users": {
+			{Name: "id", Type: "INTEGER", IsPrimary: true},
+		},
+		"orders": {
+			{Name: "id", Type: "INTEGER", IsPrimary: true},
+			{Name: "user_id", Type: "INTEGER"},
+		},
+	}
+
+	tables := buildERDTablesFromGraph(graphUnits, func(storageUnit string) ([]engine.Column, error) {
+		return columnsByTable[storageUnit], nil
+	})
+
+	var userIDColumn *engine.Column
+	for _, table := range tables {
+		if table.StorageUnit.Name != "orders" {
+			continue
+		}
+		for i := range table.Columns {
+			if table.Columns[i].Name == "user_id" {
+				userIDColumn = &table.Columns[i]
+				break
+			}
+		}
+	}
+
+	if userIDColumn == nil {
+		t.Fatal("expected orders.user_id column to be present")
+	}
+	if !userIDColumn.IsForeignKey {
+		t.Fatal("expected orders.user_id to be marked as a foreign key")
+	}
+	if userIDColumn.ReferencedTable == nil || *userIDColumn.ReferencedTable != "users" {
+		t.Fatalf("expected referenced table users, got %#v", userIDColumn.ReferencedTable)
+	}
+	if userIDColumn.ReferencedColumn == nil || *userIDColumn.ReferencedColumn != "id" {
+		t.Fatalf("expected referenced column id, got %#v", userIDColumn.ReferencedColumn)
+	}
+}
+
 // --- EXPLAIN Tests ---
 
 func TestExplainView_ReceivesResult(t *testing.T) {

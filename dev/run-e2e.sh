@@ -29,6 +29,7 @@
 #   WHODB_DATABASES      - space-separated list of databases to test
 #   WHODB_DB_CATEGORIES  - colon-separated db:category pairs (e.g., "postgres:sql mysql:sql")
 #   WHODB_VITE_EDITION   - vite build edition (empty for CE)
+#   WHODB_VITE_CONFIG    - optional Vite config path
 #   WHODB_SETUP_MODE     - mode to pass to setup-e2e.sh (default: ce)
 #   WHODB_EDITION_LABEL  - label for output (default: CE)
 #   WHODB_EXTRA_WAIT     - set to 'true' for extra service wait time
@@ -39,7 +40,7 @@
 #   ./run-e2e.sh false all                    # GUI mode (--headed), all databases
 #
 # Architecture:
-#   - Headless mode: Loops through databases sequentially for better isolation/logging
+#   - Headless mode: Runs one Playwright process per selected database
 #   - GUI mode: Single Playwright session with --headed flag
 
 set -e
@@ -58,13 +59,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Default CE database configurations (can be overridden via env vars)
-DEFAULT_DATABASES="postgres mysql mysql8 mariadb sqlite duckdb mongodb redis elasticsearch cockroachdb clickhouse memcached valkey dragonfly opensearch starrocks yugabytedb questdb ferretdb"
-DEFAULT_CATEGORIES="postgres:sql mysql:sql mysql8:sql mariadb:sql sqlite:sql duckdb:sql mongodb:document redis:keyvalue elasticsearch:document cockroachdb:sql clickhouse:sql memcached:cache valkey:keyvalue dragonfly:keyvalue opensearch:document starrocks:sql yugabytedb:sql questdb:sql ferretdb:document"
+DEFAULT_DATABASES="postgres mysql mysql8 mariadb tidb sqlite duckdb mongodb redis elasticsearch cockroachdb clickhouse memcached valkey dragonfly opensearch yugabytedb questdb ferretdb"
+DEFAULT_CATEGORIES="postgres:sql mysql:sql mysql8:sql mariadb:sql tidb:sql sqlite:sql duckdb:sql mongodb:document redis:keyvalue elasticsearch:document cockroachdb:sql clickhouse:sql memcached:cache valkey:keyvalue dragonfly:keyvalue opensearch:document yugabytedb:sql questdb:sql ferretdb:document"
 
 # Use env vars or defaults
 DATABASES_STR="${WHODB_DATABASES:-$DEFAULT_DATABASES}"
 CATEGORIES_STR="${WHODB_DB_CATEGORIES:-$DEFAULT_CATEGORIES}"
-VITE_EDITION="${WHODB_VITE_EDITION:-}"
+VITE_CONFIG="${WHODB_VITE_CONFIG:-}"
 SETUP_MODE="${WHODB_SETUP_MODE:-ce}"
 EDITION_LABEL="${WHODB_EDITION_LABEL:-CE}"
 EXTRA_WAIT="${WHODB_EXTRA_WAIT:-false}"
@@ -118,6 +119,7 @@ echo "   Databases: ${DATABASES[*]}"
 
 # Setup environment (databases + build binary + start backend)
 echo "⚙️ Setting up test environment..."
+export WHODB_SPEC_FILE="$SPEC_FILE"
 bash "$SCRIPT_DIR/setup-e2e.sh" "$SETUP_MODE" "$TARGET_DB"
 
 cd "$PROJECT_ROOT/frontend"
@@ -136,10 +138,10 @@ mkdir -p e2e/reports/test-results e2e/reports/blobs e2e/reports/html
 # Start frontend dev server
 echo "🌐 Starting frontend dev server..."
 BACKEND_PORT="${WHODB_BACKEND_PORT:-8080}"
-if [ "$VITE_EDITION" = "ee" ]; then
-    VITE_BACKEND_PORT="$BACKEND_PORT" NODE_ENV=test pnpm exec vite --config vite.ee.config.mts --port 3000 --clearScreen false --logLevel error > e2e/logs/frontend.log 2>&1 &
+if [ -n "$VITE_CONFIG" ]; then
+    VITE_BACKEND_PORT="$BACKEND_PORT" NODE_ENV=test pnpm exec vite --config "$VITE_CONFIG" --port 3000 --strictPort --clearScreen false --logLevel error > e2e/logs/frontend.log 2>&1 &
 else
-    VITE_BACKEND_PORT="$BACKEND_PORT" NODE_ENV=test pnpm exec vite --port 3000 --clearScreen false --logLevel error > e2e/logs/frontend.log 2>&1 &
+    VITE_BACKEND_PORT="$BACKEND_PORT" NODE_ENV=test pnpm exec vite --port 3000 --strictPort --clearScreen false --logLevel error > e2e/logs/frontend.log 2>&1 &
 fi
 FRONTEND_PID=$!
 
@@ -147,7 +149,10 @@ FRONTEND_PID=$!
 echo "⏳ Waiting for frontend to be ready..."
 COUNTER=0
 while [ $COUNTER -lt 30 ]; do
-    if nc -z localhost 3000 2>/dev/null; then
+    if ! kill -0 "$FRONTEND_PID" 2>/dev/null; then
+        break
+    fi
+    if curl -fsS http://localhost:3000/ 2>/dev/null | grep -q 'id="root"'; then
         echo "✅ Frontend is ready on port 3000"
         break
     fi
@@ -155,9 +160,14 @@ while [ $COUNTER -lt 30 ]; do
     COUNTER=$((COUNTER + 1))
 done
 
-if ! nc -z localhost 3000 2>/dev/null; then
+if ! kill -0 "$FRONTEND_PID" 2>/dev/null; then
     echo "❌ Frontend failed to start"
-    kill $FRONTEND_PID 2>/dev/null || true
+    tail -50 e2e/logs/frontend.log 2>/dev/null || true
+    exit 1
+fi
+
+if ! curl -fsS http://localhost:3000/ 2>/dev/null | grep -q 'id="root"'; then
+    echo "❌ Frontend did not serve the WhoDB app on port 3000"
     exit 1
 fi
 
@@ -183,15 +193,15 @@ else
     SPEC_PATTERN=""
 fi
 
-# When running a single mutating spec, Playwright project dependencies can cause
-# the full standalone suite to run (even if the spec is filtered on the CLI).
-# This opt-in mode runs the auth setup project, then runs the mutating project
-# with --no-deps to avoid triggering the full standalone project.
-PW_NO_DEPS="${WHODB_PW_NO_DEPS:-false}"
-KEYBOARD_ONLY=false
-if [ "$SPEC_FILE" = "keyboard-shortcuts" ] || [ "$SPEC_FILE" = "keyboard-shortcuts.spec.mjs" ]; then
-    KEYBOARD_ONLY=true
-fi
+# When running a single mutating spec, Playwright project dependencies would
+# otherwise run the full standalone suite before the targeted spec.
+SPEC_BASENAME="${SPEC_FILE%.spec.mjs}"
+MUTATING_SPEC=false
+case "$SPEC_BASENAME" in
+    crud|mock-data|import|data-types|key-types|schema-management|chat|keyboard-shortcuts|type-casting)
+        MUTATING_SPEC=true
+        ;;
+esac
 
 # Determine Playwright config + projects (read-only + mutating)
 PW_PROJECT="standalone"
@@ -210,6 +220,9 @@ if [ "$SPEC_FILE" = "accessibility" ] || [ "$SPEC_FILE" = "accessibility.spec.mj
     PW_ARGS="--config=$PW_CONFIG --project=$PW_PROJECT"
 else
     PW_ARGS="--config=$PW_CONFIG --project=$PW_PROJECT --project=$PW_PROJECT_MUTATING"
+    for extra_project in ${WHODB_EXTRA_PLAYWRIGHT_PROJECTS:-}; do
+        PW_ARGS="$PW_ARGS --project=$extra_project"
+    done
 fi
 if [ "$HEADLESS" = "false" ]; then
     PW_ARGS="$PW_ARGS --headed"
@@ -218,7 +231,7 @@ fi
 if [ "$HEADLESS" = "true" ]; then
     # Headless mode: Run all databases in parallel (1 Playwright process per database).
     # Each process gets its own browser, outputDir, and blob report — no file collisions.
-    # The backend handles concurrent connections fine (9 cached connections, well under the 50 limit).
+    # The backend handles the parallel database connections within the test connection limit.
 
     # Warm Playwright's transform cache so parallel workers don't race on .mjs compilation.
     DATABASE="${DATABASES[0]}" CATEGORY="$(get_category "${DATABASES[0]}")" \
@@ -234,7 +247,7 @@ if [ "$HEADLESS" = "true" ]; then
         (
             cd "$PROJECT_ROOT/frontend"
             LOG_FILE="$PROJECT_ROOT/frontend/e2e/logs/$db.log"
-            if [ "$PW_NO_DEPS" = "true" ] && [ "$KEYBOARD_ONLY" = "true" ]; then
+            if [ "$MUTATING_SPEC" = "true" ]; then
                 DATABASE="$db" \
                 CATEGORY="$(get_category "$db")" \
                 pnpm exec playwright test \

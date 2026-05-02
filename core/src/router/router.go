@@ -48,7 +48,9 @@ func NewGraphQLServer(es graphql.ExecutableSchema) *handler.Server {
 	srv.AddTransport(&transport.Options{})
 	srv.AddTransport(&transport.GET{})
 	srv.AddTransport(&transport.POST{})
-	srv.AddTransport(&transport.MultipartForm{})
+	srv.AddTransport(&transport.MultipartForm{
+		MaxUploadSize: 250 * 1024 * 1024, // 250 MB
+	})
 
 	srv.Use(extension.FixedComplexityLimit(100))
 
@@ -166,6 +168,24 @@ func setupMiddlewares(router *chi.Mux, additionalMiddlewares []func(http.Handler
 	router.Use(middlewares...)
 }
 
+func wrapWithBasePath(handler http.Handler, basePath string) *chi.Mux {
+	router := chi.NewRouter()
+	redirectToBasePath := func(w http.ResponseWriter, r *http.Request) {
+		target := basePath + "/"
+		if r.URL.RawQuery != "" {
+			target += "?" + r.URL.RawQuery
+		}
+		http.Redirect(w, r, target, http.StatusMovedPermanently)
+	}
+
+	router.Get(basePath, redirectToBasePath)
+	router.Head(basePath, redirectToBasePath)
+	router.Handle("/health", handler)
+	router.Handle(basePath+"/*", http.StripPrefix(basePath, handler))
+
+	return router
+}
+
 // InitializeRouter creates the chi router with all middleware, GraphQL server, and additional HTTP handlers.
 func InitializeRouter(schema graphql.ExecutableSchema, httpHandlers map[string]http.Handler, additionalMiddlewares []func(http.Handler) http.Handler, publicPaths []string, staticFiles embed.FS) *chi.Mux {
 	router := chi.NewRouter()
@@ -173,5 +193,14 @@ func InitializeRouter(schema graphql.ExecutableSchema, httpHandlers map[string]h
 	setupMiddlewares(router, additionalMiddlewares, publicPaths)
 	setupServer(router, schema, httpHandlers, staticFiles)
 
-	return router
+	if env.BasePath == "" {
+		return router
+	}
+
+	if env.IsAPIGatewayEnabled || !hasEmbeddedFrontend(staticFiles) {
+		log.Warnf("Ignoring WHODB_BASE_PATH=%s because bundled frontend assets are not being served", env.BasePath)
+		return router
+	}
+
+	return wrapWithBasePath(router, env.BasePath)
 }

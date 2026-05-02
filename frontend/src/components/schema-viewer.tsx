@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { skipToken, useQuery } from "@apollo/client/react";
 import {
     SearchInput,
     Sidebar as SidebarComponent,
@@ -24,17 +25,26 @@ import {
     Tree,
     TreeDataItem,
 } from "@clidey/ux";
-import {StorageUnit, useGetStorageUnitsQuery} from "@graphql";
+import {GetStorageUnitsDocument, GetStorageUnitsQuery, SourceAction, type SourceObjectRefInput} from "@graphql";
 import {FolderIcon, TableCellsIcon} from "./heroicons";
 import {FC, useCallback, useEffect, useMemo, useState} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
 import {InternalRoutes} from "../config/routes";
-import {useDatabaseTraits} from "../hooks/useDatabaseTraits";
+import {useSourceContract} from "../hooks/useSourceContract";
 import {useAppSelector} from "../store/hooks";
 import {Loading} from "./loading";
 import {useTranslation} from "@/hooks/use-translation";
+import {buildSourceParentRef} from "@/utils/source-refs";
 
-function groupByType(units: StorageUnit[]) {
+type SourceBrowserObject = GetStorageUnitsQuery['StorageUnit'][number];
+
+type SchemaViewerProps = {
+    parentRef?: SourceObjectRefInput;
+    selectedName?: string;
+    trail?: SourceBrowserObject[];
+};
+
+function groupByType(units: SourceBrowserObject[]) {
     const groups: Record<string, any[]> = {};
     for (const unit of units) {
         const type = toTitleCase(unit.Attributes.find(a => a.Key === "Type")?.Value ?? "");
@@ -45,28 +55,28 @@ function groupByType(units: StorageUnit[]) {
     return groups;
 }
 
-export const SchemaViewer: FC = () => {
+export const SchemaViewer: FC<SchemaViewerProps> = ({ parentRef: explicitParentRef, selectedName, trail = [] }) => {
     const { t } = useTranslation('components/schema-viewer');
     const current = useAppSelector(state => state.auth.current);
     const selectedSchema = useAppSelector(state => state.database.schema);
-    const { storageUnitLabel, usesDatabaseInsteadOfSchema } = useDatabaseTraits(current?.Type);
+    const { item, storageUnitLabel, supportsSchema } = useSourceContract(current?.Type);
     const navigate = useNavigate();
-    const state = useLocation().state as { unit: StorageUnit } | undefined;
+    const state = useLocation().state as { unit?: SourceBrowserObject } | undefined;
 
     // Search state
     const [search, setSearch] = useState("");
 
-    // For databases that use database instead of schema, determine the schema value
-    const schemaValue = usesDatabaseInsteadOfSchema ? (current?.Database ?? '') : selectedSchema;
+    const parentRef = explicitParentRef ?? buildSourceParentRef(item, current, selectedSchema);
+    const storageUnitsQueryOptions = current && (explicitParentRef != null || !supportsSchema || selectedSchema !== "")
+        ? {
+            variables: {
+                parent: parentRef,
+            },
+        }
+        : skipToken;
 
     // Query for storage units (tables, views, etc.)
-    const {data, loading, refetch} = useGetStorageUnitsQuery({
-        variables: {
-            schema: schemaValue,
-        },
-        // Skip if no current connection OR no schema value is available
-        skip: !current || !schemaValue,
-    });
+    const {data, loading, refetch} = useQuery(GetStorageUnitsDocument, storageUnitsQueryOptions);
 
     // Refetch when the connection context changes (profile switch or database switch)
     const currentProfileId = current?.Id;
@@ -77,17 +87,21 @@ export const SchemaViewer: FC = () => {
         }
     }, [currentProfileId, currentDatabase, refetch]);
 
+    const storageUnits = useMemo(() => {
+        return (data?.StorageUnit ?? []) as SourceBrowserObject[];
+    }, [data?.StorageUnit]);
+
     // Group storage units by type for tree display, with search filter
     const treeData: TreeDataItem[] = useMemo(() => {
-        if (!data?.StorageUnit) return [];
-        const grouped = groupByType(data.StorageUnit);
+        if (storageUnits.length === 0) return [];
+        const grouped = groupByType(storageUnits);
 
         // If searching, flatten all units and filter by name, then group again
         if (search.trim() !== "") {
             const searchLower = search.trim().toLowerCase();
             // Flatten all units
-            const filteredUnits = data.StorageUnit.filter(unit =>
-                unit.Name.toLowerCase().includes(searchLower)
+            const filteredUnits = storageUnits.filter(unit =>
+                (unit.Name ?? "").toLowerCase().includes(searchLower)
             );
             const filteredGrouped = groupByType(filteredUnits);
             return Object.entries(filteredGrouped).map(([type, units]) => ({
@@ -113,28 +127,39 @@ export const SchemaViewer: FC = () => {
                 icon: TableCellsIcon as TreeDataItem["icon"],
             })),
         }));
-    }, [data, search]);
+    }, [search, storageUnits]);
 
     const handleSelect = useCallback((item: TreeDataItem | undefined) => {
         // Only leaf nodes (tables) are selectable
         const tableId = item?.id;
-        if (tableId == null || tableId === state?.unit.Name) {
+        if (tableId == null || tableId === (selectedName ?? state?.unit?.Name)) {
             return
         }
-        const unit = data?.StorageUnit.find(u => u.Name === tableId);
+        const unit = storageUnits.find(u => u.Name === tableId);
         if (unit == null) {
+            return;
+        }
+        if (unit.Actions.includes(SourceAction.Browse) && unit.HasChildren) {
+            navigate(InternalRoutes.Dashboard.StorageUnit.path, {
+                state: {
+                    parent: unit,
+                    trail: [...trail, unit],
+                },
+            });
             return;
         }
         navigate(InternalRoutes.Dashboard.ExploreStorageUnit.path, {
             state: {
                 unit,
+                parentRef,
+                trail,
             },
         });
-    }, [navigate, state, data]);
+    }, [navigate, parentRef, selectedName, state?.unit?.Name, storageUnits, trail]);
 
     // Only hide sidebar if there's truly no data (no connection, no schema, etc.)
     // Don't hide when search returns empty results
-    if (!data?.StorageUnit || (treeData.length === 0 && search.trim() === "")) {
+    if (storageUnits.length === 0 && search.trim() === "") {
         return null;
     }
 
@@ -169,7 +194,7 @@ export const SchemaViewer: FC = () => {
                                 <Tree
                                     className="flex-1 overflow-y-auto"
                                     data={treeData}
-                                    initialSelectedItemId={state?.unit.Name}
+                                    initialSelectedItemId={selectedName ?? state?.unit?.Name}
                                     onSelectChange={handleSelect}
                                     expandAll
                                 />

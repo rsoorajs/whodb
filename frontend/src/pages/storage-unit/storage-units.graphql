@@ -1,10 +1,17 @@
-query GetStorageUnits($schema: String!) {
-  StorageUnit(schema: $schema) {
+query GetStorageUnits($parent: SourceObjectRefInput) {
+  StorageUnit: SourceObjects(parent: $parent) {
+    Ref {
+      Kind
+      Locator
+      Path
+    }
+    Kind
     Name
-    Attributes {
+    Attributes: Metadata {
       Key
       Value
     }
-    IsMockDataGenerationAllowed
+    Actions
+    HasChildren
   }
 }

@@ -25,7 +25,6 @@ import { aiModelsReducers } from './ai-models';
 import { scratchpadReducers, IScratchpadState } from './scratchpad';
 import { IChatState } from './chat';
 import { tourReducers } from './tour';
-import { databaseMetadataReducers } from './database-metadata';
 import { providersReducers } from './providers';
 import { healthReducers } from './health';
 import { exploreConditionsReducers } from './explore-conditions';
@@ -152,23 +151,50 @@ const chatTransform = createTransform(
   { whitelist: ['houdini'] }
 );
 
+const aiModelsPersistTransform = createTransform(
+  (inboundState: any) => {
+    if (!inboundState?.modelTypes) return inboundState;
+    // Only persist non-platform providers (user-added API keys)
+    const nonPlatformProviders = inboundState.modelTypes.filter((m: any) => !m.isPlatformProvider);
+    return {
+      ...inboundState,
+      modelTypes: nonPlatformProviders,
+      // Don't persist current selection for platform providers (goes in platform store instead)
+      current: inboundState.current?.isPlatformProvider ? undefined : inboundState.current,
+      currentModel: inboundState.current?.isPlatformProvider ? undefined : inboundState.currentModel,
+      models: inboundState.current?.isPlatformProvider ? [] : inboundState.models,
+    };
+  },
+  (outboundState: any) => outboundState,
+  { whitelist: ['aiModels'] }
+);
+
+const settingsPersistTransform = createTransform(
+  (inboundState: any) => {
+    if (!inboundState) return inboundState;
+    const { newUIEnabled, ...settingsToPersist } = inboundState;
+    return settingsToPersist;
+  },
+  (outboundState: any) => outboundState,
+  { whitelist: ['settings'] }
+);
+
 const ceReducerMap = {
   auth: persistReducer({ key: "auth", storage, }, authReducers),
   database: persistReducer({ key: "database", storage, }, databaseReducers),
-  settings: persistReducer({ key: "settings", storage }, settingsReducers),
+  settings: persistReducer({ key: "settings", storage, transforms: [settingsPersistTransform] }, settingsReducers),
   houdini: persistReducer({
     key: "houdini",
     storage,
     transforms: [chatTransform]
   }, houdiniReducers),
-  aiModels: persistReducer({ key: "aiModels", storage }, aiModelsReducers),
+  aiModels: persistReducer({ key: "aiModels", storage, transforms: [aiModelsPersistTransform] }, aiModelsReducers),
   scratchpad: persistReducer({
     key: "scratchpad",
     storage,
     transforms: [scratchpadTransform]
   }, scratchpadReducers),
   tour: persistReducer({ key: "tour", storage }, tourReducers),
-  databaseMetadata: persistReducer({ key: "databaseMetadata", storage }, databaseMetadataReducers),
   providers: persistReducer({ key: "providers", storage }, providersReducers),
   health: healthReducers, // Health status is not persisted (transient state)
   exploreConditions: persistReducer({ key: 'exploreConditions', storage }, exploreConditionsReducers),
@@ -192,7 +218,9 @@ export const reduxStore = configureStore({
 /** Injects an additional reducer slice into the store. Called by EE at boot to add EE-specific state. */
 export function registerReducer(key: string, reducer: Reducer): void {
   if (key in eeReducerMap) return;
-  eeReducerMap[key] = reducer;
+  // Persist EE reducers (like platform)
+  const persistedReducer = persistReducer({ key, storage }, reducer);
+  eeReducerMap[key] = persistedReducer;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   reduxStore.replaceReducer(buildRootReducer() as any);
 }

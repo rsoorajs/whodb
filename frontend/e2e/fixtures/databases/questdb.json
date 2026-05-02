@@ -71,11 +71,11 @@
   "tables": {
     "users": {
       "columns": {
-        "id": "INT",
-        "username": "STRING",
-        "email": "STRING",
-        "password": "STRING",
-        "created_at": "TIMESTAMP"
+        "id": "integer",
+        "username": "character varying",
+        "email": "character varying",
+        "password": "character varying",
+        "created_at": "timestamp"
       },
       "expectedColumns": ["", "id", "username", "email", "password", "created_at"],
       "testData": {
@@ -86,7 +86,7 @@
         ]
       },
       "metadata": {
-        "type": "table"
+        "type": "base table"
       }
     }
   },

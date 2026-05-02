@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { skipToken, useMutation, useQuery } from "@apollo/client/react";
 import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import {
     Badge,
@@ -32,21 +33,23 @@ import {
 } from "@clidey/ux";
 import { SearchSelect } from "../ux";
 import {
+    AddGcpProviderDocument,
     GcpProviderInput,
     GcpProvider,
     CloudProviderStatus,
+    GetDiscoveredConnectionsDocument,
+    GetGcpRegionsDocument,
+    GetLocalGcpProjectsDocument,
     LocalGcpProject,
-    useAddGcpProviderMutation,
-    useUpdateGcpProviderMutation,
-    useTestCloudProviderMutation,
-    useTestGcpCredentialsMutation,
-    useGetLocalGcpProjectsQuery,
-    useGetGcpRegionsQuery,
+    TestCloudProviderDocument,
+    TestGcpCredentialsDocument,
+    UpdateGcpProviderDocument,
 } from "@graphql";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ProvidersActions, LocalCloudProvider } from "../../store/providers";
 import { useTranslation } from "@/hooks/use-translation";
 import { ChevronDownIcon, CloudIcon } from "../heroicons";
+import { upsertCloudProviderCache } from "../../utils/apollo-provider-cache";
 
 export interface GcpProviderModalProps {
     open: boolean;
@@ -71,15 +74,14 @@ export const GcpProviderModal: FC<GcpProviderModalProps> = ({
     }, [editingProviderId, cloudProviders]);
 
     const isEditMode = editingProviderId !== null;
+    const localProjectsQueryOptions = isEditMode ? skipToken : {};
 
     // Query local GCP projects
-    const { data: localProjectsData } = useGetLocalGcpProjectsQuery({
-        skip: isEditMode,
-    });
+    const { data: localProjectsData } = useQuery(GetLocalGcpProjectsDocument, localProjectsQueryOptions);
     const localProjects = localProjectsData?.LocalGCPProjects ?? [];
 
     // Query GCP regions from backend
-    const { data: regionsData } = useGetGcpRegionsQuery();
+    const { data: regionsData } = useQuery(GetGcpRegionsDocument);
     const gcpRegions = regionsData?.GCPRegions ?? [];
 
     // Form state
@@ -92,14 +94,24 @@ export const GcpProviderModal: FC<GcpProviderModalProps> = ({
     const [discoverMemorystore, setDiscoverMemorystore] = useState(true);
 
     // GraphQL mutations
-    const [addProvider, { loading: addLoading }] = useAddGcpProviderMutation({
-        refetchQueries: ['GetCloudProviders', 'GetDiscoveredConnections'],
+    const [addProvider, { loading: addLoading }] = useMutation(AddGcpProviderDocument, {
+        refetchQueries: [GetDiscoveredConnectionsDocument],
+        update(cache, { data }) {
+            if (data?.AddGCPProvider) {
+                upsertCloudProviderCache(cache, data.AddGCPProvider);
+            }
+        },
     });
-    const [updateProvider, { loading: updateLoading }] = useUpdateGcpProviderMutation({
-        refetchQueries: ['GetCloudProviders', 'GetDiscoveredConnections'],
+    const [updateProvider, { loading: updateLoading }] = useMutation(UpdateGcpProviderDocument, {
+        refetchQueries: [GetDiscoveredConnectionsDocument],
+        update(cache, { data }) {
+            if (data?.UpdateGCPProvider) {
+                upsertCloudProviderCache(cache, data.UpdateGCPProvider);
+            }
+        },
     });
-    const [testProvider, { loading: testLoading }] = useTestCloudProviderMutation();
-    const [testCredentials, { loading: testCredentialsLoading }] = useTestGcpCredentialsMutation();
+    const [testProvider, { loading: testLoading }] = useMutation(TestCloudProviderDocument);
+    const [testCredentials, { loading: testCredentialsLoading }] = useMutation(TestGcpCredentialsDocument);
 
     const loading = addLoading || updateLoading || testLoading || testCredentialsLoading;
 

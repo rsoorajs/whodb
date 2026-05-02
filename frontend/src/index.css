@@ -25,14 +25,14 @@
 @supports (font-variation-settings: normal) {
     @font-face {
         font-family: "Inter";
-        src: url("/fonts/Inter/Inter-VariableFont_opsz,wght.ttf") format("truetype");
+        src: url("/fonts/Inter/Inter-VariableFont_opsz,wght.woff2") format("woff2");
         font-weight: 100 900;
         font-style: normal;
         font-display: swap;
     }
     @font-face {
         font-family: "Inter";
-        src: url("/fonts/Inter/Inter-Italic-VariableFont_opsz,wght.ttf") format("truetype");
+        src: url("/fonts/Inter/Inter-Italic-VariableFont_opsz,wght.woff2") format("woff2");
         font-weight: 100 900;
         font-style: italic;
         font-display: swap;
@@ -225,4 +225,21 @@ body.disable-animations *::after {
 
 [data-testid="ai-provider"] ~ div [data-testid="empty-state"] h1 {
   font-size: 18px;
+}
+
+body.whodb-new-ui-enabled [data-sonner-toast] {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+body.whodb-new-ui-enabled [data-sonner-toast][data-styled='true'] {
+  --normal-bg: var(--popover) !important;
+  background-color: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+  border-color: var(--border) !important;
+}
+
+body.whodb-new-ui-enabled .dark [data-sonner-toast][data-styled='true'] {
+  --normal-bg: oklch(20.5% 0 0) !important;
+  background-color: oklch(20.5% 0 0) !important;
 }

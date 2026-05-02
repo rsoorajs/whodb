@@ -21,6 +21,12 @@ import { clearBrowserState } from '../../support/helpers/animation.mjs';
 const targetDb = process.env.DATABASE;
 const shouldRun = !targetDb || targetDb.toLowerCase() === 'postgres';
 
+function parsePersistedAuth(authData) {
+    const parsed = JSON.parse(authData);
+    delete parsed.sslStatus;
+    return parsed;
+}
+
 /**
  * Browser Storage Tests
  *
@@ -120,7 +126,8 @@ describeOrSkip('Browser Storage', () => {
                     'persist:aiModels',
                     'persist:scratchpad',
                     'persist:tour',
-                    'persist:databaseMetadata'
+                    'persist:providers',
+                    'persist:exploreConditions'
                 ];
 
                 const results = {};
@@ -164,7 +171,7 @@ describeOrSkip('Browser Storage', () => {
                 database: localStorage.getItem('persist:database')
             }));
 
-            expect(JSON.parse(afterReload.auth)).toEqual(JSON.parse(beforeReload.auth));
+            expect(parsePersistedAuth(afterReload.auth)).toEqual(parsePersistedAuth(beforeReload.auth));
             expect(JSON.parse(afterReload.database)).toEqual(JSON.parse(beforeReload.database));
         });
     });

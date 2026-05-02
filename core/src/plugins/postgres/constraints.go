@@ -28,8 +28,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// Pre-compiled regex for PostgreSQL type casts like ::text, ::character varying
-var pgTypeCastPattern = regexp.MustCompile(`::\w+(\s+\w+)?`)
+// Pre-compiled regex for PostgreSQL/CockroachDB type casts like ::text, ::character varying, :::STRING
+var pgTypeCastPattern = regexp.MustCompile(`:{2,3}\w+(\s+\w+)?(\[\])?`)
 
 // GetColumnConstraints retrieves column constraints for PostgreSQL tables
 func (p *PostgresPlugin) GetColumnConstraints(config *engine.PluginConfig, schema string, storageUnit string) (map[string]map[string]any, error) {
@@ -168,7 +168,7 @@ func (p *PostgresPlugin) parseCheckConstraint(checkClause string, constraints ma
 
 	// Remove CHECK keyword and outer parentheses
 	clause := strings.TrimPrefix(checkClause, "CHECK ")
-	clause = strings.Trim(clause, "()")
+	clause = gorm_plugin.TrimEnclosingParens(clause)
 
 	columnName := gorm_plugin.ExtractColumnNameFromClause(clause)
 	if columnName == "" {

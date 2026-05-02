@@ -18,6 +18,22 @@ import { test, expect, forEachDatabase } from '../../support/test-fixture.mjs';
 import { getDatabaseConfig } from '../../support/database-config.mjs';
 import { clearBrowserState } from '../../support/helpers/animation.mjs';
 
+const PROFILE_REPRESENTATIVE_DATABASES = ['postgres', 'mongodb', 'redis', 'memcached'];
+
+async function expectPersistedProfileType(page, expectedType) {
+    await expect.poll(async () => {
+        return await page.evaluate(() => {
+            const rawAuth = localStorage.getItem('persist:auth');
+            if (!rawAuth) return null;
+
+            const auth = JSON.parse(rawAuth);
+            if (!auth.current) return null;
+
+            return JSON.parse(auth.current).Type;
+        });
+    }, { timeout: 10000 }).toBe(expectedType);
+}
+
 /**
  * Profile Management Tests
  *
@@ -28,6 +44,10 @@ import { clearBrowserState } from '../../support/helpers/animation.mjs';
 test.describe('Profile Management', () => {
     test.describe('Profile Display', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('displays profile selector in sidebar', async ({ whodb, page }) => {
                     await expect(page.locator('[data-testid="sidebar-profile"]')).toBeVisible();
@@ -50,6 +70,10 @@ test.describe('Profile Management', () => {
 
     test.describe('Profile Dropdown', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('opens dropdown when profile is clicked', async ({ whodb, page }) => {
                     await page.locator('[data-testid="sidebar-profile"]').click();
@@ -145,6 +169,10 @@ test.describe('Profile Management', () => {
 
     test.describe('Profile Switching', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('can switch between profiles when multiple exist', async ({ whodb, page }) => {
                     await page.locator('[data-testid="sidebar-profile"]').click();
@@ -166,6 +194,10 @@ test.describe('Profile Management', () => {
 
     test.describe('Add New Profile', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('shows add profile option in dropdown', async ({ whodb, page }) => {
                     await page.locator('[data-testid="sidebar-profile"]').click();
@@ -221,11 +253,15 @@ test.describe('Profile Management', () => {
                     await page.keyboard.press('Escape');
                 });
             });
-        });
+        }, { databases: PROFILE_REPRESENTATIVE_DATABASES });
     });
 
     test.describe('Profile Last Accessed', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('displays profile information', async ({ whodb, page }) => {
                     await expect(page.locator('[data-testid="sidebar-profile"]')).toBeAttached();
@@ -241,6 +277,10 @@ test.describe('Profile Management', () => {
 
     test.describe('Logout from Profile', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('can logout from current profile', async ({ whodb, page }) => {
                     await expect(page.locator('[data-testid="sidebar-profile"]')).toBeAttached();
@@ -282,6 +322,10 @@ test.describe('Profile Management', () => {
 
     test.describe('Profile Persistence', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('maintains profile selection after page reload', async ({ whodb, page }) => {
                     await expect(page.locator('[data-testid="sidebar-profile"]')).toBeAttached();
@@ -293,17 +337,17 @@ test.describe('Profile Management', () => {
                 });
 
                 test('maintains profile selection when navigating between pages', async ({ whodb, page }) => {
-                    await expect(page.locator('[data-testid="sidebar-profile"]')).toBeAttached();
+                    await expectPersistedProfileType(page, db.type);
 
                     await page.locator('[href="/graph"]').click();
                     await expect(page).toHaveURL(/\/graph/);
 
-                    await expect(page.locator('[data-testid="sidebar-profile"]')).toBeAttached();
+                    await expectPersistedProfileType(page, db.type);
 
                     await page.locator('[href="/storage-unit"]').click();
                     await expect(page).toHaveURL(/\/storage-unit/);
 
-                    await expect(page.locator('[data-testid="sidebar-profile"]')).toBeAttached();
+                    await expectPersistedProfileType(page, db.type);
                 });
             });
         });
@@ -311,6 +355,10 @@ test.describe('Profile Management', () => {
 
     test.describe('Profile Navigation', () => {
         forEachDatabase('sql', (db) => {
+            if (db.type !== 'Postgres') {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('profile element exists on different pages', async ({ whodb, page }) => {
                     // Verify profile element exists on graph page

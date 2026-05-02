@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import {useQuery} from "@apollo/client";
+import {skipToken, useLazyQuery, useQuery} from "@apollo/client/react";
 import {FC, useCallback, useEffect, useMemo, useRef, useState} from "react";
-import {Edge, Node, ReactFlowProvider, useEdgesState, useNodesState} from "reactflow";
+import {Edge, Node, NodeMouseHandler, ReactFlowProvider, useEdgesState, useNodesState} from "reactflow";
 import {GraphElements} from "../../components/graph/constants";
 import {Graph, IGraphInstance} from "../../components/graph/graph";
 import {createEdge, createNode} from "../../components/graph/utils";
@@ -27,11 +27,9 @@ import {
     GetGraphDocument,
     GetGraphQuery,
     GetGraphQueryVariables,
-    StorageUnit,
-    useGetColumnsBatchLazyQuery,
-    useGetStorageUnitsQuery
+    GetColumnsBatchDocument,
 } from '@graphql';
-import {useDatabaseTraits} from "../../hooks/useDatabaseTraits";
+import {useSourceContract} from "../../hooks/useSourceContract";
 import {useAppSelector} from "../../store/hooks";
 import {StorageUnitGraphCard} from "../storage-unit/storage-unit";
 import {useTranslation} from '@/hooks/use-translation';
@@ -48,10 +46,13 @@ import {
 } from "@clidey/ux";
 import {useNavigate} from "react-router-dom";
 import {FolderIcon, RectangleGroupIcon, TableCellsIcon} from "../../components/heroicons";
+import {buildSourceScopeRef, getObjectNameFromRef} from "../../utils/source-refs";
+
+type GraphStorageUnit = NonNullable<GetGraphQuery["Graph"]>[number]["Unit"];
 
 // Helper function to group storage units by type
-function groupByType(units: StorageUnit[]) {
-    const groups: Record<string, StorageUnit[]> = {};
+function groupByType(units: GraphStorageUnit[]) {
+    const groups: Record<string, GraphStorageUnit[]> = {};
     for (const unit of units) {
         const typeAttr = unit.Attributes.find(a => a.Key === "Type")?.Value ?? "";
         const type = toTitleCase(typeAttr);
@@ -69,7 +70,7 @@ interface GraphSidebarProps {
     setSearch: (search: string) => void;
     selectedUnits: Set<string>;
     setSelectedUnits: (units: Set<string> | ((prev: Set<string>) => Set<string>)) => void;
-    storageUnitsData: any;
+    storageUnits: GraphStorageUnit[];
     unitsLoading: boolean;
 }
 
@@ -79,14 +80,14 @@ const GraphSidebar: FC<GraphSidebarProps> = ({
     setSearch,
     selectedUnits,
     setSelectedUnits,
-    storageUnitsData,
+    storageUnits,
     unitsLoading
 }) => {
     const { t } = useTranslation('pages/graph');
-    const { storageUnitLabel } = useDatabaseTraits(current?.Type);
+    const { storageUnitLabel } = useSourceContract(current?.Type);
     const children = useMemo(() => {
-        const units: StorageUnit[] = (storageUnitsData?.StorageUnit ?? [])
-            .filter((u: StorageUnit) => u.Name.toLowerCase().includes(search.trim().toLowerCase()));
+        const units = storageUnits
+            .filter((u: GraphStorageUnit) => u.Name.toLowerCase().includes(search.trim().toLowerCase()));
         const groups = groupByType(units);
         const groupEntries = Object.entries(groups);
         if (groupEntries.length === 0) {
@@ -117,7 +118,7 @@ const GraphSidebar: FC<GraphSidebarProps> = ({
                 })}
             </div>
         ));
-    }, [search, selectedUnits, setSelectedUnits, storageUnitsData, t]);
+    }, [search, selectedUnits, setSelectedUnits, storageUnits, t]);
 
     return (
         <div className="dark flex grow">
@@ -158,80 +159,121 @@ export const GraphPage: FC = () => {
     const reactFlowRef = useRef<IGraphInstance>();
     const schema = useAppSelector(state => state.database.schema);
     const current = useAppSelector(state => state.auth.current);
-    const { singularStorageUnitLabel, storageUnitLabel, usesSchemaForGraph } = useDatabaseTraits(current?.Type);
+    const { item, singularStorageUnitLabel, storageUnitLabel } = useSourceContract(current?.Type);
     const navigate = useNavigate();
     const [search, setSearch] = useState("");
     const [selectedUnits, setSelectedUnits] = useState<Set<string>>(new Set());
-    const [graphData, setGraphData] = useState<GetGraphQuery["Graph"]>([]);
     const [isInitialized, setIsInitialized] = useState(false);
     const [tableColumns, setTableColumns] = useState<Record<string, any[]>>({});
+    const [loadingColumns, setLoadingColumns] = useState<Record<string, boolean>>({});
 
-    const [fetchColumnsBatch] = useGetColumnsBatchLazyQuery();
+    const [fetchColumnsBatch] = useLazyQuery(GetColumnsBatchDocument);
+    const graphScopeRef = useMemo(() => buildSourceScopeRef(item, current, schema), [current, item, schema]);
+    const graphQueryOptions = current
+        ? {
+            variables: {
+                ref: graphScopeRef,
+            },
+        }
+        : skipToken;
 
     const {
+        data: graphQueryData,
         loading: graphLoading,
         refetch: refetchGraph
-    } = useQuery<GetGraphQuery, GetGraphQueryVariables>(GetGraphDocument, {
-        variables: {
-            schema: usesSchemaForGraph ? schema : current?.Database ?? "",
-        },
-        onCompleted(data) {
-            setGraphData(data.Graph);
-        },
-    });
+    } = useQuery<GetGraphQuery, GetGraphQueryVariables>(GetGraphDocument, graphQueryOptions);
+    const graphData = useMemo(() => {
+        return (graphQueryData?.Graph ?? []) as GetGraphQuery["Graph"];
+    }, [graphQueryData?.Graph]);
+    const storageUnits = useMemo(() => {
+        return graphData.map(node => node.Unit);
+    }, [graphData]);
 
-    // Fetch all storage units for sidebar selection
-    const {data: storageUnitsData, loading: unitsLoading, refetch: refetchStorageUnits} = useGetStorageUnitsQuery({
-        variables: {
-            schema: usesSchemaForGraph ? schema : current?.Database ?? "",
-        },
-        skip: !current,
-        fetchPolicy: "cache-and-network",
-    });
-
-    // Refetch when the connection context changes (profile switch or database switch)
+    // Clear graph-specific UI state when the connection context changes.
     const currentProfileId = current?.Id;
     const currentDatabase = current?.Database;
     useEffect(() => {
+        setSelectedUnits(new Set());
+        setTableColumns({});
+        setLoadingColumns({});
+    }, [currentProfileId, currentDatabase, schema]);
+
+    // Refetch when the connection context changes (profile switch or database switch).
+    useEffect(() => {
         if (currentProfileId) {
             refetchGraph();
-            refetchStorageUnits();
         }
-    }, [currentProfileId, currentDatabase, refetchGraph, refetchStorageUnits]);
+    }, [currentProfileId, currentDatabase, refetchGraph]);
 
     // Default selection logic: auto-select up to 10 units
     useEffect(() => {
-        const units = storageUnitsData?.StorageUnit ?? [];
+        const units = storageUnits;
         if (units.length === 0) return;
         setSelectedUnits(prev => {
             if (prev.size > 0) return prev;
             const toSelect = units.slice(0, 10);
             return new Set(toSelect.map(u => u.Name));
         });
-    }, [storageUnitsData?.StorageUnit]);
+    }, [storageUnits]);
 
-    // Incrementally fetch columns for newly selected units
-    useEffect(() => {
-        if (selectedUnits.size === 0) return;
-        const needed = [...selectedUnits].filter(name => !(name in tableColumns));
-        if (needed.length === 0) return;
-        const graphSchema = usesSchemaForGraph ? schema : current?.Database ?? "";
+    const loadColumnsForRefs = useCallback((refs: GraphStorageUnit["Ref"][]) => {
+        const refsToFetch = refs.filter(ref => {
+            const unitName = getObjectNameFromRef(ref);
+            return !(unitName in tableColumns) && !loadingColumns[unitName];
+        });
+        if (refsToFetch.length === 0) {
+            return;
+        }
+
+        const unitNames = refsToFetch.map(ref => getObjectNameFromRef(ref));
+        setLoadingColumns(prev => {
+            const next = { ...prev };
+            for (const unitName of unitNames) {
+                next[unitName] = true;
+            }
+            return next;
+        });
+
         fetchColumnsBatch({
-            variables: { schema: graphSchema, storageUnits: needed },
+            variables: { refs: refsToFetch },
         }).then(result => {
-            if (result.data?.ColumnsBatch) {
+            const batch = result.data?.ColumnsBatch;
+            if (batch) {
                 setTableColumns(prev => {
                     const next = { ...prev };
-                    for (const item of result.data!.ColumnsBatch) {
-                        next[item.StorageUnit] = item.Columns;
+                    for (const item of batch) {
+                        next[getObjectNameFromRef(item.StorageUnit)] = item.Columns;
                     }
                     return next;
                 });
             }
         }).catch(error => {
             console.error('Failed to fetch columns batch:', error);
+        }).finally(() => {
+            setLoadingColumns(prev => {
+                const next = { ...prev };
+                for (const unitName of unitNames) {
+                    delete next[unitName];
+                }
+                return next;
+            });
         });
-    }, [selectedUnits, tableColumns, fetchColumnsBatch, usesSchemaForGraph, schema, current?.Database]);
+    }, [fetchColumnsBatch, loadingColumns, tableColumns]);
+
+    useEffect(() => {
+        const refs = storageUnits
+            .filter(unit => selectedUnits.has(unit.Name))
+            .map(unit => unit.Ref);
+        loadColumnsForRefs(refs);
+    }, [loadColumnsForRefs, selectedUnits, storageUnits]);
+
+    const handleNodeClick = useCallback<NodeMouseHandler>((_, node) => {
+        const ref = node.data?.Ref;
+        if (!ref) {
+            return;
+        }
+        loadColumnsForRefs([ref]);
+    }, [loadColumnsForRefs]);
 
     // Build nodes and edges from graph data and selection
     const { computedNodes, computedEdges } = useMemo(() => {
@@ -257,16 +299,17 @@ export const GraphPage: FC = () => {
             const itemCount = metadataCount + columnCount;
             const calculatedHeight = Math.max(250, 200 + (itemCount * 50));
 
-            newNodes.push(createNode({
-                id: node.Unit.Name,
-                type: GraphElements.StorageUnit,
-                data: {
-                    ...node.Unit,
-                    columns: columns,
-                },
-                width: 400,
-                height: calculatedHeight,
-            }));
+                newNodes.push(createNode({
+                    id: node.Unit.Name,
+                    type: GraphElements.StorageUnit,
+                    data: {
+                        ...node.Unit,
+                        columns: columns,
+                        columnsLoading: loadingColumns[node.Unit.Name] || false,
+                    },
+                    width: 400,
+                    height: calculatedHeight,
+                }));
         }
         
         // Create edges between selected nodes with column-level connections
@@ -360,7 +403,7 @@ export const GraphPage: FC = () => {
         }
 
         return { computedNodes: newNodes, computedEdges: newEdges };
-    }, [graphData, selectedUnits, tableColumns]);
+    }, [graphData, loadingColumns, selectedUnits, tableColumns]);
 
     // Update nodes and edges when computed values change
     useEffect(() => {
@@ -377,7 +420,7 @@ export const GraphPage: FC = () => {
             }, 50);
             return () => clearTimeout(timer);
         }
-    }, [isInitialized, computedNodes]);
+    }, [isInitialized, computedNodes, computedEdges]);
 
     const handleOnReady = useCallback((instance: IGraphInstance) => {
         reactFlowRef.current = instance;
@@ -402,8 +445,8 @@ export const GraphPage: FC = () => {
             setSearch={setSearch}
             selectedUnits={selectedUnits}
             setSelectedUnits={setSelectedUnits}
-            storageUnitsData={storageUnitsData}
-            unitsLoading={unitsLoading}
+            storageUnits={storageUnits}
+            unitsLoading={graphLoading}
         />
     }>
         <div className="flex-1 h-full">
@@ -422,6 +465,7 @@ export const GraphPage: FC = () => {
                                 setNodes={setNodes} setEdges={setEdges}
                                 onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
                                 minZoom={0.1}
+                                onNodeClick={handleNodeClick}
                                 onReady={handleOnReady} />
                 }
             </ReactFlowProvider>

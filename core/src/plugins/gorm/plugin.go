@@ -22,12 +22,13 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
-	"github.com/clidey/whodb/core/graph/model"
 	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/plugins"
+	queryast "github.com/clidey/whodb/core/src/query"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -66,6 +67,8 @@ type GormPluginFunctions interface {
 	ConvertStringValue(value, columnType string, isNullable bool) (any, error)
 	ConvertRawToRows(raw *sql.Rows) (*engine.GetRowsResult, error)
 	ConvertRecordValuesToMap(values []engine.Record) (map[string]any, error)
+	FormatValue(val any) string
+	FormatTimeForExport(value time.Time) string
 
 	// CreateSQLBuilder creates a SQL builder instance - can be overridden by specific plugins
 	CreateSQLBuilder(db *gorm.DB) SQLBuilderInterface
@@ -90,16 +93,9 @@ type GormPluginFunctions interface {
 	// GetRowsOrderBy returns the ORDER BY clause for pagination queries
 	GetRowsOrderBy(db *gorm.DB, schema string, storageUnit string) string
 
-	// ShouldHandleColumnType returns true if the plugin wants to handle a specific column type
-	ShouldHandleColumnType(columnType string) bool
-
-	// GetColumnScanner returns a scanner for a specific column type
-	// This is called when ShouldHandleColumnType returns true
-	GetColumnScanner(columnType string) any
-
-	// FormatColumnValue formats a scanned value for a specific column type
-	// This is called when ShouldHandleColumnType returns true
-	FormatColumnValue(columnType string, scanner any) (string, error)
+	// GetColumnCodec returns a codec for plugin-specific scanned column handling.
+	// Return nil to use the shared default scanner/formatter path.
+	GetColumnCodec(columnType string) ColumnCodec
 
 	// GetCustomColumnTypeName returns a custom column type name for display
 	// Return empty string to use the default type name
@@ -159,6 +155,9 @@ type GormPluginFunctions interface {
 	// for bulk insert operations. Used to calculate appropriate batch sizes.
 	// Default: 65535 (PostgreSQL/MySQL limit). Override for databases with lower limits.
 	GetMaxBulkInsertParameters() int
+
+	// GetBulkInsertBatchSize returns the preferred bulk insert row batch size.
+	GetBulkInsertBatchSize() int
 
 	// BuildSkipConflictClause returns an OnConflict clause that skips duplicate rows
 	// during append-mode imports. Dialect-specific because Postgres uses DO NOTHING
@@ -229,13 +228,22 @@ func (p *GormPlugin) GetAllSchemas(config *engine.PluginConfig) ([]string, error
 }
 
 func (p *GormPlugin) GetRows(config *engine.PluginConfig, req *engine.GetRowsRequest) (*engine.GetRowsResult, error) {
+	log.WithFields(map[string]any{
+		"databaseType": config.Credentials.Type,
+		"schema":       req.Schema,
+		"storageUnit":  req.StorageUnit,
+		"pageSize":     req.PageSize,
+		"pageOffset":   req.PageOffset,
+		"hasWhere":     req.Where != nil,
+		"sortCount":    len(req.Sort),
+	}).Debug("GORM row fetch requested")
 	return plugins.WithConnection(config, p.DB, func(db *gorm.DB) (*engine.GetRowsResult, error) {
 		// Use generic implementation; database-specific behavior should be handled in each plugin
 		return p.getGenericRows(db, req.Schema, req.StorageUnit, req.Where, req.Sort, req.PageSize, req.PageOffset)
 	})
 }
 
-func (p *GormPlugin) GetRowCount(config *engine.PluginConfig, schema string, storageUnit string, where *model.WhereCondition) (int64, error) {
+func (p *GormPlugin) GetRowCount(config *engine.PluginConfig, schema string, storageUnit string, where *queryast.WhereCondition) (int64, error) {
 	return plugins.WithConnection(config, p.DB, func(db *gorm.DB) (int64, error) {
 		var columnTypes map[string]ColumnTypeInfo
 		if where != nil {
@@ -307,7 +315,7 @@ func (p *GormPlugin) GetColumnsForTable(config *engine.PluginConfig, schema stri
 }
 
 // SQLite-specific row retrieval is implemented in the sqlite3 plugin override.
-func (p *GormPlugin) getGenericRows(db *gorm.DB, schema, storageUnit string, where *model.WhereCondition, sort []*model.SortCondition, pageSize, pageOffset int) (*engine.GetRowsResult, error) {
+func (p *GormPlugin) getGenericRows(db *gorm.DB, schema, storageUnit string, where *queryast.WhereCondition, sort []*queryast.SortCondition, pageSize, pageOffset int) (*engine.GetRowsResult, error) {
 	var columnTypes map[string]ColumnTypeInfo
 	if where != nil {
 		var err error
@@ -319,6 +327,16 @@ func (p *GormPlugin) getGenericRows(db *gorm.DB, schema, storageUnit string, whe
 
 	builder := p.GormPluginFunctions.CreateSQLBuilder(db)
 	fullTable := builder.BuildFullTableName(schema, storageUnit)
+	log.WithFields(map[string]any{
+		"dialect":     db.Dialector.Name(),
+		"schema":      schema,
+		"storageUnit": storageUnit,
+		"fullTable":   fullTable,
+		"pageSize":    pageSize,
+		"pageOffset":  pageOffset,
+		"hasWhere":    where != nil,
+		"sortCount":   len(sort),
+	}).Debug("GORM generic row fetch starting")
 
 	// Parallel count query improves performance for large tables
 	var totalCount int64
@@ -352,7 +370,7 @@ func (p *GormPlugin) getGenericRows(db *gorm.DB, schema, storageUnit string, whe
 				Column:    s.Column,
 				Direction: plugins.Down,
 			}
-			if s.Direction == model.SortDirectionAsc {
+			if s.Direction == queryast.SortDirectionAsc {
 				sortList[i].Direction = plugins.Up
 			}
 		}
@@ -382,6 +400,12 @@ func (p *GormPlugin) getGenericRows(db *gorm.DB, schema, storageUnit string, whe
 		log.WithError(err).Error(fmt.Sprintf("Failed to convert raw rows for table %s.%s", schema, storageUnit))
 		return nil, err
 	}
+	log.WithFields(map[string]any{
+		"schema":      schema,
+		"storageUnit": storageUnit,
+		"rowCount":    len(result.Rows),
+		"columnCount": len(result.Columns),
+	}).Debug("GORM generic row fetch converted rows")
 
 	// Fix any missing column type metadata
 	for i, col := range result.Columns {
@@ -397,21 +421,28 @@ func (p *GormPlugin) getGenericRows(db *gorm.DB, schema, storageUnit string, whe
 	} else {
 		result.TotalCount = totalCount
 	}
+	log.WithFields(map[string]any{
+		"schema":      schema,
+		"storageUnit": storageUnit,
+		"rowCount":    len(result.Rows),
+		"columnCount": len(result.Columns),
+		"totalCount":  result.TotalCount,
+	}).Debug("GORM generic row fetch completed")
 
 	return result, nil
 }
 
-func (p *GormPlugin) ApplyWhereConditions(query *gorm.DB, condition *model.WhereCondition, columnTypes map[string]ColumnTypeInfo) (*gorm.DB, error) {
+func (p *GormPlugin) ApplyWhereConditions(query *gorm.DB, condition *queryast.WhereCondition, columnTypes map[string]ColumnTypeInfo) (*gorm.DB, error) {
 	if condition == nil {
 		return query, nil
 	}
 
 	switch condition.Type {
-	case model.WhereConditionTypeAtomic:
+	case queryast.WhereConditionTypeAtomic:
 		return p.applyAtomicCondition(query, condition.Atomic, columnTypes)
-	case model.WhereConditionTypeAnd:
+	case queryast.WhereConditionTypeAnd:
 		return p.applyAndConditions(query, condition.And, columnTypes)
-	case model.WhereConditionTypeOr:
+	case queryast.WhereConditionTypeOr:
 		return p.applyOrConditions(query, condition.Or, columnTypes)
 	}
 
@@ -419,7 +450,7 @@ func (p *GormPlugin) ApplyWhereConditions(query *gorm.DB, condition *model.Where
 }
 
 // applyAtomicCondition handles a single atomic WHERE condition (e.g., column = value).
-func (p *GormPlugin) applyAtomicCondition(query *gorm.DB, atomic *model.AtomicWhereCondition, columnTypes map[string]ColumnTypeInfo) (*gorm.DB, error) {
+func (p *GormPlugin) applyAtomicCondition(query *gorm.DB, atomic *queryast.AtomicWhereCondition, columnTypes map[string]ColumnTypeInfo) (*gorm.DB, error) {
 	if atomic == nil {
 		return query, nil
 	}
@@ -509,7 +540,7 @@ func (p *GormPlugin) applySingleValueCondition(query *gorm.DB, col, operator, ra
 }
 
 // applyAndConditions applies all children as AND-combined WHERE clauses.
-func (p *GormPlugin) applyAndConditions(query *gorm.DB, and *model.OperationWhereCondition, columnTypes map[string]ColumnTypeInfo) (*gorm.DB, error) {
+func (p *GormPlugin) applyAndConditions(query *gorm.DB, and *queryast.OperationWhereCondition, columnTypes map[string]ColumnTypeInfo) (*gorm.DB, error) {
 	if and == nil {
 		return query, nil
 	}
@@ -525,7 +556,7 @@ func (p *GormPlugin) applyAndConditions(query *gorm.DB, and *model.OperationWher
 }
 
 // applyOrConditions applies all children as OR-combined WHERE clauses.
-func (p *GormPlugin) applyOrConditions(query *gorm.DB, or *model.OperationWhereCondition, columnTypes map[string]ColumnTypeInfo) (*gorm.DB, error) {
+func (p *GormPlugin) applyOrConditions(query *gorm.DB, or *queryast.OperationWhereCondition, columnTypes map[string]ColumnTypeInfo) (*gorm.DB, error) {
 	if or == nil {
 		return query, nil
 	}
@@ -590,7 +621,7 @@ func (p *GormPlugin) ExecuteRawSQL(config *engine.PluginConfig, openMultiStateme
 				return nil, err
 			}
 			// codeql[go/sql-injection]: RawExecute intentionally runs user-authored SQL from the query editor/import flow.
-			_, err = sqlDB.Exec(query)
+			_, err = sqlDB.ExecContext(config.OperationContext(), query)
 			if err != nil {
 				return nil, err
 			}
@@ -683,6 +714,11 @@ func (p *GormPlugin) GetMaxBulkInsertParameters() int {
 	return 65535
 }
 
+// GetBulkInsertBatchSize returns the default bulk insert row batch size.
+func (p *GormPlugin) GetBulkInsertBatchSize() int {
+	return 1000
+}
+
 // BuildSkipConflictClause returns ON CONFLICT (pk) DO NOTHING — works for Postgres, SQLite, ClickHouse.
 // MySQL/MariaDB plugins override this with identity assignments.
 func (p *GormPlugin) BuildSkipConflictClause(pkColumns []string) clause.OnConflict {
@@ -699,11 +735,5 @@ func (p *GormPlugin) BuildSkipConflictClause(pkColumns []string) clause.OnConfli
 // MarkGeneratedColumns is a no-op base implementation.
 // Database plugins should override this to detect auto-increment and computed columns.
 func (p *GormPlugin) MarkGeneratedColumns(config *engine.PluginConfig, schema string, storageUnit string, columns []engine.Column) error {
-	return nil
-}
-
-// GetDatabaseMetadata returns nil by default.
-// Database plugins should override this to provide metadata for frontend configuration.
-func (p *GormPlugin) GetDatabaseMetadata() *engine.DatabaseMetadata {
 	return nil
 }

@@ -17,7 +17,7 @@
 import {useCallback, useEffect} from "react";
 import {useNavigate} from "react-router-dom";
 import {InternalRoutes} from "../config/routes";
-import {useDatabaseTraits} from "./useDatabaseTraits";
+import {useSourceContract} from "./useSourceContract";
 import {useAppSelector} from "../store/hooks";
 import {matchesShortcut, resolveShortcut, SHORTCUTS} from "../utils/shortcuts";
 
@@ -25,7 +25,7 @@ export const useSidebarShortcuts = () => {
     const navigate = useNavigate();
     const current = useAppSelector(state => state.auth.current);
     const isLoggedIn = useAppSelector(state => state.auth.status === "logged-in");
-    const { isNoSQL, supportsScratchpad } = useDatabaseTraits(current?.Type);
+    const { supportsChat, supportsGraph, supportsScratchpad } = useSourceContract(current?.Type);
 
     const handleKeyDown = useCallback((event: KeyboardEvent) => {
         // Only handle when logged in
@@ -44,7 +44,7 @@ export const useSidebarShortcuts = () => {
         const routes: string[] = [];
 
         // Chat is first for SQL databases
-        if (!isNoSQL) {
+        if (supportsChat) {
             routes.push(InternalRoutes.Chat.path);
         }
 
@@ -52,7 +52,9 @@ export const useSidebarShortcuts = () => {
         routes.push(InternalRoutes.Dashboard.StorageUnit.path);
 
         // Graph
-        routes.push(InternalRoutes.Graph.path);
+        if (supportsGraph) {
+            routes.push(InternalRoutes.Graph.path);
+        }
 
         // Scratchpad (if supported)
         if (supportsScratchpad) {
@@ -76,7 +78,7 @@ export const useSidebarShortcuts = () => {
             event.preventDefault();
             window.dispatchEvent(new CustomEvent('menu:toggle-sidebar'));
         }
-    }, [current, isLoggedIn, isNoSQL, navigate, supportsScratchpad]);
+    }, [current, isLoggedIn, navigate, supportsChat, supportsGraph, supportsScratchpad]);
 
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { useLazyQuery } from "@apollo/client/react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -36,19 +37,21 @@ import {
     SelectValue,
     Sheet,
     SheetContent,
+    Separator,
     SheetFooter,
     toast
 } from "@clidey/ux";
 import { SearchSelect } from "./ux";
-import { FC, ReactElement, useCallback, useEffect, useMemo, useState } from "react";
-import { useGetAiModelsLazyQuery, useGetAiProvidersLazyQuery } from "../generated/graphql";
-import { reduxStore } from "../store";
-import { AIModelsActions, availableExternalModelTypes } from "../store/ai-models";
+import { FC, ReactElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { GetAiModelsDocument, GetAiProvidersDocument } from "@graphql";
+import { AIModelsActions, availableExternalModelTypes, type IAIModelType } from "../store/ai-models";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { ensureModelsArray, ensureModelTypesArray } from "../utils/ai-models-helper";
 import { ExternalLink } from "../utils/external-links";
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from "../hooks/use-translation";
+import { getAIProviderOverrides } from "../config/ai-provider-registry";
+import { persistAISelection } from "../config/ai-persistence";
 import {
     ArrowPathIcon,
     ArrowTopRightOnSquareIcon,
@@ -77,17 +80,37 @@ export const useAI = () => {
     const models = ensureModelsArray(modelsRaw);
     const [modelAvailable, setModelAvailable] = useState(true);
 
+    // Get persisted AI selection from platform store (EE only)
+    const platformState = useAppSelector(state => (state as any).platform);
+    const persistedProviderId = platformState?.selectedAIProviderId;
+    const persistedModel = platformState?.selectedAIModel;
+
     const dispatch = useAppDispatch();
 
-    const [getAiProviders, { loading }] = useGetAiProvidersLazyQuery();
-    const [getAIModels, { loading: getAIModelsLoading }] = useGetAiModelsLazyQuery({
-        onError() {
-            setModelAvailable(false);
-            dispatch(AIModelsActions.setModels([]));
-            dispatch(AIModelsActions.setCurrentModel(undefined));
-        },
+    const [getAiProviders, { loading }] = useLazyQuery(GetAiProvidersDocument);
+    const [getAIModels, { loading: getAIModelsLoading }] = useLazyQuery(GetAiModelsDocument, {
         fetchPolicy: "network-only",
     });
+
+    const handleAIModelsError = useCallback(() => {
+        setModelAvailable(false);
+        dispatch(AIModelsActions.setModels([]));
+        dispatch(AIModelsActions.setCurrentModel(undefined));
+    }, [dispatch]);
+
+    const fetchAIModels = useCallback(async (variables: {
+        providerId?: string;
+        modelType: string;
+        token?: string;
+    }) => {
+        const { data, error } = await getAIModels({ variables });
+
+        if (error) {
+            throw error;
+        }
+
+        return data?.AIModel ?? [];
+    }, [getAIModels]);
 
     const handleAIModelTypeChange = useCallback((item: string) => {
         const modelType = modelTypes.find(model => model.id === item);
@@ -95,24 +118,29 @@ export const useAI = () => {
             return;
         }
         setModelAvailable(true);
-        getAIModels({
-            variables: {
+        void fetchAIModels({
                 providerId: modelType.id,
                 modelType: modelType.modelType,
                 token: modelType.token,
-            },
-            onCompleted(data) {
-                dispatch(AIModelsActions.setModels(data.AIModel));
-                if (data.AIModel.length > 0) {
-                    dispatch(AIModelsActions.setCurrentModel(data.AIModel[0]));
+            })
+            .then((aiModels) => {
+                dispatch(AIModelsActions.setModels(aiModels));
+                if (aiModels.length > 0) {
+                    dispatch(AIModelsActions.setCurrentModel(aiModels[0]));
                 }
-            },
-        });
-    }, [dispatch, getAIModels, modelTypes]);
+            })
+            .catch(() => {
+                handleAIModelsError();
+            });
+    }, [dispatch, fetchAIModels, handleAIModelsError, modelTypes]);
 
     const handleAIModelChange = useCallback((item: string) => {
         dispatch(AIModelsActions.setCurrentModel(item));
-    }, [dispatch]);
+
+        if (modelType) {
+            persistAISelection({ providerId: modelType.id, model: item });
+        }
+    }, [dispatch, modelType]);
 
     const handleAIModelRemove = useCallback((_: any, item: string) => {
         if (modelType?.id === item) {
@@ -125,92 +153,139 @@ export const useAI = () => {
     const handleAIProviderChange = useCallback((item: string) => {
         dispatch(AIModelsActions.setCurrentModelType({ id: item }));
         handleAIModelTypeChange(item);
-    }, [handleAIModelTypeChange]);
 
-    useEffect(() => {
-        // Clear environment-defined providers from Redux state on mount to ensure fresh data
-        // Keep only user-added providers (those with tokens)
-        // Use modelTypes from Redux hook to ensure persistence has rehydrated
-        const userAddedProviders = modelTypes.filter(model =>
+        persistAISelection({ providerId: item, model: null });
+    }, [handleAIModelTypeChange, dispatch]);
+
+    const stateRef = useRef({ modelType, currentModel, modelTypes });
+    stateRef.current = { modelType, currentModel, modelTypes };
+
+    const loadProviders = useCallback(async () => {
+        const state = stateRef.current;
+        const { modelType: currentType, currentModel: savedModel, modelTypes: currentModelTypes } = state;
+        const overrides = getAIProviderOverrides();
+        const isPlatformMode = overrides?.isActive() ?? false;
+
+        // Set selection immediately from platform store if available (before async loading)
+        if (persistedProviderId && !currentType) {
+            dispatch(AIModelsActions.setCurrentModelType({ id: persistedProviderId }));
+            if (persistedModel) {
+                dispatch(AIModelsActions.setCurrentModel(persistedModel));
+            }
+        }
+
+        const userAddedProviders = isPlatformMode
+            ? []
+            : currentModelTypes.filter(model => model.token != null && model.token !== "");
+
+        const [envResult, platformProviders] = await Promise.all([
+            getAiProviders().catch(() => ({ data: undefined, error: undefined })),
+            isPlatformMode && overrides ? overrides.loadProviders() : Promise.resolve([]),
+        ]);
+
+        const aiProviders = envResult.data?.AIProviders || [];
+
+        const initialModelTypes = userAddedProviders.filter(model =>
             model.token != null && model.token !== ""
         );
 
-        getAiProviders({
-            onCompleted(data) {
-                const aiProviders = data.AIProviders || [];
+        const newProviders = aiProviders.filter(provider =>
+            !initialModelTypes.some(model => model.id === provider.ProviderId)
+        );
 
-                // Only keep user-added providers that still have tokens
-                const initialModelTypes = userAddedProviders.filter(model => {
-                    // Keep user-added providers (with tokens)
-                    return model.token != null && model.token !== "";
+        const finalModelTypes: IAIModelType[] = [
+            ...newProviders.map(provider => ({
+                id: provider.ProviderId,
+                modelType: provider.Type,
+                name: provider.Name,
+                isEnvironmentDefined: provider.IsEnvironmentDefined,
+                isGeneric: provider.IsGeneric,
+            })),
+            ...platformProviders,
+            ...initialModelTypes,
+        ];
+
+        const waitingForPlatform = currentType?.isPlatformProvider && !isPlatformMode;
+
+        // Check if we have a persisted provider ID to restore from platform store
+        const shouldRestoreSelection = !currentType && persistedProviderId && finalModelTypes.some(m => m.id === persistedProviderId);
+
+        if (currentType && !finalModelTypes.some(model => model.id === currentType.id) && !waitingForPlatform && !shouldRestoreSelection) {
+            dispatch(AIModelsActions.setCurrentModelType({ id: "" }));
+            dispatch(AIModelsActions.setModels([]));
+            dispatch(AIModelsActions.setCurrentModel(undefined));
+        }
+
+        dispatch(AIModelsActions.setModelTypes(finalModelTypes));
+
+        if (waitingForPlatform) {
+            return;
+        }
+
+        // Restore selection if available
+        let selectedProvider = currentType && finalModelTypes.some(m => m.id === currentType.id)
+            ? currentType
+            : null;
+
+        if (!selectedProvider && shouldRestoreSelection) {
+            selectedProvider = finalModelTypes.find(m => m.id === persistedProviderId) || null;
+            if (selectedProvider) {
+                dispatch(AIModelsActions.setCurrentModelType({ id: selectedProvider.id }));
+            }
+        }
+
+        if (!selectedProvider && finalModelTypes.length > 0) {
+            const firstProvider = finalModelTypes[0];
+            dispatch(AIModelsActions.setCurrentModelType({ id: firstProvider.id }));
+
+            void fetchAIModels({
+                    providerId: firstProvider.id,
+                    modelType: firstProvider.modelType ?? "",
+                    token: firstProvider.token ?? "",
+                })
+                .then((aiModels) => {
+                    dispatch(AIModelsActions.setModels(aiModels));
+                    if (aiModels.length > 0) {
+                        dispatch(AIModelsActions.setCurrentModel(aiModels[0]));
+                    }
+                })
+                .catch(() => {
+                    handleAIModelsError();
                 });
-
-                // Filter out providers that already exist in modelTypes
-                const newProviders = aiProviders.filter(provider =>
-                    !initialModelTypes.some(model => model.id === provider.ProviderId)
-                );
-
-                const finalModelTypes = [
-                    ...newProviders.map(provider => ({
-                        id: provider.ProviderId,
-                        modelType: provider.Type,
-                        name: provider.Name,
-                        isEnvironmentDefined: provider.IsEnvironmentDefined,
-                        isGeneric: provider.IsGeneric,
-                    })),
-                    ...initialModelTypes
-                ];
-
-                // Check if current model type exists in final model types
-                // Use modelType from Redux hook instead of direct store access
-                if (modelType && !finalModelTypes.some(model => model.id === modelType.id)) {
-                    dispatch(AIModelsActions.setCurrentModelType({ id: "" }));
-                    dispatch(AIModelsActions.setModels([]));
-                    dispatch(AIModelsActions.setCurrentModel(undefined));
-                }
-
-                dispatch(AIModelsActions.setModelTypes(finalModelTypes));
-
-                // Auto-select first provider if none is selected and providers are available
-                if (!modelType && finalModelTypes.length > 0) {
-                    const firstProvider = finalModelTypes[0];
-                    dispatch(AIModelsActions.setCurrentModelType({ id: firstProvider.id }));
-
-                    // Fetch models for the first provider
-                    getAIModels({
-                        variables: {
-                            providerId: firstProvider.id,
-                            modelType: firstProvider.modelType ?? "",
-                            token: (firstProvider as any).token ?? "",
-                        },
-                        onCompleted(data) {
-                            dispatch(AIModelsActions.setModels(data.AIModel));
-                            if (data.AIModel.length > 0) {
-                                dispatch(AIModelsActions.setCurrentModel(data.AIModel[0]));
-                            }
-                        },
-                    });
-                } else if (modelType) {
-                    // Only fetch models if there's a current model type
-                    getAIModels({
-                        variables: {
-                            providerId: modelType.id,
-                            modelType: modelType.modelType ?? "",
-                            token: modelType.token ?? "",
-                        },
-                        onCompleted(data) {
-                            dispatch(AIModelsActions.setModels(data.AIModel));
-                            // Auto-select first model if none is selected
-                            if (data.AIModel.length > 0 && !currentModel) {
-                                dispatch(AIModelsActions.setCurrentModel(data.AIModel[0]));
-                            }
-                        },
-                    });
-                }
-            },
-        });
+        } else if (selectedProvider) {
+            dispatch(AIModelsActions.setCurrentModelType({ id: selectedProvider.id }));
+            void fetchAIModels({
+                    providerId: selectedProvider.id,
+                    modelType: selectedProvider.modelType ?? "",
+                    token: selectedProvider.token ?? "",
+                })
+                .then((aiModels) => {
+                    dispatch(AIModelsActions.setModels(aiModels));
+                    if (aiModels.length > 0) {
+                        // Try to restore persisted model from platform store, fall back to saved model, then first model
+                        const modelToSelect = (persistedModel && aiModels.includes(persistedModel))
+                            ? persistedModel
+                            : (savedModel && aiModels.includes(savedModel))
+                                ? savedModel
+                                : aiModels[0];
+                        dispatch(AIModelsActions.setCurrentModel(modelToSelect));
+                    }
+                })
+                .catch(() => {
+                    handleAIModelsError();
+                });
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    useEffect(() => {
+        void loadProviders();
+
+        const overrides = getAIProviderOverrides();
+        if (overrides?.onActivate) {
+            return overrides.onActivate(() => { void loadProviders(); });
+        }
+    }, [loadProviders]);
 
     const modelTypesDropdownItems = useMemo(() => {
         return modelTypes.filter(modelType => modelType != null && modelType.modelType != null).map(modelType => ({
@@ -244,6 +319,7 @@ export const useAI = () => {
         getAIModels,
         getAIModelsLoading,
         modelAvailable,
+        handleAIModelsError,
         handleAIModelTypeChange,
         handleAIModelChange,
         handleAIModelRemove,
@@ -267,6 +343,7 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
     getAIModels,
     getAIModelsLoading,
     modelAvailable,
+    handleAIModelsError,
     handleAIModelTypeChange,
     handleAIModelChange,
     handleAIModelRemove,
@@ -279,6 +356,7 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
     onAddExternalModel,
 }) => {
     const { t } = useTranslation('components/ai');
+    const newUIEnabled = useAppSelector(state => state.settings.newUIEnabled);
     const dispatch = useAppDispatch();
     const [addExternalModel, setAddExternalModel] = useState(false);
     const [externalModelType, setExternalModel] = useState<string>(externalModelTypes[0].id);
@@ -303,34 +381,63 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
 
         dispatch(AIModelsActions.setCurrentModel(undefined));
         dispatch(AIModelsActions.setModels([]));
-        getAIModels({
+        const overrides = getAIProviderOverrides();
+        const isPlatformMode = overrides?.isActive() ?? false;
+
+        void getAIModels({
             variables: {
                 modelType: externalModelType,
                 token: externalModelToken,
-            },
-            onCompleted(data) {
-                dispatch(AIModelsActions.setModels(data.AIModel));
-                const id = uuidv4();
+            }
+        }).then(async ({ data, error }) => {
+            if (error) {
+                throw error;
+            }
+
+            const aiModels = data?.AIModel ?? [];
+            dispatch(AIModelsActions.setModels(aiModels));
+
+            let id: string;
+            if (isPlatformMode && overrides) {
+                const result = await overrides.addProvider({
+                    modelType: externalModelType,
+                    name: externalModelName || externalModelType,
+                    token: externalModelToken,
+                });
+                if (!result) throw new Error('Failed to create provider');
+                id = result.id;
+                dispatch(AIModelsActions.addAIModelType({
+                    id,
+                    modelType: externalModelType,
+                    name: externalModelName || externalModelType,
+                    isPlatformProvider: true,
+                }));
+            } else {
+                id = uuidv4();
                 dispatch(AIModelsActions.addAIModelType({
                     id,
                     modelType: externalModelType,
                     name: externalModelName || externalModelType,
                     token: externalModelToken,
                 }));
-                dispatch(AIModelsActions.setCurrentModelType({ id }));
-                setExternalModel(externalModelTypes[0].id);
-                setExternalModelToken("");
-                setExternalModelName("");
-                setAddExternalModel(false);
-                if (data.AIModel.length > 0) {
-                    dispatch(AIModelsActions.setCurrentModel(data.AIModel[0]));
-                }
-            },
-            onError(error) {
-                toast.error(`${t('unableToConnect')}: ${error.message}`);
-            },
+            }
+
+            dispatch(AIModelsActions.setCurrentModelType({ id }));
+            setExternalModel(externalModelTypes[0].id);
+            setExternalModelToken("");
+            setExternalModelName("");
+            setAddExternalModel(false);
+            if (aiModels.length > 0) {
+                dispatch(AIModelsActions.setCurrentModel(aiModels[0]));
+            }
+        }).catch((error: unknown) => {
+            handleAIModelsError();
+            const errorMessage = error instanceof Error
+                ? error.message
+                : String((error as { message?: string }).message ?? t('unknownError'));
+            toast.error(`${t('unableToConnect')}: ${errorMessage}`);
         });
-    }, [getAIModels, externalModelType, externalModelToken, externalModelName, dispatch, t]);
+    }, [dispatch, externalModelName, externalModelToken, externalModelType, getAIModels, handleAIModelsError, t]);
 
     const handleOpenDocs = useCallback(() => {
         window.open("https://docs.whodb.com/ai/introduction", "_blank");
@@ -340,8 +447,12 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
         onClear?.();
     }, [onClear]);
 
-    const handleDeleteProvider = useCallback((id?: string) => {
+    const handleDeleteProvider = useCallback(async (id?: string) => {
         if (id) {
+            const overrides = getAIProviderOverrides();
+            if (overrides?.isActive()) {
+                await overrides.deleteProvider(id).catch(() => {});
+            }
             dispatch(AIModelsActions.removeAIModelType({ id }));
         }
         dispatch(AIModelsActions.setCurrentModelType({ id: "" }));
@@ -351,7 +462,9 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
 
     return <div className="flex flex-col gap-4" data-testid="ai-provider">
         <Sheet open={addExternalModel} onOpenChange={setAddExternalModel}>
-            <SheetContent className="max-w-md mx-auto w-full px-8 py-10 flex flex-col gap-4">
+            <SheetContent className={cn("max-w-md mx-auto w-full flex flex-col gap-4", {
+                "px-8 py-10": !newUIEnabled,
+            })}>
                 <div className="flex flex-col gap-4">
                     <div className="text-lg font-semibold mb-2">{t('addExternalModel')}</div>
                     <div className="flex flex-col gap-2">
@@ -392,7 +505,9 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
                         />
                     </div>
                 </div>
-                <div className="flex items-center gap-sm self-end">
+                <div className={cn("flex items-center gap-sm self-end", {
+                    "mt-4": newUIEnabled,
+                })}>
                     <Button
                         onClick={handleAddExternalModel}
                         data-testid="external-model-cancel"
@@ -454,16 +569,29 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
                     side="right"
                     align="start"
                     extraOptions={
-                        <CommandItem
-                            key="__add__"
-                            value="__add__"
-                            onSelect={handleAddExternalModel}
-                        >
-                            <span className="flex items-center gap-sm text-green-500">
-                                <PlusCircleIcon className="w-4 h-4 stroke-green-500" />
+                        newUIEnabled ? <>
+                            <Separator />
+                            <CommandItem
+                                key="__add__"
+                                value="__add__"
+                                onSelect={handleAddExternalModel}
+                            >
+                                <span className="mr-2 h-4 w-4 shrink-0" />
+                                <PlusCircleIcon className="w-4 h-4" />
                                 {t('addProvider')}
-                            </span>
-                        </CommandItem>
+                            </CommandItem>
+                        </> : (<>
+                            <CommandItem
+                                key="__add__"
+                                value="__add__"
+                                onSelect={handleAddExternalModel}
+                            >
+                                <span className="flex items-center gap-sm text-green-500">
+                                    <PlusCircleIcon className="w-4 h-4 stroke-green-500" />
+                                    {t('addProvider')}
+                                </span>
+                            </CommandItem></>
+                        )
                     }
                     rightIcon={<ChevronDownIcon className="w-4 h-4" />}
                     buttonProps={{
@@ -497,7 +625,7 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
                         data-testid="chat-delete-provider"
                         variant="secondary"
                         className={cn({
-                            "hidden": disableNewChat || modelType?.isEnvironmentDefined,
+                            "hidden": disableNewChat || modelType?.isEnvironmentDefined || modelType?.isPlatformProvider,
                         })}
                     >
                         <TrashIcon className="w-4 h-4" /> {t('deleteProvider')}

@@ -229,9 +229,15 @@ export const whereMethods = {
     async updateConditionValue(value) {
         const mode = await this.getWhereConditionMode();
         if (mode === "popover") {
-            await this.page.locator('[data-testid="field-value"]').fill(value);
+            const fieldValue = this.page.locator('[data-testid="field-value"]').filter({ visible: true }).first();
+            await fieldValue.clear();
+            await fieldValue.fill(value);
+            await expect(fieldValue).toHaveValue(value);
         } else {
-            await this.page.locator('[data-testid="sheet-field-value-0"]').fill(value);
+            const fieldValue = this.page.locator('[data-testid="sheet-field-value-0"]');
+            await fieldValue.clear();
+            await fieldValue.fill(value);
+            await expect(fieldValue).toHaveValue(value);
         }
     },
 

@@ -22,12 +22,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/clidey/whodb/core/graph/model"
+	"github.com/clidey/whodb/core/src/query"
 	"github.com/clidey/whodb/core/src/log"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-func convertWhereConditionToMongoDB(where *model.WhereCondition) (bson.M, error) {
+func convertWhereConditionToMongoDB(where *query.WhereCondition) (bson.M, error) {
 	if where == nil {
 		return bson.M{}, nil
 	}
@@ -36,7 +36,7 @@ func convertWhereConditionToMongoDB(where *model.WhereCondition) (bson.M, error)
 	getOp := func(op string) string { return strings.ToLower(op) }
 
 	switch where.Type {
-	case model.WhereConditionTypeAtomic:
+	case query.WhereConditionTypeAtomic:
 		if where.Atomic == nil {
 			return nil, fmt.Errorf("atomic condition must have an atomicwherecondition")
 		}
@@ -123,7 +123,7 @@ func convertWhereConditionToMongoDB(where *model.WhereCondition) (bson.M, error)
 			return nil, fmt.Errorf("unsupported operator: %s", where.Atomic.Operator)
 		}
 
-	case model.WhereConditionTypeAnd:
+	case query.WhereConditionTypeAnd:
 		if where.And == nil || len(where.And.Children) == 0 {
 			return bson.M{}, nil
 		}
@@ -140,7 +140,7 @@ func convertWhereConditionToMongoDB(where *model.WhereCondition) (bson.M, error)
 
 		return bson.M{"$and": andConditions}, nil
 
-	case model.WhereConditionTypeOr:
+	case query.WhereConditionTypeOr:
 		if where.Or == nil || len(where.Or.Children) == 0 {
 			return bson.M{}, nil
 		}

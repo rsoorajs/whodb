@@ -18,7 +18,6 @@ package azure
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
@@ -49,19 +48,4 @@ func GenerateADToken(ctx context.Context, cred azcore.TokenCredential, scope str
 
 	log.Infof("Azure AD Auth: token generated successfully (token length=%d)", len(token.Token))
 	return token.Token, nil
-}
-
-// ScopeForDatabaseType returns the Azure AD scope for a given database type.
-// Returns an error if the database type doesn't support Azure AD authentication.
-func ScopeForDatabaseType(databaseType string) (string, error) {
-	switch databaseType {
-	case "Postgres", "PostgreSQL":
-		return ScopePostgreSQLMySQL, nil
-	case "MySQL":
-		return ScopePostgreSQLMySQL, nil
-	case "Redis":
-		return ScopeRedis, nil
-	default:
-		return "", fmt.Errorf("Azure AD authentication is not supported for database type: %s", databaseType)
-	}
 }

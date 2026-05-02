@@ -17,19 +17,14 @@
 package main
 
 import (
-	_ "github.com/clidey/whodb/cli/internal/baml" // Must be first - downloads BAML library if needed
-	_ "github.com/clidey/whodb/core/src/bamlinit" // Sets BAML env vars before native library loads
-
-	"github.com/clidey/whodb/cli/cmd"
+	cliapp "github.com/clidey/whodb/cli/app"
 	"github.com/clidey/whodb/cli/internal/bootstrap"
-	"github.com/clidey/whodb/cli/pkg/crash"
+	"github.com/clidey/whodb/cli/pkg/identity"
 )
 
-func init() {
-	bootstrap.Ensure()
-}
-
 func main() {
-	defer crash.Handler()
-	cmd.Execute()
+	cliapp.Run(cliapp.Config{
+		Identity:  identity.CE(),
+		Bootstrap: bootstrap.Ensure,
+	})
 }

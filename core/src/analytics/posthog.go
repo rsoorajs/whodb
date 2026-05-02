@@ -51,6 +51,9 @@ type Config struct {
 	Host        string
 	Environment string
 	AppVersion  string
+	// SuppressClientLogs disables PostHog background logger output. Useful for
+	// short-lived CLIs where network failures should stay silent.
+	SuppressClientLogs bool
 }
 
 // Metadata stores request-scoped attributes that are useful for analytics enrichment.
@@ -82,9 +85,14 @@ func Initialize(config Config) error {
 		fallbackID.Store(hashIdentifier(fmt.Sprintf("fallback:%d", time.Now().UnixNano())))
 		enabled.Store(false)
 
-		c, err := posthog.NewWithConfig(config.APIKey, posthog.Config{
+		posthogConfig := posthog.Config{
 			Endpoint: config.Host,
-		})
+		}
+		if config.SuppressClientLogs {
+			posthogConfig.Logger = silentPosthogLogger{}
+		}
+
+		c, err := posthog.NewWithConfig(config.APIKey, posthogConfig)
 		if err != nil {
 			initErr = err
 			return
@@ -98,6 +106,16 @@ func Initialize(config Config) error {
 
 	return initErr
 }
+
+type silentPosthogLogger struct{}
+
+func (silentPosthogLogger) Debugf(string, ...interface{}) {}
+
+func (silentPosthogLogger) Logf(string, ...interface{}) {}
+
+func (silentPosthogLogger) Warnf(string, ...interface{}) {}
+
+func (silentPosthogLogger) Errorf(string, ...interface{}) {}
 
 // Shutdown flushes events and disposes the PostHog client.
 func Shutdown() {

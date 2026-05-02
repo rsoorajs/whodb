@@ -42,29 +42,36 @@ fi
 # Map database names to Docker service names and ports
 get_docker_services() {
     local db=$1
+    local services=""
+    local ssl_services=""
     case $db in
-        postgres)    echo "e2e_postgres e2e_postgres_ssl" ;;
-        mysql)       echo "e2e_mysql e2e_mysql_ssl" ;;
-        mysql8)      echo "e2e_mysql_842" ;;
-        mariadb)     echo "e2e_mariadb e2e_mariadb_ssl" ;;
-        sqlite)      echo "" ;;  # No Docker service needed
-        duckdb)      echo "" ;;  # No Docker service needed
-        mongodb)     echo "e2e_mongo e2e_mongo_ssl" ;;
-        redis)       echo "e2e_redis redis-init e2e_redis_ssl" ;;
-        memcached)   echo "e2e_memcached memcached-init e2e_memcached_ssl" ;;
-        elasticsearch) echo "e2e_elasticsearch elasticsearch-init e2e_elasticsearch_ssl" ;;
-        cockroachdb) echo "e2e_cockroachdb cockroachdb-init e2e_cockroachdb_ssl cockroachdb-ssl-init" ;;
-        clickhouse)  echo "e2e_clickhouse e2e_clickhouse_ssl" ;;
-        valkey)      echo "e2e_valkey valkey-init" ;;
-        dragonfly)   echo "e2e_dragonfly dragonfly-init" ;;
-        opensearch)  echo "e2e_opensearch opensearch-init" ;;
-        starrocks)   echo "e2e_starrocks starrocks-init" ;;
-        yugabytedb)  echo "e2e_yugabytedb yugabytedb-init" ;;
-        questdb)     echo "e2e_questdb questdb-init" ;;
-        ferretdb)    echo "e2e_ferretdb_pg e2e_ferretdb ferretdb-init" ;;
-        all)         echo "" ;;  # Empty means start all
-        *)           echo "" ;;
+        postgres)    services="e2e_postgres"; ssl_services="e2e_postgres_ssl" ;;
+        mysql)       services="e2e_mysql"; ssl_services="e2e_mysql_ssl" ;;
+        mysql8)      services="e2e_mysql_842" ;;
+        mariadb)     services="e2e_mariadb"; ssl_services="e2e_mariadb_ssl" ;;
+        tidb)        services="e2e_tidb tidb-init" ;;
+        sqlite)      services="" ;;  # No Docker service needed
+        duckdb)      services="" ;;  # No Docker service needed
+        mongodb)     services="e2e_mongo"; ssl_services="e2e_mongo_ssl" ;;
+        redis)       services="e2e_redis redis-init"; ssl_services="e2e_redis_ssl redis-ssl-init" ;;
+        memcached)   services="e2e_memcached memcached-init"; ssl_services="e2e_memcached_ssl memcached-ssl-init" ;;
+        elasticsearch) services="e2e_elasticsearch elasticsearch-init"; ssl_services="e2e_elasticsearch_ssl elasticsearch-ssl-init" ;;
+        cockroachdb) services="e2e_cockroachdb cockroachdb-init"; ssl_services="e2e_cockroachdb_ssl cockroachdb-ssl-init" ;;
+        clickhouse)  services="e2e_clickhouse"; ssl_services="e2e_clickhouse_ssl" ;;
+        valkey)      services="e2e_valkey valkey-init" ;;
+        dragonfly)   services="e2e_dragonfly dragonfly-init" ;;
+        opensearch)  services="e2e_opensearch opensearch-init" ;;
+        yugabytedb)  services="e2e_yugabytedb yugabytedb-init" ;;
+        questdb)     services="e2e_questdb questdb-init" ;;
+        ferretdb)    services="e2e_ferretdb_pg e2e_ferretdb ferretdb-init" ;;
+        all)         services="" ;;  # Empty means start all
+        *)           services="" ;;
     esac
+
+    if [ -n "$ssl_services" ] && needs_ssl; then
+        services="$services $ssl_services"
+    fi
+    echo "$services"
 }
 
 get_db_port() {
@@ -74,6 +81,7 @@ get_db_port() {
         mysql)       echo "3306" ;;
         mysql8)      echo "3308" ;;
         mariadb)     echo "3307" ;;
+        tidb)        echo "4000" ;;
         mongodb)     echo "27017" ;;
         redis)       echo "6379" ;;
         cockroachdb) echo "26257" ;;
@@ -83,7 +91,6 @@ get_db_port() {
         valkey)      echo "6382" ;;
         dragonfly)   echo "6383" ;;
         opensearch)  echo "9202" ;;
-        starrocks)   echo "9030" ;;
         yugabytedb)  echo "5434" ;;
         questdb)     echo "8812" ;;
         ferretdb)    echo "27020" ;;
@@ -100,7 +107,7 @@ get_db_wait_time() {
         mongodb|clickhouse)             echo "30" ;;  # Light init
         redis|memcached|valkey|dragonfly) echo "20" ;;  # Very fast
         opensearch)                     echo "60" ;;  # Similar to ES
-        starrocks)                      echo "120" ;; # Heavy all-in-one image
+        tidb)                           echo "90" ;;  # MySQL-compatible distributed DB
         yugabytedb)                     echo "90" ;;  # Distributed DB startup
         questdb)                        echo "30" ;;  # Lightweight
         ferretdb)                       echo "30" ;;  # Lightweight (depends on PG)
@@ -146,11 +153,64 @@ docker_compose_cmd() {
     fi
 }
 
+wait_for_init_services() {
+    local services
+    if [ "$#" -gt 0 ]; then
+        services="$*"
+    else
+        services="$($(docker_compose_cmd) config --services)"
+    fi
+
+    local init_services=""
+    local service
+    for service in $services; do
+        case "$service" in
+            *-init) init_services="$init_services $service" ;;
+        esac
+    done
+
+    if [ -z "$init_services" ]; then
+        return 0
+    fi
+
+    echo "⏳ Waiting for data init container(s):$init_services"
+    if ! $(docker_compose_cmd) wait $init_services; then
+        local failed_init_services=""
+        local service_state
+        local service_status
+        local service_exit_code
+        for service in $init_services; do
+            local container_id
+            container_id="$($(docker_compose_cmd) ps -q "$service" 2>/dev/null || true)"
+            if [ -z "$container_id" ]; then
+                failed_init_services="$failed_init_services $service"
+                continue
+            fi
+
+            service_state="$(docker inspect -f '{{.State.Status}} {{.State.ExitCode}}' "$container_id" 2>/dev/null || true)"
+            service_status="${service_state%% *}"
+            service_exit_code="${service_state##* }"
+            if [ "$service_status" = "exited" ] && [ "$service_exit_code" != "0" ]; then
+                failed_init_services="$failed_init_services $service"
+            fi
+        done
+
+        if [ -z "$failed_init_services" ]; then
+            failed_init_services="$init_services"
+        fi
+
+        echo "❌ Data init container failed:$failed_init_services"
+        $(docker_compose_cmd) logs --no-color $failed_init_services || true
+        exit 1
+    fi
+    echo "✅ Data init container(s) completed:$init_services"
+}
+
 
 # Run cleanup first to ensure clean state
 echo "🧹 Running cleanup first..."
 if [ -f "$SCRIPT_DIR/cleanup-e2e.sh" ]; then
-    bash "$SCRIPT_DIR/cleanup-e2e.sh"
+    bash "$SCRIPT_DIR/cleanup-e2e.sh" "$EDITION"
 else
     echo "⚠️ cleanup-e2e.sh not found, continuing without cleanup"
 fi
@@ -216,10 +276,16 @@ fi
 # Setup DuckDB (with smart initialization check, uses Docker CLI)
 DUCKDB_DB="$PROJECT_ROOT/core/tmp/e2e_test.duckdb"
 DUCKDB_NEEDS_INIT=true
+DOCKER_HOST_USER="$(id -u):$(id -g)"
 
 if [ -f "$DUCKDB_DB" ]; then
     # Check if database has expected structure
-    if docker run --rm -v "$PROJECT_ROOT/core/tmp:/db" --entrypoint /duckdb duckdb/duckdb /db/e2e_test.duckdb -c "SELECT table_name FROM information_schema.tables WHERE table_schema='main' AND table_name='users';" 2>/dev/null | grep -q users; then
+    if docker run --rm \
+        --user "$DOCKER_HOST_USER" \
+        -v "$PROJECT_ROOT/core/tmp:/db" \
+        --entrypoint /duckdb \
+        duckdb/duckdb /db/e2e_test.duckdb \
+        -c "SELECT table_name FROM information_schema.tables WHERE table_schema='main' AND table_name='users';" 2>/dev/null | grep -q users; then
         echo "✅ DuckDB E2E database already initialized, skipping setup"
         DUCKDB_NEEDS_INIT=false
     else
@@ -234,6 +300,7 @@ if [ "$DUCKDB_NEEDS_INIT" = "true" ]; then
     mkdir -p "$PROJECT_ROOT/core/tmp"
 
     docker run --rm -i \
+        --user "$DOCKER_HOST_USER" \
         -v "$PROJECT_ROOT/core/tmp:/db" \
         --entrypoint /duckdb \
         duckdb/duckdb /db/e2e_test.duckdb < "$SCRIPT_DIR/sample-data/duckdb/data.sql"
@@ -293,6 +360,7 @@ if [ "$SKIP_CE_DATABASES" = "false" ]; then
 
         echo "🚀 Starting $TARGET_DB database service(s) + Postgres..."
         $(docker_compose_cmd) up -d --remove-orphans $DOCKER_SERVICES
+        wait_for_init_services $DOCKER_SERVICES
 
         # Wait for Postgres if it's not already the target
         if [ "$TARGET_DB" != "postgres" ]; then
@@ -309,10 +377,12 @@ if [ "$SKIP_CE_DATABASES" = "false" ]; then
         fi
 
         # Wait for SSL container if applicable
-        SSL_PORT=$(get_ssl_port "$TARGET_DB")
-        if [ -n "$SSL_PORT" ]; then
-            echo "⏳ Waiting for $TARGET_DB SSL to be ready..."
-            wait_for_port "$TARGET_DB-SSL" "$SSL_PORT" "$DB_WAIT"
+        if needs_ssl; then
+            SSL_PORT=$(get_ssl_port "$TARGET_DB")
+            if [ -n "$SSL_PORT" ]; then
+                echo "⏳ Waiting for $TARGET_DB SSL to be ready..."
+                wait_for_port "$TARGET_DB-SSL" "$SSL_PORT" "$DB_WAIT"
+            fi
         fi
 
         # Wait for background Postgres check
@@ -326,6 +396,7 @@ if [ "$SKIP_CE_DATABASES" = "false" ]; then
 
         echo "🚀 Starting all CE database services..."
         $(docker_compose_cmd) up -d --remove-orphans
+        wait_for_init_services
 
         # Wait for services using parallel port checks
         echo "⏳ Waiting for services to be ready..."
@@ -339,6 +410,8 @@ if [ "$SKIP_CE_DATABASES" = "false" ]; then
         PID_MYSQL8=$!
         wait_for_port "MariaDB" 3307 90 &
         PID_MARIA=$!
+        wait_for_port "TiDB" 4000 90 &
+        PID_TIDB=$!
         wait_for_port "MongoDB" 27017 30 &
         PID_MONGO=$!
         wait_for_port "CockroachDB" 26257 60 &
@@ -349,8 +422,22 @@ if [ "$SKIP_CE_DATABASES" = "false" ]; then
         PID_REDIS=$!
         wait_for_port "ElasticSearch" 9200 60 &
         PID_ES=$!
+        wait_for_port "Memcached" 11211 20 &
+        PID_MEMCACHED=$!
+        wait_for_port "Valkey" 6382 20 &
+        PID_VALKEY=$!
+        wait_for_port "Dragonfly" 6383 20 &
+        PID_DRAGONFLY=$!
+        wait_for_port "OpenSearch" 9202 60 &
+        PID_OPENSEARCH=$!
+        wait_for_port "YugabyteDB" 5434 90 &
+        PID_YUGABYTEDB=$!
+        wait_for_port "QuestDB" 8812 30 &
+        PID_QUESTDB=$!
+        wait_for_port "FerretDB" 27020 30 &
+        PID_FERRETDB=$!
 
-        ALL_PIDS="$PID_PG $PID_MYSQL $PID_MYSQL8 $PID_MARIA $PID_CRDB $PID_MONGO $PID_CH $PID_REDIS $PID_ES"
+        ALL_PIDS="$PID_PG $PID_MYSQL $PID_MYSQL8 $PID_MARIA $PID_TIDB $PID_CRDB $PID_MONGO $PID_CH $PID_REDIS $PID_ES $PID_MEMCACHED $PID_VALKEY $PID_DRAGONFLY $PID_OPENSEARCH $PID_YUGABYTEDB $PID_QUESTDB $PID_FERRETDB"
 
         # SSL container wait_for_port calls (only when running SSL tests)
         if needs_ssl; then
@@ -371,8 +458,10 @@ if [ "$SKIP_CE_DATABASES" = "false" ]; then
             PID_CH_SSL=$!
             wait_for_port "ElasticSearch-SSL" 9201 90 &
             PID_ES_SSL=$!
+            wait_for_port "Memcached-SSL" 11212 30 &
+            PID_MEMCACHED_SSL=$!
 
-            ALL_PIDS="$ALL_PIDS $PID_PG_SSL $PID_MYSQL_SSL $PID_MARIA_SSL $PID_MONGO_SSL $PID_CRDB_SSL $PID_REDIS_SSL $PID_CH_SSL $PID_ES_SSL"
+            ALL_PIDS="$ALL_PIDS $PID_PG_SSL $PID_MYSQL_SSL $PID_MARIA_SSL $PID_MONGO_SSL $PID_CRDB_SSL $PID_REDIS_SSL $PID_CH_SSL $PID_ES_SSL $PID_MEMCACHED_SSL"
         fi
 
         # Wait for all background processes

@@ -19,12 +19,11 @@ package llm
 import (
 	"testing"
 
-	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/source"
 )
 
 func TestInstanceReturnsCorrectClient(t *testing.T) {
-	cfg := &engine.PluginConfig{ExternalModel: &engine.ExternalModel{Type: string(OpenAI_LLMType), Token: "key1"}}
-	client := Instance(cfg)
+	client := ClientForModel(&source.ExternalModel{Type: string(OpenAI_LLMType), Token: "key1"})
 	if client.Type != OpenAI_LLMType {
 		t.Fatalf("expected type %s, got %s", OpenAI_LLMType, client.Type)
 	}
@@ -33,8 +32,7 @@ func TestInstanceReturnsCorrectClient(t *testing.T) {
 	}
 
 	// Different config produces a client with the new values
-	cfg2 := &engine.PluginConfig{ExternalModel: &engine.ExternalModel{Type: string(Ollama_LLMType), Token: "key2"}}
-	client2 := Instance(cfg2)
+	client2 := ClientForModel(&source.ExternalModel{Type: string(Ollama_LLMType), Token: "key2"})
 	if client2.Type != Ollama_LLMType {
 		t.Fatalf("expected type %s, got %s", Ollama_LLMType, client2.Type)
 	}

@@ -17,6 +17,7 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -24,6 +25,9 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/clidey/whodb/cli/internal/config"
+	"github.com/clidey/whodb/core/src/engine"
+	"github.com/clidey/whodb/core/src/env"
+	"github.com/clidey/whodb/core/src/providers"
 )
 
 func setupConnectionViewTest(t *testing.T) (*ConnectionView, func()) {
@@ -68,6 +72,24 @@ func requireDBTypeIndex(t *testing.T, v *ConnectionView, dbType string) int {
 	return -1
 }
 
+type connectionViewTestProvider struct {
+	id          string
+	name        string
+	connections []providers.DiscoveredConnection
+}
+
+func (p *connectionViewTestProvider) Type() providers.ProviderType { return providers.ProviderTypeAWS }
+func (p *connectionViewTestProvider) ID() string                   { return p.id }
+func (p *connectionViewTestProvider) Name() string                 { return p.name }
+func (p *connectionViewTestProvider) DiscoverConnections(ctx context.Context) ([]providers.DiscoveredConnection, error) {
+	return append([]providers.DiscoveredConnection(nil), p.connections...), nil
+}
+func (p *connectionViewTestProvider) TestConnection(ctx context.Context) error { return nil }
+func (p *connectionViewTestProvider) RefreshConnection(ctx context.Context, connectionID string) (bool, error) {
+	return false, nil
+}
+func (p *connectionViewTestProvider) Close(ctx context.Context) error { return nil }
+
 func TestNewConnectionView_NoConnections(t *testing.T) {
 	v, cleanup := setupConnectionViewTest(t)
 	defer cleanup()
@@ -105,6 +127,72 @@ func TestNewConnectionView_WithConnections(t *testing.T) {
 	// With saved connections, should start in list mode
 	if v.mode != "list" {
 		t.Errorf("Expected mode 'list' with connections, got '%s'", v.mode)
+	}
+}
+
+func TestConnectionView_LoadsCloudConnectionsAndPrefillsForm(t *testing.T) {
+	v, cleanup := setupConnectionViewTest(t)
+	defer cleanup()
+
+	originalAWS := env.IsAWSProviderEnabled
+	originalAzure := env.IsAzureProviderEnabled
+	originalGCP := env.IsGCPProviderEnabled
+	t.Cleanup(func() {
+		env.IsAWSProviderEnabled = originalAWS
+		env.IsAzureProviderEnabled = originalAzure
+		env.IsGCPProviderEnabled = originalGCP
+		_ = providers.GetDefaultRegistry().Close(context.Background())
+	})
+	env.IsAWSProviderEnabled = true
+	env.IsAzureProviderEnabled = false
+	env.IsGCPProviderEnabled = false
+
+	if err := providers.GetDefaultRegistry().Register(&connectionViewTestProvider{
+		id:   "aws-prod",
+		name: "AWS Prod",
+		connections: []providers.DiscoveredConnection{{
+			ID:           "aws-prod/prod-db",
+			ProviderType: providers.ProviderTypeAWS,
+			ProviderID:   "aws-prod",
+			Name:         "prod-db",
+			DatabaseType: engine.DatabaseType_Postgres,
+			Status:       providers.ConnectionStatusAvailable,
+			Metadata: map[string]string{
+				"endpoint": "prod-db.example.com",
+				"port":     "5432",
+			},
+		}},
+	}); err != nil {
+		t.Fatalf("Register failed: %v", err)
+	}
+
+	msg := v.loadCloudConnections()()
+	v, _ = v.Update(msg)
+
+	foundCloud := false
+	for _, item := range v.list.Items() {
+		ci := item.(connectionItem)
+		if ci.source == ConnectionSourceCloud {
+			foundCloud = true
+			v.list.Select(v.list.Index() + 1)
+			break
+		}
+	}
+	if !foundCloud {
+		t.Fatal("expected a cloud connection item in the list")
+	}
+
+	v.list.Select(len(v.list.Items()) - 1)
+	v, _ = v.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	if v.mode != "form" {
+		t.Fatalf("expected selecting a cloud item to open the form, got %q", v.mode)
+	}
+	if got := v.inputs[fieldHost].Value(); got != "prod-db.example.com" {
+		t.Fatalf("expected discovered host prefill, got %q", got)
+	}
+	if got := v.advanced["SSL Mode"]; got != "require" {
+		t.Fatalf("expected discovered advanced SSL prefill, got %#v", v.advanced)
 	}
 }
 
@@ -178,6 +266,26 @@ func TestConnectionView_ListMode_Delete(t *testing.T) {
 	}
 }
 
+func TestConnectionView_RenderWrappedSelectableOptions_CachesResult(t *testing.T) {
+	v, cleanup := setupConnectionViewTest(t)
+	defer cleanup()
+
+	options := []string{"Postgres", "MySQL", "Sqlite3"}
+
+	rendered1, lineCount1 := v.renderWrappedSelectableOptions(options, 1, true, 24)
+	rendered2, lineCount2 := v.renderWrappedSelectableOptions(options, 1, true, 24)
+
+	if rendered1 != rendered2 {
+		t.Fatalf("expected cached wrapped options render to match, got %q vs %q", rendered1, rendered2)
+	}
+	if lineCount1 != lineCount2 {
+		t.Fatalf("expected cached wrapped option line count to match, got %d vs %d", lineCount1, lineCount2)
+	}
+	if got := len(v.selectorCache); got != 1 {
+		t.Fatalf("expected selector cache size 1, got %d", got)
+	}
+}
+
 func TestConnectionView_ListMode_EscConfirmation(t *testing.T) {
 	v, cleanup := setupConnectionViewTest(t)
 	defer cleanup()
@@ -217,6 +325,34 @@ func TestConnectionView_ListMode_EscConfirmation_SecondEsc(t *testing.T) {
 	// cmd should be tea.Quit
 	if cmd == nil {
 		t.Error("Expected quit command after second ESC")
+	}
+}
+
+func TestRenderWrappedSelectableOptions_WrapsLongLists(t *testing.T) {
+	options := []string{
+		"Postgres", "MySQL", "MariaDB", "CockroachDB", "Sqlite3", "MongoDB",
+		"Redis", "ElasticSearch", "ClickHouse", "DuckDB", "Memcached", "TiDB",
+	}
+
+	rendered, lineCount := renderWrappedSelectableOptions(options, 0, false, 32)
+	if lineCount <= 1 {
+		t.Fatalf("expected wrapped options to span multiple lines, got %d", lineCount)
+	}
+	if !strings.Contains(rendered, "\n  ") {
+		t.Fatalf("expected wrapped options to contain an indented newline, got %q", rendered)
+	}
+}
+
+func TestConnectionView_DbTypeSectionHeight_GrowsWhenWrapped(t *testing.T) {
+	v, cleanup := setupConnectionViewTest(t)
+	defer cleanup()
+
+	v.width = 48
+	v.parent.width = 48
+
+	height := v.dbTypeSectionHeight()
+	if height <= 3 {
+		t.Fatalf("expected wrapped database type section height greater than 3, got %d", height)
 	}
 }
 
@@ -446,7 +582,7 @@ func TestConnectionView_GetDefaultPort(t *testing.T) {
 		{"ClickHouse", 9000},
 		{"ElasticSearch", 9200},
 		{"Sqlite3", 0},
-		{"Unknown", 5432},
+		{"Unknown", 0},
 	}
 
 	for _, tt := range tests {
@@ -964,6 +1100,9 @@ func TestConnectionView_FormView_PostgresShowsAllFields(t *testing.T) {
 		if !strings.Contains(view, field) {
 			t.Errorf("Expected '%s' field to be visible for Postgres", field)
 		}
+	}
+	if !strings.Contains(view, "SSL Mode:") {
+		t.Error("Expected SSL mode selector to be visible for Postgres")
 	}
 }
 

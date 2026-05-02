@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package output
 import (
 	"bytes"
 	"encoding/json"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -37,6 +38,7 @@ func TestParseFormat(t *testing.T) {
 		{name: "table", input: "table", want: FormatTable},
 		{name: "plain", input: "plain", want: FormatPlain},
 		{name: "json", input: "json", want: FormatJSON},
+		{name: "ndjson", input: "ndjson", want: FormatNDJSON},
 		{name: "csv", input: "csv", want: FormatCSV},
 		{name: "uppercase_JSON", input: "JSON", want: FormatJSON},
 		{name: "mixed_case_Table", input: "TaBlE", want: FormatTable},
@@ -225,6 +227,129 @@ func TestWriter_WriteJSON_ColumnMismatch(t *testing.T) {
 	}
 }
 
+func TestWriter_WriteStringJSON(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(WithOutput(&buf), WithFormat(FormatJSON))
+
+	result := &StringQueryResult{
+		Columns: []Column{{Name: "id"}, {Name: "name"}},
+		Rows:    [][]string{{"1", "Alice"}, {"2", "Bob"}},
+	}
+
+	if err := w.WriteStringQueryResult(result); err != nil {
+		t.Fatalf("WriteStringQueryResult error: %v", err)
+	}
+
+	var output []map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &output); err != nil {
+		t.Fatalf("Invalid JSON output: %v", err)
+	}
+
+	if len(output) != 2 {
+		t.Fatalf("Expected 2 rows, got %d", len(output))
+	}
+	if output[1]["name"] != "Bob" {
+		t.Fatalf("Second row name = %v, want Bob", output[1]["name"])
+	}
+}
+
+func TestWriter_WriteStringJSON_BoolColumn(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(WithOutput(&buf), WithFormat(FormatJSON))
+
+	result := &StringQueryResult{
+		Columns: []Column{{Name: "flag", Type: "bool"}},
+		Rows:    [][]string{{"true"}},
+	}
+
+	if err := w.WriteStringQueryResult(result); err != nil {
+		t.Fatalf("WriteStringQueryResult error: %v", err)
+	}
+
+	var output []map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &output); err != nil {
+		t.Fatalf("Invalid JSON output: %v", err)
+	}
+
+	if len(output) != 1 {
+		t.Fatalf("Expected 1 row, got %d", len(output))
+	}
+	if got, ok := output[0]["flag"].(bool); !ok || !got {
+		t.Fatalf("Expected bool true, got %#v", output[0]["flag"])
+	}
+}
+
+func TestWriter_WriteNDJSON(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(WithOutput(&buf), WithFormat(FormatNDJSON))
+
+	result := &QueryResult{
+		Columns: []Column{{Name: "id"}, {Name: "name"}},
+		Rows:    [][]any{{1, "Alice"}, {2, "Bob"}},
+	}
+
+	if err := w.WriteQueryResult(result); err != nil {
+		t.Fatalf("WriteQueryResult error: %v", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 NDJSON lines, got %d", len(lines))
+	}
+
+	var first map[string]any
+	if err := json.Unmarshal([]byte(lines[0]), &first); err != nil {
+		t.Fatalf("invalid first NDJSON line: %v", err)
+	}
+	if first["name"] != "Alice" {
+		t.Errorf("first row name = %v, want Alice", first["name"])
+	}
+
+	var second map[string]any
+	if err := json.Unmarshal([]byte(lines[1]), &second); err != nil {
+		t.Fatalf("invalid second NDJSON line: %v", err)
+	}
+	if second["name"] != "Bob" {
+		t.Errorf("second row name = %v, want Bob", second["name"])
+	}
+}
+
+func TestWriter_BeginQueryStream_JSON(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(WithOutput(&buf), WithFormat(FormatJSON))
+
+	stream, err := w.BeginQueryStream([]Column{{Name: "id"}, {Name: "name"}})
+	if err != nil {
+		t.Fatalf("BeginQueryStream error: %v", err)
+	}
+	if err := stream.WriteRow([]string{"1", "Alice"}); err != nil {
+		t.Fatalf("WriteRow error: %v", err)
+	}
+	if err := stream.WriteRow([]string{"2", "Bob"}); err != nil {
+		t.Fatalf("WriteRow error: %v", err)
+	}
+	if err := stream.Close(); err != nil {
+		t.Fatalf("Close error: %v", err)
+	}
+
+	var output []map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &output); err != nil {
+		t.Fatalf("Invalid streamed JSON output: %v", err)
+	}
+	if len(output) != 2 || output[1]["name"] != "Bob" {
+		t.Fatalf("Unexpected streamed JSON output: %#v", output)
+	}
+}
+
+func TestWriter_BeginQueryStream_TableUnsupported(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(WithOutput(&buf), WithFormat(FormatTable))
+
+	if _, err := w.BeginQueryStream([]Column{{Name: "id"}}); err == nil {
+		t.Fatal("expected table streaming to be rejected")
+	}
+}
+
 // --- CSV Output Tests ---
 
 func TestWriter_WriteCSV(t *testing.T) {
@@ -334,6 +459,28 @@ func TestWriter_WritePlain(t *testing.T) {
 	}
 }
 
+func TestWriter_WriteStringPlain(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(WithOutput(&buf), WithFormat(FormatPlain))
+
+	result := &StringQueryResult{
+		Columns: []Column{{Name: "id"}, {Name: "name"}},
+		Rows:    [][]string{{"1", "Alice"}, {"2", "Bob"}},
+	}
+
+	if err := w.WriteStringQueryResult(result); err != nil {
+		t.Fatalf("WriteStringQueryResult error: %v", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	if len(lines) != 3 {
+		t.Fatalf("Expected 3 lines, got %d", len(lines))
+	}
+	if lines[1] != "1\tAlice" {
+		t.Fatalf("Unexpected first row: %q", lines[1])
+	}
+}
+
 // --- Table Output Tests ---
 
 func TestWriter_WriteTable(t *testing.T) {
@@ -386,6 +533,43 @@ func TestWriter_WriteTable_EmptyResult(t *testing.T) {
 	// Should still have header and separator
 	if !strings.Contains(output, "id") {
 		t.Error("Empty table should still show header")
+	}
+}
+
+func TestWriter_WriteTable_AlignsColumnsWithANSIText(t *testing.T) {
+	var buf bytes.Buffer
+	w := New(WithOutput(&buf), WithFormat(FormatTable))
+
+	result := &QueryResult{
+		Columns: []Column{
+			{Name: "\x1b[1mid\x1b[0m"},
+			{Name: "\x1b[1mpayment_method\x1b[0m"},
+		},
+		Rows: [][]any{
+			{1, "credit_card"},
+			{2, "paypal"},
+		},
+	}
+
+	if err := w.WriteQueryResult(result); err != nil {
+		t.Fatalf("WriteQueryResult error: %v", err)
+	}
+
+	ansiPattern := regexp.MustCompile(`\x1b\[[0-9;]*m`)
+	lines := strings.Split(strings.TrimSpace(ansiPattern.ReplaceAllString(buf.String(), "")), "\n")
+	if len(lines) != 4 {
+		t.Fatalf("Expected 4 table lines, got %d: %q", len(lines), lines)
+	}
+
+	headerIndex := strings.Index(lines[0], "payment_method")
+	firstRowIndex := strings.Index(lines[2], "credit_card")
+	secondRowIndex := strings.Index(lines[3], "paypal")
+
+	if headerIndex == -1 || firstRowIndex == -1 || secondRowIndex == -1 {
+		t.Fatalf("Expected aligned header/data cells, got lines: %#v", lines)
+	}
+	if headerIndex != firstRowIndex || headerIndex != secondRowIndex {
+		t.Fatalf("Expected second column to align, got header=%d first=%d second=%d in %#v", headerIndex, firstRowIndex, secondRowIndex, lines)
 	}
 }
 
@@ -470,6 +654,9 @@ func TestFormatConstants(t *testing.T) {
 	}
 	if FormatJSON != "json" {
 		t.Errorf("FormatJSON = %q, want 'json'", FormatJSON)
+	}
+	if FormatNDJSON != "ndjson" {
+		t.Errorf("FormatNDJSON = %q, want 'ndjson'", FormatNDJSON)
 	}
 	if FormatCSV != "csv" {
 		t.Errorf("FormatCSV = %q, want 'csv'", FormatCSV)

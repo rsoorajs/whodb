@@ -1,6 +1,10 @@
-query GetColumnsBatch($schema: String!, $storageUnits: [String!]!) {
-    ColumnsBatch(schema: $schema, storageUnits: $storageUnits) {
-        StorageUnit
+query GetColumnsBatch($refs: [SourceObjectRefInput!]!) {
+    ColumnsBatch: SourceColumnsBatch(refs: $refs) {
+        StorageUnit: Ref {
+            Kind
+            Locator
+            Path
+        }
         Columns {
             Name
             Type

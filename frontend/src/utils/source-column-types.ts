@@ -1,0 +1,163 @@
+/*
+ * Copyright 2026 Clidey, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { TypeDefinition } from '../config/source-types';
+import { getSourceSessionMetadataState } from './source-session-metadata-cache';
+
+/**
+ * Get column type definitions for a source from the backend-driven Apollo store.
+ *
+ * @param sourceType The source type identifier
+ * @returns Array of TypeDefinition objects for the source
+ */
+export function getSourceColumnTypeDefinitions(sourceType: string): TypeDefinition[] {
+    const metadataState = getSourceSessionMetadataState();
+
+    if (
+        metadataState.sourceType === sourceType &&
+        metadataState.typeDefinitions.length > 0
+    ) {
+        return metadataState.typeDefinitions.map(td => ({
+            id: td.id,
+            label: td.label,
+            hasLength: td.hasLength || undefined,
+            hasPrecision: td.hasPrecision || undefined,
+            defaultLength: td.defaultLength ?? undefined,
+            defaultPrecision: td.defaultPrecision ?? undefined,
+            category: td.category,
+        }));
+    }
+
+    // No fallback - backend is the source of truth.
+    console.warn(
+        `[source-column-types] No type definitions found for ${sourceType}. ` +
+            `Ensure SourceSessionMetadata query has completed.`
+    );
+    return [];
+}
+
+/**
+ * Get the type-alias map for a source from the backend-driven Apollo store.
+ *
+ * @param sourceType The source type identifier
+ * @returns Record mapping aliases to canonical type names
+ */
+export function getSourceColumnTypeAliasMap(sourceType: string): Record<string, string> {
+    const metadataState = getSourceSessionMetadataState();
+
+    if (
+        metadataState.sourceType === sourceType &&
+        Object.keys(metadataState.aliasMap).length > 0
+    ) {
+        return metadataState.aliasMap;
+    }
+
+    if (metadataState.sourceType !== sourceType) {
+        console.warn(
+            `[source-column-types] No alias map found for ${sourceType}. ` +
+                `Ensure SourceSessionMetadata query has completed.`
+        );
+    }
+    return {};
+}
+
+/**
+ * Normalize a type name to its canonical form for a specific source.
+ * @param typeName The type name to normalize (may include length, e.g., "VARCHAR(255)")
+ * @param sourceType The source type
+ * @returns The canonical type name (without length specifier)
+ */
+export function normalizeColumnTypeName(typeName: string, sourceType: string): string {
+    const baseType = typeName.replace(/\(.*\)$/, '').trim().toUpperCase();
+    const aliasMap = getSourceColumnTypeAliasMap(sourceType);
+
+    return aliasMap[baseType] ?? baseType;
+}
+
+/**
+ * Find a column type definition by its id or alias.
+ * @param typeId The type id or alias to find
+ * @param sourceType The source type
+ * @returns The TypeDefinition or undefined if not found
+ */
+export function findColumnTypeDefinition(typeId: string, sourceType: string): TypeDefinition | undefined {
+    const typeDefs = getSourceColumnTypeDefinitions(sourceType);
+    const normalizedType = normalizeColumnTypeName(typeId, sourceType);
+
+    let typeDef = typeDefs.find(t => t.id.toUpperCase() === normalizedType);
+
+    if (!typeDef) {
+        typeDef = typeDefs.find(t => t.id.toUpperCase() === typeId.toUpperCase());
+    }
+
+    return typeDef;
+}
+
+/**
+ * Parse a type specification into its components
+ * @param fullType The full type string (e.g., "VARCHAR(255)", "DECIMAL(10,2)")
+ * @returns Object with baseType, length, precision, scale
+ */
+export function parseTypeSpec(fullType: string): {
+    baseType: string;
+    length?: number;
+    precision?: number;
+    scale?: number;
+} {
+    const match = fullType.match(/^([A-Za-z0-9_ ]+)(?:\((\d+)(?:,\s*(\d+))?\))?$/);
+
+    if (!match) {
+        return { baseType: fullType.trim() };
+    }
+
+    const baseType = match[1].trim();
+    const firstNum = match[2] ? parseInt(match[2], 10) : undefined;
+    const secondNum = match[3] ? parseInt(match[3], 10) : undefined;
+
+    // If there's a second number, it's precision/scale (DECIMAL(10,2))
+    // Otherwise it's just length (VARCHAR(255))
+    if (secondNum !== undefined) {
+        return { baseType, precision: firstNum, scale: secondNum };
+    }
+
+    return { baseType, length: firstNum };
+}
+
+/**
+ * Format a type specification into a full type string
+ * @param baseType The base type name
+ * @param length Optional length for character types
+ * @param precision Optional precision for decimal types
+ * @param scale Optional scale for decimal types
+ * @returns The formatted type string (e.g., "VARCHAR(255)", "DECIMAL(10,2)")
+ */
+export function formatTypeSpec(
+    baseType: string,
+    length?: number,
+    precision?: number,
+    scale?: number
+): string {
+    if (precision !== undefined) {
+        if (scale !== undefined) {
+            return `${baseType}(${precision},${scale})`;
+        }
+        return `${baseType}(${precision})`;
+    }
+    if (length !== undefined) {
+        return `${baseType}(${length})`;
+    }
+    return baseType;
+}

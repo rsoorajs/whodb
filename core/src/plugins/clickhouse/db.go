@@ -17,7 +17,6 @@
 package clickhouse
 
 import (
-	"context"
 	"net"
 	"strconv"
 	"time"
@@ -109,7 +108,7 @@ func (p *ClickHousePlugin) DB(config *engine.PluginConfig) (*gorm.DB, error) {
 		}(),
 	})
 
-	err = conn.PingContext(context.Background())
+	err = conn.PingContext(config.OperationContext())
 	if err != nil {
 		l.WithError(err).Error("Failed to ping ClickHouse server")
 		return nil, err

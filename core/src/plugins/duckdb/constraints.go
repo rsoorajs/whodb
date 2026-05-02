@@ -17,6 +17,7 @@
 package duckdb
 
 import (
+	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/plugins"
 	gorm_plugin "github.com/clidey/whodb/core/src/plugins/gorm"
@@ -71,6 +72,24 @@ func (p *DuckDBPlugin) GetColumnConstraints(config *engine.PluginConfig, schema 
 			}
 		}
 
+		// Get single-column CHECK constraints used by mock data generation.
+		checkRows, err := db.Raw(`
+			SELECT unnest(dc.constraint_column_names) AS column_name, COALESCE(dc.expression, dc.constraint_text) AS check_clause
+			FROM duckdb_constraints() dc
+			WHERE dc.constraint_type = 'CHECK'
+				AND dc.schema_name = ? AND dc.table_name = ?
+		`, schema, storageUnit).Rows()
+		if err == nil {
+			defer checkRows.Close()
+			for checkRows.Next() {
+				var columnName, checkClause string
+				if err := checkRows.Scan(&columnName, &checkClause); err != nil {
+					continue
+				}
+				p.parseCheckConstraint(columnName, checkClause, constraints)
+			}
+		}
+
 		return true, nil
 	})
 
@@ -79,4 +98,22 @@ func (p *DuckDBPlugin) GetColumnConstraints(config *engine.PluginConfig, schema 
 	}
 
 	return constraints, nil
+}
+
+func (p *DuckDBPlugin) parseCheckConstraint(columnName string, checkClause string, constraints map[string]map[string]any) {
+	if columnName == "" {
+		columnName = gorm_plugin.ExtractColumnNameFromClause(checkClause)
+	}
+	if columnName == "" || !common.ValidateColumnName(columnName) {
+		return
+	}
+
+	colConstraints := gorm_plugin.EnsureConstraintEntry(constraints, columnName)
+
+	minMax := gorm_plugin.ParseMinMaxConstraints(checkClause)
+	gorm_plugin.ApplyMinMaxToConstraints(colConstraints, minMax)
+
+	if values := gorm_plugin.ParseINClauseValues(checkClause); len(values) > 0 {
+		colConstraints["check_values"] = values
+	}
 }

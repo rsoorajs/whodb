@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/clidey/whodb/cli/internal/database"
+	"github.com/clidey/whodb/cli/internal/schemadiff"
 	"github.com/clidey/whodb/core/src/engine"
 )
 
@@ -112,6 +113,18 @@ type connectionResultMsg struct {
 	statusMessage string
 }
 
+// dockerConnectionsLoadedMsg is sent when background Docker detection
+// completes for the connection list.
+type dockerConnectionsLoadedMsg struct {
+	items []connectionItem
+}
+
+// cloudConnectionsLoadedMsg is sent when background cloud discovery completes
+// for the connection list.
+type cloudConnectionsLoadedMsg struct {
+	items []connectionItem
+}
+
 // escTimeoutTickMsg is sent to tick the ESC quit confirmation timer
 type escTimeoutTickMsg struct{}
 
@@ -127,6 +140,14 @@ type schemaLoadedMsg struct {
 	tables []tableWithColumns
 	err    error
 	schema string
+}
+
+// schemaTableColumnsLoadedMsg is sent when a schema-view table's columns have
+// been loaded on demand.
+type schemaTableColumnsLoadedMsg struct {
+	tableName string
+	columns   []engine.Column
+	err       error
 }
 
 // statusMessageTimeoutMsg is sent to auto-dismiss transient status messages
@@ -147,8 +168,16 @@ type explainResultMsg struct {
 	err   error
 }
 
+// schemaDiffResultMsg is sent when a schema diff comparison completes.
+type schemaDiffResultMsg struct {
+	result *schemadiff.Result
+	err    error
+}
+
 // tableWithColumns pairs a storage unit with its column metadata
 type tableWithColumns struct {
-	StorageUnit engine.StorageUnit
-	Columns     []engine.Column
+	StorageUnit    engine.StorageUnit
+	Columns        []engine.Column
+	ColumnsLoaded  bool
+	ColumnsLoading bool
 }

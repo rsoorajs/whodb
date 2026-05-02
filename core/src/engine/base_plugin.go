@@ -21,7 +21,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/clidey/whodb/core/graph/model"
+	"github.com/clidey/whodb/core/src/query"
 )
 
 // BasePlugin provides default implementations for all PluginFunctions methods.
@@ -80,7 +80,7 @@ func (b *BasePlugin) GetRows(_ *PluginConfig, _ *GetRowsRequest) (*GetRowsResult
 	return nil, errors.ErrUnsupported
 }
 
-func (b *BasePlugin) GetRowCount(_ *PluginConfig, _ string, _ string, _ *model.WhereCondition) (int64, error) {
+func (b *BasePlugin) GetRowCount(_ *PluginConfig, _ string, _ string, _ *query.WhereCondition) (int64, error) {
 	return 0, errors.ErrUnsupported
 }
 
@@ -130,10 +130,6 @@ func (b *BasePlugin) GetForeignKeyRelationships(_ *PluginConfig, _ string, _ str
 
 func (b *BasePlugin) WithTransaction(_ *PluginConfig, operation func(tx any) error) error {
 	return operation(nil)
-}
-
-func (b *BasePlugin) GetDatabaseMetadata() *DatabaseMetadata {
-	return nil
 }
 
 func (b *BasePlugin) GetSSLStatus(_ *PluginConfig) (*SSLStatus, error) {

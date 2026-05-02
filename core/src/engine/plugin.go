@@ -19,8 +19,9 @@ package engine
 import (
 	"context"
 	"errors"
+	"time"
 
-	"github.com/clidey/whodb/core/graph/model"
+	"github.com/clidey/whodb/core/src/query"
 )
 
 // ErrMultiStatementUnsupported is returned by plugins that do not support
@@ -40,106 +41,23 @@ type Credentials struct {
 	IsProfile   bool     `json:"IsProfile,omitempty"`
 }
 
-// ExternalModel represents an external AI model configuration for chat functionality.
-type ExternalModel struct {
-	Type     string // Provider type: "OpenAI", "Anthropic", "Ollama", etc.
-	Token    string // API key
-	Model    string // User-selected model: "gpt-4o", "claude-sonnet-4", etc.
-	Endpoint string // Base URL (for Ollama/generic providers)
-}
-
 // PluginConfig contains all configuration needed to connect to and operate on a database.
 type PluginConfig struct {
 	Credentials           *Credentials
 	ExternalModel         *ExternalModel
-	Transaction           any      // Optional transaction for transactional operations (e.g., *gorm.DB for SQL plugins)
-	MultiStatement        bool     // Hint for plugins that need special handling for multi-statement scripts (e.g., MySQL)
-	UpsertPKColumns       []string // PK columns for ON CONFLICT DO UPDATE; non-nil = upsert mode
-	SkipConflictPKColumns []string // PK columns for ON CONFLICT DO NOTHING (append mode — skip duplicate rows)
-}
-
-// Record represents a key-value pair with optional extra metadata,
-// used for column attributes, configuration, and data transfer.
-type Record struct {
-	Key   string            `json:"Key"`
-	Value string            `json:"Value"`
-	Extra map[string]string `json:"Extra,omitempty"`
-}
-
-// StorageUnit represents a database table, collection, or equivalent storage structure.
-type StorageUnit struct {
-	Name       string
-	Attributes []Record
-}
-
-// Column describes a database column including its type, name, and relationship metadata.
-type Column struct {
-	Type             string
-	Name             string
-	IsNullable       bool
-	IsPrimary        bool
-	IsAutoIncrement  bool
-	IsComputed       bool // Database-managed, generated, etc
-	IsForeignKey     bool
-	ReferencedTable  *string
-	ReferencedColumn *string
-	Length           *int // For VARCHAR(n), CHAR(n) types
-	Precision        *int // For DECIMAL(p,s) types
-	Scale            *int // For DECIMAL(p,s) types
-}
-
-// GetRowsResult contains the result of a row query including columns, data, and pagination info.
-type GetRowsResult struct {
-	Columns       []Column
-	Rows          [][]string
-	DisableUpdate bool
-	TotalCount    int64
-}
-
-// GraphUnitRelationshipType defines the cardinality of a relationship between tables.
-type GraphUnitRelationshipType string
-
-// GraphUnitRelationship describes a foreign key relationship between two tables.
-type GraphUnitRelationship struct {
-	Name             string
-	RelationshipType GraphUnitRelationshipType
-	SourceColumn     *string
-	TargetColumn     *string
-}
-
-// GraphUnit represents a table and its relationships for graph visualization.
-type GraphUnit struct {
-	Unit      StorageUnit
-	Relations []GraphUnitRelationship
-}
-
-// ChatMessage represents a message in an AI chat conversation with optional query results.
-type ChatMessage struct {
-	Type                 string
-	Result               *GetRowsResult
-	Text                 string
-	RequiresConfirmation bool
-}
-
-// ForeignKeyRelationship describes a foreign key constraint on a column.
-type ForeignKeyRelationship struct {
-	ColumnName       string
-	ReferencedTable  string
-	ReferencedColumn string
-}
-
-// SSLStatus contains verified SSL/TLS connection status from the database.
-type SSLStatus struct {
-	IsEnabled bool   // Whether SSL/TLS is active on the current connection
-	Mode      string // SSL mode: disabled, required, verify-ca, verify-identity, etc.
+	Context               context.Context // Optional request context for database operations.
+	Transaction           any             // Optional transaction for transactional operations (e.g., *gorm.DB for SQL plugins)
+	MultiStatement        bool            // Hint for plugins that need special handling for multi-statement scripts (e.g., MySQL)
+	UpsertPKColumns       []string        // PK columns for ON CONFLICT DO UPDATE; non-nil = upsert mode
+	SkipConflictPKColumns []string        // PK columns for ON CONFLICT DO NOTHING (append mode — skip duplicate rows)
 }
 
 // GetRowsRequest bundles the parameters for a GetRows query.
 type GetRowsRequest struct {
 	Schema      string
 	StorageUnit string
-	Where       *model.WhereCondition
-	Sort        []*model.SortCondition
+	Where       *query.WhereCondition
+	Sort        []*query.SortCondition
 	PageSize    int
 	PageOffset  int
 }
@@ -159,7 +77,7 @@ type PluginFunctions interface {
 	BulkAddRows(config *PluginConfig, schema string, storageUnit string, rows [][]Record) (bool, error)
 	DeleteRow(config *PluginConfig, schema string, storageUnit string, values map[string]string) (bool, error)
 	GetRows(config *PluginConfig, req *GetRowsRequest) (*GetRowsResult, error)
-	GetRowCount(config *PluginConfig, schema string, storageUnit string, where *model.WhereCondition) (int64, error)
+	GetRowCount(config *PluginConfig, schema string, storageUnit string, where *query.WhereCondition) (int64, error)
 	GetGraph(config *PluginConfig, schema string) ([]GraphUnit, error)
 	RawExecute(config *PluginConfig, query string, params ...any) (*GetRowsResult, error)
 	Chat(config *PluginConfig, schema string, previousConversation string, query string) ([]*ChatMessage, error)
@@ -182,9 +100,6 @@ type PluginFunctions interface {
 	// Transaction support
 	WithTransaction(config *PluginConfig, operation func(tx any) error) error
 
-	// Database metadata for frontend type/operator configuration
-	GetDatabaseMetadata() *DatabaseMetadata
-
 	// GetSSLStatus returns the verified SSL/TLS status of the current connection.
 	// Returns nil if SSL status cannot be determined (e.g., SQLite) or is not applicable.
 	GetSSLStatus(config *PluginConfig) (*SSLStatus, error)
@@ -201,4 +116,18 @@ func NewPluginConfig(credentials *Credentials) *PluginConfig {
 	return &PluginConfig{
 		Credentials: credentials,
 	}
+}
+
+// OperationContext returns the configured request context or context.Background().
+func (c *PluginConfig) OperationContext() context.Context {
+	if c != nil && c.Context != nil {
+		return c.Context
+	}
+	return context.Background()
+}
+
+// OperationContextWithTimeout returns an operation context derived from the
+// configured request context with the provided timeout applied.
+func (c *PluginConfig) OperationContextWithTimeout(timeout time.Duration) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(c.OperationContext(), timeout)
 }

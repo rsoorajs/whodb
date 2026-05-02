@@ -22,6 +22,7 @@ import { getComponent } from "./component-registry";
 import { featureFlags } from "./features";
 import { LoadingPage } from "../components/loading";
 import { getRegisteredRoutes } from "./route-registry";
+import { useSourceContract } from "../hooks/useSourceContract";
 export { registerRoute } from "./route-registry";
 
 // Allow EE to override the login page via the component registry (e.g. for SSO).
@@ -44,6 +45,30 @@ const LazyRoute: FC<{ component: React.ComponentType<any> }> = ({ component: Com
     <Component />
   </Suspense>
 );
+
+const SourceSurfaceRoute: FC<{
+    surface: "chat" | "graph" | "scratchpad";
+    component: ReactNode;
+}> = ({ surface, component }) => {
+    const current = useAppSelector(state => state.auth.current);
+    const { loading, supportsChat, supportsGraph, supportsScratchpad } = useSourceContract(current?.Type);
+
+    if (loading) {
+        return <LoadingPage />;
+    }
+
+    const isAllowed = surface === "chat"
+        ? supportsChat
+        : surface === "graph"
+            ? supportsGraph
+            : supportsScratchpad;
+
+    if (!isAllowed) {
+        return <Navigate to="/storage-unit" replace />;
+    }
+
+    return <>{component}</>;
+};
 
 export type IInternalRoute = {
     name: string;
@@ -76,19 +101,24 @@ export const InternalRoutes = {
     Graph: {
         name: "Graph",
         path: "/graph",
-        component: <LazyRoute component={GraphPage} />,
+        component: <SourceSurfaceRoute surface="graph" component={<LazyRoute component={GraphPage} />} />,
     },
     RawExecute: {
         name: "Scratchpad",
         path: "/scratchpad",
-        component: <LazyRoute component={RawExecutePage} />,
+        component: <SourceSurfaceRoute surface="scratchpad" component={<LazyRoute component={RawExecutePage} />} />,
     },
     Chat: {
         name: "Chat",
         path: "/chat",
         component: SQLAgentPage
             ? <Suspense fallback={<LoadingPage />}><SQLAgentPage /></Suspense>
-            : <LazyRoute component={ChatPage} />,
+            : (
+                <SourceSurfaceRoute
+                    surface="chat"
+                    component={<LazyRoute component={ChatPage} />}
+                />
+            ),
     },
     Logout: {
         name: "Logout",
@@ -113,7 +143,16 @@ export const InternalRoutes = {
 
 export const PrivateRoute: FC = () => {
     const loggedIn = useAppSelector(state => state.auth.status === "logged-in");
+    const SetupGuard = getComponent('setup-guard') as FC<{ children: ReactNode }> | undefined;
+
     if(loggedIn) {
+        if (SetupGuard) {
+            return (
+                <Suspense fallback={<LoadingPage />}>
+                    <SetupGuard><Outlet /></SetupGuard>
+                </Suspense>
+            );
+        }
         return <Outlet />;
     }
     return <Navigate to={PublicRoutes.Login.path} />
@@ -133,10 +172,10 @@ export const getRoutes = (): IInternalRoute[] => {
         }
         currentRoutes.push(...Object.values((currentRoute)));
     }
-    const extra = getRegisteredRoutes().map(({ name, path, factory }) => ({
+    const extra = getRegisteredRoutes().map(({ name, path, lazyComponent }) => ({
         name,
         path,
-        component: <LazyRoute component={lazy(factory)} />,
+        component: <LazyRoute component={lazyComponent} />,
     }));
     return [...allRoutes, ...extra];
 }

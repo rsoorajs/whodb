@@ -16,68 +16,22 @@
 
 package engine
 
-import "strings"
+import (
+	"strings"
 
-// TypeCategory represents the category of a database type for UI grouping
-type TypeCategory string
-
-const (
-	TypeCategoryNumeric  TypeCategory = "numeric"
-	TypeCategoryText     TypeCategory = "text"
-	TypeCategoryBinary   TypeCategory = "binary"
-	TypeCategoryDatetime TypeCategory = "datetime"
-	TypeCategoryBoolean  TypeCategory = "boolean"
-	TypeCategoryJSON     TypeCategory = "json"
-	TypeCategoryOther    TypeCategory = "other"
+	"github.com/clidey/whodb/core/src/source"
 )
-
-// TypeDefinition describes a database column type with its metadata
-type TypeDefinition struct {
-	ID               string       // Canonical type name (e.g., "VARCHAR", "INTEGER")
-	Label            string       // Display label for UI (e.g., "varchar", "integer")
-	HasLength        bool         // Shows length input when selected (VARCHAR, CHAR)
-	HasPrecision     bool         // Shows precision/scale inputs (DECIMAL, NUMERIC)
-	DefaultLength    *int         // Default length for types with HasLength
-	DefaultPrecision *int         // Default precision for types with HasPrecision
-	Category         TypeCategory // Type category for grouping
-	InsertFunc       string       // Function to wrap INSERT values (e.g. "TO_BITMAP"), empty for normal types
-	TableModel       string       // Required table key model (e.g. "AGGREGATE"), empty for normal types
-	DDLSuffix        string       // Appended after type in CREATE TABLE (e.g. "BITMAP_UNION"), empty for normal types
-}
-
-// Capabilities declares which optional features a plugin supports.
-// The frontend reads these to determine which UI elements to show.
-type Capabilities struct {
-	SupportsScratchpad     bool
-	SupportsChat           bool
-	SupportsGraph          bool
-	SupportsSchema         bool
-	SupportsDatabaseSwitch bool
-	SupportsModifiers      bool
-}
-
-// DatabaseMetadata contains all metadata for a database type
-type DatabaseMetadata struct {
-	DatabaseType    DatabaseType
-	TypeDefinitions []TypeDefinition
-	Operators       []string
-	AliasMap        map[string]string
-	Capabilities    Capabilities
-}
 
 // Helper function to create a pointer to an int
 func IntPtr(i int) *int {
 	return &i
 }
 
-// ValidateColumnType checks if a column type string is valid against the TypeDefinitions.
-// It parses the type string (e.g., "VARCHAR(255)") and validates:
-// - The base type exists in TypeDefinitions (or AliasMap)
-// - Length/precision parameters match the type's requirements
-// Returns nil if valid, or an error describing the issue.
-func ValidateColumnType(typeName string, metadata *DatabaseMetadata) error {
+// ValidateColumnType checks if a column type string is valid against
+// source-owned type definitions and aliases.
+func ValidateColumnType(typeName string, sourceType string, metadata *source.TypeSessionMetadata) error {
 	if metadata == nil || len(metadata.TypeDefinitions) == 0 {
-		// No metadata available - allow any type (backward compatibility)
+		// No metadata available - allow any type.
 		return nil
 	}
 
@@ -100,7 +54,7 @@ func ValidateColumnType(typeName string, metadata *DatabaseMetadata) error {
 	}
 
 	if typeDef == nil {
-		return &UnsupportedTypeError{TypeName: typeName, DatabaseType: string(metadata.DatabaseType)}
+		return &UnsupportedTypeError{TypeName: typeName, DatabaseType: sourceType}
 	}
 
 	// Validate parameters

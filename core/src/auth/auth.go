@@ -27,26 +27,29 @@ import (
 	"sync"
 
 	"github.com/clidey/whodb/core/src"
-	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/log"
+	"github.com/clidey/whodb/core/src/source"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 type AuthKey string
 
 const (
-	AuthKey_Token       AuthKey = "Token"
-	AuthKey_Credentials AuthKey = "Credentials"
+	AuthKey_Token  AuthKey = "Token"
+	AuthKey_Source AuthKey = "SourceCredentials"
 )
 
-const maxRequestBodySize = 1024 * 1024 // Limit request body size to 1MB
+const maxRequestBodySize = 1024 * 1024       // Limit request body size to 1MB
+const maxUploadBodySize = 250 * 1024 * 1024 // Limit multipart upload body size to 250MB
 
-func GetCredentials(ctx context.Context) *engine.Credentials {
-	credentials := ctx.Value(AuthKey_Credentials)
+// GetSourceCredentials returns the source-first credentials from the current request context.
+func GetSourceCredentials(ctx context.Context) *source.Credentials {
+	credentials := ctx.Value(AuthKey_Source)
 	if credentials == nil {
 		return nil
 	}
-	return credentials.(*engine.Credentials)
+	return credentials.(*source.Credentials)
 }
 
 func isPublicRoute(r *http.Request) bool {
@@ -86,22 +89,30 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodySize)
-		body, err := readRequestBody(r)
-		if err != nil {
-			if err.Error() == "http: request body too large" {
-				http.Error(w, "Request body too large", http.StatusRequestEntityTooLarge)
-			} else {
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			}
-			return
-		}
+		isMultipart := strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/")
 
-		// this is to ensure that it can be re-read by the GraphQL layer
-		r.Body = io.NopCloser(bytes.NewBuffer(body))
-		if isAllowed(r, body) {
-			next.ServeHTTP(w, r)
-			return
+		if isMultipart {
+			// Multipart uploads (file uploads) use a higher body limit.
+			// Skip body buffering — auth relies on the Authorization header.
+			r.Body = http.MaxBytesReader(w, r.Body, maxUploadBodySize)
+		} else {
+			r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodySize)
+			body, err := readRequestBody(r)
+			if err != nil {
+				if err.Error() == "http: request body too large" {
+					http.Error(w, "Request body too large", http.StatusRequestEntityTooLarge)
+				} else {
+					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				}
+				return
+			}
+
+			// this is to ensure that it can be re-read by the GraphQL layer
+			r.Body = io.NopCloser(bytes.NewBuffer(body))
+			if isAllowed(r, body) {
+				next.ServeHTTP(w, r)
+				return
+			}
 		}
 
 		if authBypassFn != nil && authBypassFn(r) {
@@ -142,7 +153,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		credentials := &engine.Credentials{}
+		credentials := &source.Credentials{}
 		err = json.Unmarshal(decodedValue, credentials)
 		if err != nil {
 			log.Debugf("[Auth] Failed to unmarshal credentials JSON: %v", err)
@@ -156,33 +167,25 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		inline := true
-		isIdOnly := credentials.Id != nil && credentials.Type == "" && credentials.Hostname == ""
+		isSavedProfileReference := credentials.ID != nil && credentials.SourceType == ""
 
-		if credentials.Id != nil && isIdOnly {
-			// Client sent only ID - must match a saved profile or keyring entry
+		if isSavedProfileReference {
+			// Client sent a saved-profile reference. Resolve the stored credentials and
+			// apply any field overrides carried in the request payload.
 			matched := false
-			profiles := src.GetLoginProfiles()
-			for i, loginProfile := range profiles {
-				profileId := src.GetLoginProfileId(i, loginProfile)
-				if *credentials.Id == profileId {
-					profile := *src.GetLoginCredentials(loginProfile)
-					profile.Id = credentials.Id
-					if credentials.Database != "" {
-						profile.Database = credentials.Database
-					}
-					credentials = &profile
-					matched = true
-					inline = false
-					onceProfile.Do(func() { log.Info("Auth: credentials resolved via saved profile") })
-					break
-				}
+			_, storedProfile, ok := src.FindSourceProfile(*credentials.ID)
+			if ok {
+				storedProfile.ID = credentials.ID
+				storedProfile.Values = mergeCredentialValues(storedProfile.Values, credentials.Values)
+				credentials = storedProfile
+				matched = true
+				inline = false
+				onceProfile.Do(func() { log.Info("Auth: credentials resolved via saved profile") })
 			}
 			if !matched {
-				if stored, err := LoadCredentials(*credentials.Id); err == nil && stored != nil {
-					if credentials.Database != "" {
-						stored.Database = credentials.Database
-					}
-					stored.Id = credentials.Id
+				if stored, err := LoadCredentials(*credentials.ID); err == nil && stored != nil {
+					stored.ID = credentials.ID
+					stored.Values = mergeCredentialValues(stored.Values, credentials.Values)
 					credentials = stored
 					inline = false
 					onceKeyring.Do(func() { log.Info("Auth: credentials resolved via OS keyring") })
@@ -192,7 +195,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 					return
 				}
 			}
-		} else if credentials.Id != nil && !isIdOnly {
+		} else if credentials.ID != nil {
 			// Client sent full credentials with ID - validate or store for future use
 			// This is the initial login case for desktop apps
 			onceInline.Do(func() { log.Info("Auth: credentials supplied inline with ID") })
@@ -202,8 +205,13 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			onceInline.Do(func() { log.Info("Auth: credentials supplied inline") })
 		}
 
+		if _, ok := sourcecatalog.Find(credentials.SourceType); !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, AuthKey_Credentials, credentials)
+		ctx = context.WithValue(ctx, AuthKey_Source, credentials)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -254,15 +262,22 @@ func isAllowed(r *http.Request, body []byte) bool {
 		return false
 	}
 
-	if query.OperationName == "GetDatabase" {
-		dbType, _ := query.Variables["type"].(string)
-		return dbType == engine.DatabaseType_Sqlite3 || dbType == engine.DatabaseType_DuckDB
+	if query.OperationName == "SourceFieldOptions" {
+		sourceType, _ := query.Variables["sourceType"].(string)
+		spec, ok := sourcecatalog.Find(sourceType)
+		if !ok {
+			return false
+		}
+		field, ok := spec.ConnectionFieldByKey("Database")
+		return ok && field.SupportsOptions
 	}
 
 	switch query.OperationName {
-	case "Login", "LoginWithProfile", "GetProfiles", "UpdateSettings", "SettingsConfig", "GetVersion",
+	case "LoginSource",
+		"LoginWithSourceProfile", "SourceProfiles",
+		"GetHealth", "SettingsConfig", "GetVersion",
 		"GetAWSProviders", "GetCloudProviders", "GetCloudProvider",
-		"GetDiscoveredConnections", "GetProviderConnections", "GetConnectableDatabases",
+		"GetDiscoveredConnections", "GetProviderConnections", "SourceTypes",
 		"GetLocalAWSProfiles", "GetAWSRegions",
 		"AddAWSProvider", "TestAWSCredentials", "TestCloudProvider",
 		"RefreshCloudProvider", "RemoveCloudProvider", "UpdateAWSProvider",
@@ -283,6 +298,17 @@ func isAllowed(r *http.Request, body []byte) bool {
 		}
 	}
 	return false
+}
+
+func mergeCredentialValues(base map[string]string, overrides map[string]string) map[string]string {
+	merged := map[string]string{}
+	for key, value := range base {
+		merged[key] = value
+	}
+	for key, value := range overrides {
+		merged[key] = value
+	}
+	return merged
 }
 
 func isTokenValid(token string) bool {

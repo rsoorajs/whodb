@@ -228,7 +228,6 @@ func CloseAllConnections(_ context.Context) {
 }
 
 // getOrCreateConnection retrieves a cached connection or creates a new one.
-// Validates cached connections with a ping before returning.
 // Connection creation happens WITHOUT holding the lock to avoid blocking other operations.
 func getOrCreateConnection(config *engine.PluginConfig, createDB DBCreationFunc) (*gorm.DB, error) {
 	connID := connIdentifier(config)
@@ -242,22 +241,8 @@ func getOrCreateConnection(config *engine.PluginConfig, createDB DBCreationFunc)
 		cached.lastUsed = time.Now()
 		db := cached.db
 		connectionCacheMu.Unlock()
-
-		// Validate connection with ping (outside lock to avoid blocking)
-		if sqlDB, err := db.DB(); err == nil && sqlDB != nil {
-			if err := sqlDB.Ping(); err == nil {
-				l.Debug("Cache HIT - connection alive")
-				return db, nil
-			}
-			l.WithError(err).Debug("Ping failed, will create new connection")
-		}
-
-		// Connection is stale - remove from cache
-		connectionCacheMu.Lock()
-		if existingCached, stillExists := getCachedConnectionLocked(key, secret); stillExists && existingCached.db == db {
-			deleteCachedConnectionLocked(key, secret)
-		}
-		connectionCacheMu.Unlock()
+		l.Debug("Cache HIT - reusing cached connection")
+		return db, nil
 	} else {
 		connectionCacheMu.Unlock()
 	}
@@ -279,18 +264,11 @@ func getOrCreateConnection(config *engine.PluginConfig, createDB DBCreationFunc)
 
 	// Check if another goroutine created a connection while we were creating ours
 	if cached, found := getCachedConnectionLocked(key, secret); found && cached != nil && cached.db != nil {
-		// Another goroutine won the race - use their connection, close ours
-		if sqlDB, err := cached.db.DB(); err == nil && sqlDB != nil {
-			if err := sqlDB.Ping(); err == nil {
-				cached.lastUsed = time.Now()
-				l.Debug("using connection created by another goroutine")
-				// Close the connection we just created since we won't use it
-				closeGormDB(db)
-				return cached.db, nil
-			}
-		}
-		// Their connection is stale - remove it, use ours
-		deleteCachedConnectionLocked(key, secret)
+		// Another goroutine won the race - use their connection, close ours.
+		cached.lastUsed = time.Now()
+		l.Debug("using connection created by another goroutine")
+		closeGormDB(db)
+		return cached.db, nil
 	}
 
 	setCachedConnectionLocked(key, secret, &cachedConnection{

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,13 @@ package database
 import (
 	"context"
 	"encoding/json"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/clidey/whodb/cli/internal/bootstrap"
 	"github.com/clidey/whodb/cli/internal/config"
+	"github.com/clidey/whodb/core/src"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/types"
 )
@@ -37,10 +40,6 @@ func TestNewManager(t *testing.T) {
 
 	if mgr == nil {
 		t.Fatal("NewManager returned nil")
-	}
-
-	if mgr.engine == nil {
-		t.Fatal("Manager engine is nil")
 	}
 
 	if mgr.config == nil {
@@ -143,7 +142,7 @@ func TestGetEnvConnectionsIncludesCatalogAlias(t *testing.T) {
 	}
 	t.Setenv("WHODB_FERRETDB", string(envValue))
 
-	mgr := &Manager{engine: &engine.Engine{}}
+	mgr := &Manager{}
 	for _, conn := range mgr.getEnvConnections() {
 		if conn.Type == string(engine.DatabaseType_FerretDB) &&
 			conn.Host == "ferret-host" &&
@@ -589,6 +588,222 @@ func TestContextTimeout(t *testing.T) {
 	// Should return error (either deadline exceeded or not connected)
 	if err == nil {
 		t.Error("Expected error with timed out context")
+	}
+}
+
+type contextCaptureKey string
+
+type contextCapturePlugin struct {
+	engine.BasePlugin
+	rawContext          context.Context
+	rowsContext         context.Context
+	schemasContext      context.Context
+	storageUnitsContext context.Context
+}
+
+func (p *contextCapturePlugin) RawExecute(config *engine.PluginConfig, query string, params ...any) (*engine.GetRowsResult, error) {
+	p.rawContext = config.Context
+	return &engine.GetRowsResult{}, nil
+}
+
+func (p *contextCapturePlugin) GetRows(config *engine.PluginConfig, req *engine.GetRowsRequest) (*engine.GetRowsResult, error) {
+	p.rowsContext = config.Context
+	return &engine.GetRowsResult{}, nil
+}
+
+func (p *contextCapturePlugin) GetAllSchemas(config *engine.PluginConfig) ([]string, error) {
+	p.schemasContext = config.Context
+	return []string{"public"}, nil
+}
+
+func (p *contextCapturePlugin) GetStorageUnits(config *engine.PluginConfig, schema string) ([]engine.StorageUnit, error) {
+	p.storageUnitsContext = config.Context
+	return []engine.StorageUnit{{Name: "users"}}, nil
+}
+
+func (p *contextCapturePlugin) StorageUnitExists(config *engine.PluginConfig, schema string, storageUnit string) (bool, error) {
+	return true, nil
+}
+
+func newContextCaptureManager(plugin engine.PluginFunctions) *Manager {
+	bootstrap.Ensure()
+
+	eng := &engine.Engine{
+		Plugins: []*engine.Plugin{{
+			Type:            engine.DatabaseType_Postgres,
+			PluginFunctions: plugin,
+		}},
+	}
+	src.MainEngine = eng
+
+	return &Manager{
+		currentConnection: &Connection{Type: string(engine.DatabaseType_Postgres), Database: "app"},
+		config:            config.DefaultConfig(),
+		cache:             NewMetadataCache(DefaultCacheTTL),
+	}
+}
+
+func TestExecuteQueryWithContext_PropagatesPluginContext(t *testing.T) {
+	setupTestEnv(t)
+
+	plugin := &contextCapturePlugin{}
+	mgr := newContextCaptureManager(plugin)
+	ctx := context.WithValue(context.Background(), contextCaptureKey("query"), "raw")
+
+	if _, err := mgr.ExecuteQueryWithContext(ctx, "SELECT 1"); err != nil {
+		t.Fatalf("ExecuteQueryWithContext failed: %v", err)
+	}
+
+	if plugin.rawContext == nil {
+		t.Fatal("expected plugin context to be set")
+	}
+	if got := plugin.rawContext.Value(contextCaptureKey("query")); got != "raw" {
+		t.Fatalf("expected propagated context value %q, got %v", "raw", got)
+	}
+}
+
+func TestGetRowsWithContext_PropagatesPluginContext(t *testing.T) {
+	setupTestEnv(t)
+
+	plugin := &contextCapturePlugin{}
+	mgr := newContextCaptureManager(plugin)
+	ctx := context.WithValue(context.Background(), contextCaptureKey("rows"), "rows")
+
+	if _, err := mgr.GetRowsWithContext(ctx, "public", "users", nil, 50, 0); err != nil {
+		t.Fatalf("GetRowsWithContext failed: %v", err)
+	}
+
+	if plugin.rowsContext == nil {
+		t.Fatal("expected plugin context to be set")
+	}
+	if got := plugin.rowsContext.Value(contextCaptureKey("rows")); got != "rows" {
+		t.Fatalf("expected propagated context value %q, got %v", "rows", got)
+	}
+}
+
+func TestGetSchemasWithContext_PropagatesPluginContext(t *testing.T) {
+	setupTestEnv(t)
+
+	plugin := &contextCapturePlugin{}
+	mgr := newContextCaptureManager(plugin)
+	ctx := context.WithValue(context.Background(), contextCaptureKey("schemas"), "schemas")
+
+	if _, err := mgr.GetSchemasWithContext(ctx); err != nil {
+		t.Fatalf("GetSchemasWithContext failed: %v", err)
+	}
+
+	if plugin.schemasContext == nil {
+		t.Fatal("expected plugin context to be set")
+	}
+	if got := plugin.schemasContext.Value(contextCaptureKey("schemas")); got != "schemas" {
+		t.Fatalf("expected propagated context value %q, got %v", "schemas", got)
+	}
+}
+
+func TestGetStorageUnitsWithContext_PropagatesPluginContext(t *testing.T) {
+	setupTestEnv(t)
+
+	plugin := &contextCapturePlugin{}
+	mgr := newContextCaptureManager(plugin)
+	ctx := context.WithValue(context.Background(), contextCaptureKey("storage_units"), "storage_units")
+
+	if _, err := mgr.GetStorageUnitsWithContext(ctx, "public"); err != nil {
+		t.Fatalf("GetStorageUnitsWithContext failed: %v", err)
+	}
+
+	if plugin.storageUnitsContext == nil {
+		t.Fatal("expected plugin context to be set")
+	}
+	if got := plugin.storageUnitsContext.Value(contextCaptureKey("storage_units")); got != "storage_units" {
+		t.Fatalf("expected propagated context value %q, got %v", "storage_units", got)
+	}
+}
+
+type metadataBatchPlugin struct {
+	engine.BasePlugin
+	mu                   sync.Mutex
+	columnsByStorageUnit map[string][]engine.Column
+	constraintsByUnit    map[string]map[string]map[string]any
+	columnCalls          []string
+	constraintCalls      []string
+}
+
+func (p *metadataBatchPlugin) GetColumnsForTable(config *engine.PluginConfig, schema string, storageUnit string) ([]engine.Column, error) {
+	p.mu.Lock()
+	p.columnCalls = append(p.columnCalls, storageUnit)
+	p.mu.Unlock()
+	return p.columnsByStorageUnit[storageUnit], nil
+}
+
+func (p *metadataBatchPlugin) StorageUnitExists(config *engine.PluginConfig, schema string, storageUnit string) (bool, error) {
+	return true, nil
+}
+
+func (p *metadataBatchPlugin) GetColumnConstraints(config *engine.PluginConfig, schema string, storageUnit string) (map[string]map[string]any, error) {
+	p.mu.Lock()
+	p.constraintCalls = append(p.constraintCalls, storageUnit)
+	p.mu.Unlock()
+	return p.constraintsByUnit[storageUnit], nil
+}
+
+func TestGetColumnsForStorageUnits(t *testing.T) {
+	plugin := &metadataBatchPlugin{
+		columnsByStorageUnit: map[string][]engine.Column{
+			"users":  {{Name: "id", Type: "integer"}},
+			"orders": {{Name: "order_id", Type: "integer"}},
+		},
+	}
+	mgr := newContextCaptureManager(plugin)
+
+	columnsByUnit, err := mgr.GetColumnsForStorageUnits("public", []string{"users", "orders"})
+	if err != nil {
+		t.Fatalf("GetColumnsForStorageUnits failed: %v", err)
+	}
+
+	if len(columnsByUnit["users"]) != 1 || columnsByUnit["users"][0].Name != "id" {
+		t.Fatalf("unexpected users columns: %#v", columnsByUnit["users"])
+	}
+	if len(columnsByUnit["orders"]) != 1 || columnsByUnit["orders"][0].Name != "order_id" {
+		t.Fatalf("unexpected orders columns: %#v", columnsByUnit["orders"])
+	}
+
+	if len(plugin.columnCalls) != 2 {
+		t.Fatalf("expected 2 column calls, got %d", len(plugin.columnCalls))
+	}
+	if _, ok := mgr.GetCache().GetColumns("public", "users"); !ok {
+		t.Fatal("expected users columns to be cached")
+	}
+	if _, ok := mgr.GetCache().GetColumns("public", "orders"); !ok {
+		t.Fatal("expected orders columns to be cached")
+	}
+}
+
+func TestGetColumnConstraintsForStorageUnits(t *testing.T) {
+	plugin := &metadataBatchPlugin{
+		constraintsByUnit: map[string]map[string]map[string]any{
+			"users": {
+				"id": {"unique": true},
+			},
+			"orders": {
+				"order_id": {"default": "nextval"},
+			},
+		},
+	}
+	mgr := newContextCaptureManager(plugin)
+
+	constraintsByUnit, err := mgr.GetColumnConstraintsForStorageUnits("public", []string{"users", "orders"})
+	if err != nil {
+		t.Fatalf("GetColumnConstraintsForStorageUnits failed: %v", err)
+	}
+
+	if got := constraintsByUnit["users"]["id"]["unique"]; got != true {
+		t.Fatalf("unexpected users constraint value: %#v", constraintsByUnit["users"])
+	}
+	if got := constraintsByUnit["orders"]["order_id"]["default"]; got != "nextval" {
+		t.Fatalf("unexpected orders constraint value: %#v", constraintsByUnit["orders"])
+	}
+	if len(plugin.constraintCalls) != 2 {
+		t.Fatalf("expected 2 constraint calls, got %d", len(plugin.constraintCalls))
 	}
 }
 

@@ -19,8 +19,8 @@ package auth
 import (
 	"encoding/json"
 
-	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
+	"github.com/clidey/whodb/core/src/source"
 	"github.com/zalando/go-keyring"
 )
 
@@ -44,7 +44,7 @@ func keyForProfile(id string) string {
 	return "profile:" + id
 }
 
-func SaveCredentials(id string, creds *engine.Credentials) error {
+func SaveCredentials(id string, creds *source.Credentials) error {
 	if !env.GetIsDesktopMode() {
 		return nil
 	}
@@ -58,7 +58,7 @@ func SaveCredentials(id string, creds *engine.Credentials) error {
 	return keyring.Set(keyringService, keyForProfile(id), string(data))
 }
 
-func LoadCredentials(id string) (*engine.Credentials, error) {
+func LoadCredentials(id string) (*source.Credentials, error) {
 	if !env.GetIsDesktopMode() {
 		return nil, keyring.ErrNotFound
 	}
@@ -69,7 +69,7 @@ func LoadCredentials(id string) (*engine.Credentials, error) {
 	if err != nil {
 		return nil, err
 	}
-	var creds engine.Credentials
+	var creds source.Credentials
 	if err := json.Unmarshal([]byte(val), &creds); err != nil {
 		return nil, err
 	}

@@ -27,6 +27,7 @@ import {
     ArrowDownTrayIcon,
 } from '../components/heroicons';
 import { InternalRoutes } from './routes';
+import { withBasePath } from '../utils/base-path';
 
 export const sampleDatabaseTour: TourConfig = {
     id: 'sample-database-tour',
@@ -40,7 +41,7 @@ export const sampleDatabaseTour: TourConfig = {
             path: InternalRoutes.Dashboard.StorageUnit.path,
         },
         {
-            target: '[href="/chat"]',
+            target: `[href="${withBasePath(InternalRoutes.Chat.path)}"]`,
             title: 'AI Chat Assistant',
             description: 'Ask questions in plain English like "Show me all customers" or "What are the top products?". The AI will generate and run SQL queries for you.',
             icon: <ChatBubbleLeftRightIcon className="w-6 h-6 text-brand-foreground" />,
@@ -48,7 +49,7 @@ export const sampleDatabaseTour: TourConfig = {
             path: InternalRoutes.Dashboard.StorageUnit.path,
         },
         {
-            target: '[href="/graph"]',
+            target: `[href="${withBasePath(InternalRoutes.Graph.path)}"]`,
             title: 'Visual Schema Explorer',
             description: 'See your entire database structure at a glance. Interactive graph shows all tables, columns, and relationships with zoom and pan controls.',
             icon: <ShareIcon className="w-6 h-6 text-brand-foreground" />,
@@ -64,7 +65,7 @@ export const sampleDatabaseTour: TourConfig = {
             path: InternalRoutes.Dashboard.StorageUnit.path,
         },
         {
-            target: '[href="/scratchpad"]',
+            target: `[href="${withBasePath(InternalRoutes.RawExecute.path)}"]`,
             title: 'SQL Editor & Scratchpad',
             description: 'Write custom SQL queries with syntax highlighting and auto-completion. All your queries are automatically saved in history.',
             icon: <CodeBracketIcon className="w-6 h-6 text-brand-foreground" />,

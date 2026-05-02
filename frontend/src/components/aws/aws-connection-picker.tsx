@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { useMutation, useQuery } from "@apollo/client/react";
 import { FC, useCallback, useEffect, useMemo } from "react";
 import {
     Badge,
@@ -27,9 +28,9 @@ import {
 } from "@clidey/ux";
 import {
     CloudProviderType,
-    useGetCloudProvidersQuery,
-    useGetDiscoveredConnectionsQuery,
-    useRefreshCloudProviderMutation,
+    GetCloudProvidersDocument,
+    GetDiscoveredConnectionsDocument,
+    RefreshCloudProviderDocument,
 } from "@graphql";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ProvidersActions, LocalCloudProvider, LocalDiscoveredConnection } from "../../store/providers";
@@ -44,6 +45,7 @@ import {
     QuestionMarkCircleIcon,
 } from "../heroicons";
 import { ReactElement } from "react";
+import type { SourceTypeItem } from "@/config/source-types";
 import { buildConnectionPrefill, ConnectionPrefillData } from "@/utils/cloud-connection-prefill";
 import { getAppName } from "@/config/features";
 
@@ -52,6 +54,8 @@ export type AwsConnectionPrefillData = ConnectionPrefillData;
 interface AwsConnectionPickerProps {
     /** Called when user clicks a discovered connection - prefills the main login form */
     onSelectConnection?: (data: AwsConnectionPrefillData) => void;
+    /** Available source types used to apply backend-owned discovery-prefill metadata. */
+    sourceTypes: SourceTypeItem[];
 }
 
 /**
@@ -61,6 +65,7 @@ interface AwsConnectionPickerProps {
  */
 export const AwsConnectionPicker: FC<AwsConnectionPickerProps> = ({
     onSelectConnection,
+    sourceTypes,
 }) => {
     const { t } = useTranslation('components/aws-connection-picker');
     const appName = getAppName();
@@ -81,9 +86,9 @@ export const AwsConnectionPicker: FC<AwsConnectionPickerProps> = ({
     );
 
     // GraphQL - these operations are on the auth allowlist, so no skip needed
-    const { data: providersData, loading: providersLoading, refetch: refetchProviders } = useGetCloudProvidersQuery();
-    const { data: connectionsData, loading: connectionsLoading, refetch: refetchConnections } = useGetDiscoveredConnectionsQuery();
-    const [refreshProvider, { loading: refreshLoading }] = useRefreshCloudProviderMutation();
+    const { data: providersData, loading: providersLoading, refetch: refetchProviders } = useQuery(GetCloudProvidersDocument);
+    const { data: connectionsData, loading: connectionsLoading, refetch: refetchConnections } = useQuery(GetDiscoveredConnectionsDocument);
+    const [refreshProvider, { loading: refreshLoading }] = useMutation(RefreshCloudProviderDocument);
 
     // Sync GraphQL data with Redux
     useEffect(() => {
@@ -135,9 +140,10 @@ export const AwsConnectionPicker: FC<AwsConnectionPickerProps> = ({
     const handleSelectConnection = useCallback((conn: LocalDiscoveredConnection) => {
         if (!onSelectConnection) return;
 
-        onSelectConnection(buildConnectionPrefill(conn));
+        const sourceType = sourceTypes.find(item => item.id.toLowerCase() === conn.DatabaseType.toLowerCase());
+        onSelectConnection(buildConnectionPrefill(conn, sourceType));
         toast.success(t('connectionSelected'));
-    }, [onSelectConnection, t]);
+    }, [onSelectConnection, sourceTypes, t]);
 
     const handleModalOpenChange = useCallback((open: boolean) => {
         if (!open) {

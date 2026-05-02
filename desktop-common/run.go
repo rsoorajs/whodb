@@ -84,6 +84,7 @@ func RunApp(config RunConfig) error {
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        app.Startup,
 		OnShutdown:       app.Shutdown,
+		OnBeforeClose:    app.beforeClose,
 		OnDomReady:       app.DomReady,
 		Bind: []any{
 			app,

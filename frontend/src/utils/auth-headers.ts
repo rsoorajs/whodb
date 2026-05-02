@@ -23,6 +23,18 @@ import {getAnalyticsDistinctId} from '../config/posthog';
  */
 let authHeaderProvider: (() => string | null) | null = null;
 
+type SourceCredentialValueLike = {
+    Key: string;
+    Value: string;
+};
+
+function mapSourceCredentialValues(values: readonly SourceCredentialValueLike[] | undefined): Record<string, string> {
+    return (values ?? []).reduce<Record<string, string>>((acc, value) => {
+        acc[value.Key] = value.Value;
+        return acc;
+    }, {});
+}
+
 /**
  * Registers an alternative auth header provider. Used by EE to send JWT tokens
  * instead of CE's base64-encoded database credentials.
@@ -67,24 +79,27 @@ export function getAuthorizationHeader(): string | null {
   try {
     // @ts-ignore - auth state type not fully defined
     const authState = reduxStore.getState().auth;
+    if (authState?.status !== 'logged-in') {
+      return null;
+    }
+
     const current = authState?.current;
     if (!current) {
       return null;
     }
 
+    const values = mapSourceCredentialValues(current.Values);
+
     // For saved profiles, send only Id+Database (credentials stored server-side)
     // For inline credentials, always send full credentials for validation
     const tokenPayload = current.Saved ? {
       Id: current.Id,
-      Database: current.Database,
+      Values: current.Database ? { Database: current.Database } : {},
     } : {
       Id: current.Id,
-      Type: current.Type,
-      Hostname: current.Hostname,
-      Username: current.Username,
-      Password: current.Password,
-      Database: current.Database,
-      Advanced: current.Advanced || [],
+      SourceType: current.SourceType,
+      Values: values,
+      AccessToken: current.AccessToken,
       IsProfile: false,
     };
 

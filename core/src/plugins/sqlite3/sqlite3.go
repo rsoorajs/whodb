@@ -25,12 +25,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/clidey/whodb/core/graph/model"
+	"github.com/clidey/whodb/core/src/common"
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/plugins"
 	gorm_plugin "github.com/clidey/whodb/core/src/plugins/gorm"
+	queryast "github.com/clidey/whodb/core/src/query"
+	sourcecatalogspecs "github.com/clidey/whodb/core/src/sourcecatalog/specs"
 	"gorm.io/gorm"
 )
 
@@ -40,13 +42,7 @@ func (p *Sqlite3Plugin) CreateSQLBuilder(db *gorm.DB) gorm_plugin.SQLBuilderInte
 }
 
 var (
-	supportedOperators = map[string]string{
-		"=": "=", ">=": ">=", ">": ">", "<=": "<=", "<": "<", "<>": "<>", "!=": "!=",
-		"BETWEEN": "BETWEEN", "NOT BETWEEN": "NOT BETWEEN",
-		"LIKE": "LIKE", "NOT LIKE": "NOT LIKE", "GLOB": "GLOB",
-		"IN": "IN", "NOT IN": "NOT IN", "IS NULL": "IS NULL", "IS NOT NULL": "IS NOT NULL",
-		"AND": "AND", "OR": "OR", "NOT": "NOT",
-	}
+	supportedOperators = sourcecatalogspecs.SQLiteSupportedOperators
 )
 
 type Sqlite3Plugin struct {
@@ -190,7 +186,7 @@ func (p *Sqlite3Plugin) getColumnsViaPragma(db *gorm.DB, storageUnit string) ([]
 			continue
 		}
 
-		normalizedType := NormalizeType(strings.ToUpper(dataType))
+		normalizedType := p.NormalizeType(strings.ToUpper(dataType))
 		col := engine.Column{
 			Name:       name,
 			Type:       normalizedType,
@@ -412,7 +408,7 @@ func (p *Sqlite3Plugin) GetRows(config *engine.PluginConfig, req *engine.GetRows
 				sortList := make([]plugins.Sort, len(sort))
 				for i, s := range sort {
 					sortList[i] = plugins.Sort{Column: s.Column, Direction: plugins.Down}
-					if s.Direction == model.SortDirectionAsc {
+					if s.Direction == queryast.SortDirectionAsc {
 						sortList[i].Direction = plugins.Up
 					}
 				}
@@ -470,7 +466,7 @@ func (p *Sqlite3Plugin) GetRows(config *engine.PluginConfig, req *engine.GetRows
 				sortList := make([]plugins.Sort, len(sort))
 				for i, s := range sort {
 					sortList[i] = plugins.Sort{Column: s.Column, Direction: plugins.Down}
-					if s.Direction == model.SortDirectionAsc {
+					if s.Direction == queryast.SortDirectionAsc {
 						sortList[i].Direction = plugins.Up
 					}
 				}
@@ -529,7 +525,7 @@ func (p *Sqlite3Plugin) executeRawSQL(config *engine.PluginConfig, query string,
 				return nil, err
 			}
 			// codeql[go/sql-injection]: RawExecute intentionally runs user-authored SQL from the query editor/import flow.
-			_, err = sqlDB.Exec(query)
+			_, err = sqlDB.ExecContext(config.OperationContext(), query)
 			if err != nil {
 				return nil, err
 			}
@@ -598,7 +594,7 @@ func (p *Sqlite3Plugin) executeRawSQL(config *engine.PluginConfig, query string,
 				selects[i] = quoted
 			}
 		}
-		castQuery := fmt.Sprintf("SELECT %s FROM (%s)", strings.Join(selects, ", "), query)
+		castQuery := fmt.Sprintf("SELECT %s FROM (%s)", strings.Join(selects, ", "), trimRawSQLiteSubquery(query))
 
 		castRows, err := db.Raw(castQuery, params...).Rows()
 		if err != nil {
@@ -624,6 +620,88 @@ func (p *Sqlite3Plugin) executeRawSQL(config *engine.PluginConfig, query string,
 
 func (p *Sqlite3Plugin) RawExecute(config *engine.PluginConfig, query string, params ...any) (*engine.GetRowsResult, error) {
 	return p.executeRawSQL(config, query, params...)
+}
+
+// StreamRawExecute streams a SQLite raw query row by row while preserving
+// datetime text values that the driver would otherwise coerce to zero time.
+func (p *Sqlite3Plugin) StreamRawExecute(config *engine.PluginConfig, query string, writer engine.QueryStreamWriter, params ...any) error {
+	if config != nil && config.MultiStatement {
+		return engine.ErrMultiStatementUnsupported
+	}
+
+	_, err := plugins.WithConnection(config, p.DB, func(db *gorm.DB) (bool, error) {
+		// codeql[go/sql-injection]: StreamRawExecute intentionally runs user-authored SQL from the query editor/import flow.
+		rows, err := db.Raw(query, params...).Rows()
+		if err != nil {
+			return false, err
+		}
+
+		columnTypes, err := rows.ColumnTypes()
+		if err != nil {
+			rows.Close()
+			return false, err
+		}
+
+		var datetimeIndexes []int
+		for i, ct := range columnTypes {
+			switch strings.ToUpper(ct.DatabaseTypeName()) {
+			case "DATE", "DATETIME", "TIMESTAMP":
+				datetimeIndexes = append(datetimeIndexes, i)
+			}
+		}
+
+		if len(datetimeIndexes) == 0 {
+			defer rows.Close()
+			if err := p.streamSQLiteRows(rows, writer); err != nil {
+				return false, err
+			}
+			return true, nil
+		}
+
+		columns, err := rows.Columns()
+		if err != nil {
+			rows.Close()
+			return false, err
+		}
+		origTypes := make([]string, len(columnTypes))
+		for i, ct := range columnTypes {
+			origTypes[i] = ct.DatabaseTypeName()
+		}
+		rows.Close()
+
+		builder := gorm_plugin.NewSQLBuilder(db, p)
+		dtSet := make(map[int]bool, len(datetimeIndexes))
+		for _, idx := range datetimeIndexes {
+			dtSet[idx] = true
+		}
+		selects := make([]string, len(columns))
+		for i, col := range columns {
+			quoted := builder.QuoteIdentifier(col)
+			if dtSet[i] {
+				selects[i] = fmt.Sprintf("CAST(%s AS TEXT) AS %s", quoted, quoted)
+			} else {
+				selects[i] = quoted
+			}
+		}
+		castQuery := fmt.Sprintf("SELECT %s FROM (%s)", strings.Join(selects, ", "), trimRawSQLiteSubquery(query))
+
+		castRows, err := db.Raw(castQuery, params...).Rows()
+		if err != nil {
+			return false, err
+		}
+		defer castRows.Close()
+
+		if err := p.streamSQLiteRowsWithTypes(castRows, writer, origTypes); err != nil {
+			return false, err
+		}
+		return true, nil
+	})
+	return err
+}
+
+func trimRawSQLiteSubquery(query string) string {
+	trimmed := strings.TrimSpace(query)
+	return strings.TrimSuffix(trimmed, ";")
 }
 
 // ConvertRawToRows overrides the parent to handle SQLite datetime columns specially
@@ -729,6 +807,161 @@ func (p *Sqlite3Plugin) ConvertRawToRows(rows *sql.Rows) (*engine.GetRowsResult,
 	return result, nil
 }
 
+func (p *Sqlite3Plugin) streamSQLiteRows(rows *sql.Rows, writer engine.QueryStreamWriter) error {
+	columns, err := rows.Columns()
+	if err != nil {
+		return err
+	}
+
+	columnTypes, err := rows.ColumnTypes()
+	if err != nil {
+		return err
+	}
+
+	typeMap := make(map[string]*sql.ColumnType, len(columnTypes))
+	for _, colType := range columnTypes {
+		typeMap[colType.Name()] = colType
+	}
+
+	resultColumns := make([]engine.Column, 0, len(columns))
+	for _, col := range columns {
+		if colType, exists := typeMap[col]; exists {
+			resultColumns = append(resultColumns, engine.Column{Name: col, Type: colType.DatabaseTypeName()})
+		}
+	}
+	if err := writer.WriteColumns(resultColumns); err != nil {
+		return err
+	}
+
+	for rows.Next() {
+		columnPointers := make([]any, len(columns))
+		row := make([]string, len(columns))
+
+		for i, col := range columns {
+			colType := typeMap[col]
+			typeName := ""
+			if colType != nil {
+				typeName = colType.DatabaseTypeName()
+			}
+
+			columnPointers[i] = gorm_plugin.CreateRawColumnScanner(p.GormPluginFunctions, typeName)
+		}
+
+		if err := rows.Scan(columnPointers...); err != nil {
+			return err
+		}
+
+		for i, colPtr := range columnPointers {
+			colType := typeMap[columns[i]]
+			typeName := ""
+			if colType != nil {
+				typeName = colType.DatabaseTypeName()
+			}
+
+			value, err := gorm_plugin.FormatScannedRawColumnValue(p.GormPluginFunctions, typeName, colPtr)
+			if err != nil {
+				row[i] = "ERROR: " + err.Error()
+				continue
+			}
+			row[i] = value
+		}
+
+		if err := writer.WriteRow(row); err != nil {
+			return err
+		}
+	}
+	return rows.Err()
+}
+
+func (p *Sqlite3Plugin) streamSQLiteRowsWithTypes(rows *sql.Rows, writer engine.QueryStreamWriter, originalTypes []string) error {
+	columns, err := rows.Columns()
+	if err != nil {
+		return err
+	}
+
+	columnTypes, err := rows.ColumnTypes()
+	if err != nil {
+		return err
+	}
+
+	typeMap := make(map[string]*sql.ColumnType, len(columnTypes))
+	for _, colType := range columnTypes {
+		typeMap[colType.Name()] = colType
+	}
+
+	resultColumns := make([]engine.Column, 0, len(columns))
+	for i, col := range columns {
+		columnType := ""
+		if i < len(originalTypes) {
+			columnType = originalTypes[i]
+		}
+		resultColumns = append(resultColumns, engine.Column{Name: col, Type: columnType})
+	}
+	if err := writer.WriteColumns(resultColumns); err != nil {
+		return err
+	}
+
+	for rows.Next() {
+		columnPointers := make([]any, len(columns))
+		row := make([]string, len(columns))
+
+		for i, col := range columns {
+			colType := typeMap[col]
+			typeName := ""
+			if colType != nil {
+				typeName = strings.ToUpper(colType.DatabaseTypeName())
+			}
+
+			switch typeName {
+			case "DATE", "DATETIME", "TIMESTAMP":
+				columnPointers[i] = new(DateTimeString)
+			case "BLOB":
+				columnPointers[i] = new(sql.RawBytes)
+			default:
+				columnPointers[i] = new(sql.NullString)
+			}
+		}
+
+		if err := rows.Scan(columnPointers...); err != nil {
+			return err
+		}
+
+		for i, colPtr := range columnPointers {
+			colType := typeMap[columns[i]]
+			typeName := ""
+			if colType != nil {
+				typeName = strings.ToUpper(colType.DatabaseTypeName())
+			}
+
+			switch typeName {
+			case "DATE", "DATETIME", "TIMESTAMP":
+				dateStr := colPtr.(*DateTimeString)
+				row[i] = string(*dateStr)
+			case "BLOB":
+				rawBytes := colPtr.(*sql.RawBytes)
+				if rawBytes == nil || len(*rawBytes) == 0 {
+					row[i] = ""
+				} else {
+					row[i] = "0x" + hex.EncodeToString(*rawBytes)
+				}
+			default:
+				val := colPtr.(*sql.NullString)
+				if val.Valid {
+					row[i] = val.String
+				} else {
+					row[i] = ""
+				}
+			}
+		}
+
+		if err := writer.WriteRow(row); err != nil {
+			return err
+		}
+	}
+
+	return rows.Err()
+}
+
 func (p *Sqlite3Plugin) GetForeignKeyRelationships(config *engine.PluginConfig, schema string, storageUnit string) (map[string]*engine.ForeignKeyRelationship, error) {
 	return plugins.WithConnection(config, p.DB, func(db *gorm.DB) (map[string]*engine.ForeignKeyRelationship, error) {
 		escapedTable := strings.ReplaceAll(storageUnit, "'", "''")
@@ -761,7 +994,7 @@ func (p *Sqlite3Plugin) GetForeignKeyRelationships(config *engine.PluginConfig, 
 
 // NormalizeType converts SQLite type aliases to their canonical form.
 func (p *Sqlite3Plugin) NormalizeType(typeName string) string {
-	return NormalizeType(typeName)
+	return common.NormalizeTypeWithMap(typeName, sourcecatalogspecs.SQLiteAliasMap)
 }
 
 // GetMaxBulkInsertParameters returns 999 for SQLite.

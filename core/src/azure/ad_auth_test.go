@@ -14,45 +14,47 @@
  * limitations under the License.
  */
 
-package azure
+package azure_test
 
 import (
 	"testing"
+
+	"github.com/clidey/whodb/core/src/azure"
+	"github.com/clidey/whodb/core/src/sourcecatalog"
 )
 
 func TestScopeConstants(t *testing.T) {
-	if ScopePostgreSQLMySQL != "https://ossrdbms-aad.database.windows.net/.default" {
-		t.Errorf("ScopePostgreSQLMySQL = %q, want ossrdbms-aad scope", ScopePostgreSQLMySQL)
+	if azure.ScopePostgreSQLMySQL != "https://ossrdbms-aad.database.windows.net/.default" {
+		t.Errorf("ScopePostgreSQLMySQL = %q, want ossrdbms-aad scope", azure.ScopePostgreSQLMySQL)
 	}
-	if ScopeRedis != "https://redis.azure.com/.default" {
-		t.Errorf("ScopeRedis = %q, want redis.azure.com scope", ScopeRedis)
+	if azure.ScopeRedis != "https://redis.azure.com/.default" {
+		t.Errorf("ScopeRedis = %q, want redis.azure.com scope", azure.ScopeRedis)
 	}
 }
 
-func TestScopeForDatabaseType(t *testing.T) {
+func TestSourceCatalogAzureADScopes(t *testing.T) {
 	tests := []struct {
-		dbType    string
+		ids       []string
 		wantScope string
-		wantErr   bool
+		wantFound bool
 	}{
-		{"Postgres", ScopePostgreSQLMySQL, false},
-		{"PostgreSQL", ScopePostgreSQLMySQL, false},
-		{"MySQL", ScopePostgreSQLMySQL, false},
-		{"Redis", ScopeRedis, false},
-		{"MongoDB", "", true},
-		{"DynamoDB", "", true},
-		{"", "", true},
+		{[]string{"Postgres"}, azure.ScopePostgreSQLMySQL, true},
+		{[]string{"Aurora MySQL", "MySQL"}, azure.ScopePostgreSQLMySQL, true},
+		{[]string{"Azure Managed Redis", "Redis"}, azure.ScopeRedis, true},
+		{[]string{"MongoDB"}, "", false},
+		{[]string{"DynamoDB"}, "", false},
+		{[]string{""}, "", false},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.dbType, func(t *testing.T) {
-			scope, err := ScopeForDatabaseType(tt.dbType)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ScopeForDatabaseType(%q) error = %v, wantErr %v", tt.dbType, err, tt.wantErr)
+		t.Run(tt.ids[0], func(t *testing.T) {
+			scope, ok := sourcecatalog.ResolveAzureADScope(tt.ids...)
+			if ok != tt.wantFound {
+				t.Errorf("ResolveAzureADScope(%q) found = %v, want %v", tt.ids, ok, tt.wantFound)
 				return
 			}
 			if scope != tt.wantScope {
-				t.Errorf("ScopeForDatabaseType(%q) = %q, want %q", tt.dbType, scope, tt.wantScope)
+				t.Errorf("ResolveAzureADScope(%q) = %q, want %q", tt.ids, scope, tt.wantScope)
 			}
 		})
 	}

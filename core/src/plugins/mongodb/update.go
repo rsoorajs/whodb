@@ -27,7 +27,7 @@ import (
 )
 
 func (p *MongoDBPlugin) UpdateStorageUnit(config *engine.PluginConfig, database string, storageUnit string, values map[string]string, updatedColumns []string) (bool, error) {
-	ctx, cancel := opCtx()
+	ctx, cancel := opCtx(config)
 	defer cancel()
 	client, err := DB(config)
 	if err != nil {

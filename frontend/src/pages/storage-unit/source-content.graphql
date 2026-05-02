@@ -1,0 +1,11 @@
+query GetSourceContent($ref: SourceObjectRefInput!) {
+  Content: SourceContent(ref: $ref) {
+    Text
+    MIMEType
+    IsBinary
+    SizeBytes
+    Truncated
+    FileName
+    ModifiedAt
+  }
+}

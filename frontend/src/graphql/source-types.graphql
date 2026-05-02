@@ -1,0 +1,71 @@
+query SourceTypes {
+  SourceTypes {
+    id: Id
+    label: Label
+    connector: Connector
+    category: Category
+    traits: Traits {
+      connection: Connection {
+        transport: Transport
+        hostInputMode: HostInputMode
+        hostInputUrlParser: HostInputURLParser
+        supportsCustomCAContent: SupportsCustomCAContent
+      }
+      presentation: Presentation {
+        profileLabelStrategy: ProfileLabelStrategy
+        schemaFidelity: SchemaFidelity
+      }
+      query: Query {
+        supportsAnalyze: SupportsAnalyze
+        explainMode: ExplainMode
+      }
+      mockData: MockData {
+        supportsRelationalDependencies: SupportsRelationalDependencies
+      }
+    }
+    connectionFields: ConnectionFields {
+      Key
+      Kind
+      Section
+      Required
+      LabelKey
+      PlaceholderKey
+      DefaultValue
+      SupportsOptions
+    }
+    contract: Contract {
+      Model
+      Surfaces
+      RootActions
+      BrowsePath
+      DefaultObjectKind
+      GraphScopeKind
+      ObjectTypes {
+        Kind
+        DataShape
+        Actions
+        Views
+        SingularLabel
+        PluralLabel
+      }
+    }
+    discoveryPrefill: DiscoveryPrefill {
+      AdvancedDefaults {
+        Key
+        Value
+        MetadataKey
+        DefaultValue
+        ProviderTypes
+        Conditions {
+          Key
+          Value
+        }
+      }
+    }
+    isAwsManaged: IsAWSManaged
+    sslModes: SSLModes {
+      value
+      aliases
+    }
+  }
+}

@@ -17,16 +17,10 @@
 package graph
 
 import (
-	"context"
-	"fmt"
-
 	"github.com/clidey/whodb/core/graph/model"
-	"github.com/clidey/whodb/core/src"
-	"github.com/clidey/whodb/core/src/auth"
-	"github.com/clidey/whodb/core/src/engine"
-	"github.com/clidey/whodb/core/src/log"
 	"github.com/clidey/whodb/core/src/providers"
 	"github.com/clidey/whodb/core/src/settings"
+	"github.com/clidey/whodb/core/src/source"
 )
 
 // This file will not be regenerated automatically.
@@ -35,33 +29,8 @@ import (
 
 type Resolver struct{}
 
-// GetPluginForContext returns the appropriate database plugin and config for the current session.
-func GetPluginForContext(ctx context.Context) (*engine.Plugin, *engine.PluginConfig) {
-	creds := auth.GetCredentials(ctx)
-	log.Debugf("[GetPluginForContext] credentials: type=%s, hostname=%s, advanced count=%d", creds.Type, creds.Hostname, len(creds.Advanced))
-	for _, rec := range creds.Advanced {
-		log.Debugf("[GetPluginForContext] advanced: key=%q value=%q", rec.Key, rec.Value)
-	}
-	config := engine.NewPluginConfig(creds)
-	plugin := src.MainEngine.Choose(engine.DatabaseType(config.Credentials.Type))
-	return plugin, config
-}
-
-// ValidateStorageUnit checks that a storage unit exists in the given schema.
-// This prevents SQL injection by ensuring only existing table names are used.
-func ValidateStorageUnit(plugin engine.PluginFunctions, config *engine.PluginConfig, schema string, storageUnit string) error {
-	exists, err := plugin.StorageUnitExists(config, schema, storageUnit)
-	if err != nil {
-		return fmt.Errorf("failed to validate storage unit: %w", err)
-	}
-	if !exists {
-		return fmt.Errorf("storage unit %q not found in schema %q", storageUnit, schema)
-	}
-	return nil
-}
-
-// MapColumnsToModel converts engine columns to GraphQL model columns
-func MapColumnsToModel(columnsResult []engine.Column) []*model.Column {
+// MapColumnsToModel converts source columns to GraphQL model columns.
+func MapColumnsToModel(columnsResult []source.Column) []*model.Column {
 	var columns []*model.Column
 	for _, column := range columnsResult {
 		columns = append(columns, &model.Column{
@@ -77,25 +46,6 @@ func MapColumnsToModel(columnsResult []engine.Column) []*model.Column {
 		})
 	}
 	return columns
-}
-
-// FetchColumnsForStorageUnit retrieves column information for a single storage unit.
-func FetchColumnsForStorageUnit(
-	plugin engine.PluginFunctions,
-	config *engine.PluginConfig,
-	schema string,
-	storageUnit string,
-) ([]*model.Column, error) {
-	if err := ValidateStorageUnit(plugin, config, schema, storageUnit); err != nil {
-		return nil, err
-	}
-
-	columnsResult, err := plugin.GetColumnsForTable(config, schema, storageUnit)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get columns for %s.%s: %w", schema, storageUnit, err)
-	}
-
-	return MapColumnsToModel(columnsResult), nil
 }
 
 // stateToAWSProvider converts settings.AWSProviderState to the GraphQL model.
@@ -273,7 +223,7 @@ func discoveredConnectionToModel(conn *providers.DiscoveredConnection) *model.Di
 		ProviderType: mapProviderTypeToModel(conn.ProviderType),
 		ProviderID:   conn.ProviderID,
 		Name:         conn.Name,
-		DatabaseType: string(conn.DatabaseType),
+		SourceType:   string(conn.DatabaseType),
 		Region:       region,
 		Status:       mapConnectionStatusToModel(conn.Status),
 		Metadata:     metadata,

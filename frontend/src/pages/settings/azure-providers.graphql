@@ -99,8 +99,8 @@ mutation TestAzureCredentials($input: AzureProviderInput!) {
   TestAzureCredentials(input: $input)
 }
 
-mutation GenerateAzureADToken($providerID: ID!, $databaseType: String!) {
-  GenerateAzureADToken(providerID: $providerID, databaseType: $databaseType)
+mutation GenerateAzureADToken($providerID: ID!, $sourceType: String!) {
+  GenerateAzureADToken(providerID: $providerID, sourceType: $sourceType)
 }
 
 mutation RefreshAzureProvider($id: ID!) {

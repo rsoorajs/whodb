@@ -31,6 +31,7 @@ import (
 // responsesAPICache caches whether a given endpoint supports the Responses API.
 // Keyed by endpoint URL, value is bool (true = supports Responses API).
 var responsesAPICache sync.Map
+var httpClientFactory = func() *http.Client { return &http.Client{} }
 
 const (
 	OpenAI_LLMType LLMType = "OpenAI"
@@ -229,6 +230,5 @@ func sendHTTPRequest(method, url string, body []byte, headers map[string]string)
 		req.Header.Set(key, value)
 	}
 
-	client := &http.Client{}
-	return client.Do(req)
+	return httpClientFactory().Do(req)
 }

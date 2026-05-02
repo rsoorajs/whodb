@@ -16,6 +16,21 @@
 
 import { test, expect, forEachDatabase } from '../../support/test-fixture.mjs';
 import { getTableConfig } from '../../support/database-config.mjs';
+import { TIMEOUT } from '../../support/helpers/test-utils.mjs';
+
+async function expectGraphTopology(whodb, expectedNodes) {
+    if (!expectedNodes) {
+        return;
+    }
+
+    await expect(async () => {
+        const graph = await whodb.getGraph();
+        for (const node of Object.keys(expectedNodes)) {
+            expect(graph, `Graph should have node: ${node}`).toHaveProperty(node);
+            expect(graph[node].sort()).toEqual(expectedNodes[node].sort());
+        }
+    }).toPass({ timeout: TIMEOUT.GRAPH });
+}
 
 test.describe('Graph Visualization', () => {
 
@@ -25,29 +40,22 @@ test.describe('Graph Visualization', () => {
         const tableName = testTable.name;
 
         test('displays graph with expected topology', async ({ whodb, page }) => {
+            test.setTimeout(TIMEOUT.GRAPH + TIMEOUT.SLOW);
             await whodb.goto('graph');
 
-            const graph = await whodb.getGraph();
-            if (db.graph && db.graph.expectedNodes) {
-                for (const node of Object.keys(db.graph.expectedNodes)) {
-                    expect(graph, `Graph should have node: ${node}`).toHaveProperty(node);
-                    expect(graph[node].sort()).toEqual(
-                        db.graph.expectedNodes[node].sort()
-                    );
-                }
-            }
+            await expectGraphTopology(whodb, db.graph?.expectedNodes);
         });
 
         test('shows table metadata in graph nodes', async ({ whodb, page }) => {
+            test.setTimeout(TIMEOUT.GRAPH + TIMEOUT.SLOW);
             await whodb.goto('graph');
 
-            // Wait for graph to render and layout
-            await page.locator('.react-flow__node').first().waitFor({ state: 'visible', timeout: 10000 });
+            await whodb.getGraph();
             await page.locator('[data-testid="graph-layout-button"]').click();
             await page.waitForTimeout(1000); // Wait for layout animation
 
             // Wait for the specific node to exist
-            await page.locator(`[data-testid="rf__node-${tableName}"]`).waitFor({ state: 'attached', timeout: 10000 });
+            await page.locator(`[data-testid="rf__node-${tableName}"]`).waitFor({ state: 'attached', timeout: TIMEOUT.ACTION });
 
             const fields = await whodb.getGraphNode(tableName);
             const tableConfig = getTableConfig(db, tableName);
@@ -67,9 +75,10 @@ test.describe('Graph Visualization', () => {
         });
 
         test('can navigate from graph node to data view', async ({ whodb, page }) => {
+            test.setTimeout(TIMEOUT.GRAPH + TIMEOUT.SLOW);
             await whodb.goto('graph');
 
-            await page.locator('.react-flow__node').first().waitFor({ state: 'visible', timeout: 10000 });
+            await whodb.getGraph();
             await page.locator('[data-testid="graph-layout-button"]').click();
 
             // Hover over the node first to reveal the data button, then click
@@ -78,35 +87,28 @@ test.describe('Graph Visualization', () => {
             await page.locator(`[data-testid="rf__node-${tableName}"] [data-testid="data-button"]`).click({ force: true });
 
             await expect(page).toHaveURL(/\/storage-unit\/explore/, { timeout: 15000 });
-            await page.locator('table tbody tr').first().waitFor({ state: 'visible', timeout: 30000 });
+            await whodb.dataRows().first().waitFor({ state: 'visible', timeout: TIMEOUT.SLOW });
         });
     }, { features: ['graph'] });
 
     // Document Databases (MongoDB has graph support)
     forEachDatabase('document', (db) => {
         test('displays graph with expected topology', async ({ whodb, page }) => {
+            test.setTimeout(TIMEOUT.GRAPH + TIMEOUT.SLOW);
             await whodb.goto('graph');
 
-            const graph = await whodb.getGraph();
-            if (db.graph && db.graph.expectedNodes) {
-                for (const node of Object.keys(db.graph.expectedNodes)) {
-                    expect(graph).toHaveProperty(node);
-                    expect(graph[node].sort()).toEqual(
-                        db.graph.expectedNodes[node].sort()
-                    );
-                }
-            }
+            await expectGraphTopology(whodb, db.graph?.expectedNodes);
         });
 
         test('shows collection metadata in graph nodes', async ({ whodb, page }) => {
+            test.setTimeout(TIMEOUT.GRAPH + TIMEOUT.SLOW);
             await whodb.goto('graph');
 
-            // Wait for graph to render and layout
-            await page.locator('.react-flow__node').first().waitFor({ state: 'visible', timeout: 10000 });
+            await whodb.getGraph();
             await page.waitForTimeout(500); // Wait for layout to stabilize
 
             // Wait for the specific node to exist
-            await page.locator('[data-testid="rf__node-users"]').waitFor({ state: 'attached', timeout: 10000 });
+            await page.locator('[data-testid="rf__node-users"]').waitFor({ state: 'attached', timeout: TIMEOUT.ACTION });
 
             const fields = await whodb.getGraphNode('users');
             const tableConfig = getTableConfig(db, 'users');

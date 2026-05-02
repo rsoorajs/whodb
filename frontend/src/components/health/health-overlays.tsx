@@ -15,6 +15,7 @@
  */
 
 import { Button, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, toast } from '@clidey/ux';
+import { createPortal } from 'react-dom';
 import { useTranslation } from '@/hooks/use-translation';
 import { useAppSelector } from '@/store/hooks';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -67,8 +68,8 @@ export const ServerDownOverlay = () => {
         return null;
     }
 
-    return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
             <div
                 className={cn(
                     'w-full max-w-md rounded-lg border border-destructive/50 bg-background p-6 shadow-2xl',
@@ -91,7 +92,8 @@ export const ServerDownOverlay = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

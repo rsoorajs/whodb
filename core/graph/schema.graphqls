@@ -1,24 +1,122 @@
-enum DatabaseType {
-  Postgres,
-  MySQL,
-  Sqlite3,
-  MongoDB,
-  Redis,
-  ElasticSearch,
-  MariaDB,
-  CockroachDB,
-  ClickHouse,
-  DuckDB,
-  Memcached,
-  TiDB,
-  ElastiCache,
-  DocumentDB,
-  Valkey,
-  Dragonfly,
-  OpenSearch,
-  YugabyteDB,
-  QuestDB,
-  FerretDB,
+enum SourceCategory {
+  Database
+  Cache
+  Search
+  ObjectStore
+  FileStore
+}
+
+enum SourceModel {
+  Relational
+  Document
+  KeyValue
+  Search
+  Graph
+  Object
+}
+
+enum SourceSurface {
+  Browser
+  Query
+  Graph
+  Chat
+}
+
+enum SourceObjectKind {
+  Database
+  Schema
+  Table
+  View
+  Collection
+  Index
+  Key
+  Item
+  Function
+  Procedure
+  Trigger
+  Sequence
+}
+
+enum SourceAction {
+  Browse
+  Inspect
+  ViewRows
+  ViewContent
+  ViewDefinition
+  CreateChild
+  Delete
+  InsertData
+  UpdateData
+  DeleteData
+  ImportData
+  GenerateMockData
+  Execute
+  ViewGraph
+}
+
+enum SourceView {
+  Grid
+  JSON
+  Text
+  SQL
+  Binary
+  Metadata
+  Graph
+}
+
+enum DataShape {
+  Tabular
+  Document
+  Content
+  Graph
+  Metadata
+}
+
+enum SourceConnectionFieldKind {
+  Text
+  Password
+  FilePath
+}
+
+enum SourceConnectionFieldSection {
+  Primary
+  Advanced
+}
+
+enum SourceConnectionTransport {
+  Network
+  File
+  Bridge
+}
+
+enum SourceHostInputMode {
+  None
+  Hostname
+  HostnameOrURL
+}
+
+enum SourceHostInputURLParser {
+  None
+  Postgres
+  MongoSRV
+}
+
+enum SourceProfileLabelStrategy {
+  Default
+  Hostname
+  Database
+}
+
+enum SourceSchemaFidelity {
+  Exact
+  Sampled
+}
+
+enum SourceQueryExplainMode {
+  None
+  Explain
+  ExplainAnalyze
+  ExplainPipeline
 }
 
 scalar Upload
@@ -92,6 +190,16 @@ type RowsResult {
     TotalCount: Int!
 }
 
+type SourceContent {
+  Text: String
+  MIMEType: String!
+  IsBinary: Boolean!
+  SizeBytes: String!
+  Truncated: Boolean!
+  FileName: String!
+  ModifiedAt: String
+}
+
 type Record {
   Key: String!
   Value: String!
@@ -116,8 +224,7 @@ input ImportColumnMapping {
 }
 
 input ImportFileInput {
-  Schema: String!
-  StorageUnit: String!
+  Ref: SourceObjectRefInput!
   Mode: ImportMode!
   Options: ImportFileOptions!
   File: Upload!
@@ -129,12 +236,6 @@ input ImportSQLInput {
   Script: String
   File: Upload
   Filename: String
-}
-
-type StorageUnit {
-  Name: String!
-  Attributes: [Record!]!
-  IsMockDataGenerationAllowed: Boolean!
 }
 
 enum GraphUnitRelationshipType {
@@ -153,24 +254,15 @@ type GraphUnitRelationship {
 }
 
 type GraphUnit {
-  Unit: StorageUnit!
+  Unit: SourceObject!
 	Relations: [GraphUnitRelationship!]!
-}
-
-input LoginCredentials {
-  Id: String
-  Type: String!
-  Hostname: String!
-  Username: String!
-  Password: String!
-  Database: String!
-  Advanced: [RecordInput!]
 }
 
 type SettingsConfig {
   MetricsEnabled: Boolean
   CloudProvidersEnabled: Boolean!
   DisableCredentialForm: Boolean!
+  EnableNewUI: Boolean!
   MaxPageSize: Int!
 }
 
@@ -178,18 +270,23 @@ input SettingsConfigInput {
   MetricsEnabled: String
 }
 
-input LoginProfileInput {
-  Id: String!
-  Type: DatabaseType!
-  Database: String
+input SourceLoginInput {
+  Id: String
+  SourceType: String!
+  Values: [RecordInput!]!
+  AccessToken: String
 }
 
-type LoginProfile {
-  Alias: String
+input SourceProfileLoginInput {
   Id: String!
-  Type: DatabaseType!
-  Hostname: String
-  Database: String
+  Values: [RecordInput!]
+}
+
+type SourceProfile {
+  Id: String!
+  DisplayName: String!
+  SourceType: String!
+  Values: [Record!]!
   IsEnvironmentDefined: Boolean!
   Source: String!
   SSLConfigured: Boolean!
@@ -222,8 +319,7 @@ type ImportResult {
 }
 
 input MockDataGenerationInput {
-  Schema: String!
-  StorageUnit: String!
+  Ref: SourceObjectRefInput!
   RowCount: Int!
   Method: String!
   OverwriteExisting: Boolean!
@@ -300,62 +396,136 @@ type TypeDefinition {
   tableModel: String
 }
 
-type Capabilities {
-  supportsScratchpad: Boolean!
-  supportsChat: Boolean!
-  supportsGraph: Boolean!
-  supportsSchema: Boolean!
-  supportsDatabaseSwitch: Boolean!
-  supportsModifiers: Boolean!
+type SourceConnectionField {
+  Key: String!
+  Kind: SourceConnectionFieldKind!
+  Section: SourceConnectionFieldSection!
+  Required: Boolean!
+  LabelKey: String!
+  PlaceholderKey: String
+  DefaultValue: String
+  SupportsOptions: Boolean!
 }
 
-type DatabaseMetadata {
-  databaseType: String!
-  typeDefinitions: [TypeDefinition!]!
-  operators: [String!]!
-  aliasMap: [Record!]!
-  capabilities: Capabilities!
+type SourceObjectType {
+  Kind: SourceObjectKind!
+  DataShape: DataShape!
+  Actions: [SourceAction!]!
+  Views: [SourceView!]!
+  SingularLabel: String!
+  PluralLabel: String!
 }
 
-type ConnectableDatabaseFields {
-  hostname: Boolean!
-  username: Boolean!
-  password: Boolean!
-  database: Boolean!
-  searchPath: Boolean!
+type SourceContract {
+  Model: SourceModel!
+  Surfaces: [SourceSurface!]!
+  RootActions: [SourceAction!]!
+  BrowsePath: [SourceObjectKind!]!
+  DefaultObjectKind: SourceObjectKind!
+  GraphScopeKind: SourceObjectKind
+  ObjectTypes: [SourceObjectType!]!
 }
 
-type ConnectableDatabaseRequiredFields {
-  hostname: Boolean!
-  username: Boolean!
-  password: Boolean!
-  database: Boolean!
+type SourceConnectionTraits {
+  Transport: SourceConnectionTransport!
+  HostInputMode: SourceHostInputMode!
+  HostInputURLParser: SourceHostInputURLParser!
+  SupportsCustomCAContent: Boolean!
 }
 
-type ConnectableDatabaseSSLMode {
+type SourcePresentationTraits {
+  ProfileLabelStrategy: SourceProfileLabelStrategy!
+  SchemaFidelity: SourceSchemaFidelity!
+}
+
+type SourceQueryTraits {
+  SupportsAnalyze: Boolean!
+  ExplainMode: SourceQueryExplainMode!
+}
+
+type SourceMockDataTraits {
+  SupportsRelationalDependencies: Boolean!
+}
+
+type SourceTraits {
+  Connection: SourceConnectionTraits!
+  Presentation: SourcePresentationTraits!
+  Query: SourceQueryTraits!
+  MockData: SourceMockDataTraits!
+}
+
+type SourceType {
+  Id: String!
+  Label: String!
+  Connector: String!
+  Category: SourceCategory!
+  Traits: SourceTraits!
+  ConnectionFields: [SourceConnectionField!]!
+  Contract: SourceContract!
+  DiscoveryPrefill: SourceDiscoveryPrefill!
+  IsAWSManaged: Boolean!
+  SSLModes: [SourceSSLMode!]!
+}
+
+type SourceSSLMode {
   value: String!
   aliases: [String!]!
 }
 
-type ConnectableDatabase {
-  id: String!
-  label: String!
-  pluginType: String!
-  extra: [Record!]!
-  fields: ConnectableDatabaseFields!
-  requiredFields: ConnectableDatabaseRequiredFields!
-  supportsModifiers: Boolean!
-  supportsScratchpad: Boolean!
-  supportsSchema: Boolean!
-  supportsDatabaseSwitching: Boolean!
-  usesSchemaForGraph: Boolean!
-  usesDatabaseInsteadOfSchema: Boolean!
-  supportsMockData: Boolean!
-  isAwsManaged: Boolean!
-  sslModes: [ConnectableDatabaseSSLMode!]!
+type SourceDiscoveryMetadataCondition {
+  Key: String!
+  Value: String!
 }
 
-type DatabaseQuerySuggestion {
+type SourceDiscoveryAdvancedDefault {
+  Key: String!
+  Value: String!
+  MetadataKey: String!
+  DefaultValue: String!
+  ProviderTypes: [String!]!
+  Conditions: [SourceDiscoveryMetadataCondition!]!
+}
+
+type SourceDiscoveryPrefill {
+  AdvancedDefaults: [SourceDiscoveryAdvancedDefault!]!
+}
+
+type SourceObjectRef {
+  Kind: SourceObjectKind!
+  Locator: String!
+  Path: [String!]!
+}
+
+input SourceObjectRefInput {
+  Kind: SourceObjectKind!
+  Locator: String
+  Path: [String!]!
+}
+
+type SourceObject {
+  Ref: SourceObjectRef!
+  Kind: SourceObjectKind!
+  Name: String!
+  Path: [String!]!
+  HasChildren: Boolean!
+  Actions: [SourceAction!]!
+  Metadata: [Record!]!
+}
+
+type SourceObjectColumns {
+  Ref: SourceObjectRef!
+  Columns: [Column!]!
+}
+
+type SourceSessionMetadata {
+  SourceType: String!
+  QueryLanguages: [String!]!
+  TypeDefinitions: [TypeDefinition!]!
+  Operators: [String!]!
+  AliasMap: [Record!]!
+}
+
+type SourceQuerySuggestion {
   description: String!
   category: String!
 }
@@ -564,7 +734,7 @@ type DiscoveredConnection {
   ProviderType: CloudProviderType!
   ProviderID: String!
   Name: String!
-  DatabaseType: String!
+  SourceType: String!
   Region: String
   Status: ConnectionStatus!
   Metadata: [Record!]!
@@ -590,25 +760,26 @@ type Query {
   Version: String!
   UpdateInfo: UpdateInfo!
   Health: HealthStatus!
-  Profiles: [LoginProfile!]!
-  Database(type: String!): [String!]!
-  Schema: [String!]!
-  StorageUnit(schema: String!): [StorageUnit!]!
-  Row(schema: String!, storageUnit: String!, where: WhereCondition, sort: [SortCondition!], pageSize: Int!, pageOffset: Int!): RowsResult!
-  Columns(schema: String!, storageUnit: String!): [Column!]!
-  ColumnsBatch(schema: String!, storageUnits: [String!]!): [StorageUnitColumns!]!
-  RawExecute(query: String!): RowsResult!
-  Graph(schema: String!): [GraphUnit!]!
+  SourceProfiles: [SourceProfile!]!
+  SourceTypes: [SourceType!]!
+  SourceFieldOptions(sourceType: String!, fieldKey: String!, values: [RecordInput!]): [String!]!
+  SourceSessionMetadata: SourceSessionMetadata
+  SourceObjects(parent: SourceObjectRefInput, kinds: [SourceObjectKind!]): [SourceObject!]!
+  SourceObject(ref: SourceObjectRefInput!): SourceObject
+  SourceRows(ref: SourceObjectRefInput!, where: WhereCondition, sort: [SortCondition!], pageSize: Int!, pageOffset: Int!): RowsResult!
+  SourceContent(ref: SourceObjectRefInput!): SourceContent
+  SourceColumns(ref: SourceObjectRefInput!): [Column!]!
+  SourceColumnsBatch(refs: [SourceObjectRefInput!]!): [SourceObjectColumns!]!
+  RunSourceQuery(query: String!): RowsResult!
+  SourceGraph(ref: SourceObjectRefInput): [GraphUnit!]!
   AIProviders: [AIProvider!]!
   AIModel(providerId: String, modelType: String!, token: String): [String!]!
-  AIChat(providerId: String, modelType: String!, token: String, schema: String!, input: ChatInput!): [AIChatMessage!]!
+  AIChat(providerId: String, modelType: String!, token: String, ref: SourceObjectRefInput, input: ChatInput!): [AIChatMessage!]!
   SettingsConfig: SettingsConfig!
   MockDataMaxRowCount: Int!
-  AnalyzeMockDataDependencies(schema: String!, storageUnit: String!, rowCount: Int!, fkDensityRatio: Int): MockDataDependencyAnalysis!
-  ConnectableDatabases: [ConnectableDatabase!]!
-  DatabaseMetadata: DatabaseMetadata
+  AnalyzeMockDataDependencies(ref: SourceObjectRefInput!, rowCount: Int!, fkDensityRatio: Int): MockDataDependencyAnalysis!
   SSLStatus: SSLStatus
-  DatabaseQuerySuggestions(schema: String!): [DatabaseQuerySuggestion!]!
+  SourceQuerySuggestions(ref: SourceObjectRefInput): [SourceQuerySuggestion!]!
 
   # Cloud Provider Queries (Generic)
   CloudProviders: [CloudProvider!]!
@@ -647,26 +818,25 @@ type GenerateChatTitleResponse {
 }
 
 type Mutation {
-  Login(credentials: LoginCredentials!): StatusResponse!
-  LoginWithProfile(profile: LoginProfileInput!): StatusResponse!
+  LoginSource(credentials: SourceLoginInput!): StatusResponse!
+  LoginWithSourceProfile(profile: SourceProfileLoginInput!): StatusResponse!
   Logout: StatusResponse!
   UpdateSettings(newSettings: SettingsConfigInput!): StatusResponse!
 
-  AddStorageUnit(schema: String!, storageUnit: String!, fields: [RecordInput!]!): StatusResponse!
-  UpdateStorageUnit(schema: String!, storageUnit: String!, values: [RecordInput!]!, updatedColumns: [String!]!): StatusResponse!
-  AddRow(schema: String!, storageUnit: String!, values: [RecordInput!]!): StatusResponse!
-  DeleteRow(schema: String!, storageUnit: String!, values: [RecordInput!]!): StatusResponse!
+  CreateSourceObject(parent: SourceObjectRefInput, name: String!, fields: [RecordInput!]!): StatusResponse!
+  UpdateSourceObject(ref: SourceObjectRefInput!, values: [RecordInput!]!, updatedColumns: [String!]!): StatusResponse!
+  AddSourceRow(ref: SourceObjectRefInput!, values: [RecordInput!]!): StatusResponse!
+  DeleteSourceRow(ref: SourceObjectRefInput!, values: [RecordInput!]!): StatusResponse!
   GenerateMockData(input: MockDataGenerationInput!): MockDataGenerationStatus!
 
   ImportSQL(input: ImportSQLInput!): ImportResult!
   ImportPreview(
     file: Upload!
     options: ImportFileOptions!
-    schema: String
-    storageUnit: String
+    ref: SourceObjectRefInput
     useHeaderMapping: Boolean
   ): ImportPreview!
-  ImportTableFile(input: ImportFileInput!): ImportResult!
+  ImportSourceObjectFile(input: ImportFileInput!): ImportResult!
 
   # AI Chat Mutations
   ExecuteConfirmedSQL(query: String!, operationType: String!): AIChatMessage!
@@ -695,7 +865,7 @@ type Mutation {
   TestAzureCredentials(input: AzureProviderInput!): CloudProviderStatus!
   RefreshAzureProvider(id: ID!): AzureProvider!
   # Azure-specific: Generate a short-lived Azure AD token for database authentication
-  GenerateAzureADToken(providerID: ID!, databaseType: String!): String!
+  GenerateAzureADToken(providerID: ID!, sourceType: String!): String!
   # GCP-specific: Generate an OAuth2 access token for Cloud SQL IAM database authentication
   GenerateCloudSQLIAMAuthToken(providerID: ID!, username: String!): String!
 }

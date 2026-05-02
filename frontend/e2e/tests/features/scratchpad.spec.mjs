@@ -205,7 +205,7 @@ test.describe('Scratchpad', () => {
                     expect(postData.selectedRows).toBeDefined();
                     expect(Array.isArray(postData.selectedRows)).toBe(true);
                     expect(postData.selectedRows.length).toBeGreaterThan(0);
-                    expect(postData.storageUnit).toEqual('query_export');
+                    expect(postData.fileBaseName).toEqual('query_export');
                 });
             });
 
@@ -240,7 +240,7 @@ test.describe('Scratchpad', () => {
                     const postData = JSON.parse(request.postData());
                     expect(postData.selectedRows).toBeDefined();
                     expect(postData.format).toEqual('excel');
-                    expect(postData.storageUnit).toEqual('query_export');
+                    expect(postData.fileBaseName).toEqual('query_export');
                 });
             });
 
@@ -325,6 +325,15 @@ test.describe('Scratchpad', () => {
                 });
 
                 await test.step('execute and verify', async () => {
+                    if (db.sql.limitQuery) {
+                        const editor = page.locator('[role="dialog"] [data-testid="code-editor"] .cm-content').first();
+                        await editor.click();
+                        await editor.clear();
+                        await editor.fill(db.sql.limitQuery);
+                        await expect(editor).toContainText(db.sql.limitQuery);
+                        await editor.blur();
+                    }
+
                     await page.locator('[data-testid="run-submit-button"]').filter({ hasText: 'Run' }).first().click();
 
                     await expect(page.locator('[role="dialog"] table')).toBeVisible({ timeout: 5000 });

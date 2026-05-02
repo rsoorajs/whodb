@@ -48,8 +48,9 @@ type cachedResult struct {
 }
 
 var (
-	cache   *cachedResult
-	cacheMu sync.Mutex
+	cache               *cachedResult
+	cacheMu             sync.Mutex
+	latestReleaseGetter = fetchLatestRelease
 )
 
 type githubRelease struct {
@@ -81,7 +82,7 @@ func CheckForUpdate(currentVersion string, disabled bool) UpdateInfo {
 
 	result := noUpdate
 
-	if release, err := fetchLatestRelease(); err == nil {
+	if release, err := latestReleaseGetter(); err == nil {
 		latestTag := strings.TrimPrefix(release.TagName, "v")
 		currentClean := strings.TrimPrefix(currentVersion, "v")
 

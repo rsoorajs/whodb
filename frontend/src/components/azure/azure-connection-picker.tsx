@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { useMutation, useQuery } from "@apollo/client/react";
 import { FC, useCallback, useEffect, useMemo } from "react";
 import {
     Badge,
@@ -27,9 +28,9 @@ import {
 } from "@clidey/ux";
 import {
     CloudProviderType,
-    useGetAzureProvidersQuery,
-    useGetDiscoveredConnectionsQuery,
-    useRefreshAzureProviderMutation,
+    GetAzureProvidersDocument,
+    GetDiscoveredConnectionsDocument,
+    RefreshAzureProviderDocument,
 } from "@graphql";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { ProvidersActions, LocalDiscoveredConnection } from "../../store/providers";
@@ -44,6 +45,7 @@ import {
     QuestionMarkCircleIcon,
 } from "../heroicons";
 import { ReactElement } from "react";
+import type { SourceTypeItem } from "@/config/source-types";
 import { buildConnectionPrefill, ConnectionPrefillData } from "@/utils/cloud-connection-prefill";
 import { getAppName } from "@/config/features";
 
@@ -57,6 +59,8 @@ export function isAzureConnection(profileId: string | undefined): boolean {
 interface AzureConnectionPickerProps {
     /** Called when user clicks a discovered connection - prefills the main login form */
     onSelectConnection?: (data: AzureConnectionPrefillData) => void;
+    /** Available source types used to apply backend-owned discovery-prefill metadata. */
+    sourceTypes: SourceTypeItem[];
 }
 
 /**
@@ -66,6 +70,7 @@ interface AzureConnectionPickerProps {
  */
 export const AzureConnectionPicker: FC<AzureConnectionPickerProps> = ({
     onSelectConnection,
+    sourceTypes,
 }) => {
     const { t } = useTranslation('components/azure-connection-picker');
     const appName = getAppName();
@@ -75,9 +80,9 @@ export const AzureConnectionPicker: FC<AzureConnectionPickerProps> = ({
     const isModalOpen = useAppSelector(state => state.providers.isProviderModalOpen);
 
     // GraphQL - these operations are on the auth allowlist, so no skip needed
-    const { data: providersData, loading: providersLoading, refetch: refetchProviders } = useGetAzureProvidersQuery();
-    const { data: connectionsData, loading: connectionsLoading, refetch: refetchConnections } = useGetDiscoveredConnectionsQuery();
-    const [refreshProvider, { loading: refreshLoading }] = useRefreshAzureProviderMutation();
+    const { data: providersData, loading: providersLoading, refetch: refetchProviders } = useQuery(GetAzureProvidersDocument);
+    const { data: connectionsData, loading: connectionsLoading, refetch: refetchConnections } = useQuery(GetDiscoveredConnectionsDocument);
+    const [refreshProvider, { loading: refreshLoading }] = useMutation(RefreshAzureProviderDocument);
 
     const azureProviders = providersData?.AzureProviders ?? [];
 
@@ -127,9 +132,10 @@ export const AzureConnectionPicker: FC<AzureConnectionPickerProps> = ({
     const handleSelectConnection = useCallback((conn: LocalDiscoveredConnection) => {
         if (!onSelectConnection) return;
 
-        onSelectConnection(buildConnectionPrefill(conn));
+        const sourceType = sourceTypes.find(item => item.id.toLowerCase() === conn.DatabaseType.toLowerCase());
+        onSelectConnection(buildConnectionPrefill(conn, sourceType));
         toast.success(t('connectionSelected'));
-    }, [onSelectConnection, t]);
+    }, [onSelectConnection, sourceTypes, t]);
 
     const handleModalOpenChange = useCallback((open: boolean) => {
         if (!open) {

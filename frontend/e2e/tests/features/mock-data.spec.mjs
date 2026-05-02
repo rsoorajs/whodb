@@ -16,6 +16,7 @@
 
 import { test, expect, forEachDatabase, skipIfNoFeature } from '../../support/test-fixture.mjs';
 import { hasFeature } from '../../support/database-config.mjs';
+import { TIMEOUT } from '../../support/helpers/test-utils.mjs';
 
 test.describe('Mock Data Generation', () => {
 
@@ -105,7 +106,7 @@ test.describe('Mock Data Generation', () => {
                 // Verify Total Count increased by exactly 5
                 await expect(page.locator('[data-testid="total-count-top"]')).toHaveText(
                     new RegExp(String(initialCount + 5)),
-                    { timeout: 5000 }
+                    { timeout: TIMEOUT.SLOW }
                 );
             });
         });
@@ -161,7 +162,7 @@ test.describe('Mock Data Generation', () => {
                         const newText = await page.locator('[data-testid="total-count-top"]').textContent();
                         const newCount = parseInt(newText.replace(/[^0-9]/g, ''), 10);
                         expect(newCount).toBeGreaterThanOrEqual(initialCount + 5);
-                    }).toPass({ timeout: 5000 });
+                    }).toPass({ timeout: TIMEOUT.SLOW });
                 });
             });
 
@@ -198,7 +199,7 @@ test.describe('Mock Data Generation', () => {
                         const newText = await page.locator('[data-testid="total-count-top"]').textContent();
                         const newCount = parseInt(newText.replace(/[^0-9]/g, ''), 10);
                         expect(newCount).toBeGreaterThanOrEqual(initialCount + 2);
-                    }).toPass({ timeout: 5000 });
+                    }).toPass({ timeout: TIMEOUT.SLOW });
                 });
             });
 
@@ -258,21 +259,17 @@ test.describe('Mock Data Generation', () => {
                         const newText = await page.locator('[data-testid="total-count-top"]').textContent();
                         const newCount = parseInt(newText.replace(/[^0-9]/g, ''), 10);
                         expect(newCount).toBeGreaterThanOrEqual(initialParentCount + expectedParentRows);
-                    }).toPass({ timeout: 5000 });
+                    }).toPass({ timeout: TIMEOUT.SLOW });
 
                     // Step 7: Collect parent PKs
-                    const headers = await page.locator('table thead th').allTextContents();
-                    let pkColIndex = -1;
-                    headers.forEach((text, i) => {
-                        if (text.trim().toLowerCase() === parentPkColumn.toLowerCase()) {
-                            pkColIndex = i;
-                        }
-                    });
+                    const parentData = await whodb.getTableData();
+                    const pkColIndex = parentData.columns.findIndex((text) => (
+                        text.trim().toLowerCase() === parentPkColumn.toLowerCase()
+                    ));
 
                     if (pkColIndex !== -1) {
-                        const rows = await page.locator('table tbody tr').all();
-                        for (const row of rows) {
-                            const pkValue = await row.locator('td').nth(pkColIndex).textContent();
+                        for (const row of parentData.rows) {
+                            const pkValue = row[pkColIndex];
                             if (pkValue && pkValue.trim()) {
                                 parentPKs.add(pkValue.trim());
                             }
@@ -287,22 +284,18 @@ test.describe('Mock Data Generation', () => {
                         const newText = await page.locator('[data-testid="total-count-top"]').textContent();
                         const newCount = parseInt(newText.replace(/[^0-9]/g, ''), 10);
                         expect(newCount).toBeGreaterThanOrEqual(initialFkTableCount + rowsToGenerate);
-                    }).toPass({ timeout: 5000 });
+                    }).toPass({ timeout: TIMEOUT.SLOW });
 
                     // Step 9: Verify FK values exist in parent PKs
                     if (parentPKs.size > 0) {
-                        const fkHeaders = await page.locator('table thead th').allTextContents();
-                        let fkColIndex = -1;
-                        fkHeaders.forEach((text, i) => {
-                            if (text.trim().toLowerCase() === fkColumn.toLowerCase()) {
-                                fkColIndex = i;
-                            }
-                        });
+                        const fkData = await whodb.getTableData();
+                        const fkColIndex = fkData.columns.findIndex((text) => (
+                            text.trim().toLowerCase() === fkColumn.toLowerCase()
+                        ));
 
                         if (fkColIndex !== -1) {
-                            const fkRows = await page.locator('table tbody tr').all();
-                            for (const row of fkRows) {
-                                const fkValue = await row.locator('td').nth(fkColIndex).textContent();
+                            for (const row of fkData.rows) {
+                                const fkValue = row[fkColIndex];
                                 if (fkValue && fkValue.trim() !== 'NULL' && fkValue.trim() !== '') {
                                     expect(parentPKs.has(fkValue.trim()),
                                         `FK value ${fkValue.trim()} should exist in parent PKs`).toBe(true);
@@ -355,14 +348,17 @@ test.describe('Mock Data Generation', () => {
                     const text = await page.locator('[data-testid="total-count-top"]').textContent();
                     const count = parseInt(text.replace(/[^0-9]/g, ''), 10);
                     expect(count).toEqual(5);
-                }).toPass({ timeout: 5000 });
+                }).toPass({ timeout: TIMEOUT.SLOW });
             });
         });
 
         // Test mock data generation for data_types table (covers all column types)
         // This validates type-specific generation: smallint limits, decimal precision, etc.
         test('generates mock data for data_types table with various column types', async ({ whodb, page }) => {
-            const dataTypesTable = db.dataTypesTable;
+            const dataTypesTable = Object.hasOwn(db.mockData ?? {}, 'dataTypesTable')
+                ? db.mockData.dataTypesTable
+                : db.dataTypesTable;
+            const rowCount = db.mockData?.dataTypesRowCount ?? 100;
             if (!dataTypesTable) {
                 test.skip();
                 return;
@@ -373,7 +369,7 @@ test.describe('Mock Data Generation', () => {
 
                 await whodb.selectMockData();
 
-                await whodb.setMockDataRows(100);
+                await whodb.setMockDataRows(rowCount);
                 await whodb.setMockDataHandling('overwrite');
             });
 
@@ -392,12 +388,12 @@ test.describe('Mock Data Generation', () => {
             });
 
             await test.step('verify count', async () => {
-                // Verify Total Count is exactly 100
+                // Verify Total Count is exactly the requested row count.
                 await expect(async () => {
                     const text = await page.locator('[data-testid="total-count-top"]').textContent();
                     const count = parseInt(text.replace(/[^0-9]/g, ''), 10);
-                    expect(count).toEqual(100);
-                }).toPass({ timeout: 5000 });
+                    expect(count).toEqual(rowCount);
+                }).toPass({ timeout: TIMEOUT.SLOW });
             });
         });
     }, { features: ['mockData'] });

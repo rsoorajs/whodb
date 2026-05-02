@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/clidey/whodb/cli/internal/agentmanifest"
 	"github.com/clidey/whodb/cli/pkg/version"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -62,10 +63,12 @@ type ServerOptions struct {
 	// Default: false
 	AllowDrop bool
 	// EnabledTools specifies which tools to enable. If empty, all tools are enabled.
-	// Valid values: "query", "schemas", "tables", "columns", "connections", "confirm"
+	// Valid values: "query", "schemas", "tables", "columns", "connections", "confirm",
+	// "pending", "explain", "diff", "erd", "audit", "suggestions"
 	EnabledTools []string
 	// DisabledTools specifies which tools to disable. Takes precedence over EnabledTools.
-	// Valid values: "query", "schemas", "tables", "columns", "connections", "confirm"
+	// Valid values: "query", "schemas", "tables", "columns", "connections", "confirm",
+	// "pending", "explain", "diff", "erd", "audit", "suggestions"
 	DisabledTools []string
 	// DefaultConnection is the connection to use when none is specified.
 	// This simplifies AI interaction when working with a single database.
@@ -335,6 +338,76 @@ func registerTools(server *mcp.Server, secOpts *SecurityOptions, toolEnablement 
 			},
 		}, createPendingHandler(secOpts))
 	}
+
+	// whodb_explain - Run EXPLAIN for a SQL query.
+	if toolEnablement.isToolEnabled("explain") {
+		mcp.AddTool(server, &mcp.Tool{
+			Name:        "whodb_explain",
+			Description: descExplain,
+			Annotations: &mcp.ToolAnnotations{
+				Title:          "Explain SQL Query",
+				ReadOnlyHint:   true,
+				IdempotentHint: true,
+				OpenWorldHint:  boolPtr(false),
+			},
+		}, createExplainHandler(secOpts))
+	}
+
+	// whodb_diff - Compare schema metadata between two connections.
+	if toolEnablement.isToolEnabled("diff") {
+		mcp.AddTool(server, &mcp.Tool{
+			Name:        "whodb_diff",
+			Description: descDiff,
+			Annotations: &mcp.ToolAnnotations{
+				Title:          "Compare Schemas",
+				ReadOnlyHint:   true,
+				IdempotentHint: true,
+				OpenWorldHint:  boolPtr(false),
+			},
+		}, createSchemaDiffHandler(secOpts))
+	}
+
+	// whodb_erd - Load backend graph metadata.
+	if toolEnablement.isToolEnabled("erd") {
+		mcp.AddTool(server, &mcp.Tool{
+			Name:        "whodb_erd",
+			Description: descERD,
+			Annotations: &mcp.ToolAnnotations{
+				Title:          "Load ER Diagram Metadata",
+				ReadOnlyHint:   true,
+				IdempotentHint: true,
+				OpenWorldHint:  boolPtr(false),
+			},
+		}, createERDHandler(secOpts))
+	}
+
+	// whodb_audit - Run data quality audits.
+	if toolEnablement.isToolEnabled("audit") {
+		mcp.AddTool(server, &mcp.Tool{
+			Name:        "whodb_audit",
+			Description: descAudit,
+			Annotations: &mcp.ToolAnnotations{
+				Title:          "Run Data Quality Audit",
+				ReadOnlyHint:   true,
+				IdempotentHint: true,
+				OpenWorldHint:  boolPtr(false),
+			},
+		}, createAuditHandler(secOpts))
+	}
+
+	// whodb_suggestions - Load backend-generated query suggestions.
+	if toolEnablement.isToolEnabled("suggestions") {
+		mcp.AddTool(server, &mcp.Tool{
+			Name:        "whodb_suggestions",
+			Description: descSuggestions,
+			Annotations: &mcp.ToolAnnotations{
+				Title:          "Load Query Suggestions",
+				ReadOnlyHint:   true,
+				IdempotentHint: true,
+				OpenWorldHint:  boolPtr(false),
+			},
+		}, createSuggestionsHandler(secOpts))
+	}
 }
 
 // buildQueryDescription creates the tool description based on security settings
@@ -485,6 +558,77 @@ func createConnectionsHandler(secOpts *SecurityOptions) func(ctx context.Context
 	}
 }
 
+// createExplainHandler creates an explain handler with connection injection and validation.
+func createExplainHandler(secOpts *SecurityOptions) func(ctx context.Context, req *mcp.CallToolRequest, input ExplainInput) (*mcp.CallToolResult, ExplainOutput, error) {
+	return func(ctx context.Context, req *mcp.CallToolRequest, input ExplainInput) (*mcp.CallToolResult, ExplainOutput, error) {
+		if input.Connection == "" && secOpts.DefaultConnection != "" {
+			input.Connection = secOpts.DefaultConnection
+		}
+		if !secOpts.isConnectionAllowed(input.Connection) {
+			return nil, ExplainOutput{Error: fmt.Sprintf("connection %q is not allowed", input.Connection)}, nil
+		}
+		return HandleExplain(ctx, req, input)
+	}
+}
+
+// createSchemaDiffHandler creates a diff handler with dual-connection validation.
+func createSchemaDiffHandler(secOpts *SecurityOptions) func(ctx context.Context, req *mcp.CallToolRequest, input SchemaDiffInput) (*mcp.CallToolResult, SchemaDiffOutput, error) {
+	return func(ctx context.Context, req *mcp.CallToolRequest, input SchemaDiffInput) (*mcp.CallToolResult, SchemaDiffOutput, error) {
+		if input.FromConnection == "" && secOpts.DefaultConnection != "" {
+			input.FromConnection = secOpts.DefaultConnection
+		}
+		if input.ToConnection == "" && secOpts.DefaultConnection != "" {
+			input.ToConnection = secOpts.DefaultConnection
+		}
+		if !secOpts.isConnectionAllowed(input.FromConnection) {
+			return nil, SchemaDiffOutput{Error: fmt.Sprintf("connection %q is not allowed", input.FromConnection)}, nil
+		}
+		if !secOpts.isConnectionAllowed(input.ToConnection) {
+			return nil, SchemaDiffOutput{Error: fmt.Sprintf("connection %q is not allowed", input.ToConnection)}, nil
+		}
+		return HandleSchemaDiff(ctx, req, input)
+	}
+}
+
+// createERDHandler creates an ERD handler with connection injection and validation.
+func createERDHandler(secOpts *SecurityOptions) func(ctx context.Context, req *mcp.CallToolRequest, input ERDInput) (*mcp.CallToolResult, ERDOutput, error) {
+	return func(ctx context.Context, req *mcp.CallToolRequest, input ERDInput) (*mcp.CallToolResult, ERDOutput, error) {
+		if input.Connection == "" && secOpts.DefaultConnection != "" {
+			input.Connection = secOpts.DefaultConnection
+		}
+		if !secOpts.isConnectionAllowed(input.Connection) {
+			return nil, ERDOutput{Error: fmt.Sprintf("connection %q is not allowed", input.Connection)}, nil
+		}
+		return HandleERD(ctx, req, input)
+	}
+}
+
+// createAuditHandler creates an audit handler with connection injection and validation.
+func createAuditHandler(secOpts *SecurityOptions) func(ctx context.Context, req *mcp.CallToolRequest, input AuditInput) (*mcp.CallToolResult, AuditOutput, error) {
+	return func(ctx context.Context, req *mcp.CallToolRequest, input AuditInput) (*mcp.CallToolResult, AuditOutput, error) {
+		if input.Connection == "" && secOpts.DefaultConnection != "" {
+			input.Connection = secOpts.DefaultConnection
+		}
+		if !secOpts.isConnectionAllowed(input.Connection) {
+			return nil, AuditOutput{Error: fmt.Sprintf("connection %q is not allowed", input.Connection)}, nil
+		}
+		return HandleAudit(ctx, req, input)
+	}
+}
+
+// createSuggestionsHandler creates a suggestions handler with connection injection and validation.
+func createSuggestionsHandler(secOpts *SecurityOptions) func(ctx context.Context, req *mcp.CallToolRequest, input SuggestionsInput) (*mcp.CallToolResult, SuggestionsOutput, error) {
+	return func(ctx context.Context, req *mcp.CallToolRequest, input SuggestionsInput) (*mcp.CallToolResult, SuggestionsOutput, error) {
+		if input.Connection == "" && secOpts.DefaultConnection != "" {
+			input.Connection = secOpts.DefaultConnection
+		}
+		if !secOpts.isConnectionAllowed(input.Connection) {
+			return nil, SuggestionsOutput{Error: fmt.Sprintf("connection %q is not allowed", input.Connection)}, nil
+		}
+		return HandleSuggestions(ctx, req, input)
+	}
+}
+
 // registerResources registers MCP resources for the server.
 func registerResources(server *mcp.Server) {
 	// Resource: Available connections
@@ -500,6 +644,23 @@ func registerResources(server *mcp.Server) {
 		}
 
 		data, _ := json.MarshalIndent(conns, "", "  ")
+		return &mcp.ReadResourceResult{
+			Contents: []*mcp.ResourceContents{
+				{Text: string(data)},
+			},
+		}, nil
+	})
+
+	server.AddResource(&mcp.Resource{
+		Name:        "agent-schema",
+		URI:         "whodb://agent/schema",
+		Description: "Machine-readable WhoDB agent capability manifest",
+		MIMEType:    "application/json",
+	}, func(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
+		data, err := json.MarshalIndent(agentmanifest.Build(), "", "  ")
+		if err != nil {
+			return nil, err
+		}
 		return &mcp.ReadResourceResult{
 			Contents: []*mcp.ResourceContents{
 				{Text: string(data)},
@@ -1061,6 +1222,106 @@ const descPending = `List all pending write confirmations that are waiting for a
 
 **Important:** Tokens are single-use and expire after 60 seconds. If expired, re-submit the original query to get a new token.`
 
+const descExplain = `Run EXPLAIN for a SQL query using the database's native explain mode.
+
+**Best for:** Understanding query plans; checking whether a query will scan too much data before you run the real query.
+**Not recommended for:** Fetching actual data (use whodb_query for that).
+**Common mistakes:** Passing a non-SQL string; forgetting that EXPLAIN output is database-specific.
+
+**Usage Example:**
+` + "```json" + `
+{
+  "name": "whodb_explain",
+  "arguments": {
+    "connection": "mydb",
+    "query": "SELECT * FROM users WHERE email LIKE '%@example.com' LIMIT 10"
+  }
+}
+` + "```" + `
+
+**Returns:** The database-native EXPLAIN output with columns and rows, ready for follow-up analysis.`
+
+const descDiff = `Compare schema metadata between two database connections.
+
+**Best for:** Spotting drift between environments; comparing staging vs production; reviewing storage-unit, column, and relationship changes.
+**Not recommended for:** Row-level data comparison.
+**Common mistakes:** Forgetting to specify both connections; comparing the same connection and schema without overrides.
+
+**Usage Example:**
+` + "```json" + `
+{
+  "name": "whodb_diff",
+  "arguments": {
+    "from_connection": "staging",
+    "to_connection": "prod",
+    "from_schema": "public",
+    "to_schema": "public"
+  }
+}
+` + "```" + `
+
+**Returns:** A structured schema diff with storage-unit, column, and relationship summaries plus per-object changes.`
+
+const descERD = `Load backend graph metadata for a schema or database.
+
+**Best for:** Understanding how tables relate before writing joins; inspecting primary/foreign key relationships programmatically.
+**Not recommended for:** Query execution.
+**Common mistakes:** Expecting row data instead of metadata.
+
+**Usage Example:**
+` + "```json" + `
+{
+  "name": "whodb_erd",
+  "arguments": {
+    "connection": "mydb",
+    "schema": "public"
+  }
+}
+` + "```" + `
+
+**Returns:** Storage units with columns plus normalized relationship edges sourced from backend graph metadata.`
+
+const descAudit = `Run data-quality checks on one schema or table.
+
+**Best for:** Finding null-rate spikes, missing primary keys, low-cardinality issues, duplicate rows, and orphaned foreign keys.
+**Not recommended for:** Replacing a full observability or data-governance system.
+**Common mistakes:** Forgetting to scope the audit to one table when you only need one table.
+
+**Usage Example:**
+` + "```json" + `
+{
+  "name": "whodb_audit",
+  "arguments": {
+    "connection": "mydb",
+    "schema": "public",
+    "table": "orders",
+    "null_warning": 15,
+    "null_error": 60
+  }
+}
+` + "```" + `
+
+**Returns:** Audit results per table, including issue summaries and the underlying table/column findings.`
+
+const descSuggestions = `Load backend-generated starter queries for a schema or database.
+
+**Best for:** Quickly orienting yourself in an unfamiliar database; suggesting first queries for exploration.
+**Not recommended for:** Exhaustive SQL tutoring.
+**Common mistakes:** Treating the suggestions as guaranteed-valid business logic rather than onboarding hints.
+
+**Usage Example:**
+` + "```json" + `
+{
+  "name": "whodb_suggestions",
+  "arguments": {
+    "connection": "mydb",
+    "schema": "public"
+  }
+}
+` + "```" + `
+
+**Returns:** A short list of backend-generated query suggestions derived from the actual storage units in the resolved schema.`
+
 const defaultInstructions = `WhoDB MCP Server - Database Management Tools
 
 Available tools:
@@ -1071,6 +1332,11 @@ Available tools:
 - whodb_connections: List available database connections
 - whodb_confirm: Confirm pending write operations (enabled by default)
 - whodb_pending: List pending write confirmations awaiting approval
+- whodb_explain: Run EXPLAIN for a SQL query
+- whodb_diff: Compare schema metadata between two connections
+- whodb_erd: Load graph/relationship metadata for a schema
+- whodb_audit: Run data quality checks on one schema or table
+- whodb_suggestions: Load backend-generated starter queries
 
 Available prompts (for guidance):
 - query_help: Get SQL query writing guidance (supports database_type and query_type args)
@@ -1103,7 +1369,12 @@ Example workflow:
 2. Get tables with columns: whodb_tables(connection="mydb", include_columns=true)
 3. Query data: whodb_query(connection="mydb", query="SELECT * FROM users LIMIT 10")
    → Results include column_types alongside column names
-4. Write data: whodb_query(connection="mydb", query="INSERT INTO...") -> user confirms -> whodb_confirm(token="...")
+4. Inspect a plan: whodb_explain(connection="mydb", query="SELECT ...")
+5. Compare environments: whodb_diff(from_connection="staging", to_connection="prod")
+6. Explore relationships: whodb_erd(connection="mydb")
+7. Audit one schema: whodb_audit(connection="mydb")
+8. Get starter queries: whodb_suggestions(connection="mydb")
+9. Write data: whodb_query(connection="mydb", query="INSERT INTO...") -> user confirms -> whodb_confirm(token="...")
    → Tokens are valid for 5 minutes and retryable. Use whodb_pending to recover lost tokens.
 
 Best practices:

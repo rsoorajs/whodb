@@ -1,0 +1,20 @@
+query SourceSessionMetadata {
+  SourceSessionMetadata {
+    sourceType: SourceType
+    queryLanguages: QueryLanguages
+    typeDefinitions: TypeDefinitions {
+      id
+      label
+      hasLength
+      hasPrecision
+      defaultLength
+      defaultPrecision
+      category
+    }
+    operators: Operators
+    aliasMap: AliasMap {
+      Key
+      Value
+    }
+  }
+}

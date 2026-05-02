@@ -444,7 +444,7 @@ Look for sequential scans that could use indexes.
 **"Export is slow"**
 - Use LIMIT for testing
 - Export in batches
-- Consider SQL format (faster than CSV)
+- Use native database tools for full dumps or migration archives
 
 **"JOIN queries are slow"**
 - Add indexes on join columns
@@ -991,7 +991,7 @@ If this fails, issue is with connection/execution.
 
 <Step title="Create a new cell">
 If one cell is stuck:
-- Press Ctrl+N to create new cell
+- Hover over the cell and use the add-cell control
 - Try query in new cell
 - Delete the stuck cell
 </Step>

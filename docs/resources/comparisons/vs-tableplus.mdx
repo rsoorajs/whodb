@@ -32,18 +32,18 @@ Elegant, polished, fast native app, excellent macOS integration, one-time paymen
 | Aspect | WhoDB | TablePlus |
 |--------|-------|-----------|
 | **Price** | Free (Open Source) | $89-$129 (lifetime) |
-| **Startup Time** | \<1 second | 1-2 seconds |
-| **Memory Usage** | ~50MB | ~150MB |
+| **Runtime** | Go server + browser UI | Native desktop app |
+| **Resource Profile** | Lightweight shared deployment | Local desktop process |
 | **Platform** | Web-based (any browser) | Native (Mac, Windows, Linux) |
 | **Installation** | No installation | Download + install |
-| **Offline Access** | No | Yes |
-| **Multi-Database** | Yes (6+) | Yes (15+) |
-| **Database Support** | Common databases | Good coverage |
+| **Offline Access** | Requires browser/server connectivity | Yes |
+| **Multi-Database** | Yes (broad CE catalog) | Yes (15+) |
+| **Database Support** | Current CE catalog | Good coverage |
 | **UI Modern** | Yes | Yes |
 | **Learning Curve** | Very low | Very low |
-| **Team Features** | Excellent | Limited |
-| **Collaboration** | Central server access | Individual licenses |
-| **Export Options** | 4 formats | Multiple formats |
+| **Team Features** | Shared deployment with database-side controls | Limited |
+| **Collaboration** | Central server access and shared workflows | Individual licenses |
+| **Export Options** | CSV/Excel; JSON Lines for document-style records when supported | Multiple formats |
 | **Mock Data** | Built-in | No |
 | **Open Source** | Yes | No |
 
@@ -116,13 +116,12 @@ This is one of the most fundamental differences:
 | Edition | Cost | Per User | Best For |
 |---------|------|----------|----------|
 | Community | Free | $0 | Individual projects, small teams, open source |
-| Enterprise | Custom | Varies | Large teams, enterprise features, support |
 
 **Cost for Different Team Sizes:**
 - Solo developer: $0/month
 - Small team (5): $0/month
-- Team (10): $0/month (Community) or custom (Enterprise)
-- Enterprise (50+): Custom pricing
+- Team (10): $0/month for CE, plus your hosting costs
+- Larger teams: $0/month for CE, plus hosting, operations, and support needs
 
 ### TablePlus Pricing
 
@@ -147,17 +146,15 @@ This is one of the most fundamental differences:
 
 Both tools are fast, but in different ways:
 
-### Startup Performance
+### Runtime Model
 
 | Action | WhoDB | TablePlus |
 |--------|-------|-----------|
-| Application startup | \<1 second | 1-2 seconds |
-| First database load | \<500ms | 1 second |
-| Ready to work | \<1 second | 2-3 seconds |
+| Opening the tool | Open the hosted/local WhoDB URL | Launch the desktop app |
+| Connection context | Shared server deployment or local instance | Local desktop connection profile |
+| Team access | One deployment can serve multiple users | Installed per user |
 
-**Typical workflow (checking 5 tables):**
-- WhoDB: 10-15 seconds
-- TablePlus: 3-5 seconds (already running) or 8-10 seconds (cold start)
+TablePlus is very fast for individual desktop workflows. WhoDB is stronger when you want browser access, Docker deployment, and a shared app surface.
 
 ### Ongoing Performance
 
@@ -200,11 +197,11 @@ Excellent coverage of 15+ databases:
 | **Edit Data** | Yes | Yes |
 | **Add Records** | Yes | Yes |
 | **Delete Records** | Yes | Yes |
-| **Inline Editing** | Yes | Yes |
-| **Bulk Operations** | Yes | Limited |
+| **Row Editing** | Edit sheet | Yes |
+| **Bulk Operations** | Selected-row actions where supported | Limited |
 | **Sorting** | Click column | Click column |
 | **Filtering** | Visual builder | Column filtering |
-| **Search** | Real-time | Limited |
+| **Search** | Loaded-row search plus WHERE filters | Limited |
 | **Favorites** | Yes | Yes |
 | **Connection Profiles** | Yes | Yes |
 | **Keyboard Shortcuts** | Extensive | Extensive |
@@ -215,9 +212,9 @@ Excellent coverage of 15+ databases:
 |---------|:----:|:--------:|
 | **SQL Editor** | Yes | Yes |
 | **Syntax Highlighting** | Yes | Yes |
-| **Auto-completion** | Yes | Yes |
-| **Query History** | Searchable | Recent queries |
-| **Saved Queries** | Yes | Yes |
+| **Auto-completion** | CLI TUI; web CE editor focuses on syntax highlighting | Yes |
+| **Query History** | Per-cell web history; CLI history search | Recent queries |
+| **Saved Queries** | CLI bookmarks | Yes |
 | **Multi-Query** | Multi-cell | Sequential |
 | **Export Results** | Yes | Yes |
 | **Execution Time** | Yes | Yes |
@@ -227,8 +224,8 @@ Excellent coverage of 15+ databases:
 | Feature | WhoDB | TablePlus |
 |---------|:----:|:--------:|
 | **CSV** | Yes | Yes |
-| **JSON** | Yes | Yes |
-| **SQL** | Yes | Yes |
+| **JSON** | JSON Lines for document-style records when supported | Yes |
+| **SQL** | Use native database tools | Yes |
 | **Excel** | Yes | Yes |
 | **XML** | No | Yes |
 | **PDF** | No | Yes |
@@ -240,13 +237,13 @@ Excellent coverage of 15+ databases:
 <Accordion title="Administration">
 | Feature | WhoDB | TablePlus |
 |---------|:----:|:--------:|
-| **User Management** | Yes | Yes |
-| **Privilege Management** | Yes | Yes |
-| **Database Creation** | Yes | Yes |
-| **Index Management** | Yes | Yes |
-| **Constraint Management** | Yes | Yes |
-| **View Management** | Yes | Yes |
-| **Backup/Restore** | Limited | Limited |
+| **User Management** | Use database-native tools | Yes |
+| **Privilege Management** | Use database-native tools | Yes |
+| **Database Creation** | Use database-native tools; create objects where supported | Yes |
+| **Index Management** | Use database-native tools | Yes |
+| **Constraint Management** | Use database-native tools | Yes |
+| **View Management** | Use database-native tools | Yes |
+| **Backup/Restore** | Native database tools recommended | Limited |
 </Accordion>
 
 <Accordion title="Visualization">
@@ -266,11 +263,11 @@ Excellent coverage of 15+ databases:
 
 <CardGroup cols={1}>
 <Card title="Mock Data Generation">
-Built-in realistic test data generation for all column types. Perfect for testing. TablePlus doesn't have this.
+Built-in realistic test data generation for supported column types. Useful for testing workflows. TablePlus doesn't have this built in.
 </Card>
 
 <Card title="Interactive Schema Graph">
-Visual schema exploration with clickable nodes and relationships. Helps understand complex databases instantly. TablePlus has basic visualization only.
+Visual schema exploration with relationship lines, node cards, and data actions. TablePlus has basic visualization only.
 </Card>
 
 <Card title="Multi-Cell Notebooks">
@@ -294,7 +291,7 @@ Beautifully designed native application. Integrates with OS perfectly. Feels lik
 </Card>
 
 <Card title="Offline Access">
-Works completely offline after installation. Access databases without internet. WhoDB requires internet connection.
+Works completely offline after installation. WhoDB needs connectivity between the browser, the WhoDB server, and the database.
 </Card>
 
 <Card title="Advanced Export Formats">
@@ -347,7 +344,7 @@ Open multiple database connections side by side. Multi-window support. WhoDB use
 
 ### WhoDB Onboarding
 
-**Time to Productivity:** 10-15 minutes
+**Time to Productivity:** Short for common browse/query tasks
 
 - Modern SaaS design patterns (familiar if you use any web app)
 - Intuitive sidebar navigation
@@ -356,7 +353,7 @@ Open multiple database connections side by side. Multi-window support. WhoDB use
 
 ### TablePlus Onboarding
 
-**Time to Productivity:** 10-15 minutes
+**Time to Productivity:** Short for users familiar with desktop database tools
 
 - Native app experience (familiar if you use desktop apps)
 - Context menus and traditional app navigation
@@ -487,8 +484,8 @@ Both tools support secure database access:
 | Feature | WhoDB | TablePlus |
 |---------|:----:|:--------:|
 | **Database Auth** | Yes | Yes |
-| **LDAP** | EE only | No |
-| **OAuth** | EE only | No |
+| **LDAP** | Use reverse proxy or external auth layer | No |
+| **OAuth** | Use reverse proxy or external auth layer | No |
 | **Local Auth** | Yes | Yes |
 </Accordion>
 
@@ -506,7 +503,7 @@ Both tools support secure database access:
 </Accordion>
 </AccordionGroup>
 
-**Verdict:** Both secure. TablePlus has system keychain integration. WhoDB Enterprise has LDAP/OAuth.
+**Verdict:** Both can be deployed securely. TablePlus has system keychain integration; WhoDB CE usually relies on browser/server profiles, environment-defined profiles, and the authentication layer in front of the app.
 
 ## Real-World Scenarios
 
@@ -551,9 +548,9 @@ Both tools support secure database access:
 - Harder to standardize
 - **Cost: $445-$1,290+**
 
-**Result:** WhoDB wins dramatically for teams
+**Result:** WhoDB is usually easier to standardize for teams because it can run as a shared deployment.
 
-### Scenario 3: Enterprise Team (50+ developers)
+### Scenario 3: Large Team (50+ developers)
 
 **Situation:** Large team with centralized IT
 
@@ -561,9 +558,9 @@ Both tools support secure database access:
 - Free
 - Single deployment to manage
 - Easy IT management
-- Scaling to 50+ users is straightforward
+- Scale by sizing the web service, database connectivity, and reverse proxy appropriately
 - Consistent across organization
-- **Cost: $0 (CE) or custom (EE)**
+- **Cost: $0 for CE, plus hosting and operations**
 
 **TablePlus:**
 - $89-$129 per developer
@@ -617,8 +614,8 @@ Install WhoDB and try it for a week alongside TablePlus. See if it meets your ne
 
 <Step title="Plan Migration">
 - Create connections in WhoDB
-- Import saved queries
-- Train team on interface (easy, ~15 minutes each)
+- Copy important SQL into Scratchpad pages, CLI bookmarks, or your repository
+- Walk the team through the interface and existing workflows
 - Run both during transition
 - Cut over when comfortable
 </Step>
@@ -637,7 +634,7 @@ Hybrid approach: WhoDB for team, TablePlus for individuals who prefer it.
 
 If you need TablePlus specific features (offline, native app, PDF export):
 
-- Export saved queries
+- Copy important SQL out of Scratchpad pages or CLI bookmarks
 - Set up connections in TablePlus
 - Take advantage of rich features
 - Keep WhoDB if team will use it
@@ -701,7 +698,7 @@ Ready to see if WhoDB meets your needs?
 
 <CardGroup cols={2}>
 <Card title="Install WhoDB Free" icon="download" href="/installation">
-Get started in under 5 minutes
+Install the current CE build
 </Card>
 <Card title="Live Demo" icon="play" href="https://whodb.com/demo">
 Try without installing
@@ -724,7 +721,7 @@ Yes, absolutely. Many developers do this. Use WhoDB for team/shared work and Tab
 </Accordion>
 
 <Accordion title="What if I need offline access?">
-TablePlus is the solution for offline-first work. WhoDB requires internet. If you work offline frequently, TablePlus is necessary. If occasionally offline, WhoDB is fine.
+TablePlus is the solution for offline-first work. WhoDB needs connectivity between your browser, the WhoDB server, and the database. That can be local or self-hosted, but it is not an offline desktop workflow.
 </Accordion>
 
 <Accordion title="Which is better for Mac?">
@@ -732,7 +729,7 @@ TablePlus has beautiful native Mac integration. WhoDB works great on Mac too (br
 </Accordion>
 
 <Accordion title="What about team collaboration?">
-WhoDB is built for teams with central deployment. TablePlus is individual-focused. For 5+ person teams, WhoDB is dramatically better. For solo work, TablePlus is adequate.
+WhoDB fits central deployment and shared operational workflows. TablePlus is more individual-focused. For solo work, TablePlus remains a good native desktop option.
 </Accordion>
 
 <Accordion title="Is the $89-$129 cost worth it?">

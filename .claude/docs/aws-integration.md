@@ -2,15 +2,16 @@
 
 This document describes the AWS-specific implementation details for WhoDB. For the generic cloud provider architecture and how to add new providers (GCP, Azure), see [Cloud Providers](./cloud-providers.md).
 
-The AWS integration allows WhoDB to auto-discover database resources from AWS accounts and connect to them using existing database plugins.
+The AWS integration allows WhoDB to auto-discover source resources from AWS
+accounts and connect to them using the existing source catalog and plugin layer.
 
 ## Architecture Overview
 
-AWS is implemented as a **Connection Provider**, not a separate database type. This means:
+AWS is implemented as a **Connection Provider**, not a separate source type. This means:
 
 1. **AWS discovers databases** (RDS, ElastiCache, DocumentDB)
-2. **AWS generates credentials** that existing plugins understand
-3. **Existing plugins connect** using those credentials
+2. **AWS generates credentials** that existing connectors/plugins understand
+3. **The existing source/session flow connects** using those credentials
 
 The MySQL plugin doesn't know or care if it's connecting to AWS RDS MySQL or a self-hosted MySQL - it just receives standard credentials.
 
@@ -77,7 +78,9 @@ type ConnectionProvider interface {
 
 ### DiscoveredConnection
 
-Represents a database found by a provider:
+Represents a source discovered by a provider. Internally the provider layer
+still stores an `engine.DatabaseType`; the GraphQL layer translates that into
+the public `SourceType` string.
 
 ```go
 type DiscoveredConnection struct {
@@ -138,9 +141,9 @@ connections, _ := registry.DiscoverAll(ctx)
 // Connection metadata (endpoint, port, TLS) is exposed to frontend.
 // Users select a connection in the UI, which prefills the login form.
 // Users can then modify values (e.g., hostname to localhost for tunneling)
-// before submitting via the standard Login mutation.
+// before submitting via the standard LoginSource mutation.
 
-// The Login resolver maps display types to plugins:
+// The source login resolver maps source types to connectors/plugins:
 //   - ElastiCache → Redis plugin
 //   - DocumentDB → MongoDB plugin
 ```
@@ -241,4 +244,3 @@ These are planned but not yet implemented:
 1. **Secrets Manager integration** - Retrieve database passwords from AWS Secrets Manager
 2. **S3 export** - Export query results to S3
 3. **CloudWatch metrics** - Show database performance metrics
-

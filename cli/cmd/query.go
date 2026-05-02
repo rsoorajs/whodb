@@ -28,6 +28,7 @@ import (
 	"github.com/clidey/whodb/cli/pkg/analytics"
 	"github.com/clidey/whodb/cli/pkg/mcp"
 	"github.com/clidey/whodb/cli/pkg/output"
+	"github.com/clidey/whodb/core/src/engine"
 	"github.com/spf13/cobra"
 )
 
@@ -35,6 +36,7 @@ var (
 	queryConnection string
 	queryFormat     string
 	queryQuiet      bool
+	queryStream     bool
 )
 
 var queryCmd = &cobra.Command{
@@ -56,7 +58,12 @@ Output formats:
   table  - Human-readable table with borders
   plain  - Tab-separated values for grep/awk
   json   - JSON array of objects
-  csv    - RFC 4180 CSV format`,
+  ndjson - One JSON object per line
+  csv    - RFC 4180 CSV format
+
+Streaming:
+  Use --stream for row-by-row query output without buffering the full result set.
+  Supported streaming formats: plain, json, ndjson, csv.`,
 	Example: `  # Query with a named connection
   whodb-cli query --connection mydb "SELECT id, name FROM users LIMIT 5"
 
@@ -68,6 +75,9 @@ Output formats:
 
   # Use with grep (auto-selects plain format when piped)
   whodb-cli query "SELECT * FROM logs" | grep ERROR
+
+  # Stream NDJSON for large result sets
+  whodb-cli query --stream --format ndjson "SELECT * FROM audit_log"
 
   # Read SQL from stdin
   echo "SELECT * FROM users" | whodb-cli query -
@@ -106,10 +116,8 @@ Output formats:
 			return err
 		}
 
-		out := output.New(
-			output.WithFormat(format),
-			output.WithQuiet(queryQuiet),
-		)
+		quiet := queryQuiet || shouldSuppressInformationalOutput(cmd, format)
+		out := newCommandOutput(cmd, format, quiet)
 
 		mgr, err := dbmgr.NewManager()
 		if err != nil {
@@ -132,56 +140,83 @@ Output formats:
 		}
 
 		var spinner *output.Spinner
-		if !queryQuiet {
+		if !quiet {
 			spinner = output.NewSpinner(fmt.Sprintf("Connecting to %s...", conn.Type))
+			spinner.Start()
 		}
-		spinner.Start()
 		if err := mgr.Connect(conn); err != nil {
-			spinner.StopWithError("Connection failed")
+			if spinner != nil {
+				spinner.StopWithError("Connection failed")
+			}
 			analytics.TrackConnectError(ctx, conn.Type, "connection_failed", time.Since(startTime).Milliseconds())
 			return fmt.Errorf("cannot connect to database: %w", err)
 		}
-		spinner.StopWithSuccess("Connected")
+		if spinner != nil {
+			spinner.Stop()
+		}
 		defer mgr.Disconnect()
 
-		if !queryQuiet {
+		if !quiet {
 			spinner = output.NewSpinner("Executing query...")
+			spinner.Start()
 		}
-		spinner.Start()
 		queryStart := time.Now()
+
+		if queryStream {
+			streamWriter := &outputQueryStreamWriter{writer: out}
+			rowCount, err := mgr.ExecuteQueryStream(ctx, sql, streamWriter)
+			if err != nil {
+				if spinner != nil {
+					spinner.StopWithError("Query failed")
+				}
+				analytics.TrackQueryError(ctx, conn.Type, "execution_failed", time.Since(queryStart).Milliseconds())
+				return fmt.Errorf("query failed: %w", err)
+			}
+			if spinner != nil {
+				spinner.Stop()
+			}
+			if err := streamWriter.Close(); err != nil {
+				return fmt.Errorf("finalizing streamed output: %w", err)
+			}
+
+			analytics.TrackQueryExecute(ctx, conn.Type, string(mcp.DetectStatementType(sql)), true,
+				time.Since(queryStart).Milliseconds(), rowCount, map[string]any{
+					"format":    string(format),
+					"streaming": true,
+				})
+			return nil
+		}
+
 		result, err := mgr.ExecuteQuery(sql)
 		if err != nil {
-			spinner.StopWithError("Query failed")
+			if spinner != nil {
+				spinner.StopWithError("Query failed")
+			}
 			analytics.TrackQueryError(ctx, conn.Type, "execution_failed", time.Since(queryStart).Milliseconds())
 			return fmt.Errorf("query failed: %w", err)
 		}
-		spinner.Stop()
+		if spinner != nil {
+			spinner.Stop()
+		}
 
 		columns := make([]output.Column, len(result.Columns))
 		for i, col := range result.Columns {
 			columns[i] = output.Column{Name: col.Name, Type: col.Type}
 		}
 
-		rows := make([][]any, len(result.Rows))
-		for i, row := range result.Rows {
-			rows[i] = make([]any, len(row))
-			for j, cell := range row {
-				rows[i][j] = cell
-			}
-		}
-
 		// Track successful query execution
 		analytics.TrackQueryExecute(ctx, conn.Type, string(mcp.DetectStatementType(sql)), true,
-			time.Since(queryStart).Milliseconds(), len(rows), map[string]any{
-				"format": string(format),
+			time.Since(queryStart).Milliseconds(), len(result.Rows), map[string]any{
+				"format":    string(format),
+				"streaming": false,
 			})
 
-		queryResult := &output.QueryResult{
+		queryResult := &output.StringQueryResult{
 			Columns: columns,
-			Rows:    rows,
+			Rows:    result.Rows,
 		}
 
-		return out.WriteQueryResult(queryResult)
+		return out.WriteStringQueryResult(queryResult)
 	},
 }
 
@@ -189,9 +224,47 @@ func init() {
 	rootCmd.AddCommand(queryCmd)
 
 	queryCmd.Flags().StringVarP(&queryConnection, "connection", "c", "", "connection name to use")
-	queryCmd.Flags().StringVarP(&queryFormat, "format", "f", "auto", "output format: auto, table, plain, json, csv")
+	queryCmd.Flags().StringVarP(&queryFormat, "format", "f", "auto", "output format: auto, table, plain, json, ndjson, csv")
+	queryCmd.Flags().BoolVar(&queryStream, "stream", false, "stream query results row by row (plain/json/ndjson/csv only)")
 	queryCmd.Flags().BoolVarP(&queryQuiet, "quiet", "q", false, "suppress informational messages")
 
 	queryCmd.RegisterFlagCompletionFunc("connection", completeConnectionNames)
 	queryCmd.RegisterFlagCompletionFunc("format", completeOutputFormats)
+}
+
+type outputQueryStreamWriter struct {
+	writer *output.Writer
+	stream output.QueryStream
+}
+
+func (w *outputQueryStreamWriter) WriteColumns(columns []engine.Column) error {
+	if w.stream != nil {
+		return nil
+	}
+
+	outputColumns := make([]output.Column, len(columns))
+	for i, col := range columns {
+		outputColumns[i] = output.Column{Name: col.Name, Type: col.Type}
+	}
+
+	stream, err := w.writer.BeginQueryStream(outputColumns)
+	if err != nil {
+		return err
+	}
+	w.stream = stream
+	return nil
+}
+
+func (w *outputQueryStreamWriter) WriteRow(row []string) error {
+	if w.stream == nil {
+		return fmt.Errorf("stream output is not initialized")
+	}
+	return w.stream.WriteRow(row)
+}
+
+func (w *outputQueryStreamWriter) Close() error {
+	if w.stream == nil {
+		return nil
+	}
+	return w.stream.Close()
 }

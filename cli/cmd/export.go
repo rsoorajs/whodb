@@ -18,7 +18,9 @@ package cmd
 
 import (
 	"context"
+	"encoding/csv"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -26,6 +28,7 @@ import (
 	dbmgr "github.com/clidey/whodb/cli/internal/database"
 	"github.com/clidey/whodb/cli/pkg/analytics"
 	"github.com/clidey/whodb/cli/pkg/output"
+	"github.com/clidey/whodb/core/src/engine"
 	"github.com/spf13/cobra"
 )
 
@@ -38,6 +41,7 @@ var (
 	exportOutput     string
 	exportDelimiter  string
 	exportQuiet      bool
+	exportStream     bool
 )
 
 var exportCmd = &cobra.Command{
@@ -54,7 +58,10 @@ You can export either:
 The output format is determined by:
   1. The --format flag (csv or excel)
   2. The file extension of --output (.csv or .xlsx)
-  3. Default: csv`,
+  3. Default: csv
+
+Streaming:
+  Use --stream with CSV output to write large exports incrementally.`,
 	Example: `  # Export a table to CSV
   whodb-cli export --connection mydb --table users --output users.csv
 
@@ -66,6 +73,9 @@ The output format is determined by:
 
   # Custom CSV delimiter
   whodb-cli export --connection mydb --table users --output users.csv --delimiter ";"
+
+  # Stream a large query export directly to CSV
+  whodb-cli export --connection mydb --query "SELECT * FROM events" --output events.csv --stream
 
   # Specify schema
   whodb-cli export --connection mydb --schema public --table users --output users.csv`,
@@ -108,13 +118,17 @@ The output format is determined by:
 		var spinner *output.Spinner
 		if !exportQuiet {
 			spinner = output.NewSpinner(fmt.Sprintf("Connecting to %s...", conn.Type))
+			spinner.Start()
 		}
-		spinner.Start()
 		if err := mgr.Connect(conn); err != nil {
-			spinner.StopWithError("Connection failed")
+			if spinner != nil {
+				spinner.StopWithError("Connection failed")
+			}
 			return fmt.Errorf("cannot connect to database: %w", err)
 		}
-		spinner.StopWithSuccess("Connected")
+		if spinner != nil {
+			spinner.Stop()
+		}
 		defer mgr.Disconnect()
 
 		// Determine export format
@@ -132,22 +146,20 @@ The output format is determined by:
 		if format != "csv" && format != "excel" {
 			return fmt.Errorf("unsupported format %q (use csv or excel)", format)
 		}
+		if exportStream && format != "csv" {
+			return fmt.Errorf("streaming export only supports csv format")
+		}
 
 		// Get schema
 		schema := exportSchema
-		if schema == "" && conn.Schema != "" {
-			schema = conn.Schema
+		if exportTable != "" {
+			resolvedSchema, err := mgr.ResolveSnapshotSchema(conn, exportSchema)
+			if err == nil {
+				schema = resolvedSchema
+			}
 		}
-		if schema == "" && exportTable != "" {
-			// Schema-less databases (SQLite, Redis, etc.) don't support schemas
-			schemas, err := mgr.GetSchemas()
-			if err != nil {
-				schemas = []string{}
-			}
-			if len(schemas) > 0 {
-				schema = schemas[0]
-				out.Info("Using schema: %s", schema)
-			}
+		if schema != "" && exportSchema == "" && exportTable != "" && !exportQuiet {
+			out.Info("Using schema: %s", schema)
 		}
 
 		if !exportQuiet {
@@ -156,49 +168,61 @@ The output format is determined by:
 			} else {
 				spinner = output.NewSpinner("Exporting query results...")
 			}
+			spinner.Start()
 		}
-		spinner.Start()
 
 		var exportErr error
 		if exportTable != "" {
-			// Export table
-			if format == "excel" {
-				exportErr = mgr.ExportToExcel(schema, exportTable, exportOutput)
+			if exportStream {
+				exportErr = exportTableToCSVStream(mgr, schema, exportTable, exportOutput, exportDelimiter)
 			} else {
-				delimiter := exportDelimiter
-				if delimiter == "" {
-					delimiter = ","
+				if format == "excel" {
+					exportErr = mgr.ExportToExcel(schema, exportTable, exportOutput)
+				} else {
+					delimiter := exportDelimiter
+					if delimiter == "" {
+						delimiter = ","
+					}
+					exportErr = mgr.ExportToCSV(schema, exportTable, exportOutput, delimiter)
 				}
-				exportErr = mgr.ExportToCSV(schema, exportTable, exportOutput, delimiter)
 			}
 		} else {
-			// Export query results
-			result, err := mgr.ExecuteQuery(exportQuery)
-			if err != nil {
-				spinner.StopWithError("Query failed")
-				return fmt.Errorf("query failed: %w", err)
-			}
-
-			if format == "excel" {
-				exportErr = mgr.ExportResultsToExcel(result, exportOutput)
+			if exportStream {
+				exportErr = exportQueryToCSVStream(ctx, mgr, exportQuery, exportOutput, exportDelimiter)
 			} else {
-				delimiter := exportDelimiter
-				if delimiter == "" {
-					delimiter = ","
+				result, err := mgr.ExecuteQuery(exportQuery)
+				if err != nil {
+					if spinner != nil {
+						spinner.StopWithError("Query failed")
+					}
+					return fmt.Errorf("query failed: %w", err)
 				}
-				exportErr = mgr.ExportResultsToCSV(result, exportOutput, delimiter)
+
+				if format == "excel" {
+					exportErr = mgr.ExportResultsToExcel(result, exportOutput)
+				} else {
+					delimiter := exportDelimiter
+					if delimiter == "" {
+						delimiter = ","
+					}
+					exportErr = mgr.ExportResultsToCSV(result, exportOutput, delimiter)
+				}
 			}
 		}
 
 		if exportErr != nil {
-			spinner.StopWithError("Export failed")
+			if spinner != nil {
+				spinner.StopWithError("Export failed")
+			}
 			return fmt.Errorf("export failed: %w", exportErr)
 		}
 
 		// Track export (row count is not always available, use -1 when unknown)
 		analytics.TrackExport(ctx, conn.Type, format, -1, time.Since(startTime).Milliseconds())
 
-		spinner.StopWithSuccess("Export complete")
+		if spinner != nil {
+			spinner.StopWithSuccess("Export complete")
+		}
 		out.Success("Exported to %s", exportOutput)
 		return nil
 	},
@@ -214,8 +238,137 @@ func init() {
 	exportCmd.Flags().StringVarP(&exportFormat, "format", "f", "", "output format: csv or excel (default: auto-detect from filename)")
 	exportCmd.Flags().StringVarP(&exportOutput, "output", "o", "", "output file path (required)")
 	exportCmd.Flags().StringVarP(&exportDelimiter, "delimiter", "d", ",", "CSV delimiter (default: comma)")
+	exportCmd.Flags().BoolVar(&exportStream, "stream", false, "stream CSV exports incrementally to the output file")
 	exportCmd.Flags().BoolVarP(&exportQuiet, "quiet", "q", false, "suppress informational messages")
 
 	exportCmd.RegisterFlagCompletionFunc("connection", completeConnectionNames)
 	exportCmd.RegisterFlagCompletionFunc("format", completeExportFormats)
+}
+
+type atomicCSVFile struct {
+	file      *os.File
+	writer    *csv.Writer
+	tmpPath   string
+	finalPath string
+	finalized bool
+}
+
+func newAtomicCSVFile(filename, delimiter string) (*atomicCSVFile, error) {
+	dir := filepath.Dir(filename)
+	file, err := os.CreateTemp(dir, ".whodb-export-*.csv")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp file: %w", err)
+	}
+
+	if delimiter == "" {
+		delimiter = ","
+	}
+	csvWriter := csv.NewWriter(file)
+	csvWriter.Comma = rune(delimiter[0])
+
+	return &atomicCSVFile{
+		file:      file,
+		writer:    csvWriter,
+		tmpPath:   file.Name(),
+		finalPath: filename,
+	}, nil
+}
+
+func (f *atomicCSVFile) Write(record []string) error {
+	return f.writer.Write(record)
+}
+
+func (f *atomicCSVFile) Close() error {
+	if f.finalized {
+		return nil
+	}
+	f.finalized = true
+
+	f.writer.Flush()
+	if err := f.writer.Error(); err != nil {
+		_ = f.file.Close()
+		_ = os.Remove(f.tmpPath)
+		return fmt.Errorf("failed to flush CSV writer: %w", err)
+	}
+	if err := f.file.Sync(); err != nil {
+		_ = f.file.Close()
+		_ = os.Remove(f.tmpPath)
+		return fmt.Errorf("failed to sync temp file: %w", err)
+	}
+	if err := f.file.Close(); err != nil {
+		_ = os.Remove(f.tmpPath)
+		return fmt.Errorf("failed to close temp file: %w", err)
+	}
+	if err := os.Rename(f.tmpPath, f.finalPath); err != nil {
+		_ = os.Remove(f.finalPath)
+		if err2 := os.Rename(f.tmpPath, f.finalPath); err2 != nil {
+			_ = os.Remove(f.tmpPath)
+			return fmt.Errorf("failed to save file: %w", err2)
+		}
+	}
+	syncOutputDir(filepath.Dir(f.finalPath))
+	_ = os.Chmod(f.finalPath, 0600)
+	return nil
+}
+
+func (f *atomicCSVFile) Abort() {
+	if f.finalized {
+		return
+	}
+	f.finalized = true
+	_ = f.file.Close()
+	_ = os.Remove(f.tmpPath)
+}
+
+type csvQueryStreamWriter struct {
+	file *atomicCSVFile
+}
+
+func (w *csvQueryStreamWriter) WriteColumns(columns []engine.Column) error {
+	headers := make([]string, len(columns))
+	for i, col := range columns {
+		headers[i] = col.Name
+	}
+	return w.file.Write(headers)
+}
+
+func (w *csvQueryStreamWriter) WriteRow(row []string) error {
+	return w.file.Write(row)
+}
+
+func exportTableToCSVStream(mgr *dbmgr.Manager, schema, table, filename, delimiter string) error {
+	file, err := newAtomicCSVFile(filename, delimiter)
+	if err != nil {
+		return err
+	}
+	defer file.Abort()
+
+	if _, err := mgr.ExportDataStream(schema, table, file.Write); err != nil {
+		return err
+	}
+	return file.Close()
+}
+
+func exportQueryToCSVStream(ctx context.Context, mgr *dbmgr.Manager, query, filename, delimiter string) error {
+	file, err := newAtomicCSVFile(filename, delimiter)
+	if err != nil {
+		return err
+	}
+	defer file.Abort()
+
+	streamWriter := &csvQueryStreamWriter{file: file}
+	if _, err := mgr.ExecuteQueryStream(ctx, query, streamWriter); err != nil {
+		return err
+	}
+	return file.Close()
+}
+
+func syncOutputDir(dir string) {
+	if dir == "" || dir == "." {
+		return
+	}
+	if file, err := os.Open(dir); err == nil {
+		_ = file.Sync()
+		_ = file.Close()
+	}
 }

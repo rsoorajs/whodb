@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 Clidey, Inc.
+ * Copyright 2026 Clidey, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/clidey/whodb/cli/pkg/identity"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +28,7 @@ var guideCmd = &cobra.Command{
 	Short: "Show the full usage guide",
 	Long:  "Displays a comprehensive guide covering all features, shortcuts, and workflows.",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Print(guideText)
+		fmt.Print(identity.ReplaceText(guideText))
 	},
 }
 
@@ -51,6 +52,7 @@ GETTING STARTED
 
   Once connected, you'll see the Browser view with your tables.
   Press ? in any view for a quick shortcut reference.
+  Reconnectable TUI sessions resume automatically on the next launch.
 
 LAYOUTS
 ───────
@@ -93,6 +95,14 @@ SQL EDITOR
 
   Ghost text: Start typing and you'll see dimmed suggestions
   from your query history. Press → (right arrow) to accept.
+
+  When the editor is empty, backend-generated suggestions appear
+  based on the tables in the active schema or database.
+
+  CLI:
+    whodb-cli explain --connection mydb "SELECT * FROM users"
+    whodb-cli explain --connection mydb --format json "SELECT * FROM users"
+    whodb-cli query --connection mydb --stream --format ndjson "SELECT * FROM users"
 
 BROWSING DATA
 ─────────────
@@ -137,6 +147,7 @@ IMPORT / EXPORT
   Export:
     Press e from Results, or:
     whodb-cli export -c mydb -t users -o users.csv
+    whodb-cli export -c mydb -Q "SELECT * FROM users" -o users.csv --stream
 
 MOCK DATA
 ─────────
@@ -154,6 +165,37 @@ MOCK DATA
   The command analyzes parent-table dependencies first, then generates
   data in the correct order. Blocked tables reuse existing rows instead
   of writing new data.
+
+CLOUD DISCOVERY
+───────────────
+  When cloud provider support is enabled, you can inspect configured
+  providers and their discovered resources directly from the CLI, then
+  prefill normal connection flows from a discovered resource ID:
+
+    whodb-cli cloud providers list
+    whodb-cli cloud providers test aws-prod-us-west-2
+    whodb-cli cloud providers refresh --all
+    whodb-cli cloud connections list
+    whodb-cli cloud connections list --provider aws-prod-us-west-2
+    whodb-cli connect --discovered aws-prod-us-west-2/prod-db
+    whodb-cli connections add --from-discovered aws-prod-us-west-2/prod-db --user alice --database app
+
+  Cloud provider support follows the shared provider flags:
+    WHODB_ENABLE_AWS_PROVIDER=true
+    WHODB_ENABLE_AZURE_PROVIDER=true
+    WHODB_ENABLE_GCP_PROVIDER=true
+
+SCHEMA DIFF
+───────────
+  Ctrl+V      Open schema diff in the TUI
+
+  Compare two saved connections, adjust schema overrides if needed,
+  then browse the shared diff output in a scrollable view.
+
+  CLI:
+    whodb-cli diff --from staging --to prod
+    whodb-cli diff --from staging --to prod --schema public
+    whodb-cli diff --from staging --to prod --format json
 
 AI CHAT
 ───────
@@ -186,6 +228,10 @@ ER DIAGRAM
   z           Toggle zoom (compact / expanded)
   ↑↓          Scroll
 
+  CLI:
+    whodb-cli erd --connection mydb
+    whodb-cli erd --connection mydb --format json
+
 BOOKMARKS
 ─────────
   Ctrl+B      Open bookmarks
@@ -193,6 +239,12 @@ BOOKMARKS
   Save frequently used queries with a custom name.
   Press s to save the current editor query, Enter to load
   a saved bookmark, d to delete.
+
+  CLI:
+    whodb-cli bookmarks list
+    whodb-cli bookmarks save recent-users "SELECT * FROM users ORDER BY id DESC"
+    whodb-cli bookmarks load recent-users
+    whodb-cli bookmarks delete recent-users
 
 COMMAND LOG
 ───────────
@@ -219,6 +271,20 @@ SSH TUNNELS
 
   Requires the host to be in your ~/.ssh/known_hosts file.
 
+SSL
+───
+  The CLI also supports SSL mode selection and certificate files
+  in both command mode and the TUI connection form.
+
+  Examples:
+    whodb-cli connect \
+      --type postgres --host localhost --user alice --database mydb \
+      --ssl-mode verify-ca --ssl-ca ./ca.pem
+
+    whodb-cli connections add \
+      --name prod --type Postgres --host db.internal --user alice --database mydb \
+      --ssl-mode verify-identity --ssl-ca ./ca.pem --ssl-server-name db.internal
+
 DOCKER DETECTION
 ────────────────
   The CLI auto-detects running Docker database containers.
@@ -240,6 +306,11 @@ CONNECTION PROFILES
   To delete:  Select and press d
 
   CLI: whodb-cli --profile production
+  CLI management:
+    whodb-cli profiles list
+    whodb-cli profiles save production --connection prod --theme Dracula --page-size 100 --timeout 30
+    whodb-cli profiles show production
+    whodb-cli profiles delete production
 
   Useful for switching between dev/staging/prod with different
   visual cues (e.g., red theme for production).
@@ -284,13 +355,27 @@ PROGRAMMATIC USAGE
   The CLI supports non-interactive commands for scripting:
 
   whodb-cli query "SELECT * FROM users" -c mydb -f json
-  whodb-cli schemas -c mydb --include-tables
-  whodb-cli tables -c mydb --include-columns
+  whodb-cli schemas -c mydb -f json
+  whodb-cli tables -c mydb -s public -f json
   whodb-cli columns -c mydb -t users
-  whodb-cli history --format json
+  whodb-cli diff --from staging --to prod --format json
+  whodb-cli explain --connection mydb --format json "SELECT * FROM users"
+  whodb-cli erd --connection mydb --format json
+  whodb-cli suggestions --connection mydb --format json
+  whodb-cli bookmarks list --format json
+  whodb-cli bookmarks load recent-users --format json
+  whodb-cli profiles list --format json
+  whodb-cli profiles show production --format json
+  whodb-cli history list --format json
   whodb-cli connections list
+  whodb-cli connections test mydb --format json
+  whodb-cli history clear --format json
+  whodb-cli mock-data --connection mydb --table orders --rows 10 --analyze --format json
 
-  Output formats: table, plain, json, csv (use -f flag).
+  Query/list commands support structured output with -f json where available.
+  Action/analysis commands emit {command, success, data} envelopes.
+  Output formats: table, plain, json, ndjson, csv (use -f flag).
+  ndjson emits one JSON object per row for streaming-friendly pipes.
   Pipe-friendly: auto-detects TTY and uses plain format when piped.
 
 MCP SERVER

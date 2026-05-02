@@ -19,6 +19,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	dbmgr "github.com/clidey/whodb/cli/internal/database"
@@ -51,6 +52,7 @@ Output formats:
   table  - Human-readable table with borders
   plain  - Tab-separated values for scripting
   json   - JSON array of column objects
+  ndjson - One JSON object per line
   csv    - CSV format`,
 	Example: `  # Describe columns in a table
   whodb-cli columns --connection mydb --table users
@@ -73,10 +75,8 @@ Output formats:
 			return err
 		}
 
-		out := output.New(
-			output.WithFormat(format),
-			output.WithQuiet(columnsQuiet),
-		)
+		quiet := columnsQuiet || shouldSuppressInformationalOutput(cmd, format)
+		out := newCommandOutput(cmd, format, quiet)
 
 		mgr, err := dbmgr.NewManager()
 		if err != nil {
@@ -99,15 +99,19 @@ Output formats:
 		}
 
 		var spinner *output.Spinner
-		if !columnsQuiet {
+		if !quiet {
 			spinner = output.NewSpinner(fmt.Sprintf("Connecting to %s...", conn.Type))
+			spinner.Start()
 		}
-		spinner.Start()
 		if err := mgr.Connect(conn); err != nil {
-			spinner.StopWithError("Connection failed")
+			if spinner != nil {
+				spinner.StopWithError("Connection failed")
+			}
 			return fmt.Errorf("cannot connect to database: %w", err)
 		}
-		spinner.StopWithSuccess("Connected")
+		if spinner != nil {
+			spinner.Stop()
+		}
 		defer mgr.Disconnect()
 
 		// Get schema
@@ -127,20 +131,24 @@ Output formats:
 			}
 		}
 
-		if !columnsQuiet {
+		if !quiet {
 			spinner = output.NewSpinner("Fetching columns...")
+			spinner.Start()
 		}
-		spinner.Start()
 		columns, err := mgr.GetColumns(schema, columnsTable)
 		if err != nil {
-			spinner.StopWithError("Failed to fetch columns")
+			if spinner != nil {
+				spinner.StopWithError("Failed to fetch columns")
+			}
 			return fmt.Errorf("failed to fetch columns: %w", err)
 		}
-		spinner.Stop()
+		if spinner != nil {
+			spinner.Stop()
+		}
 
 		analytics.TrackColumnsListed(ctx, conn.Type, len(columns), time.Since(startTime).Milliseconds())
 
-		// Convert to QueryResult format
+		// Convert to StringQueryResult to avoid materializing [][]any.
 		outputColumns := []output.Column{
 			{Name: "name", Type: "string"},
 			{Name: "type", Type: "string"},
@@ -150,7 +158,7 @@ Output formats:
 			{Name: "referenced_column", Type: "string"},
 		}
 
-		rows := make([][]any, len(columns))
+		rows := make([][]string, len(columns))
 		for i, col := range columns {
 			refTable := ""
 			refColumn := ""
@@ -160,22 +168,22 @@ Output formats:
 			if col.ReferencedColumn != nil {
 				refColumn = *col.ReferencedColumn
 			}
-			rows[i] = []any{
+			rows[i] = []string{
 				col.Name,
 				col.Type,
-				col.IsPrimary,
-				col.IsForeignKey,
+				strconv.FormatBool(col.IsPrimary),
+				strconv.FormatBool(col.IsForeignKey),
 				refTable,
 				refColumn,
 			}
 		}
 
-		result := &output.QueryResult{
+		result := &output.StringQueryResult{
 			Columns: outputColumns,
 			Rows:    rows,
 		}
 
-		return out.WriteQueryResult(result)
+		return out.WriteStringQueryResult(result)
 	},
 }
 
@@ -185,7 +193,7 @@ func init() {
 	columnsCmd.Flags().StringVarP(&columnsConnection, "connection", "c", "", "connection name to use")
 	columnsCmd.Flags().StringVarP(&columnsSchema, "schema", "s", "", "schema containing the table")
 	columnsCmd.Flags().StringVarP(&columnsTable, "table", "t", "", "table to describe (required)")
-	columnsCmd.Flags().StringVarP(&columnsFormat, "format", "f", "auto", "output format: auto, table, plain, json, csv")
+	columnsCmd.Flags().StringVarP(&columnsFormat, "format", "f", "auto", "output format: auto, table, plain, json, ndjson, csv")
 	columnsCmd.Flags().BoolVarP(&columnsQuiet, "quiet", "q", false, "suppress informational messages")
 
 	columnsCmd.RegisterFlagCompletionFunc("connection", completeConnectionNames)

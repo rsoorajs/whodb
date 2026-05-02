@@ -15,7 +15,6 @@
  */
 
 // Package baml handles automatic download and setup of the BAML native library.
-// This package must be imported before any code that uses BAML.
 package baml
 
 import (
@@ -26,6 +25,9 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
+
+	"github.com/clidey/whodb/cli/pkg/identity"
 )
 
 // BAMLVersion is the version of BAML to download.
@@ -69,12 +71,17 @@ var unsupportedPlatforms = map[string]bool{
 	"linux/riscv64": true,
 }
 
-func init() {
-	if err := Setup(); err != nil {
-		// Don't fail hard - AI features just won't work
-		fmt.Fprintf(os.Stderr, "Warning: BAML setup failed: %v\n", err)
-		fmt.Fprintf(os.Stderr, "AI features will be unavailable.\n")
-	}
+var ensureOnce sync.Once
+
+// Ensure performs one-time BAML setup for the current CLI process.
+func Ensure() {
+	ensureOnce.Do(func() {
+		if err := Setup(); err != nil {
+			// Don't fail hard - AI features just won't work
+			fmt.Fprintf(os.Stderr, "Warning: BAML setup failed: %v\n", err)
+			fmt.Fprintf(os.Stderr, "AI features will be unavailable.\n")
+		}
+	})
 }
 
 // Setup ensures the BAML native library is available.
@@ -130,12 +137,10 @@ func Setup() error {
 
 // getLibraryDir returns the directory where BAML libraries are stored.
 func getLibraryDir() (string, error) {
-	homeDir, err := os.UserHomeDir()
+	libDir, err := identity.HomePath("lib")
 	if err != nil {
 		return "", err
 	}
-
-	libDir := filepath.Join(homeDir, ".whodb-cli", "lib")
 
 	// Create directory if it doesn't exist
 	if err := os.MkdirAll(libDir, 0755); err != nil {

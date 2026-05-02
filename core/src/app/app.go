@@ -37,12 +37,60 @@ import (
 	"github.com/clidey/whodb/core/src/engine"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/log"
-	"github.com/clidey/whodb/core/src/plugins"
 	"github.com/clidey/whodb/core/src/router"
 	"github.com/clidey/whodb/core/src/settings"
+	"github.com/clidey/whodb/core/src/source"
+	_ "github.com/clidey/whodb/core/src/source/adapters"
 )
 
 const defaultPort = "8080"
+
+func applicationVersion() string {
+	if env.ApplicationVersion == "" {
+		return "dev"
+	}
+	return env.ApplicationVersion
+}
+
+func runtimeMode() string {
+	if env.GetIsDesktopMode() {
+		return "desktop"
+	}
+	if env.GetIsCLIMode() {
+		return "cli"
+	}
+	return "server"
+}
+
+func registeredPluginNames() []string {
+	pluginNames := make([]string, 0, len(engine.RegisteredPlugins()))
+	for _, p := range engine.RegisteredPlugins() {
+		pluginNames = append(pluginNames, string(p.Type))
+	}
+	return pluginNames
+}
+
+func resolvePort() string {
+	port := os.Getenv("PORT")
+	if port == "" {
+		return defaultPort
+	}
+	return port
+}
+
+func welcomeBannerLines(port string) []string {
+	title := "🎉 Welcome to WhoDB! 🎉"
+	if env.IsEnterpriseEdition {
+		title = "🎉 Welcome to WhoDB Enterprise! 🎉"
+	}
+
+	return []string{
+		title,
+		"Get started by visiting:",
+		fmt.Sprintf("http://0.0.0.0:%s", port),
+		"Explore and enjoy working with your databases!",
+	}
+}
 
 // PopulateActiveDatabases sets env.ActiveDatabases from registered plugins.
 func PopulateActiveDatabases() {
@@ -80,33 +128,18 @@ func Run(config AppConfig, staticFiles embed.FS) {
 	flag.Parse()
 
 	if *showVersion {
-		version := env.ApplicationVersion
-		if version == "" {
-			version = "dev"
-		}
-		fmt.Println(version)
+		fmt.Println(applicationVersion())
 		return
 	}
 
 	PopulateActiveDatabases()
 
 	defer log.CloseLogFile()
-	appVersion := env.ApplicationVersion
-	if appVersion == "" {
-		appVersion = "dev"
-	}
+	appVersion := applicationVersion()
 	log.Alwaysf("Starting WhoDB %s (log level: %s, set WHODB_LOG_LEVEL=warn or WHODB_LOG_LEVEL=error for quieter output)", appVersion, log.GetLevel())
 
-	mode := "server"
-	if env.GetIsDesktopMode() {
-		mode = "desktop"
-	} else if env.GetIsCLIMode() {
-		mode = "cli"
-	}
-	pluginNames := make([]string, 0, len(engine.RegisteredPlugins()))
-	for _, p := range engine.RegisteredPlugins() {
-		pluginNames = append(pluginNames, string(p.Type))
-	}
+	mode := runtimeMode()
+	pluginNames := registeredPluginNames()
 	log.Alwaysf("go=%s os=%s arch=%s mode=%s plugins=[%s]",
 		runtime.Version(), runtime.GOOS, runtime.GOARCH, mode, strings.Join(pluginNames, ", "))
 
@@ -158,10 +191,7 @@ func Run(config AppConfig, staticFiles embed.FS) {
 
 	r := router.InitializeRouter(config.Schema, config.HTTPHandlers, config.Middlewares, config.PublicPaths, staticFiles)
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = defaultPort
-	}
+	port := resolvePort()
 
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%s", port),
@@ -181,14 +211,9 @@ func Run(config AppConfig, staticFiles embed.FS) {
 
 	// Brief pause to let ListenAndServe bind the port before printing the welcome banner
 	time.Sleep(2 * time.Second)
-	if env.IsEnterpriseEdition {
-		log.Always("🎉 Welcome to WhoDB Enterprise! 🎉")
-	} else {
-		log.Always("🎉 Welcome to WhoDB! 🎉")
+	for _, line := range welcomeBannerLines(port) {
+		log.Always(line)
 	}
-	log.Always("Get started by visiting:")
-	log.Alwaysf("http://0.0.0.0:%s", port)
-	log.Always("Explore and enjoy working with your databases!")
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -212,7 +237,9 @@ func Run(config AppConfig, staticFiles embed.FS) {
 
 	go func() {
 		defer wg.Done()
-		plugins.CloseAllConnections(ctx)
+		if err := source.Shutdown(ctx); err != nil {
+			log.Errorf("source shutdown error: %v", err)
+		}
 	}()
 
 	wg.Wait()

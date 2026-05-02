@@ -31,6 +31,7 @@ type GlobalKeys struct {
 	MockData    key.Binding
 	ReadOnly    key.Binding
 	CmdLog      key.Binding
+	SchemaDiff  key.Binding
 	ERDiagram   key.Binding
 	Audit       key.Binding
 	Profiles    key.Binding
@@ -86,6 +87,9 @@ type ResultsKeys struct {
 	PrevPage   key.Binding
 	Where      key.Binding
 	Columns    key.Binding
+	AddRow     key.Binding
+	EditRow    key.Binding
+	DeleteRow  key.Binding
 	Export     key.Binding
 	PageSize   key.Binding
 	CustomSize key.Binding
@@ -202,6 +206,19 @@ type AuditKeys struct {
 	DrillDown key.Binding
 }
 
+// SchemaDiffKeys contains keybindings for the schema diff view.
+type SchemaDiffKeys struct {
+	PrevField   key.Binding
+	NextField   key.Binding
+	OptionLeft  key.Binding
+	OptionRight key.Binding
+	Compare     key.Binding
+	Edit        key.Binding
+	Recompare   key.Binding
+	ScrollUp    key.Binding
+	ScrollDown  key.Binding
+}
+
 // ERDKeys contains keybindings for the ER diagram view
 type ERDKeys struct {
 	NextTable  key.Binding
@@ -237,6 +254,7 @@ type Keymap struct {
 	SchemaSelect   SchemaSelectKeys
 	Bookmarks      BookmarksKeys
 	Audit          AuditKeys
+	SchemaDiff     SchemaDiffKeys
 	ERD            ERDKeys
 	Profiles       ProfilesKeys
 }
@@ -283,6 +301,10 @@ var Keys = Keymap{
 		CmdLog: key.NewBinding(
 			key.WithKeys("ctrl+d"),
 			key.WithHelp("ctrl+d", "command log"),
+		),
+		SchemaDiff: key.NewBinding(
+			key.WithKeys("ctrl+v"),
+			key.WithHelp("ctrl+v", "schema diff"),
 		),
 		ERDiagram: key.NewBinding(
 			key.WithKeys("ctrl+k"),
@@ -425,6 +447,18 @@ var Keys = Keymap{
 		Columns: key.NewBinding(
 			key.WithKeys("c"),
 			key.WithHelp("c", "columns"),
+		),
+		AddRow: key.NewBinding(
+			key.WithKeys("a"),
+			key.WithHelp("a", "add row"),
+		),
+		EditRow: key.NewBinding(
+			key.WithKeys("u"),
+			key.WithHelp("u", "edit row"),
+		),
+		DeleteRow: key.NewBinding(
+			key.WithKeys("d"),
+			key.WithHelp("d", "delete row"),
 		),
 		Export: key.NewBinding(
 			key.WithKeys("e"),
@@ -727,6 +761,44 @@ var Keys = Keymap{
 			key.WithHelp("enter", "drill down"),
 		),
 	},
+	SchemaDiff: SchemaDiffKeys{
+		PrevField: key.NewBinding(
+			key.WithKeys("shift+tab", "up", "k"),
+			key.WithHelp("shift+tab", "prev field"),
+		),
+		NextField: key.NewBinding(
+			key.WithKeys("tab", "down", "j"),
+			key.WithHelp("tab", "next field"),
+		),
+		OptionLeft: key.NewBinding(
+			key.WithKeys("left", "h"),
+			key.WithHelp("←/h", "previous"),
+		),
+		OptionRight: key.NewBinding(
+			key.WithKeys("right", "l"),
+			key.WithHelp("→/l", "next"),
+		),
+		Compare: key.NewBinding(
+			key.WithKeys("enter"),
+			key.WithHelp("enter", "compare"),
+		),
+		Edit: key.NewBinding(
+			key.WithKeys("e"),
+			key.WithHelp("[e]", "edit"),
+		),
+		Recompare: key.NewBinding(
+			key.WithKeys("r"),
+			key.WithHelp("[r]", "compare again"),
+		),
+		ScrollUp: key.NewBinding(
+			key.WithKeys("up", "k"),
+			key.WithHelp("↑/k", "scroll up"),
+		),
+		ScrollDown: key.NewBinding(
+			key.WithKeys("down", "j"),
+			key.WithHelp("↓/j", "scroll down"),
+		),
+	},
 	ERD: ERDKeys{
 		NextTable: key.NewBinding(
 			key.WithKeys("tab"),
@@ -784,10 +856,70 @@ func RenderBindingHelp(bindings ...key.Binding) string {
 }
 
 func RenderBindingHelpWidth(width int, bindings ...key.Binding) string {
+	return renderBindingHelpWidth(width, true, bindings...)
+}
+
+func renderBindingHelpWidthNoHelp(width int, bindings ...key.Binding) string {
+	return renderBindingHelpWidth(width, false, bindings...)
+}
+
+func renderFooterHelpPairsWidth(width int, keys ...string) string {
+	return renderHelpPairsWidth(width, true, keys...)
+}
+
+func renderFooterHelpPairsWidthNoHelp(width int, keys ...string) string {
+	return renderHelpPairsWidth(width, false, keys...)
+}
+
+func renderBindingHelpWidth(width int, includeHelp bool, bindings ...key.Binding) string {
+	if includeHelp {
+		bindings = appendHelpBinding(bindings)
+	}
+
 	var pairs []string
 	for _, b := range bindings {
 		h := b.Help()
 		pairs = append(pairs, h.Key, h.Desc)
 	}
-	return styles.RenderHelpWidth(width, pairs...)
+	return renderHelpPairsWidth(width, false, pairs...)
+}
+
+func renderHelpPairsWidth(width int, includeHelp bool, keys ...string) string {
+	if width <= 0 {
+		width = 80
+	}
+	if includeHelp {
+		keys = appendHelpPair(keys)
+	}
+	return styles.RenderHelpWidth(width, keys...)
+}
+
+func appendHelpBinding(bindings []key.Binding) []key.Binding {
+	helpKey := Keys.Global.Help.Help().Key
+	for _, binding := range bindings {
+		if binding.Help().Key == helpKey {
+			return bindings
+		}
+	}
+
+	result := make([]key.Binding, 0, len(bindings)+1)
+	result = append(result, bindings...)
+	result = append(result, Keys.Global.Help)
+	return result
+}
+
+func appendHelpPair(keys []string) []string {
+	if len(keys) >= 2 {
+		helpKey := Keys.Global.Help.Help().Key
+		for i := 0; i+1 < len(keys); i += 2 {
+			if keys[i] == helpKey {
+				return keys
+			}
+		}
+	}
+
+	result := make([]string, 0, len(keys)+2)
+	result = append(result, keys...)
+	result = append(result, Keys.Global.Help.Help().Key, Keys.Global.Help.Help().Desc)
+	return result
 }

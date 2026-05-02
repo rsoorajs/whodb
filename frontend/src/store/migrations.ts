@@ -321,6 +321,31 @@ function migrateLanguageCodesV5(): void {
 }
 
 /**
+ * Remove the orphaned persisted database metadata state now that metadata is
+ * owned by Apollo session state instead of Redux persistence.
+ */
+function clearDatabaseMetadataStateV6(): void {
+  try {
+    localStorage.removeItem('persist:databaseMetadata');
+  } catch (error) {
+    console.error('Error clearing database metadata state:', error);
+  }
+}
+
+/**
+ * Clear persisted auth state again after the source-first Authorization header
+ * contract corrections so stale logged-in sessions from earlier source-refactor
+ * builds do not survive.
+ */
+function clearAuthStateV8(): void {
+  try {
+    localStorage.removeItem('persist:auth');
+  } catch (error) {
+    console.error('Error clearing auth state:', error);
+  }
+}
+
+/**
  * Run all necessary migrations
  */
 export function runMigrations(): void {
@@ -345,6 +370,16 @@ export function runMigrations(): void {
   if (currentVersion < 5) {
     migrateLanguageCodesV5();
     setMigrationVersion(5);
+  }
+
+  if (currentVersion < 6) {
+    clearDatabaseMetadataStateV6();
+    setMigrationVersion(6);
+  }
+
+  if (currentVersion < 8) {
+    clearAuthStateV8();
+    setMigrationVersion(8);
   }
 
   // Always ensure AI models state is valid

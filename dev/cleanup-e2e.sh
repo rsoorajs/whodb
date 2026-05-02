@@ -17,6 +17,9 @@
 
 # Get edition from parameter (default to CE)
 EDITION="${1:-ce}"
+if [ "$EDITION" = "ee-only" ]; then
+    EDITION="ee"
+fi
 
 echo "🧹 Cleaning up $EDITION E2E environment..."
 
@@ -25,6 +28,25 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 echo "📁 Working from project root: $PROJECT_ROOT"
+
+kill_port() {
+    local port="$1"
+    local pids
+
+    pids="$(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)"
+
+    if [ -z "$pids" ] && command -v fuser >/dev/null 2>&1; then
+        pids="$(fuser "$port"/tcp 2>/dev/null || true)"
+    fi
+
+    if [ -z "$pids" ] && command -v ss >/dev/null 2>&1; then
+        pids="$(ss -ltnp "sport = :$port" 2>/dev/null | sed -n 's/.*pid=\([0-9]\+\).*/\1/p' | sort -u)"
+    fi
+
+    if [ -n "$pids" ]; then
+        echo "$pids" | xargs kill -9 2>/dev/null || true
+    fi
+}
 
 # Cleanup SQLite and tmp directory (but preserve hash file for caching)
 echo "🧹 Cleaning up tmp directory..."
@@ -123,10 +145,10 @@ fi
 
 # Kill anything still on port 3000 (just in case)
 echo "🔍 Ensuring port 3000 is free..."
-lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+kill_port 3000
 
 # Kill anything still on port 8080 (just in case)
 echo "🔍 Ensuring port 8080 is free..."
-lsof -ti:8080 | xargs kill -9 2>/dev/null || true
+kill_port 8080
 
 echo "✅ $EDITION E2E environment cleanup complete!"
