@@ -17,7 +17,7 @@
 import {useMutation, useQuery} from "@apollo/client/react";
 import {Toaster} from "@clidey/ux";
 import {SettingsConfigDocument, UpdateSettingsDocument} from '@graphql';
-import {Suspense, useCallback, useEffect} from "react";
+import {Suspense, useEffect} from "react";
 import {Route, Routes} from "react-router-dom";
 import {getStoredConsentState, optInUser, optOutUser, resetAnalyticsIdentity} from "./config/posthog";
 import {getRoutes, PrivateRoute, PublicRoutes} from './config/routes';
@@ -40,6 +40,7 @@ export const App = () => {
     const {data: settingsConfigData} = useQuery(SettingsConfigDocument);
     const dispatch = useAppDispatch();
   const metricsEnabled = useAppSelector(state => state.settings.metricsEnabled);
+  const authStatus = useAppSelector(state => state.auth.status);
   const newUIEnabled = settingsConfigData?.SettingsConfig?.EnableNewUI === true;
 
   // Apply UI customization settings
@@ -105,7 +106,11 @@ export const App = () => {
         }
     }, [metricsEnabled]);
 
-  const updateBackendWithSettings = useCallback(() => {
+  useEffect(() => {
+    if (authStatus !== 'logged-in') {
+      return;
+    }
+
     updateSettings({
       variables: {
         newSettings: {
@@ -113,14 +118,9 @@ export const App = () => {
         }
       }
     });
-  }, [updateSettings, metricsEnabled])
-
-  useEffect(() => {
-    updateBackendWithSettings();
-  }, [updateBackendWithSettings]);
+  }, [authStatus, updateSettings, metricsEnabled]);
 
   // Start health check service when user logs in, stop when they log out
-  const authStatus = useAppSelector(state => state.auth.status);
 
   useEffect(() => {
     if (authStatus === 'logged-in') {
