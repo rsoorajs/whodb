@@ -1,0 +1,6 @@
+{
+  "whodb": {
+    "command": "npx",
+    "args": ["-y", "@clidey/whodb-cli", "mcp", "serve"]
+  }
+}
