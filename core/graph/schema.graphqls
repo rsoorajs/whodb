@@ -262,6 +262,7 @@ type SettingsConfig {
   MetricsEnabled: Boolean
   CloudProvidersEnabled: Boolean!
   DisableCredentialForm: Boolean!
+  EnableNewUI: Boolean!
   MaxPageSize: Int!
 }
 

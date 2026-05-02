@@ -3,6 +3,7 @@ query SettingsConfig {
         MetricsEnabled
         CloudProvidersEnabled
         DisableCredentialForm
+        EnableNewUI
         MaxPageSize
     }
 }

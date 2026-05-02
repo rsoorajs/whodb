@@ -227,19 +227,19 @@ body.disable-animations *::after {
   font-size: 18px;
 }
 
-[data-sonner-toast] {
+body.whodb-new-ui-enabled [data-sonner-toast] {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
-[data-sonner-toast][data-styled='true'] {
+body.whodb-new-ui-enabled [data-sonner-toast][data-styled='true'] {
   --normal-bg: var(--popover) !important;
   background-color: var(--popover) !important;
   color: var(--popover-foreground) !important;
   border-color: var(--border) !important;
 }
 
-.dark [data-sonner-toast][data-styled='true'] {
+body.whodb-new-ui-enabled .dark [data-sonner-toast][data-styled='true'] {
   --normal-bg: oklch(20.5% 0 0) !important;
   background-color: oklch(20.5% 0 0) !important;
 }

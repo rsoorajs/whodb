@@ -1359,6 +1359,7 @@ func (r *queryResolver) SettingsConfig(ctx context.Context) (*model.SettingsConf
 		MetricsEnabled:        &currentSettings.MetricsEnabled,
 		CloudProvidersEnabled: env.IsAWSProviderEnabled || env.IsAzureProviderEnabled || env.IsGCPProviderEnabled,
 		DisableCredentialForm: env.DisableCredentialForm,
+		EnableNewUI:           env.IsNewUIEnabled,
 		MaxPageSize:           env.MaxPageSize,
 	}, nil
 }

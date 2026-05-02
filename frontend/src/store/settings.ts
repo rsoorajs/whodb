@@ -23,6 +23,7 @@ const ANALYTICS_CONSENT_KEY = 'whodb.analytics.consent';
 type ISettingsState = {
     metricsEnabled: boolean;
     cloudProvidersEnabled: boolean;
+    newUIEnabled: boolean;
     storageUnitView: 'list' | 'card';
     fontSize: 'small' | 'medium' | 'large';
     borderRadius: 'none' | 'small' | 'medium' | 'large';
@@ -55,6 +56,7 @@ const getInitialState = (): ISettingsState => {
     return {
         metricsEnabled: getInitialMetricsEnabled(),
         cloudProvidersEnabled: false,
+        newUIEnabled: false,
         storageUnitView: 'card',
         fontSize: 'medium',
         borderRadius: 'medium',
@@ -83,6 +85,9 @@ export const settingsSlice = createSlice({
         },
         setCloudProvidersEnabled: (state, action: PayloadAction<ISettingsState["cloudProvidersEnabled"]>) => {
             state.cloudProvidersEnabled = action.payload;
+        },
+        setNewUIEnabled: (state, action: PayloadAction<ISettingsState["newUIEnabled"]>) => {
+            state.newUIEnabled = action.payload;
         },
         setStorageUnitView: (state, action: PayloadAction<ISettingsState["storageUnitView"]>) => {
             state.storageUnitView = action.payload;

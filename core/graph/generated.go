@@ -325,6 +325,7 @@ type ComplexityRoot struct {
 	SettingsConfig struct {
 		CloudProvidersEnabled func(childComplexity int) int
 		DisableCredentialForm func(childComplexity int) int
+		EnableNewUI           func(childComplexity int) int
 		MaxPageSize           func(childComplexity int) int
 		MetricsEnabled        func(childComplexity int) int
 	}
@@ -2064,6 +2065,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.SettingsConfig.DisableCredentialForm(childComplexity), true
+	case "SettingsConfig.EnableNewUI":
+		if e.ComplexityRoot.SettingsConfig.EnableNewUI == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SettingsConfig.EnableNewUI(childComplexity), true
 	case "SettingsConfig.MaxPageSize":
 		if e.ComplexityRoot.SettingsConfig.MaxPageSize == nil {
 			break
@@ -9682,6 +9689,8 @@ func (ec *executionContext) fieldContext_Query_SettingsConfig(_ context.Context,
 				return ec.fieldContext_SettingsConfig_CloudProvidersEnabled(ctx, field)
 			case "DisableCredentialForm":
 				return ec.fieldContext_SettingsConfig_DisableCredentialForm(ctx, field)
+			case "EnableNewUI":
+				return ec.fieldContext_SettingsConfig_EnableNewUI(ctx, field)
 			case "MaxPageSize":
 				return ec.fieldContext_SettingsConfig_MaxPageSize(ctx, field)
 			}
@@ -10954,6 +10963,35 @@ func (ec *executionContext) _SettingsConfig_DisableCredentialForm(ctx context.Co
 }
 
 func (ec *executionContext) fieldContext_SettingsConfig_DisableCredentialForm(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SettingsConfig",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SettingsConfig_EnableNewUI(ctx context.Context, field graphql.CollectedField, obj *model.SettingsConfig) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SettingsConfig_EnableNewUI,
+		func(ctx context.Context) (any, error) {
+			return obj.EnableNewUI, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SettingsConfig_EnableNewUI(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "SettingsConfig",
 		Field:      field,
@@ -19307,6 +19345,11 @@ func (ec *executionContext) _SettingsConfig(ctx context.Context, sel ast.Selecti
 			}
 		case "DisableCredentialForm":
 			out.Values[i] = ec._SettingsConfig_DisableCredentialForm(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "EnableNewUI":
+			out.Values[i] = ec._SettingsConfig_EnableNewUI(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

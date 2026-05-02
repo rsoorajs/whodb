@@ -113,6 +113,9 @@ var IsAzureProviderEnabled = os.Getenv("WHODB_ENABLE_AZURE_PROVIDER") == "true"
 // IsGCPProviderEnabled controls whether GCP provider functionality is available.
 var IsGCPProviderEnabled = os.Getenv("WHODB_ENABLE_GCP_PROVIDER") == "true"
 
+// IsNewUIEnabled controls whether the new UI visuals are available.
+var IsNewUIEnabled = os.Getenv("WHODB_ENABLE_NEW_UI") == "true"
+
 // DisableCredentialForm controls whether the credential form is disabled.
 var DisableCredentialForm = os.Getenv("WHODB_DISABLE_CREDENTIAL_FORM") == "true"
 
