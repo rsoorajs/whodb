@@ -166,6 +166,25 @@ function canSubmitDatabaseCredentials(
     return hostnameOk && usernameOk && passwordOk && databaseOk;
 }
 
+function canSubmitCustomForm(
+    databaseType: SourceTypeItem,
+    hostName: string,
+    username: string,
+    password: string,
+    advancedForm: Record<string, string>,
+): boolean {
+    if (databaseType.customFormCanSubmit != null) {
+        return databaseType.customFormCanSubmit({
+            hostName,
+            username,
+            password,
+            advancedForm,
+        });
+    }
+
+    return hostName.length > 0 || Object.keys(advancedForm).length > 0;
+}
+
 
 /**
  * Generate a consistent ID for desktop credentials based on connection details.
@@ -334,7 +353,11 @@ export const LoginForm: FC<LoginFormProps> = ({
     }, [dispatch, t]);
 
     const handleSubmit = useCallback(() => {
-        if (databaseType.id === "" || !canSubmitDatabaseCredentials(databaseType, hostName, username, password, database)) {
+        const credentialsAreComplete = databaseType.customFormRenderer != null
+            ? canSubmitCustomForm(databaseType, hostName, username, password, advancedForm)
+            : canSubmitDatabaseCredentials(databaseType, hostName, username, password, database);
+
+        if (databaseType.id === "" || !credentialsAreComplete) {
             setIsAutoLoggingIn(false);
             return setError(t('allFieldsRequired'));
         }
@@ -968,7 +991,7 @@ export const LoginForm: FC<LoginFormProps> = ({
 
     const loginWithCredentialsEnabled = useMemo(() => {
         if (databaseType.customFormRenderer) {
-            return hostName.length > 0 || Object.keys(advancedForm).length > 0;
+            return canSubmitCustomForm(databaseType, hostName, username, password, advancedForm);
         }
         return canSubmitDatabaseCredentials(databaseType, hostName, username, password, database);
     }, [databaseType, hostName, username, password, database, advancedForm]);
