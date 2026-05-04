@@ -15,7 +15,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/redis/armredis v1.0.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions v1.3.0
 	github.com/ClickHouse/clickhouse-go/v2 v2.45.0
-	github.com/aws/aws-sdk-go-v2 v1.41.6
+	github.com/aws/aws-sdk-go-v2 v1.41.7
 	github.com/aws/aws-sdk-go-v2/config v1.32.14
 	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.6.22
 	github.com/aws/aws-sdk-go-v2/service/docdb v1.48.13
@@ -23,7 +23,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/opensearch v1.64.0
 	github.com/aws/aws-sdk-go-v2/service/rds v1.118.1
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.10
-	github.com/aws/smithy-go v1.25.0
+	github.com/aws/smithy-go v1.25.1
 	github.com/boundaryml/baml v0.220.0
 	github.com/brianvoe/gofakeit/v7 v7.14.1
 	github.com/deckarep/golang-set/v2 v2.8.0
