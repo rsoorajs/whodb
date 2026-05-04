@@ -5,7 +5,7 @@ go 1.26.1
 require (
 	cloud.google.com/go/alloydb v1.24.0
 	cloud.google.com/go/memcache v1.14.0
-	cloud.google.com/go/redis v1.21.0
+	cloud.google.com/go/redis v1.22.0
 	github.com/99designs/gqlgen v0.17.89
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1
