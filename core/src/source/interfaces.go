@@ -57,6 +57,12 @@ type SourceBrowser interface {
 	GetObject(ctx context.Context, ref ObjectRef) (*Object, error)
 }
 
+// PaginatedSourceBrowser lists browseable objects with an offset and page size.
+type PaginatedSourceBrowser interface {
+	// ListObjectsPage lists one page of objects beneath the provided parent.
+	ListObjectsPage(ctx context.Context, parent *ObjectRef, kinds []ObjectKind, pageSize int, pageOffset int) ([]Object, error)
+}
+
 // TabularReader reads row/column data from a source object.
 type TabularReader interface {
 	// ReadRows returns tabular rows for the provided object reference.
