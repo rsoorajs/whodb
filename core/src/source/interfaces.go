@@ -18,6 +18,7 @@ package source
 
 import (
 	"context"
+	"io"
 
 	"github.com/clidey/whodb/core/src/query"
 )
@@ -91,6 +92,14 @@ type ContentReader interface {
 type ContentDownloader interface {
 	// DownloadContent returns a streaming payload for the provided object reference.
 	DownloadContent(ctx context.Context, ref ObjectRef) (*ContentDownload, error)
+}
+
+// ContentUploader streams source object content into a source.
+type ContentUploader interface {
+	// UploadContent uploads content beneath a parent source object.
+	UploadContent(ctx context.Context, parent *ObjectRef, name string, reader io.Reader, contentType string, sizeBytes int64) (bool, error)
+	// ReplaceContent replaces content for the provided object reference.
+	ReplaceContent(ctx context.Context, ref ObjectRef, reader io.Reader, contentType string, sizeBytes int64) (bool, error)
 }
 
 // AvailabilityChecker verifies that a source session can reach the underlying
