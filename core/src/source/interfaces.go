@@ -87,6 +87,12 @@ type ContentReader interface {
 	ReadContent(ctx context.Context, ref ObjectRef) (*ContentResult, error)
 }
 
+// ContentDownloader streams source object content for download.
+type ContentDownloader interface {
+	// DownloadContent returns a streaming payload for the provided object reference.
+	DownloadContent(ctx context.Context, ref ObjectRef) (*ContentDownload, error)
+}
+
 // AvailabilityChecker verifies that a source session can reach the underlying
 // system with the current credentials.
 type AvailabilityChecker interface {
