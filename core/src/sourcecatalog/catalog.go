@@ -592,6 +592,7 @@ func buildConnectionFields(entry DatabaseEntry, traits source.TypeTraits) []sour
 			Key:             key,
 			Kind:            kind,
 			Section:         source.ConnectionFieldSectionAdvanced,
+			Required:        field.Required,
 			LabelKey:        labelKey,
 			PlaceholderKey:  placeholderKey,
 			DefaultValue:    field.DefaultValue,

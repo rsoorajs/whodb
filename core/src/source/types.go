@@ -229,6 +229,7 @@ type ConnectionField struct {
 type ConnectionExtraField struct {
 	DefaultValue   string
 	Kind           ConnectionFieldKind
+	Required       bool
 	LabelKey       string
 	PlaceholderKey string
 }

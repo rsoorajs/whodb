@@ -69,31 +69,63 @@ export function supportsDatabaseFieldOptions(
     ) ?? false;
 }
 
+function connectionFieldValue(
+    field: SourceConnectionFieldItem,
+    values: {
+        hostName: string;
+        username: string;
+        password: string;
+        database: string;
+        advancedForm: Record<string, string>;
+    }
+): string {
+    switch (field.Key.toLowerCase()) {
+    case 'hostname':
+        return values.hostName;
+    case 'username':
+        return values.username;
+    case 'password':
+        return values.password;
+    case 'database':
+        return values.database;
+    default:
+        return values.advancedForm[field.Key] ?? '';
+    }
+}
+
 /**
- * Validates the standard connection fields against the source type's required-field contract.
+ * Validates the standard field-based connection form against the backend-owned
+ * required-field contract, including required advanced fields.
  *
  * @param databaseType Source type to validate against.
  * @param hostName Hostname value.
  * @param username Username value.
  * @param password Password value.
  * @param database Database value.
- * @returns `true` when all required standard fields are present.
+ * @param advancedForm Advanced field values.
+ * @returns `true` when all required declared connection fields are present.
  */
-export function canSubmitDatabaseCredentials(
+export function canSubmitStandardConnectionForm(
     databaseType: SourceTypeItem,
     hostName: string,
     username: string,
     password: string,
-    database: string
+    database: string,
+    advancedForm: Record<string, string>
 ): boolean {
-    const requiredFields = databaseType.requiredFields ?? {};
+    return (databaseType.connectionFields ?? []).every(field => {
+        if (!field.Required) {
+            return true;
+        }
 
-    const hostnameOk = !requiredFields.hostname || hostName.length > 0;
-    const usernameOk = !requiredFields.username || username.length > 0;
-    const passwordOk = !requiredFields.password || password.length > 0;
-    const databaseOk = !requiredFields.database || database.length > 0;
-
-    return hostnameOk && usernameOk && passwordOk && databaseOk;
+        return connectionFieldValue(field, {
+            hostName,
+            username,
+            password,
+            database,
+            advancedForm,
+        }).trim().length > 0;
+    });
 }
 
 /**

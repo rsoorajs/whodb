@@ -85,7 +85,7 @@ import {
 import {
     buildSourceAdvancedSectionState,
     canSubmitCustomConnectionForm,
-    canSubmitDatabaseCredentials,
+    canSubmitStandardConnectionForm,
     findConnectionFieldByKey,
     getPromotedConnectionFieldKeys,
     supportsDatabaseFieldOptions,
@@ -304,7 +304,7 @@ export const LoginForm: FC<LoginFormProps> = ({
     const handleSubmit = useCallback(() => {
         const credentialsAreComplete = databaseType.customFormRenderer != null
             ? canSubmitCustomConnectionForm(databaseType, hostName, username, password, advancedForm)
-            : canSubmitDatabaseCredentials(databaseType, hostName, username, password, database);
+            : canSubmitStandardConnectionForm(databaseType, hostName, username, password, database, advancedForm);
 
         if (databaseType.id === "" || !credentialsAreComplete) {
             setIsAutoLoggingIn(false);
@@ -942,7 +942,7 @@ export const LoginForm: FC<LoginFormProps> = ({
         if (databaseType.customFormRenderer) {
             return canSubmitCustomConnectionForm(databaseType, hostName, username, password, advancedForm);
         }
-        return canSubmitDatabaseCredentials(databaseType, hostName, username, password, database);
+        return canSubmitStandardConnectionForm(databaseType, hostName, username, password, database, advancedForm);
     }, [databaseType, hostName, username, password, database, advancedForm]);
 
     const loginWithSourceProfileEnabled = useMemo(() => {

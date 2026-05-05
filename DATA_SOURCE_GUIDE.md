@@ -519,6 +519,7 @@ This controls the connection UI form and which fields are shown.
 
 - `DefaultValue` sets the default UI value.
 - `Kind` is optional and controls how the field renders (`Boolean`, `Password`, `FilePath`, etc.).
+- `Required` is optional and marks an advanced field as mandatory in the shared connection form.
 - `LabelKey` and `PlaceholderKey` are optional overrides for localization keys.
 
 **Wire-compatible alias pattern**: If your source is wire-compatible with an existing plugin (e.g., Valkey is Redis-compatible), set `ID` to the new name but `PluginType` to the existing plugin:

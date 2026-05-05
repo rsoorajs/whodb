@@ -357,6 +357,7 @@ func TestBuildTypeSpecUsesTypedExtraFields(t *testing.T) {
 			"Token": {
 				DefaultValue: "secret",
 				Kind:         source.ConnectionFieldKindPassword,
+				Required:     true,
 				LabelKey:     "advancedFields.customToken",
 			},
 			"SSL": {
@@ -378,6 +379,9 @@ func TestBuildTypeSpecUsesTypedExtraFields(t *testing.T) {
 	}
 	if tokenField.Kind != source.ConnectionFieldKindPassword {
 		t.Fatalf("expected token field kind %q, got %q", source.ConnectionFieldKindPassword, tokenField.Kind)
+	}
+	if !tokenField.Required {
+		t.Fatal("expected token field to remain required in the built source type")
 	}
 	if tokenField.LabelKey != "advancedFields.customToken" {
 		t.Fatalf("expected token field label key %q, got %q", "advancedFields.customToken", tokenField.LabelKey)
