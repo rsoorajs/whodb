@@ -17,8 +17,12 @@
 package router
 
 import (
+	"context"
 	"embed"
+	"fmt"
 	"net/http"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler/extension"
@@ -27,6 +31,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/clidey/whodb/core/graph"
+	coreaudit "github.com/clidey/whodb/core/src/audit"
 	"github.com/clidey/whodb/core/src/auth"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/clidey/whodb/core/src/log"
@@ -57,6 +62,89 @@ func NewGraphQLServer(es graphql.ExecutableSchema) *handler.Server {
 	if env.IsDevelopment {
 		srv.Use(extension.Introspection{})
 	}
+
+	srv.AroundOperations(func(ctx context.Context, next graphql.OperationHandler) graphql.ResponseHandler {
+		opCtx := graphql.GetOperationContext(ctx)
+		if opCtx != nil && opCtx.Operation != nil {
+			ctx = coreaudit.WithRequest(ctx, coreaudit.Request{
+				OperationName: graphQLOperationName(opCtx),
+				OperationType: strings.ToLower(string(opCtx.Operation.Operation)),
+			})
+		}
+		return next(ctx)
+	})
+
+	srv.AroundRootFields(func(ctx context.Context, next graphql.RootResolver) graphql.Marshaler {
+		start := time.Now()
+		rootFieldCtx := graphql.GetRootFieldContext(ctx)
+		fc := graphql.GetFieldContext(ctx)
+		opCtx := graphql.GetOperationContext(ctx)
+
+		fieldName := "unknown"
+		objectName := ""
+		details := map[string]any{}
+		if rootFieldCtx != nil && rootFieldCtx.Field.Field != nil {
+			fieldName = strings.TrimSpace(rootFieldCtx.Field.Name)
+			if alias := strings.TrimSpace(rootFieldCtx.Field.Alias); alias != "" {
+				details["path"] = alias
+				if alias != fieldName {
+					details["field_alias"] = alias
+				}
+			}
+		}
+		if fc != nil {
+			if fieldName == "unknown" && fc.Field.Field != nil {
+				fieldName = strings.TrimSpace(fc.Field.Name)
+			}
+			objectName = strings.TrimSpace(fc.Object)
+			details["arg_keys"] = sortedGraphQLArgKeys(fc.Args)
+			if _, ok := details["path"]; !ok {
+				details["path"] = fmt.Sprintf("%v", fc.Path())
+			}
+		}
+		if opCtx != nil && opCtx.Operation != nil {
+			details["operation_name"] = graphQLOperationName(opCtx)
+			details["operation_type"] = strings.ToLower(string(opCtx.Operation.Operation))
+			if objectName == "" {
+				objectName = strings.TrimSpace(string(opCtx.Operation.Operation))
+			}
+		}
+
+		marshaler := next(ctx)
+
+		outcome := coreaudit.OutcomeSuccess
+		severity := coreaudit.SeverityInfo
+		errorMessage := ""
+		if fc != nil && graphql.HasFieldError(ctx, fc) {
+			outcome = coreaudit.OutcomeFailure
+			severity = coreaudit.SeverityWarn
+			if errs := graphql.GetFieldErrors(ctx, fc); len(errs) > 0 {
+				errorMessage = errs.Error()
+			}
+		}
+
+		actionPrefix := "graphql.operation"
+		if opCtx != nil && opCtx.Operation != nil {
+			actionPrefix = "graphql." + strings.ToLower(string(opCtx.Operation.Operation))
+		}
+
+		coreaudit.RecordWithContext(ctx, coreaudit.AuditEvent{
+			Timestamp: start,
+			Action:    actionPrefix + "." + fieldName,
+			Outcome:   outcome,
+			Severity:  severity,
+			Resource: coreaudit.Resource{
+				ID:   fieldName,
+				Type: "graphql_field",
+				Name: objectName,
+			},
+			Details:  details,
+			Error:    errorMessage,
+			Duration: time.Since(start),
+		})
+
+		return marshaler
+	})
 
 	return srv
 }
@@ -146,6 +234,7 @@ func setupMiddlewares(router *chi.Mux, additionalMiddlewares []func(http.Handler
 	// Additional middlewares run before CE credential auth so that
 	// a bypass registered via auth.RegisterAuthBypass can see context they set.
 	middlewares = append(middlewares, additionalMiddlewares...)
+	middlewares = append(middlewares, auditHTTPMiddleware)
 	if len(publicPaths) > 0 {
 		bypassSet := make(map[string]struct{}, len(publicPaths))
 		for _, p := range publicPaths {
@@ -166,6 +255,32 @@ func setupMiddlewares(router *chi.Mux, additionalMiddlewares []func(http.Handler
 	}
 
 	router.Use(middlewares...)
+}
+
+func sortedGraphQLArgKeys(args map[string]any) []string {
+	if len(args) == 0 {
+		return []string{}
+	}
+
+	keys := make([]string, 0, len(args))
+	for key := range args {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func graphQLOperationName(opCtx *graphql.OperationContext) string {
+	if opCtx == nil {
+		return ""
+	}
+	if name := strings.TrimSpace(opCtx.OperationName); name != "" {
+		return name
+	}
+	if opCtx.Operation != nil {
+		return strings.TrimSpace(opCtx.Operation.Name)
+	}
+	return ""
 }
 
 func wrapWithBasePath(handler http.Handler, basePath string) *chi.Mux {

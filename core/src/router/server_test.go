@@ -22,9 +22,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 
 	graphapi "github.com/clidey/whodb/core/graph"
+	coreaudit "github.com/clidey/whodb/core/src/audit"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/go-chi/chi/v5"
 )
@@ -111,4 +113,68 @@ func TestNewGraphQLServerTogglesIntrospectionByEnvironment(t *testing.T) {
 	if !strings.Contains(prodBody, "errors") {
 		t.Fatalf("expected introspection to be rejected outside development mode, got %s", prodBody)
 	}
+}
+
+func TestNewGraphQLServerAuditsGraphQLRootFieldName(t *testing.T) {
+	service := &capturingAuditService{}
+	coreaudit.SetAuditService(service)
+	coreaudit.SetActorProvider(nil)
+	t.Cleanup(func() {
+		coreaudit.SetAuditService(nil)
+		coreaudit.SetActorProvider(nil)
+	})
+
+	server := NewGraphQLServer(graphapi.NewExecutableSchema(graphapi.Config{Resolvers: &graphapi.Resolver{}}))
+
+	queryBody, err := json.Marshal(map[string]any{
+		"query": `query GetHealth { Health { Server Database } }`,
+	})
+	if err != nil {
+		t.Fatalf("failed to build request body: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/query", bytes.NewReader(queryBody))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	server.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected GraphQL HTTP 200, got %d with body %s", rr.Code, rr.Body.String())
+	}
+
+	events := service.Events()
+	if len(events) != 1 {
+		t.Fatalf("expected exactly one root-field audit event, got %d", len(events))
+	}
+
+	event := events[0]
+	if event.Action != "graphql.query.Health" {
+		t.Fatalf("expected action graphql.query.Health, got %s", event.Action)
+	}
+	if event.Resource.ID != "Health" {
+		t.Fatalf("expected resource id Health, got %s", event.Resource.ID)
+	}
+	if event.Request.OperationName != "GetHealth" {
+		t.Fatalf("expected operation name GetHealth, got %s", event.Request.OperationName)
+	}
+	if path, ok := event.Details["path"].(string); !ok || path != "Health" {
+		t.Fatalf("expected detail path Health, got %#v", event.Details["path"])
+	}
+}
+
+type capturingAuditService struct {
+	mu     sync.Mutex
+	events []coreaudit.AuditEvent
+}
+
+func (s *capturingAuditService) Record(event coreaudit.AuditEvent) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.events = append(s.events, event)
+}
+
+func (s *capturingAuditService) Events() []coreaudit.AuditEvent {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]coreaudit.AuditEvent(nil), s.events...)
 }
