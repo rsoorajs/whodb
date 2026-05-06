@@ -98,8 +98,9 @@ type ContentDownloader interface {
 type ContentUploader interface {
 	// UploadContent uploads content beneath a parent source object.
 	UploadContent(ctx context.Context, parent *ObjectRef, name string, reader io.Reader, contentType string, sizeBytes int64) (bool, error)
-	// ReplaceContent replaces content for the provided object reference.
-	ReplaceContent(ctx context.Context, ref ObjectRef, reader io.Reader, contentType string, sizeBytes int64) (bool, error)
+	// ReplaceContent replaces content for the provided object reference, using
+	// name as the desired leaf object name when supplied.
+	ReplaceContent(ctx context.Context, ref ObjectRef, name string, reader io.Reader, contentType string, sizeBytes int64) (bool, error)
 }
 
 // AvailabilityChecker verifies that a source session can reach the underlying
