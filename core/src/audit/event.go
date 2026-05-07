@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func prepareEvent(ctx context.Context, event AuditEvent, actorProvider ActorProvider) AuditEvent {
@@ -36,6 +37,17 @@ func prepareEvent(ctx context.Context, event AuditEvent, actorProvider ActorProv
 	}
 
 	event.Request = mergeRequest(RequestFromContext(ctx), event.Request)
+	if event.Request.TraceID == "" || event.Request.SpanID == "" {
+		spanContext := trace.SpanContextFromContext(ctx)
+		if spanContext.IsValid() {
+			if event.Request.TraceID == "" {
+				event.Request.TraceID = spanContext.TraceID().String()
+			}
+			if event.Request.SpanID == "" {
+				event.Request.SpanID = spanContext.SpanID().String()
+			}
+		}
+	}
 
 	if event.Actor == (Actor{}) {
 		event.Actor = actorProvider(ctx)

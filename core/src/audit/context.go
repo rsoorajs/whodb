@@ -71,6 +71,12 @@ func mergeRequest(base Request, override Request) Request {
 	if strings.TrimSpace(override.OperationType) != "" {
 		request.OperationType = strings.TrimSpace(override.OperationType)
 	}
+	if strings.TrimSpace(override.TraceID) != "" {
+		request.TraceID = strings.TrimSpace(override.TraceID)
+	}
+	if strings.TrimSpace(override.SpanID) != "" {
+		request.SpanID = strings.TrimSpace(override.SpanID)
+	}
 
 	return request
 }
