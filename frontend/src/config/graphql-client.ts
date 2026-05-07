@@ -115,6 +115,10 @@ const errorLink = onError(({error}) => {
 });
 
 function fallbackAutoLogin() {
+    if (window.location.pathname.startsWith(withBasePath('/login'))) {
+        return;
+    }
+
     // @ts-ignore
     const authState = reduxStore.getState().auth;
     const currentProfile = authState.current;
@@ -122,9 +126,7 @@ function fallbackAutoLogin() {
     if (currentProfile) {
         void handleAutoLogin(currentProfile);
     } else {
-        if (!window.location.pathname.startsWith(withBasePath('/login'))) {
-            redirectToLoginWithMessage('sessionExpired');
-        }
+        redirectToLoginWithMessage('sessionExpired');
     }
 }
 
