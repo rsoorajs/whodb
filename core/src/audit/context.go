@@ -19,10 +19,16 @@ package audit
 import (
 	"context"
 	"strings"
+	"sync"
 )
 
 type requestContextKey struct{}
 type scopeContextKey struct{}
+
+type scopeState struct {
+	mu    sync.RWMutex
+	scope Scope
+}
 
 // Scope describes organization, project, and source identifiers associated
 // with an audited action.
@@ -49,17 +55,40 @@ func RequestFromContext(ctx context.Context) Request {
 
 // WithScope stores audit scope metadata inside the supplied context.
 func WithScope(ctx context.Context, scope Scope) context.Context {
-	return context.WithValue(ctx, scopeContextKey{}, mergeScope(ScopeFromContext(ctx), scope))
+	if state, ok := ctx.Value(scopeContextKey{}).(*scopeState); ok && state != nil {
+		state.merge(scope)
+		return ctx
+	}
+
+	return context.WithValue(ctx, scopeContextKey{}, &scopeState{
+		scope: mergeScope(ScopeFromContext(ctx), scope),
+	})
+}
+
+// WithIsolatedScope stores audit scope metadata inside a fresh mutable scope state.
+// Child operations can extend this scope without mutating parent contexts.
+func WithIsolatedScope(ctx context.Context, scope Scope) context.Context {
+	return context.WithValue(ctx, scopeContextKey{}, &scopeState{
+		scope: mergeScope(ScopeFromContext(ctx), scope),
+	})
 }
 
 // ScopeFromContext extracts audit scope metadata from the supplied context.
 func ScopeFromContext(ctx context.Context) Scope {
 	value := ctx.Value(scopeContextKey{})
-	scope, ok := value.(Scope)
-	if !ok {
+	switch typed := value.(type) {
+	case Scope:
+		return typed
+	case *scopeState:
+		if typed == nil {
+			return Scope{}
+		}
+		typed.mu.RLock()
+		defer typed.mu.RUnlock()
+		return typed.scope
+	default:
 		return Scope{}
 	}
-	return scope
 }
 
 func mergeRequest(base Request, override Request) Request {
@@ -119,4 +148,10 @@ func mergeScope(base Scope, override Scope) Scope {
 	}
 
 	return scope
+}
+
+func (s *scopeState) merge(scope Scope) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.scope = mergeScope(s.scope, scope)
 }

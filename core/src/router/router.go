@@ -104,7 +104,7 @@ func NewGraphQLServer(es graphql.ExecutableSchema) *handler.Server {
 			}
 		}
 		details["arg_keys"] = sortedGraphQLArgKeys(rootArgs)
-		ctx = coreaudit.WithScope(ctx, graphQLAuditScope(rootArgs))
+		ctx = coreaudit.WithIsolatedScope(ctx, graphQLAuditScope(rootArgs))
 		if opCtx != nil && opCtx.Operation != nil {
 			details["operation_name"] = graphQLOperationName(opCtx)
 			details["operation_type"] = strings.ToLower(string(opCtx.Operation.Operation))

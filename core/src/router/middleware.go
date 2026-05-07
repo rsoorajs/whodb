@@ -67,14 +67,15 @@ func auditHTTPMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		sw := &statusResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
-		next.ServeHTTP(sw, r)
+		ctx := coreaudit.WithIsolatedScope(r.Context(), coreaudit.Scope{})
+		next.ServeHTTP(sw, r.WithContext(ctx))
 
 		route := ""
-		if routeCtx := chi.RouteContext(r.Context()); routeCtx != nil {
+		if routeCtx := chi.RouteContext(ctx); routeCtx != nil {
 			route = routeCtx.RoutePattern()
 		}
 
-		ctx := coreaudit.WithRequest(r.Context(), coreaudit.Request{Route: route})
+		ctx = coreaudit.WithRequest(ctx, coreaudit.Request{Route: route})
 		outcome := coreaudit.OutcomeSuccess
 		severity := coreaudit.SeverityInfo
 		switch {

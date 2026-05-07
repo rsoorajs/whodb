@@ -67,6 +67,12 @@ func prepareEvent(ctx context.Context, event AuditEvent, actorProvider ActorProv
 	event = eventEnricher(ctx, event)
 	event.OrgID = strings.TrimSpace(event.OrgID)
 	event.ProjectID = strings.TrimSpace(event.ProjectID)
+	if event.OrgID != "" || event.ProjectID != "" {
+		WithScope(ctx, Scope{
+			OrgID:     event.OrgID,
+			ProjectID: event.ProjectID,
+		})
+	}
 
 	event.Error = strings.TrimSpace(event.Error)
 	if event.Error == "" {
