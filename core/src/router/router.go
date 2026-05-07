@@ -80,6 +80,7 @@ func NewGraphQLServer(es graphql.ExecutableSchema) *handler.Server {
 		rootFieldCtx := graphql.GetRootFieldContext(ctx)
 		fc := graphql.GetFieldContext(ctx)
 		opCtx := graphql.GetOperationContext(ctx)
+		rootArgs := graphQLAuditArguments(rootFieldCtx, opCtx, fc)
 
 		fieldName := "unknown"
 		objectName := ""
@@ -98,12 +99,12 @@ func NewGraphQLServer(es graphql.ExecutableSchema) *handler.Server {
 				fieldName = strings.TrimSpace(fc.Field.Name)
 			}
 			objectName = strings.TrimSpace(fc.Object)
-			details["arg_keys"] = sortedGraphQLArgKeys(fc.Args)
-			ctx = coreaudit.WithScope(ctx, graphQLAuditScope(fc.Args))
 			if _, ok := details["path"]; !ok {
 				details["path"] = fmt.Sprintf("%v", fc.Path())
 			}
 		}
+		details["arg_keys"] = sortedGraphQLArgKeys(rootArgs)
+		ctx = coreaudit.WithScope(ctx, graphQLAuditScope(rootArgs))
 		if opCtx != nil && opCtx.Operation != nil {
 			details["operation_name"] = graphQLOperationName(opCtx)
 			details["operation_type"] = strings.ToLower(string(opCtx.Operation.Operation))
@@ -149,6 +150,22 @@ func NewGraphQLServer(es graphql.ExecutableSchema) *handler.Server {
 	})
 
 	return srv
+}
+
+func graphQLAuditArguments(rootFieldCtx *graphql.RootFieldContext, opCtx *graphql.OperationContext, fc *graphql.FieldContext) map[string]any {
+	if fc != nil && len(fc.Args) > 0 {
+		return fc.Args
+	}
+	if rootFieldCtx == nil || rootFieldCtx.Field.Field == nil {
+		return nil
+	}
+
+	var variables map[string]any
+	if opCtx != nil {
+		variables = opCtx.Variables
+	}
+
+	return rootFieldCtx.Field.ArgumentMap(variables)
 }
 
 func setupServer(router *chi.Mux, schema graphql.ExecutableSchema, httpHandlers map[string]http.Handler, staticFiles embed.FS) {

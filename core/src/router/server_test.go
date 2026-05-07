@@ -25,10 +25,12 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/99designs/gqlgen/graphql"
 	graphapi "github.com/clidey/whodb/core/graph"
 	coreaudit "github.com/clidey/whodb/core/src/audit"
 	"github.com/clidey/whodb/core/src/env"
 	"github.com/go-chi/chi/v5"
+	"github.com/vektah/gqlparser/v2/ast"
 )
 
 func TestHealthCheckMiddlewareShortCircuitsHandler(t *testing.T) {
@@ -191,6 +193,58 @@ func TestGraphQLAuditScopeFindsStructProjectID(t *testing.T) {
 
 	if scope.ProjectID != "project-789" {
 		t.Fatalf("expected struct project id, got %q", scope.ProjectID)
+	}
+}
+
+func TestGraphQLAuditArgumentsUsesRootFieldArgumentsBeforeFieldContextArgsExist(t *testing.T) {
+	rootFieldCtx := &graphql.RootFieldContext{
+		Object: "ProjectSources",
+		Field: graphql.CollectedField{
+			Field: &ast.Field{
+				Name: "ProjectSources",
+				Definition: &ast.FieldDefinition{
+					Name: "ProjectSources",
+					Arguments: ast.ArgumentDefinitionList{
+						&ast.ArgumentDefinition{Name: "projectId"},
+						&ast.ArgumentDefinition{Name: "sourceId"},
+					},
+				},
+				Arguments: ast.ArgumentList{
+					&ast.Argument{
+						Name: "projectId",
+						Value: &ast.Value{
+							Raw:  "projectId",
+							Kind: ast.Variable,
+						},
+					},
+					&ast.Argument{
+						Name: "sourceId",
+						Value: &ast.Value{
+							Raw:  "sourceId",
+							Kind: ast.Variable,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	args := graphQLAuditArguments(rootFieldCtx, &graphql.OperationContext{
+		Variables: map[string]any{
+			"projectId": "project-123",
+			"sourceId":  "source-456",
+		},
+	}, nil)
+	scope := graphQLAuditScope(args)
+
+	if got := args["projectId"]; got != "project-123" {
+		t.Fatalf("expected projectId arg from root field, got %#v", got)
+	}
+	if got := scope.ProjectID; got != "project-123" {
+		t.Fatalf("expected project id from root field args, got %q", got)
+	}
+	if got := scope.SourceID; got != "source-456" {
+		t.Fatalf("expected source id from root field args, got %q", got)
 	}
 }
 
