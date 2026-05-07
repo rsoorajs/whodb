@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func prepareEvent(ctx context.Context, event AuditEvent, actorProvider ActorProvider) AuditEvent {
+func prepareEvent(ctx context.Context, event AuditEvent, actorProvider ActorProvider, eventEnricher EventEnricher) AuditEvent {
 	if strings.TrimSpace(event.ID) == "" {
 		event.ID = uuid.NewString()
 	}
@@ -55,6 +55,18 @@ func prepareEvent(ctx context.Context, event AuditEvent, actorProvider ActorProv
 	if event.Actor.IP == "" {
 		event.Actor.IP = event.Request.RemoteIP
 	}
+
+	scope := ScopeFromContext(ctx)
+	if event.OrgID == "" {
+		event.OrgID = strings.TrimSpace(scope.OrgID)
+	}
+	if event.ProjectID == "" {
+		event.ProjectID = strings.TrimSpace(scope.ProjectID)
+	}
+
+	event = eventEnricher(ctx, event)
+	event.OrgID = strings.TrimSpace(event.OrgID)
+	event.ProjectID = strings.TrimSpace(event.ProjectID)
 
 	event.Error = strings.TrimSpace(event.Error)
 	if event.Error == "" {

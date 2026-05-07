@@ -162,6 +162,38 @@ func TestNewGraphQLServerAuditsGraphQLRootFieldName(t *testing.T) {
 	}
 }
 
+func TestGraphQLAuditScopeFindsNestedProjectAndSourceIDs(t *testing.T) {
+	scope := graphQLAuditScope(map[string]any{
+		"input": map[string]any{
+			"projectId": "project-123",
+			"filters": map[string]any{
+				"sourceId": "source-456",
+			},
+		},
+	})
+
+	if scope.ProjectID != "project-123" {
+		t.Fatalf("expected nested project id, got %q", scope.ProjectID)
+	}
+	if scope.SourceID != "source-456" {
+		t.Fatalf("expected nested source id, got %q", scope.SourceID)
+	}
+}
+
+func TestGraphQLAuditScopeFindsStructProjectID(t *testing.T) {
+	type nested struct {
+		ProjectID string
+	}
+
+	scope := graphQLAuditScope(map[string]any{
+		"input": nested{ProjectID: "project-789"},
+	})
+
+	if scope.ProjectID != "project-789" {
+		t.Fatalf("expected struct project id, got %q", scope.ProjectID)
+	}
+}
+
 type capturingAuditService struct {
 	mu     sync.Mutex
 	events []coreaudit.AuditEvent

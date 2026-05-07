@@ -22,6 +22,15 @@ import (
 )
 
 type requestContextKey struct{}
+type scopeContextKey struct{}
+
+// Scope describes organization, project, and source identifiers associated
+// with an audited action.
+type Scope struct {
+	OrgID     string
+	ProjectID string
+	SourceID  string
+}
 
 // WithRequest stores request metadata inside the supplied context.
 func WithRequest(ctx context.Context, request Request) context.Context {
@@ -36,6 +45,21 @@ func RequestFromContext(ctx context.Context) Request {
 		return Request{}
 	}
 	return request
+}
+
+// WithScope stores audit scope metadata inside the supplied context.
+func WithScope(ctx context.Context, scope Scope) context.Context {
+	return context.WithValue(ctx, scopeContextKey{}, mergeScope(ScopeFromContext(ctx), scope))
+}
+
+// ScopeFromContext extracts audit scope metadata from the supplied context.
+func ScopeFromContext(ctx context.Context) Scope {
+	value := ctx.Value(scopeContextKey{})
+	scope, ok := value.(Scope)
+	if !ok {
+		return Scope{}
+	}
+	return scope
 }
 
 func mergeRequest(base Request, override Request) Request {
@@ -79,4 +103,20 @@ func mergeRequest(base Request, override Request) Request {
 	}
 
 	return request
+}
+
+func mergeScope(base Scope, override Scope) Scope {
+	scope := base
+
+	if strings.TrimSpace(override.OrgID) != "" {
+		scope.OrgID = strings.TrimSpace(override.OrgID)
+	}
+	if strings.TrimSpace(override.ProjectID) != "" {
+		scope.ProjectID = strings.TrimSpace(override.ProjectID)
+	}
+	if strings.TrimSpace(override.SourceID) != "" {
+		scope.SourceID = strings.TrimSpace(override.SourceID)
+	}
+
+	return scope
 }

@@ -21,7 +21,7 @@ import (
 )
 
 // SchemaVersion is the current audit event schema version.
-const SchemaVersion = 2
+const SchemaVersion = 3
 
 // Severity represents the importance of an audit event.
 type Severity string
@@ -48,6 +48,8 @@ type AuditEvent struct {
 	Timestamp     time.Time      `json:"timestamp"`
 	Actor         Actor          `json:"actor"`
 	Request       Request        `json:"request"`
+	OrgID         string         `json:"org_id,omitempty"`
+	ProjectID     string         `json:"project_id,omitempty"`
 	Action        string         `json:"action"`
 	Outcome       Outcome        `json:"outcome"`
 	Resource      Resource       `json:"resource"`

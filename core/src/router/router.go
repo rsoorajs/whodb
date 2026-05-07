@@ -21,6 +21,7 @@ import (
 	"embed"
 	"fmt"
 	"net/http"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -98,6 +99,7 @@ func NewGraphQLServer(es graphql.ExecutableSchema) *handler.Server {
 			}
 			objectName = strings.TrimSpace(fc.Object)
 			details["arg_keys"] = sortedGraphQLArgKeys(fc.Args)
+			ctx = coreaudit.WithScope(ctx, graphQLAuditScope(fc.Args))
 			if _, ok := details["path"]; !ok {
 				details["path"] = fmt.Sprintf("%v", fc.Path())
 			}
@@ -163,6 +165,110 @@ func setupServer(router *chi.Mux, schema graphql.ExecutableSchema, httpHandlers 
 	for path, h := range httpHandlers {
 		router.Handle(path, h)
 	}
+}
+
+func graphQLAuditScope(args map[string]any) coreaudit.Scope {
+	return coreaudit.Scope{
+		OrgID:     firstGraphQLArgumentValue(args, "orgid"),
+		ProjectID: firstGraphQLArgumentValue(args, "projectid"),
+		SourceID:  firstGraphQLArgumentValue(args, "sourceid"),
+	}
+}
+
+func firstGraphQLArgumentValue(value any, wanted string) string {
+	switch typed := value.(type) {
+	case map[string]any:
+		for key, child := range typed {
+			if normalizeGraphQLArgumentName(key) == wanted {
+				if stringValue := strings.TrimSpace(argumentStringValue(child)); stringValue != "" {
+					return stringValue
+				}
+			}
+			if nested := firstGraphQLArgumentValue(child, wanted); nested != "" {
+				return nested
+			}
+		}
+		return ""
+	case []any:
+		for _, child := range typed {
+			if nested := firstGraphQLArgumentValue(child, wanted); nested != "" {
+				return nested
+			}
+		}
+		return ""
+	}
+
+	reflected := reflect.ValueOf(value)
+	if !reflected.IsValid() {
+		return ""
+	}
+	for reflected.Kind() == reflect.Pointer || reflected.Kind() == reflect.Interface {
+		if reflected.IsNil() {
+			return ""
+		}
+		reflected = reflected.Elem()
+	}
+
+	switch reflected.Kind() {
+	case reflect.Map:
+		for _, key := range reflected.MapKeys() {
+			if key.Kind() != reflect.String {
+				continue
+			}
+			keyValue := key.String()
+			child := reflected.MapIndex(key)
+			if normalizeGraphQLArgumentName(keyValue) == wanted {
+				if stringValue := strings.TrimSpace(argumentStringValue(child.Interface())); stringValue != "" {
+					return stringValue
+				}
+			}
+			if nested := firstGraphQLArgumentValue(child.Interface(), wanted); nested != "" {
+				return nested
+			}
+		}
+	case reflect.Slice, reflect.Array:
+		for index := 0; index < reflected.Len(); index++ {
+			if nested := firstGraphQLArgumentValue(reflected.Index(index).Interface(), wanted); nested != "" {
+				return nested
+			}
+		}
+	case reflect.Struct:
+		reflectedType := reflected.Type()
+		for index := 0; index < reflected.NumField(); index++ {
+			field := reflectedType.Field(index)
+			if !field.IsExported() {
+				continue
+			}
+			fieldValue := reflected.Field(index).Interface()
+			if normalizeGraphQLArgumentName(field.Name) == wanted {
+				if stringValue := strings.TrimSpace(argumentStringValue(fieldValue)); stringValue != "" {
+					return stringValue
+				}
+			}
+			if nested := firstGraphQLArgumentValue(fieldValue, wanted); nested != "" {
+				return nested
+			}
+		}
+	}
+
+	return ""
+}
+
+func argumentStringValue(value any) string {
+	switch typed := value.(type) {
+	case string:
+		return typed
+	case *string:
+		if typed == nil {
+			return ""
+		}
+		return *typed
+	}
+	return ""
+}
+
+func normalizeGraphQLArgumentName(name string) string {
+	return strings.ToLower(strings.ReplaceAll(strings.TrimSpace(name), "_", ""))
 }
 
 // statusResponseWriter wraps http.ResponseWriter to capture the status code.

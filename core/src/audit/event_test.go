@@ -25,12 +25,30 @@ func TestPrepareEventUsesSpanContextForTraceFields(t *testing.T) {
 
 	event := prepareEvent(ctx, AuditEvent{Action: "http.request"}, func(context.Context) Actor {
 		return Actor{}
-	})
+	}, noOpEventEnricher)
 
 	if event.Request.TraceID != "4bf92f3577b34da6a3ce929d0e0e4736" {
 		t.Fatalf("expected trace id from span context, got %q", event.Request.TraceID)
 	}
 	if event.Request.SpanID != "00f067aa0ba902b7" {
 		t.Fatalf("expected span id from span context, got %q", event.Request.SpanID)
+	}
+}
+
+func TestPrepareEventUsesContextScopeForOrgAndProject(t *testing.T) {
+	ctx := WithScope(context.Background(), Scope{
+		OrgID:     "org-123",
+		ProjectID: "project-456",
+	})
+
+	event := prepareEvent(ctx, AuditEvent{Action: "graphql.query.ProjectTransforms"}, func(context.Context) Actor {
+		return Actor{}
+	}, noOpEventEnricher)
+
+	if event.OrgID != "org-123" {
+		t.Fatalf("expected org id from context scope, got %q", event.OrgID)
+	}
+	if event.ProjectID != "project-456" {
+		t.Fatalf("expected project id from context scope, got %q", event.ProjectID)
 	}
 }

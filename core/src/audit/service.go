@@ -30,9 +30,14 @@ type AuditService interface {
 // context when one is available.
 type ActorProvider func(ctx context.Context) Actor
 
+// EventEnricher enriches audit events with implementation-specific metadata
+// derived from the current context or the event payload itself.
+type EventEnricher func(ctx context.Context, event AuditEvent) AuditEvent
+
 var (
 	currentService       AuditService  = &noOpService{}
 	currentActorProvider ActorProvider = noOpActorProvider
+	currentEventEnricher EventEnricher = noOpEventEnricher
 	mu                   sync.RWMutex
 )
 
@@ -40,7 +45,7 @@ var (
 func Record(event AuditEvent) {
 	mu.RLock()
 	defer mu.RUnlock()
-	currentService.Record(prepareEvent(context.Background(), event, noOpActorProvider))
+	currentService.Record(prepareEvent(context.Background(), event, currentActorProvider, currentEventEnricher))
 }
 
 // RecordWithContext captures an audit event and enriches it from the supplied
@@ -48,7 +53,7 @@ func Record(event AuditEvent) {
 func RecordWithContext(ctx context.Context, event AuditEvent) {
 	mu.RLock()
 	defer mu.RUnlock()
-	currentService.Record(prepareEvent(ctx, event, currentActorProvider))
+	currentService.Record(prepareEvent(ctx, event, currentActorProvider, currentEventEnricher))
 }
 
 // SetAuditService injects a concrete implementation of the AuditService.
@@ -73,6 +78,18 @@ func SetActorProvider(provider ActorProvider) {
 	currentActorProvider = provider
 }
 
+// SetEventEnricher injects an event enricher for request- and system-scoped
+// audit metadata. Passing nil resets the enricher to the default no-op
+// behavior.
+func SetEventEnricher(enricher EventEnricher) {
+	mu.Lock()
+	defer mu.Unlock()
+	if enricher == nil {
+		enricher = noOpEventEnricher
+	}
+	currentEventEnricher = enricher
+}
+
 // noOpService is the default implementation that drops all events.
 type noOpService struct{}
 
@@ -80,4 +97,8 @@ func (s *noOpService) Record(event AuditEvent) {}
 
 func noOpActorProvider(context.Context) Actor {
 	return Actor{}
+}
+
+func noOpEventEnricher(_ context.Context, event AuditEvent) AuditEvent {
+	return event
 }
