@@ -29,7 +29,7 @@ require (
 	github.com/deckarep/golang-set/v2 v2.8.0
 	github.com/dromara/carbon/v2 v2.6.16
 	github.com/duckdb/duckdb-go/v2 v2.10502.0
-	github.com/elastic/elastic-transport-go/v8 v8.10.0
+	github.com/elastic/elastic-transport-go/v8 v8.11.0
 	github.com/elastic/go-elasticsearch/v8 v8.19.4
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/go-chi/cors v1.2.2
