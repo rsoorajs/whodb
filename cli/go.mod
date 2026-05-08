@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/go-version v1.9.0
 	github.com/modelcontextprotocol/go-sdk v1.6.0
 	github.com/muesli/termenv v0.16.0
-	github.com/sahilm/fuzzy v0.1.1
+	github.com/sahilm/fuzzy v0.1.2
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/xuri/excelize/v2 v2.10.1
