@@ -35,6 +35,7 @@ import {isAwsHostname, isAzureHostname, isGcpHostname} from '../utils/cloud-conn
 import {getTranslation, loadTranslationsSync} from '../utils/i18n';
 import {type SupportedLanguage, DEFAULT_LANGUAGE} from '../utils/languages';
 import {clearSourceSessionMetadata} from '../utils/source-session-metadata-cache';
+import { isDesktopApp } from '@/utils/external-links';
 
 // Always use an application-relative URI so that:
 // - Desktop/Wails uses the embedded router handler
@@ -70,7 +71,11 @@ const redirectToLoginWithMessage = (
 ) => {
     const t = translator ?? getTranslator();
     toast.error(t(key));
-    window.location.href = withBasePath('/login');
+    if (isDesktopApp()) {
+        window.location.hash = '/login';
+    } else {
+        window.location.href = withBasePath('/login');
+    }
 };
 
 const httpLink = new HttpLink({
@@ -115,7 +120,8 @@ const errorLink = onError(({error}) => {
 });
 
 function fallbackAutoLogin() {
-    if (window.location.pathname.startsWith(withBasePath('/login'))) {
+    if (window.location.pathname.startsWith(withBasePath('/login'))
+        || window.location.hash.startsWith('#/login')) {
         return;
     }
 

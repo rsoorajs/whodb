@@ -18,7 +18,8 @@ import {Button} from "@clidey/ux";
 import {Component, type ErrorInfo, type ReactNode} from "react";
 import {captureException} from "../config/posthog";
 import {withBasePath} from "../utils/base-path";
-import {openExternalLink} from "../utils/external-links";
+import {isDesktopApp, openExternalLink} from "../utils/external-links";
+
 
 interface ErrorBoundaryProps {
     children: ReactNode;
@@ -45,7 +46,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     }
 
     private handleGoHome = () => {
-        window.location.href = withBasePath("/");
+        if (isDesktopApp()) {
+            window.location.hash = '/';
+        } else {
+            window.location.href = withBasePath("/");
+        }
     };
 
     render() {
