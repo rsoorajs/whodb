@@ -291,10 +291,15 @@ func normalizeGraphQLArgumentName(name string) string {
 // statusResponseWriter wraps http.ResponseWriter to capture the status code.
 type statusResponseWriter struct {
 	http.ResponseWriter
-	statusCode int
+	statusCode  int
+	wroteHeader bool
 }
 
 func (w *statusResponseWriter) WriteHeader(code int) {
+	if w.wroteHeader {
+		return
+	}
+	w.wroteHeader = true
 	w.statusCode = code
 	w.ResponseWriter.WriteHeader(code)
 }
