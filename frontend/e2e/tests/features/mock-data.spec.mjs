@@ -355,7 +355,9 @@ test.describe('Mock Data Generation', () => {
         // Test mock data generation for data_types table (covers all column types)
         // This validates type-specific generation: smallint limits, decimal precision, etc.
         test('generates mock data for data_types table with various column types', async ({ whodb, page }) => {
-            const dataTypesTable = db.dataTypesTable;
+            const dataTypesTable = Object.hasOwn(db.mockData ?? {}, 'dataTypesTable')
+                ? db.mockData.dataTypesTable
+                : db.dataTypesTable;
             const rowCount = db.mockData?.dataTypesRowCount ?? 100;
             if (!dataTypesTable) {
                 test.skip();

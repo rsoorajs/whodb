@@ -84,26 +84,20 @@ test.describe('Data Types CRUD Operations', () => {
                     }
 
                     const expectedOriginal = String(testConfig.originalValue).trim();
-                    const expectedUpdate = String(testConfig.displayUpdateValue || testConfig.updateValue).trim();
                     const columnValues = rows.map(r => String(r[columnIndex + 1] || '').trim());
 
-                    // Accept either original or update value (handles leftover state from failed UPDATE tests)
                     const seedRowIndex = rows.findIndex(r => {
                         const cellValue = String(r[columnIndex + 1] || '').trim();
-                        return cellValue === expectedOriginal || cellValue === expectedUpdate;
+                        return cellValue === expectedOriginal;
                     });
 
                     expect(
                         seedRowIndex,
-                        `Seed data with ${columnName}=${expectedOriginal} or ${expectedUpdate} should exist. Actual values: ${JSON.stringify(columnValues)}`
+                        `Seed data with ${columnName}=${expectedOriginal} should exist. Actual values: ${JSON.stringify(columnValues)}`
                     ).not.toEqual(-1);
 
-                    // Verify the value matches one of the expected formats
                     const actualValue = String(rows[seedRowIndex][columnIndex + 1] || '').trim();
-                    expect(
-                        actualValue === expectedOriginal || actualValue === expectedUpdate,
-                        `${testConfig.type} should display as "${expectedOriginal}" or "${expectedUpdate}", got "${actualValue}"`
-                    ).toBeTruthy();
+                    expect(actualValue).toEqual(expectedOriginal);
                 });
 
                 test('ADD - creates row with type value', async ({ whodb, page }) => {
@@ -144,48 +138,10 @@ test.describe('Data Types CRUD Operations', () => {
                 test('UPDATE - edits type value', async ({ whodb, page }) => {
                     const originalValue = String(testConfig.originalValue).trim();
                     const updateDisplayValue = String(expectedUpdateDisplay).trim();
-                    const revertValue = testConfig.inputOriginalValue || testConfig.originalValue;
 
                     await test.step('navigate to table', async () => {
                         await whodb.data(tableName);
                         await whodb.sortBy(0);
-                    });
-
-                    await test.step('check and revert leftover data', async () => {
-                        let tableData = await whodb.getTableData();
-                        let rows = tableData.rows;
-                        if (rows.length === 0) {
-                            throw new Error('No rows in data_types table');
-                        }
-
-                        const columnValues = rows.map(r => String(r[columnIndex + 1] || '').trim());
-
-                        let targetRowIndex = rows.findIndex(r => {
-                            const cellValue = String(r[columnIndex + 1] || '').trim();
-                            return cellValue === originalValue;
-                        });
-
-                        if (targetRowIndex === -1) {
-                            targetRowIndex = rows.findIndex(r => {
-                                const cellValue = String(r[columnIndex + 1] || '').trim();
-                                return cellValue === updateDisplayValue;
-                            });
-                            if (targetRowIndex !== -1) {
-                                await whodb.updateRow(targetRowIndex, columnIndex, revertValue, false);
-
-                                if (mutationDelay > 0) {
-                                    await page.waitForTimeout(mutationDelay);
-                                    await whodb.data(tableName);
-                                    await whodb.sortBy(0);
-                                }
-
-                                await whodb.waitForRowValue(columnIndex + 1, originalValue);
-                            }
-                        }
-
-                        if (targetRowIndex === -1) {
-                            throw new Error(`Row with value "${originalValue}" or "${updateDisplayValue}" not found in column ${columnName}. Actual values: ${JSON.stringify(columnValues)}`);
-                        }
                     });
 
                     await test.step('perform update with network verification', async () => {
@@ -223,23 +179,6 @@ test.describe('Data Types CRUD Operations', () => {
                         expect(targetIdx, 'Updated row should exist').not.toEqual(-1);
                         const cellValue = String(updatedRows[targetIdx][columnIndex + 1] || '').trim();
                         expect(cellValue).toEqual(updateDisplayValue);
-                    });
-
-                    await test.step('revert to original', async () => {
-                        const { rows } = await whodb.getTableData();
-                        const revertIdx = rows.findIndex(r => {
-                            const cellValue = String(r[columnIndex + 1] || '').trim();
-                            return cellValue === updateDisplayValue;
-                        });
-                        await whodb.updateRow(revertIdx, columnIndex, revertValue, false);
-
-                        if (mutationDelay > 0) {
-                            await page.waitForTimeout(mutationDelay);
-                            await whodb.data(tableName);
-                            await whodb.sortBy(0);
-                        }
-
-                        await whodb.waitForRowValue(columnIndex + 1, originalValue);
                     });
                 });
 

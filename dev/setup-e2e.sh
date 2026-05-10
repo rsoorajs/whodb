@@ -210,7 +210,7 @@ wait_for_init_services() {
 # Run cleanup first to ensure clean state
 echo "🧹 Running cleanup first..."
 if [ -f "$SCRIPT_DIR/cleanup-e2e.sh" ]; then
-    bash "$SCRIPT_DIR/cleanup-e2e.sh"
+    bash "$SCRIPT_DIR/cleanup-e2e.sh" "$EDITION"
 else
     echo "⚠️ cleanup-e2e.sh not found, continuing without cleanup"
 fi

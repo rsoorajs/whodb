@@ -35,6 +35,7 @@ func TestMutationUpdateSettingsAndQuerySettingsConfig(t *testing.T) {
 	originalAzure := env.IsAzureProviderEnabled
 	originalGCP := env.IsGCPProviderEnabled
 	originalDisableCredentialForm := env.DisableCredentialForm
+	originalNewUI := env.IsNewUIEnabled
 	originalMaxPageSize := env.MaxPageSize
 	t.Cleanup(func() {
 		settings.UpdateSettings(settings.MetricsEnabledField(originalSettings.MetricsEnabled))
@@ -42,6 +43,7 @@ func TestMutationUpdateSettingsAndQuerySettingsConfig(t *testing.T) {
 		env.IsAzureProviderEnabled = originalAzure
 		env.IsGCPProviderEnabled = originalGCP
 		env.DisableCredentialForm = originalDisableCredentialForm
+		env.IsNewUIEnabled = originalNewUI
 		env.MaxPageSize = originalMaxPageSize
 	})
 
@@ -59,6 +61,7 @@ func TestMutationUpdateSettingsAndQuerySettingsConfig(t *testing.T) {
 	env.IsAzureProviderEnabled = true
 	env.IsGCPProviderEnabled = false
 	env.DisableCredentialForm = true
+	env.IsNewUIEnabled = true
 	env.MaxPageSize = 321
 
 	cfg, err := (&Resolver{}).Query().SettingsConfig(context.Background())
@@ -68,8 +71,11 @@ func TestMutationUpdateSettingsAndQuerySettingsConfig(t *testing.T) {
 	if cfg.MetricsEnabled == nil || !*cfg.MetricsEnabled {
 		t.Fatalf("expected metrics setting to be enabled, got %#v", cfg)
 	}
-	if !cfg.CloudProvidersEnabled || !cfg.DisableCredentialForm || cfg.MaxPageSize != 321 {
+	if !cfg.CloudProvidersEnabled || !cfg.DisableCredentialForm || !cfg.EnableNewUI || cfg.MaxPageSize != 321 {
 		t.Fatalf("expected settings config to reflect env flags, got %#v", cfg)
+	}
+	if cfg.AWSProviderEnabled || !cfg.AzureProviderEnabled || cfg.GCPProviderEnabled {
+		t.Fatalf("expected provider-specific settings to reflect env flags, got %#v", cfg)
 	}
 }
 

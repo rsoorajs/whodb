@@ -45,6 +45,10 @@ function schemaQualifiedTableName(db, tableName) {
     return `${db.sql?.schemaPrefix ?? ''}${tableName}`;
 }
 
+function schemaFieldTypes(db, key, defaults) {
+    return db.schemaManagement?.fieldTypes?.[key] ?? defaults;
+}
+
 /**
  * Schema/Table Management Tests
  *
@@ -54,6 +58,10 @@ function schemaQualifiedTableName(db, tableName) {
 test.describe('Schema Management', () => {
     test.describe('Create Storage Unit Visibility', () => {
         forEachDatabase('sql', (db) => {
+            if (db.features?.schemaManagement === false) {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('shows create storage unit card for SQL databases', async ({ whodb, page }) => {
                     await page.goto(whodb.url('/storage-unit'));
@@ -106,6 +114,10 @@ test.describe('Schema Management', () => {
 
     test.describe('Add Columns with Types', () => {
         forEachDatabase('sql', (db) => {
+            if (db.features?.schemaManagement === false) {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('can add columns with types during table creation', async ({ whodb, page }) => {
                     await page.goto(whodb.url('/storage-unit'));
@@ -193,6 +205,10 @@ test.describe('Schema Management', () => {
 
     test.describe('Set Primary Key', () => {
         forEachDatabase('sql', (db) => {
+            if (db.features?.schemaManagement === false) {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('can set primary key during table creation', async ({ whodb, page }) => {
                     await page.goto(whodb.url('/storage-unit'));
@@ -236,6 +252,10 @@ test.describe('Schema Management', () => {
 
     test.describe('Create New Table', () => {
         forEachDatabase('sql', (db) => {
+            if (db.features?.schemaManagement === false) {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 const createdTableNames = new Set();
 
@@ -298,7 +318,7 @@ test.describe('Schema Management', () => {
                     // Field type
                     await firstField.locator('button[data-testid^="field-type-"]').click();
 
-                    await selectFieldType(page, ['integer', 'int']);
+                    await selectFieldType(page, schemaFieldTypes(db, 'integer', ['integer', 'int']));
 
                     // Add second field: name (text/varchar)
                     await page.locator('[data-testid="add-field-button"]').click();
@@ -310,7 +330,7 @@ test.describe('Schema Management', () => {
                     // Field type
                     await secondField.locator('button[data-testid^="field-type-"]').click();
 
-                    await selectFieldType(page, ['varchar', 'string', 'text']);
+                    await selectFieldType(page, schemaFieldTypes(db, 'string', ['varchar', 'string', 'text']));
 
                     const verifyCreate = waitForMutation(page, 'AddStorageUnit');
 
@@ -353,7 +373,7 @@ test.describe('Schema Management', () => {
 
                     await firstField.locator('button[data-testid^="field-type-"]').click();
 
-                    await selectFieldType(page, ['integer', 'int']);
+                    await selectFieldType(page, schemaFieldTypes(db, 'integer', ['integer', 'int']));
 
                     const verifyCreate = waitForMutation(page, 'AddStorageUnit');
 
@@ -429,6 +449,10 @@ test.describe('Schema Management', () => {
 
     test.describe('Form Validation', () => {
         forEachDatabase('sql', (db) => {
+            if (db.features?.schemaManagement === false) {
+                return;
+            }
+
             test.describe(`${db.type}`, () => {
                 test('prevents submission without table name', async ({ whodb, page }) => {
                     await page.goto(whodb.url('/storage-unit'));

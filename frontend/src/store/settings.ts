@@ -23,6 +23,10 @@ const ANALYTICS_CONSENT_KEY = 'whodb.analytics.consent';
 type ISettingsState = {
     metricsEnabled: boolean;
     cloudProvidersEnabled: boolean;
+    awsProviderEnabled: boolean;
+    azureProviderEnabled: boolean;
+    gcpProviderEnabled: boolean;
+    newUIEnabled: boolean;
     storageUnitView: 'list' | 'card';
     fontSize: 'small' | 'medium' | 'large';
     borderRadius: 'none' | 'small' | 'medium' | 'large';
@@ -37,6 +41,7 @@ type ISettingsState = {
     appTheme: 'default';
     /** OS override for keyboard shortcuts. Undefined means use system detection. */
     os: 'linux' | 'macos' | 'windows' | undefined;
+    sidebarOpen: boolean;
 }
 
 const getInitialMetricsEnabled = (): boolean => {
@@ -55,6 +60,10 @@ const getInitialState = (): ISettingsState => {
     return {
         metricsEnabled: getInitialMetricsEnabled(),
         cloudProvidersEnabled: false,
+        awsProviderEnabled: false,
+        azureProviderEnabled: false,
+        gcpProviderEnabled: false,
+        newUIEnabled: false,
         storageUnitView: 'card',
         fontSize: 'medium',
         borderRadius: 'medium',
@@ -69,6 +78,7 @@ const getInitialState = (): ISettingsState => {
         disableAnimations: settingsDefaults.disableAnimations ?? false,
         appTheme: 'default',
         os: undefined,
+        sidebarOpen: true,
     };
 };
 
@@ -83,6 +93,18 @@ export const settingsSlice = createSlice({
         },
         setCloudProvidersEnabled: (state, action: PayloadAction<ISettingsState["cloudProvidersEnabled"]>) => {
             state.cloudProvidersEnabled = action.payload;
+        },
+        setAWSProviderEnabled: (state, action: PayloadAction<ISettingsState["awsProviderEnabled"]>) => {
+            state.awsProviderEnabled = action.payload;
+        },
+        setAzureProviderEnabled: (state, action: PayloadAction<ISettingsState["azureProviderEnabled"]>) => {
+            state.azureProviderEnabled = action.payload;
+        },
+        setGCPProviderEnabled: (state, action: PayloadAction<ISettingsState["gcpProviderEnabled"]>) => {
+            state.gcpProviderEnabled = action.payload;
+        },
+        setNewUIEnabled: (state, action: PayloadAction<ISettingsState["newUIEnabled"]>) => {
+            state.newUIEnabled = action.payload;
         },
         setStorageUnitView: (state, action: PayloadAction<ISettingsState["storageUnitView"]>) => {
             state.storageUnitView = action.payload;
@@ -120,6 +142,9 @@ export const settingsSlice = createSlice({
         },
         setOS: (state, action: PayloadAction<ISettingsState["os"]>) => {
             state.os = action.payload;
+        },
+        setSidebarOpen: (state, action: PayloadAction<boolean>) => {
+            state.sidebarOpen = action.payload;
         },
     },
 });

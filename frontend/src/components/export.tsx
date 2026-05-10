@@ -28,7 +28,7 @@ import {
     SheetTitle,
     toast
 } from "@clidey/ux";
-import type { SourceObjectRefInput } from "@graphql";
+import { DataShape, type SourceObjectRefInput } from "@graphql";
 import {FC, useCallback, useEffect, useMemo, useState} from "react";
 import {useExportToCSV} from "./hooks";
 import {ShareIcon} from "./heroicons";
@@ -65,8 +65,19 @@ export const Export: FC<IExportProps> = ({
                                          }) => {
     const { t } = useTranslation('components/export');
     const [exportDelimiter, setExportDelimiter] = useState(',');
-    const { isNoSQL } = useSourceContract(databaseType);
-    const defaultFormat = useMemo(() => isNoSQL ? 'ndjson' : 'csv', [isNoSQL]);
+    const { isNoSQL, item } = useSourceContract(databaseType);
+    const isDefaultObjectTabular = useMemo(() => {
+        const defaultKind = item?.contract?.DefaultObjectKind;
+        return item?.contract?.ObjectTypes.some(objectType =>
+            objectType.Kind === defaultKind && objectType.DataShape === DataShape.Tabular
+        ) === true;
+    }, [item]);
+    const defaultFormat = useMemo(() => {
+        if (rawQuery || isDefaultObjectTabular) {
+            return 'csv';
+        }
+        return isNoSQL ? 'ndjson' : 'csv';
+    }, [isDefaultObjectTabular, isNoSQL, rawQuery]);
     const [exportFormat, setExportFormat] = useState<'csv' | 'excel' | 'ndjson'>(defaultFormat);
 
     useEffect(() => {

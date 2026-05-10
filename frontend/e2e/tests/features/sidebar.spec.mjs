@@ -375,8 +375,15 @@ test.describe('Sidebar Navigation', () => {
         forEachDatabase('sql', (db) => {
             test.describe(`${db.type}`, () => {
                 test('shows WhoDB version in sidebar footer', async ({ whodb, page }) => {
-                    await page.locator('[data-testid="sidebar-version-info"]').hover();
-                    await expect(page.getByRole('tooltip')).toContainText('Version: development');
+                    const newUIVersionInfo = page.locator('[data-testid="sidebar-version-info"]');
+
+                    // TODO: Remove this old/new sidebar compatibility branch when WHODB_ENABLE_NEW_UI gating is removed.
+                    if (await newUIVersionInfo.count() > 0) {
+                        await newUIVersionInfo.hover();
+                        await expect(page.getByRole('tooltip')).toContainText('Version: development');
+                    } else {
+                        await expect(page.getByText(/Version:\s*development/)).toBeVisible();
+                    }
                 });
             });
         }, { databases: ['postgres'] });

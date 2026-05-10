@@ -356,6 +356,7 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
     onAddExternalModel,
 }) => {
     const { t } = useTranslation('components/ai');
+    const newUIEnabled = useAppSelector(state => state.settings.newUIEnabled);
     const dispatch = useAppDispatch();
     const [addExternalModel, setAddExternalModel] = useState(false);
     const [externalModelType, setExternalModel] = useState<string>(externalModelTypes[0].id);
@@ -461,7 +462,9 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
 
     return <div className="flex flex-col gap-4" data-testid="ai-provider">
         <Sheet open={addExternalModel} onOpenChange={setAddExternalModel}>
-            <SheetContent className="max-w-md mx-auto w-full flex flex-col gap-4">
+            <SheetContent className={cn("max-w-md mx-auto w-full flex flex-col gap-4", {
+                "px-8 py-10": !newUIEnabled,
+            })}>
                 <div className="flex flex-col gap-4">
                     <div className="text-lg font-semibold mb-2">{t('addExternalModel')}</div>
                     <div className="flex flex-col gap-2">
@@ -502,7 +505,9 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
                         />
                     </div>
                 </div>
-                <div className="flex items-center gap-sm self-end mt-4">
+                <div className={cn("flex items-center gap-sm self-end", {
+                    "mt-4": newUIEnabled,
+                })}>
                     <Button
                         onClick={handleAddExternalModel}
                         data-testid="external-model-cancel"
@@ -564,7 +569,7 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
                     side="right"
                     align="start"
                     extraOptions={
-                        <>
+                        newUIEnabled ? <>
                             <Separator />
                             <CommandItem
                                 key="__add__"
@@ -575,7 +580,18 @@ export const AIProvider: FC<ReturnType<typeof useAI> & {
                                 <PlusCircleIcon className="w-4 h-4" />
                                 {t('addProvider')}
                             </CommandItem>
-                        </>
+                        </> : (<>
+                            <CommandItem
+                                key="__add__"
+                                value="__add__"
+                                onSelect={handleAddExternalModel}
+                            >
+                                <span className="flex items-center gap-sm text-green-500">
+                                    <PlusCircleIcon className="w-4 h-4 stroke-green-500" />
+                                    {t('addProvider')}
+                                </span>
+                            </CommandItem></>
+                        )
                     }
                     rightIcon={<ChevronDownIcon className="w-4 h-4" />}
                     buttonProps={{

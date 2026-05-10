@@ -137,7 +137,7 @@ test.describe('Where Conditions', () => {
             await whodb.submitTable();
         });
 
-        test('shows more conditions button when exceeding visible limit', async ({ whodb, page }) => {
+        conditionalTest(multiConditionSupported, 'shows more conditions button when exceeding visible limit', async ({ whodb, page }) => {
             await whodb.data(tableName);
 
             // Clear any existing conditions first

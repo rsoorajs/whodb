@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import {useMutation} from "@apollo/client/react";
+import {useMutation, useQuery} from "@apollo/client/react";
 import {Toaster} from "@clidey/ux";
-import {UpdateSettingsDocument} from '@graphql';
-import {Suspense, useCallback, useEffect} from "react";
+import {SettingsConfigDocument, UpdateSettingsDocument} from '@graphql';
+import {Suspense, useEffect} from "react";
 import {Route, Routes} from "react-router-dom";
 import {getStoredConsentState, optInUser, optOutUser, resetAnalyticsIdentity} from "./config/posthog";
 import {getRoutes, PrivateRoute, PublicRoutes} from './config/routes';
@@ -37,8 +37,12 @@ import {HealthActions} from "./store/health";
 
 export const App = () => {
     const [updateSettings] = useMutation(UpdateSettingsDocument);
+    const {data: settingsConfigData} = useQuery(SettingsConfigDocument);
     const dispatch = useAppDispatch();
   const metricsEnabled = useAppSelector(state => state.settings.metricsEnabled);
+  const authStatus = useAppSelector(state => state.auth.status);
+  const settingsConfig = settingsConfigData?.SettingsConfig;
+  const newUIEnabled = settingsConfig?.EnableNewUI === true;
 
   // Apply UI customization settings
   useThemeCustomization();
@@ -54,6 +58,23 @@ export const App = () => {
 
   // Setup sidebar navigation shortcuts (Ctrl+1-4 on Mac, Alt+1-4 on Windows/Linux, Cmd/Ctrl+B)
   useSidebarShortcuts();
+
+  useEffect(() => {
+      dispatch(SettingsActions.setNewUIEnabled(newUIEnabled));
+      document.body.classList.toggle('whodb-new-ui-enabled', newUIEnabled);
+
+      return () => {
+          document.body.classList.remove('whodb-new-ui-enabled');
+      };
+  }, [dispatch, newUIEnabled]);
+
+  useEffect(() => {
+      if (!settingsConfig) return;
+      dispatch(SettingsActions.setCloudProvidersEnabled(settingsConfig.CloudProvidersEnabled));
+      dispatch(SettingsActions.setAWSProviderEnabled(settingsConfig.AWSProviderEnabled));
+      dispatch(SettingsActions.setAzureProviderEnabled(settingsConfig.AzureProviderEnabled));
+      dispatch(SettingsActions.setGCPProviderEnabled(settingsConfig.GCPProviderEnabled));
+  }, [dispatch, settingsConfig]);
 
   useEffect(() => {
       const consent = getStoredConsentState();
@@ -94,7 +115,11 @@ export const App = () => {
         }
     }, [metricsEnabled]);
 
-  const updateBackendWithSettings = useCallback(() => {
+  useEffect(() => {
+    if (authStatus !== 'logged-in') {
+      return;
+    }
+
     updateSettings({
       variables: {
         newSettings: {
@@ -102,14 +127,9 @@ export const App = () => {
         }
       }
     });
-  }, [updateSettings, metricsEnabled])
-
-  useEffect(() => {
-    updateBackendWithSettings();
-  }, [updateBackendWithSettings]);
+  }, [authStatus, updateSettings, metricsEnabled]);
 
   // Start health check service when user logs in, stop when they log out
-  const authStatus = useAppSelector(state => state.auth.status);
 
   useEffect(() => {
     if (authStatus === 'logged-in') {

@@ -24,19 +24,21 @@
  *   - "standalone-mutating": Destructive tests (depends on "standalone", runs after).
  *   - "gateway": Read-only tests (connects via CDP).
  *   - "gateway-mutating": Destructive tests (depends on "gateway", runs after).
+ *   - "ee-standalone": EE read-only tests and tracked EE overrides.
+ *   - "ee-standalone-mutating": EE destructive tests and tracked EE overrides.
  *
  * EE override:
- *   When EE_E2E_DIR is set (by ee/dev/run-e2e.sh), EE test files are included
- *   via an "ee-standalone" project. If an EE test file has the same name as a CE
- *   test file (e.g. ssl-modes.spec.mjs), the CE version is excluded so only the
- *   EE version runs.
+ *   When EE_E2E_DIR is set (by ee/dev/run-e2e.sh), EE feature test files are
+ *   included via EE projects. If an EE test file has the same name as a CE test
+ *   file (e.g. ssl-modes.spec.mjs), the CE version is excluded so the tracked
+ *   EE file overrides it.
  *
  * Environment variables:
  *   BASE_URL        - WhoDB URL (default: http://localhost:3000 for local dev)
  *   CDP_ENDPOINT    - CDP URL for connecting to an existing browser
  *   DATABASE        - Target single database (e.g., "postgres")
  *   CATEGORY        - Target category (e.g., "sql", "document", "keyvalue")
- *   EE_E2E_DIR      - Path to EE test directory (set by ee/dev/run-e2e.sh)
+ *   EE_E2E_DIR      - Path to tracked EE feature tests (set by ee/dev/run-e2e.sh)
  */
 
 import { readdirSync } from "fs";
@@ -67,8 +69,7 @@ const MUTATING_TESTS = [
 function getEEOverrideIgnores() {
   if (!EE_E2E_DIR) return [];
   try {
-    const eeFeatureDir = `${EE_E2E_DIR}/features`;
-    const eeFiles = readdirSync(eeFeatureDir).filter(f => f.endsWith(".spec.mjs"));
+    const eeFiles = readdirSync(EE_E2E_DIR).filter(f => f.endsWith(".spec.mjs"));
     return eeFiles.map(f => new RegExp(f.replace(/\./g, "\\.")));
   } catch {
     return [];
@@ -170,6 +171,14 @@ export default defineConfig({
             testDir: EE_E2E_DIR,
             dependencies: ["setup"],
             testIgnore: [/auth\.setup\.mjs/, ...MUTATING_TESTS],
+            use: standaloneBrowser,
+          },
+          {
+            name: "ee-standalone-mutating",
+            testDir: EE_E2E_DIR,
+            dependencies: ["ee-standalone"],
+            retries: 0,
+            testMatch: MUTATING_TESTS,
             use: standaloneBrowser,
           },
         ]

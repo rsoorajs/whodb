@@ -250,6 +250,18 @@ func TestIsAllowedPermitsWhitelistedOperations(t *testing.T) {
 		t.Fatalf("expected LoginWithSourceProfile operation to be allowed without auth")
 	}
 
+	settingsConfig := `{"operationName":"SettingsConfig","variables":{}}`
+	req = httptest.NewRequest(http.MethodPost, "/api/query", strings.NewReader(settingsConfig))
+	if !isAllowed(req, []byte(settingsConfig)) {
+		t.Fatalf("expected SettingsConfig operation to be allowed without auth")
+	}
+
+	updateSettings := `{"operationName":"UpdateSettings","variables":{"newSettings":{"MetricsEnabled":"true"}}}`
+	req = httptest.NewRequest(http.MethodPost, "/api/query", strings.NewReader(updateSettings))
+	if isAllowed(req, []byte(updateSettings)) {
+		t.Fatalf("expected UpdateSettings operation to require auth")
+	}
+
 	getDb := `{"operationName":"SourceFieldOptions","variables":{"sourceType":"Sqlite3"}}`
 	req = httptest.NewRequest(http.MethodPost, "/api/query", strings.NewReader(getDb))
 	if !isAllowed(req, []byte(getDb)) {

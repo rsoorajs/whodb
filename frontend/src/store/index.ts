@@ -169,10 +169,20 @@ const aiModelsPersistTransform = createTransform(
   { whitelist: ['aiModels'] }
 );
 
+const settingsPersistTransform = createTransform(
+  (inboundState: any) => {
+    if (!inboundState) return inboundState;
+    const { newUIEnabled, ...settingsToPersist } = inboundState;
+    return settingsToPersist;
+  },
+  (outboundState: any) => outboundState,
+  { whitelist: ['settings'] }
+);
+
 const ceReducerMap = {
   auth: persistReducer({ key: "auth", storage, }, authReducers),
   database: persistReducer({ key: "database", storage, }, databaseReducers),
-  settings: persistReducer({ key: "settings", storage }, settingsReducers),
+  settings: persistReducer({ key: "settings", storage, transforms: [settingsPersistTransform] }, settingsReducers),
   houdini: persistReducer({
     key: "houdini",
     storage,

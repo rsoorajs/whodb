@@ -325,6 +325,15 @@ test.describe('Scratchpad', () => {
                 });
 
                 await test.step('execute and verify', async () => {
+                    if (db.sql.limitQuery) {
+                        const editor = page.locator('[role="dialog"] [data-testid="code-editor"] .cm-content').first();
+                        await editor.click();
+                        await editor.clear();
+                        await editor.fill(db.sql.limitQuery);
+                        await expect(editor).toContainText(db.sql.limitQuery);
+                        await editor.blur();
+                    }
+
                     await page.locator('[data-testid="run-submit-button"]').filter({ hasText: 'Run' }).first().click();
 
                     await expect(page.locator('[role="dialog"] table')).toBeVisible({ timeout: 5000 });

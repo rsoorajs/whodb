@@ -69,7 +69,7 @@ import {useAppSelector} from "../../store/hooks";
 import {featureFlags} from "../../config/features";
 import {getComponent} from "../../config/component-registry";
 import { findSourceTypeItem, type SourceTypeItem } from "../../config/source-types";
-import {isAwsHostname} from "../../utils/cloud-connection-prefill";
+import {isAwsHostname, isAzureHostname, isGcpHostname} from "../../utils/cloud-connection-prefill";
 import {useSourceContract} from "../../hooks/useSourceContract";
 import {useSourceTypeItems} from "../../hooks/useSourceCatalog";
 import {
@@ -85,7 +85,10 @@ import {
     TableCellsIcon
 } from "../heroicons";
 import {Icons} from "../icons";
+import {Loading} from "../loading";
 import {DatabaseIconWithBadge, isAwsConnection} from "../aws";
+import {isAzureConnection} from "../azure";
+import {isGcpConnection} from "../gcp";
 import {useProfileSwitch} from "@/hooks/use-profile-switch";
 import {buildSourceSchemaQuery} from "@/utils/source-refs";
 
@@ -190,7 +193,10 @@ export const Sidebar: FC = () => {
     const { t } = useTranslation('components/sidebar');
     const schema = useAppSelector(state => state.database.schema);
     const databaseSchemaTerminology = useAppSelector(state => state.settings.databaseSchemaTerminology);
-    const cloudProvidersEnabled = useAppSelector(state => state.settings.cloudProvidersEnabled);
+    const awsProviderEnabled = useAppSelector(state => state.settings.awsProviderEnabled);
+    const azureProviderEnabled = useAppSelector(state => state.settings.azureProviderEnabled);
+    const gcpProviderEnabled = useAppSelector(state => state.settings.gcpProviderEnabled);
+    const newUIEnabled = useAppSelector(state => state.settings.newUIEnabled);
     const isEmbedded = useAppSelector(state => state.auth.isEmbedded);
     const dispatch = useDispatch();
     const pathname = useLocation().pathname;
@@ -225,6 +231,7 @@ export const Sidebar: FC = () => {
         : skipToken;
     const {data: availableDatabases, loading: availableDatabasesLoading, refetch: getDatabases} = useQuery(SourceFieldOptionsDocument, databaseQueryOptions);
     const { data: availableSchemas, loading: availableSchemasLoading, refetch: getSchemas } = useQuery(GetSchemaDocument, schemaQueryOptions);
+    const loading = availableDatabasesLoading || availableSchemasLoading;
     const availableSchemaNames = useMemo(() => {
         return availableSchemas?.Schema?.map(schemaObject => schemaObject.Name) ?? [];
     }, [availableSchemas?.Schema]);
@@ -260,16 +267,20 @@ export const Sidebar: FC = () => {
     });
     const { items: sourceTypeItems } = useSourceTypeItems();
 
-    // Profile select logic - filter out AWS profiles when cloud providers disabled
     const profileOptions = useMemo(() => profiles
-        .filter(profile => cloudProvidersEnabled || !isAwsHostname(profile.Hostname))
+        .filter(profile => {
+            if (isAwsHostname(profile.Hostname)) return awsProviderEnabled;
+            if (isAzureHostname(profile.Hostname)) return azureProviderEnabled;
+            if (isGcpHostname(profile.Hostname)) return gcpProviderEnabled;
+            return true;
+        })
         .map(profile => ({
             value: profile.Id,
             label: getProfileLabel(profile, findSourceTypeItem(sourceTypeItems, profile.Type)),
             icon: (
                 <DatabaseIconWithBadge
                     icon={getProfileIcon(profile)}
-                    showCloudBadge={isAwsConnection(profile.Id)}
+                    showCloudBadge={isAwsConnection(profile.Id) || isAzureConnection(profile.Id) || isGcpConnection(profile.Id)}
                     sslStatus={profile.Id === current?.Id
                         ? sslStatus
                         : (profile.SSLConfigured ? { IsEnabled: true, Mode: 'configured' } : undefined)}
@@ -277,7 +288,7 @@ export const Sidebar: FC = () => {
                 />
             ),
             profile,
-        })), [profiles, current?.Id, sslStatus, cloudProvidersEnabled, sourceTypeItems]);
+        })), [profiles, current?.Id, sslStatus, awsProviderEnabled, azureProviderEnabled, gcpProviderEnabled, sourceTypeItems]);
 
     const currentProfileOption = useMemo(() => {
         if (!current) return undefined;
@@ -497,13 +508,14 @@ export const Sidebar: FC = () => {
                 <SidebarHeader className={cn({ "ml-4": open })}>
                     <div className="flex items-center gap-sm justify-between">
                         <div className={cn("flex items-center gap-sm mt-2", { "hidden": !open })}>
-                            {extensions.Logo ?? <img src={logoImage} alt="clidey logo" className="w-auto h-6" />}
-                            {open && <span className="text-lg font-bold" data-testid="app-name">{getAppName()}</span>}
+                            {extensions.Logo ?? <img src={logoImage} alt="clidey logo" className={cn("w-auto", newUIEnabled ? "h-6" : "h-8")} />}
+                            {open && <span className={cn("font-bold", newUIEnabled ? "text-lg" : "text-3xl")} data-testid="app-name">{getAppName()}</span>}
                         </div>
                         <SidebarTrigger className="px-0" />
                     </div>
                 </SidebarHeader>
                 <SidebarContent className={cn("mt-8 mb-16 overflow-y-auto", { "mx-4": open })}>
+                    {newUIEnabled ? (
                     <SidebarGroup className="grow">
                         <SidebarMenu className="gap-0 grow">
                             {EESidebarNav ? (
@@ -558,7 +570,6 @@ export const Sidebar: FC = () => {
                                 </Suspense>
                             ) : (
                                 <>
-                                    {/* CE CLASSIC LAYOUT */}
                                     {open && (
                                         <div className="flex flex-col gap-sm mb-4">
                                             <SearchSelect
@@ -631,7 +642,6 @@ export const Sidebar: FC = () => {
 
                             {!EESidebarNav && <div className="grow" />}
 
-                            {/* Logout — only in CE layout (EE handles its own sign-out) */}
                             {!EESidebarNav && !isEmbedded && (
                                 <SidebarMenuItem className="flex justify-between items-center w-full">
                                     <SidebarMenuButton asChild tooltip={t('logOutProfile')}>
@@ -663,34 +673,216 @@ export const Sidebar: FC = () => {
                             )}
                         </SidebarMenu>
                     </SidebarGroup>
-                </SidebarContent>
-                <div className="absolute right-3 bottom-3">
-                    <TooltipProvider delayDuration={200}>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <button className={cn(
-                                    "rounded-full p-1 text-muted-foreground/60 hover:text-muted-foreground transition-colors",
-                                    updateInfo?.UpdateInfo?.updateAvailable && "text-blue-500/70 hover:text-blue-400"
-                                )} data-testid="sidebar-version-info">
-                                    <InformationCircleIcon className="w-4 h-4" />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" align="end">
-                                <p className="text-xs">{t('version')} {__APP_VERSION__}</p>
-                                {updateInfo?.UpdateInfo?.updateAvailable && (
-                                    <a
-                                        href={updateInfo.UpdateInfo.releaseURL}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-xs text-blue-500 hover:text-blue-400 transition-colors"
-                                    >
-                                        {t('updateAvailable', { version: updateInfo.UpdateInfo.latestVersion })}
-                                    </a>
+                    ) : loading ? (
+                        <div className="flex justify-center items-center h-full">
+                            <Loading size="lg" />
+                        </div>
+                    ) : (
+                        <SidebarGroup className="grow">
+                            <div className="flex flex-col gap-lg">
+                                <div className="flex flex-col gap-sm w-full">
+                                    <h2 className={cn("text-sm", { "hidden": !open })}>{t('profile')}</h2>
+                                    <SearchSelect
+                                        label={t('profile')}
+                                        options={profileOptions}
+                                        value={currentProfileOption?.value}
+                                        onChange={handleProfileChange}
+                                        placeholder={t('selectProfile')}
+                                        searchPlaceholder={t('searchProfile')}
+                                        onlyIcon={!open}
+                                        extraOptions={!isEmbedded ? (
+                                            <CommandItem
+                                                key="__add__"
+                                                value="__add__"
+                                                onSelect={handleAddProfile}
+                                            >
+                                                <span className="flex items-center gap-sm text-green-500">
+                                                    <PlusCircleIcon className="w-4 h-4 stroke-green-500" />
+                                                    {t('addAnotherProfile')}
+                                                </span>
+                                            </CommandItem>
+                                        ) : undefined}
+                                        side="left" align="start"
+                                        buttonProps={{
+                                            "data-testid": "sidebar-profile",
+                                            "data-collapsed": !open,
+                                        }}
+                                    />
+                                </div>
+                                {supportsDatabaseSwitching && (
+                                    <div className={cn("flex flex-col gap-sm w-full", {
+                                        "opacity-0 pointer-events-none": !open,
+                                    })}>
+                                        <h2 className="text-sm" data-testid="sidebar-database-label">{databaseDropdownLabel}</h2>
+                                        <SearchSelect
+                                            label={databaseDropdownLabel}
+                                            options={databaseOptions}
+                                            value={current?.Database}
+                                            onChange={handleDatabaseChange}
+                                            placeholder={databaseSchemaTerminology === 'schema' && usesDatabaseInsteadOfSchema ? t('selectSchema') : t('selectDatabase')}
+                                            searchPlaceholder={databaseSchemaTerminology === 'schema' && usesDatabaseInsteadOfSchema ? t('searchSchema') : t('searchDatabase')}
+                                            side="left" align="start"
+                                            buttonProps={{
+                                                "data-testid": "sidebar-database",
+                                                "aria-label": databaseDropdownLabel,
+                                            }}
+                                        />
+                                    </div>
                                 )}
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
+                                {supportsSchema && (
+                                    <div className={cn("flex flex-col gap-sm w-full", {
+                                        "opacity-0 pointer-events-none": !open || pathname.includes(InternalRoutes.RawExecute.path),
+                                    })}>
+                                        <h2 className="text-sm">{t('schema')}</h2>
+                                        <SearchSelect
+                                            label={t('schema')}
+                                            options={schemaOptions}
+                                            value={schema}
+                                            onChange={handleSchemaChange}
+                                            placeholder={t('selectSchema')}
+                                            searchPlaceholder={t('searchSchema')}
+                                            side="left" align="start"
+                                            buttonProps={{
+                                                "data-testid": "sidebar-schema",
+                                            }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            <SidebarMenu className="grow mt-8 gap-4">
+                                {sidebarRoutes.map(route => (
+                                    <SidebarMenuItem key={route.title}>
+                                        <SidebarMenuButton asChild tooltip={route.title}>
+                                            <Link
+                                                to={route.path}
+                                                className={cn("flex items-center gap-2", {
+                                                    "font-bold": pathname === route.path,
+                                                })}
+                                            >
+                                                {route.icon}
+                                                {open && <span>{route.title}</span>}
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                ))}
+
+                                <SidebarSeparator className={cn("my-2", {
+                                    "mx-0": !open,
+                                })} />
+
+                                {featureFlags.contactUsPage && InternalRoutes.ContactUs && (
+                                    <SidebarMenuItem>
+                                        <SidebarMenuButton asChild tooltip={t('contactUs')}>
+                                            <Link
+                                                to={InternalRoutes.ContactUs.path}
+                                                className={cn("flex items-center gap-2", {
+                                                    "font-bold": pathname === InternalRoutes.ContactUs.path,
+                                                })}
+                                            >
+                                                <QuestionMarkCircleIcon className="w-4 h-4" />
+                                                {open && <span>{t('contactUs')}</span>}
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                )}
+                                {featureFlags.settingsPage && InternalRoutes.Settings && (
+                                    <SidebarMenuItem>
+                                        <SidebarMenuButton asChild tooltip={t('settings')}>
+                                            <Link
+                                                to={InternalRoutes.Settings.path}
+                                                className={cn("flex items-center gap-2", {
+                                                    "font-bold": pathname === InternalRoutes.Settings.path,
+                                                })}
+                                            >
+                                                <CogIcon className="w-4 h-4" />
+                                                {open && <span>{t('settings')}</span>}
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                )}
+                                <div className="grow" />
+                                {!isEmbedded && (
+                                    <SidebarMenuItem className="flex justify-between items-center w-full">
+                                        <SidebarMenuButton asChild tooltip={t('logOutProfile')}>
+                                            <div className="flex items-center gap-sm text-nowrap w-fit cursor-pointer" onClick={handleLogoutProfile}>
+                                                <ArrowLeftStartOnRectangleIcon className="w-4 h-4" />
+                                                {open && <span>{t('logOutProfile')}</span>}
+                                            </div>
+                                        </SidebarMenuButton>
+                                        <SidebarMenuButton asChild>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger className={cn({
+                                                    "hidden": !open,
+                                                })}>
+                                                    <Button
+                                                        className="flex items-center justify-center p-1 rounded hover:bg-gray-100 dark:hover:bg-neutral-800 ml-2"
+                                                        aria-label={t('moreLogoutOptions')}
+                                                        variant="ghost"
+                                                    >
+                                                        <ChevronDownIcon className="w-4 h-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent side="right" align="start">
+                                                    <DropdownMenuItem onClick={handleLogoutAll}>
+                                                        <ArrowLeftStartOnRectangleIcon className="w-4 h-4" />
+                                                        <span className="ml-2">{t('logoutAllProfiles')}</span>
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                )}
+                            </SidebarMenu>
+                        </SidebarGroup>
+                    )}
+                </SidebarContent>
+                {newUIEnabled ? (
+                    <div className="absolute right-3 bottom-3">
+                        <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button className={cn(
+                                        "rounded-full p-1 text-muted-foreground/60 hover:text-muted-foreground transition-colors",
+                                        updateInfo?.UpdateInfo?.updateAvailable && "text-blue-500/70 hover:text-blue-400"
+                                    )} data-testid="sidebar-version-info">
+                                        <InformationCircleIcon className="w-4 h-4" />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" align="end">
+                                    <p className="text-xs">{t('version')} {__APP_VERSION__}</p>
+                                    {updateInfo?.UpdateInfo?.updateAvailable && (
+                                        <a
+                                            href={updateInfo.UpdateInfo.releaseURL}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-blue-500 hover:text-blue-400 transition-colors"
+                                        >
+                                            {t('updateAvailable', { version: updateInfo.UpdateInfo.latestVersion })}
+                                        </a>
+                                    )}
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
+                ) : (
+                    <div className={cn("absolute right-4 bottom-4 text-xs text-muted-foreground", {
+                        "hidden": !open,
+                    })}>
+                        {t('version')} {__APP_VERSION__}
+                        {updateInfo?.UpdateInfo?.updateAvailable && (
+                            <a
+                                href={updateInfo.UpdateInfo.releaseURL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ml-2 text-blue-500 hover:text-blue-400 transition-colors"
+                                title={t('updateAvailable', { version: updateInfo.UpdateInfo.latestVersion })}
+                            >
+                                &uarr; {updateInfo.UpdateInfo.latestVersion}
+                            </a>
+                        )}
+                    </div>
+                )}
             </SidebarComponent>
             <Sheet open={showLoginCard} onOpenChange={setShowLoginCard}>
                 <SheetContent side="right" className="p-8">

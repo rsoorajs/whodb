@@ -21,7 +21,8 @@
  *
  * Environment variables:
  *   FIXTURES_DIR          - Override path to CE fixtures
- *   EE_FIXTURES_DIR       - Override path to EE fixtures
+ *   EE_FIXTURES_DIR       - Override path to additional fixtures
+ *   WHODB_EXTRA_FIXTURE_DATABASES - Optional space-separated filter for additional fixtures
  *   GATEWAY_FIXTURES_DIR  - Override path to gateway fixtures (Docker hostnames)
  */
 
@@ -37,6 +38,7 @@ const FIXTURES_DIR =
 // EE fixtures only load when explicitly set via env var (by ee/dev/run-e2e.sh)
 // or registered via registerDatabases() (by ee/frontend/e2e/support/test-runner.mjs)
 const EE_FIXTURES_DIR = process.env.EE_FIXTURES_DIR || "";
+const EXTRA_FIXTURE_DATABASES = process.env.WHODB_EXTRA_FIXTURE_DATABASES;
 
 // GATEWAY_FIXTURES_DIR removed - host overrides are now handled via
 // DB_HOST_<NAME> env vars (e.g., DB_HOST_POSTGRES=e2e_postgres)
@@ -45,12 +47,18 @@ function loadJsonFile(filePath) {
   return JSON.parse(readFileSync(filePath, "utf-8"));
 }
 
-function loadFixturesFromDir(dir) {
+function fixtureFilter(value) {
+  if (value === undefined) return null;
+  return new Set(value.split(/\s+/).filter(Boolean));
+}
+
+function loadFixturesFromDir(dir, allowedNames = null) {
   if (!dir || !existsSync(dir)) return {};
   const configs = {};
   for (const file of readdirSync(dir)) {
     if (!file.endsWith(".json")) continue;
     const name = file.replace(".json", "");
+    if (allowedNames && !allowedNames.has(name)) continue;
     configs[name] = loadJsonFile(join(dir, file));
   }
   return configs;
@@ -73,7 +81,7 @@ export function getDatabaseConfigs() {
   if (_configsCache) return _configsCache;
 
   const ce = loadFixturesFromDir(FIXTURES_DIR);
-  const ee = loadFixturesFromDir(EE_FIXTURES_DIR);
+  const ee = loadFixturesFromDir(EE_FIXTURES_DIR, fixtureFilter(EXTRA_FIXTURE_DATABASES));
   const all = { ...ce, ...ee, ...additionalConfigs };
 
   // Apply host overrides from environment (e.g., DB_HOST_POSTGRES=e2e_postgres)
