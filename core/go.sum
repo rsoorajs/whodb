@@ -10,8 +10,8 @@ cloud.google.com/go/compute/metadata v0.9.0 h1:pDUj4QMoPejqq20dK0Pg2N4yG9zIkYGdB
 cloud.google.com/go/compute/metadata v0.9.0/go.mod h1:E0bWwX5wTnLPedCKqk3pJmVgCBSM6qQI1yTBdEb3C10=
 cloud.google.com/go/longrunning v0.9.0 h1:0EzbDEGsAvOZNbqXopgniY0w0a1phvu5IdUFq8grmqY=
 cloud.google.com/go/longrunning v0.9.0/go.mod h1:pkTz846W7bF4o2SzdWJ40Hu0Re+UoNT6Q5t+igIcb8E=
-cloud.google.com/go/memcache v1.14.0 h1:g2KUZ9DLNmQ4Er1XJPaPts2zj+sFnjkGg7Oj+zdtq5E=
-cloud.google.com/go/memcache v1.14.0/go.mod h1:y/rXhJiieCF742K958dY29fSfM+Y3wh2thRmWspU2Dg=
+cloud.google.com/go/memcache v1.16.0 h1:J6Iq97D6rlDMTJRnTjP3tttRrop8bZDCEKpbsmu0K1c=
+cloud.google.com/go/memcache v1.16.0/go.mod h1:y/rXhJiieCF742K958dY29fSfM+Y3wh2thRmWspU2Dg=
 cloud.google.com/go/redis v1.22.0 h1:wkNYXLrxXhPd/ChgiN+Ly+ALa462tLWgn3NWa48SfZc=
 cloud.google.com/go/redis v1.22.0/go.mod h1:EUlUT24BAL6LsE1f/N9Bg3LhRCfH+LzwLGbst3KuZRw=
 filippo.io/edwards25519 v1.2.0 h1:crnVqOiS4jqYleHd9vaKZ+HKtHfllngJIiOpNpoJsjo=
