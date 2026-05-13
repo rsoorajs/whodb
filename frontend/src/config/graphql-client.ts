@@ -30,12 +30,11 @@ import {
 import {LocalLoginProfile} from '../store/auth';
 import {reduxStore} from '../store';
 import {addAuthHeader} from '../utils/auth-headers';
-import {withBasePath} from '../utils/base-path';
+import {isOnRoute, navigateWithBasePath, withBasePath} from '../utils/base-path';
 import {isAwsHostname, isAzureHostname, isGcpHostname} from '../utils/cloud-connection-prefill';
 import {getTranslation, loadTranslationsSync} from '../utils/i18n';
 import {type SupportedLanguage, DEFAULT_LANGUAGE} from '../utils/languages';
 import {clearSourceSessionMetadata} from '../utils/source-session-metadata-cache';
-import { isDesktopApp } from '@/utils/external-links';
 
 // Always use an application-relative URI so that:
 // - Desktop/Wails uses the embedded router handler
@@ -71,11 +70,7 @@ const redirectToLoginWithMessage = (
 ) => {
     const t = translator ?? getTranslator();
     toast.error(t(key));
-    if (isDesktopApp()) {
-        window.location.hash = '/login';
-    } else {
-        window.location.href = withBasePath('/login');
-    }
+    navigateWithBasePath('/login');
 };
 
 const httpLink = new HttpLink({
@@ -120,8 +115,7 @@ const errorLink = onError(({error}) => {
 });
 
 function fallbackAutoLogin() {
-    if (window.location.pathname.startsWith(withBasePath('/login'))
-        || window.location.hash.startsWith('#/login')) {
+    if (isOnRoute('/login')) {
         return;
     }
 
