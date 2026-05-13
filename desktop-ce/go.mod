@@ -54,7 +54,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.42.1 // indirect
 	github.com/aws/smithy-go v1.25.1 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
-	github.com/boundaryml/baml v0.220.0 // indirect
+	github.com/boundaryml/baml v0.222.0 // indirect
 	github.com/brianvoe/gofakeit/v7 v7.14.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/danieljoos/wincred v1.2.3 // indirect
