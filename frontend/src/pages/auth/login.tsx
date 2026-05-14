@@ -854,6 +854,7 @@ export const LoginForm: FC<LoginFormProps> = ({
         }
 
         const hostnameField = findConnectionFieldByKey(databaseType, "Hostname");
+        const portField = findConnectionFieldByKey(databaseType, "Port");
         const usernameField = findConnectionFieldByKey(databaseType, "Username");
         const passwordField = findConnectionFieldByKey(databaseType, "Password");
         const databaseField = findConnectionFieldByKey(databaseType, "Database");
@@ -862,7 +863,7 @@ export const LoginForm: FC<LoginFormProps> = ({
         if (usesFileTransport(databaseType)) {
             return <div className="flex flex-col gap-lg w-full">
                 <div className="flex flex-col gap-xs w-full">
-                    <Label htmlFor="sqlite-database">{t('database')}</Label>
+                    <Label htmlFor="sqlite-database">{t(databaseField?.LabelKey ?? 'database')}</Label>
                     {isDesktop ? (
                         <div className="flex flex-col gap-sm w-full">
                             <Input
@@ -913,9 +914,17 @@ export const LoginForm: FC<LoginFormProps> = ({
         }
         return <div className="flex flex-col gap-lg w-full">
             { databaseType.fields?.hostname && (
-                <div className="flex flex-col gap-sm w-full">
-                    <Label htmlFor="login-hostname">{databaseType.traits?.connection.hostInputMode === SourceHostInputMode.HostnameOrUrl ? t('hostNameOrUrl') : t('hostName')}</Label>
-                    <Input id="login-hostname" value={hostName} onChange={(e) => handleHostNameChange(e.target.value)} data-testid="hostname" placeholder={hostnameField?.PlaceholderKey ? t(hostnameField.PlaceholderKey) : t('enterHostName')} aria-required={hostnameField?.Required ? "true" : undefined} aria-invalid={error ? "true" : undefined} aria-describedby={error ? "login-error" : undefined} />
+                <div className="flex gap-sm w-full items-end">
+                    <div className="flex flex-col gap-sm flex-1">
+                        <Label htmlFor="login-hostname">{databaseType.traits?.connection.hostInputMode === SourceHostInputMode.HostnameOrUrl ? t('hostNameOrUrl') : t('hostName')}</Label>
+                        <Input id="login-hostname" value={hostName} onChange={(e) => handleHostNameChange(e.target.value)} data-testid="hostname" placeholder={hostnameField?.PlaceholderKey ? t(hostnameField.PlaceholderKey) : t('enterHostName')} aria-required={hostnameField?.Required ? "true" : undefined} aria-invalid={error ? "true" : undefined} aria-describedby={error ? "login-error" : undefined} />
+                    </div>
+                    { portField && (
+                        <div className="flex flex-col gap-sm w-24">
+                            <Label htmlFor="login-port">{t(portField.LabelKey)}</Label>
+                            <Input id="login-port" value={advancedForm['Port'] ?? portField.DefaultValue ?? ''} onChange={(e) => handleAdvancedForm('Port', e.target.value)} data-testid="port" placeholder={portField.DefaultValue ?? ''} />
+                        </div>
+                    )}
                 </div>
             )}
             { databaseType.fields?.username && (
@@ -932,7 +941,7 @@ export const LoginForm: FC<LoginFormProps> = ({
             )}
             { databaseType.fields?.database && (
                 <div className="flex flex-col gap-sm w-full">
-                    <Label htmlFor="login-database">{t('database')}</Label>
+                    <Label htmlFor="login-database">{t(databaseField?.LabelKey ?? 'database')}</Label>
                     <Input id="login-database" value={database} onChange={(e) => setDatabase(e.target.value)} data-testid="database" placeholder={databaseField?.PlaceholderKey ? t(databaseField.PlaceholderKey) : t('enterDatabase')} aria-required={databaseField?.Required ? "true" : undefined} aria-invalid={error ? "true" : undefined} aria-describedby={error ? "login-error" : undefined} />
                 </div>
             )}

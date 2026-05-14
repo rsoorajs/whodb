@@ -6,6 +6,8 @@ en_US:
   loggingIn: Logging In
   title: Login
   databaseType: Database Type
+  databaseName: "Database Name"
+  databaseFilePath: "Database File Path"
   hostName: Host Name
   hostNameOrUrl: Host Name (or Paste Connection URL)
   username: Username
