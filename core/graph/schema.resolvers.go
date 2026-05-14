@@ -123,6 +123,11 @@ func (r *mutationResolver) Logout(ctx context.Context) (*model.StatusResponse, e
 	return resp, nil
 }
 
+// TestSourceConnection is the resolver for the TestSourceConnection field.
+func (r *mutationResolver) TestSourceConnection(ctx context.Context, credentials model.SourceLoginInput) (*model.StatusResponse, error) {
+	return testSourceConnection(ctx, sourceCredentialsFromInput(credentials))
+}
+
 // UpdateSettings is the resolver for the UpdateSettings field.
 func (r *mutationResolver) UpdateSettings(ctx context.Context, newSettings model.SettingsConfigInput) (*model.StatusResponse, error) {
 	var fields []settings.ISettingsField

@@ -260,6 +260,7 @@ type ComplexityRoot struct {
 		TestAzureCredentials         func(childComplexity int, input model.AzureProviderInput) int
 		TestCloudProvider            func(childComplexity int, id string) int
 		TestGCPCredentials           func(childComplexity int, input model.GCPProviderInput) int
+		TestSourceConnection         func(childComplexity int, credentials model.SourceLoginInput) int
 		UpdateAWSProvider            func(childComplexity int, id string, input model.AWSProviderInput) int
 		UpdateAzureProvider          func(childComplexity int, id string, input model.AzureProviderInput) int
 		UpdateGCPProvider            func(childComplexity int, id string, input model.GCPProviderInput) int
@@ -516,6 +517,7 @@ type MutationResolver interface {
 	LoginSource(ctx context.Context, credentials model.SourceLoginInput) (*model.StatusResponse, error)
 	LoginWithSourceProfile(ctx context.Context, profile model.SourceProfileLoginInput) (*model.StatusResponse, error)
 	Logout(ctx context.Context) (*model.StatusResponse, error)
+	TestSourceConnection(ctx context.Context, credentials model.SourceLoginInput) (*model.StatusResponse, error)
 	UpdateSettings(ctx context.Context, newSettings model.SettingsConfigInput) (*model.StatusResponse, error)
 	CreateSourceObject(ctx context.Context, parent *model.SourceObjectRefInput, name string, fields []*model.RecordInput) (*model.StatusResponse, error)
 	UpdateSourceObject(ctx context.Context, ref model.SourceObjectRefInput, values []*model.RecordInput, updatedColumns []string) (*model.StatusResponse, error)
@@ -1648,6 +1650,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.TestGCPCredentials(childComplexity, args["input"].(model.GCPProviderInput)), true
+	case "Mutation.TestSourceConnection":
+		if e.ComplexityRoot.Mutation.TestSourceConnection == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_TestSourceConnection_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.TestSourceConnection(childComplexity, args["credentials"].(model.SourceLoginInput)), true
 	case "Mutation.UpdateAWSProvider":
 		if e.ComplexityRoot.Mutation.UpdateAWSProvider == nil {
 			break
@@ -4247,6 +4260,20 @@ func (ec *executionContext) field_Mutation_TestGCPCredentials_args(ctx context.C
 		return nil, err
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_TestSourceConnection_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "credentials",
+		func(ctx context.Context, v any) (model.SourceLoginInput, error) {
+			return ec.unmarshalNSourceLoginInput2githubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐSourceLoginInput(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["credentials"] = arg0
 	return args, nil
 }
 
@@ -7827,6 +7854,50 @@ func (ec *executionContext) fieldContext_Mutation_Logout(_ context.Context, fiel
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_StatusResponse(ctx, field)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_TestSourceConnection(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_TestSourceConnection(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().TestSourceConnection(ctx, fc.Args["credentials"].(model.SourceLoginInput))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.StatusResponse) graphql.Marshaler {
+			return ec.marshalNStatusResponse2ᚖgithubᚗcomᚋclideyᚋwhodbᚋcoreᚋgraphᚋmodelᚐStatusResponse(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_TestSourceConnection(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_StatusResponse(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_TestSourceConnection_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -16943,6 +17014,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "Logout":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_Logout(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "TestSourceConnection":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_TestSourceConnection(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
