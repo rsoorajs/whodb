@@ -236,6 +236,8 @@ export const graphqlClient = new ApolloClient({
  * Clears all cached GraphQL data without refetching active queries.
  */
 export async function clearGraphqlStore(): Promise<void> {
-    await graphqlClient.clearStore();
+    try {
+        await graphqlClient.clearStore();
+    } catch (e) {}
     clearSourceSessionMetadata();
 }
