@@ -311,6 +311,22 @@ func (w *statusResponseWriter) Flush() {
 	}
 }
 
+// sseAwareTimeout applies the given timeout to all requests except SSE streaming endpoints,
+// which are long-lived connections that manage their own timeouts via the LLM HTTP client.
+func sseAwareTimeout(dt time.Duration) func(http.Handler) http.Handler {
+	timeoutMiddleware := middleware.Timeout(dt)
+	return func(next http.Handler) http.Handler {
+		timedHandler := timeoutMiddleware(next)
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasSuffix(r.URL.Path, "/stream") {
+				next.ServeHTTP(w, r)
+				return
+			}
+			timedHandler.ServeHTTP(w, r)
+		})
+	}
+}
+
 // healthCheckMiddleware responds to GET /health without requiring authentication.
 // Used by E2E setup scripts to verify the server is ready to handle requests.
 func healthCheckMiddleware(next http.Handler) http.Handler {
@@ -348,7 +364,7 @@ func setupMiddlewares(router *chi.Mux, additionalMiddlewares []func(http.Handler
 		middleware.RealIP,
 		middleware.RedirectSlashes,
 		middleware.Recoverer,
-		middleware.Timeout(90 * time.Second), // Increased for LLM inference time
+		sseAwareTimeout(90 * time.Second),
 		cors.Handler(cors.Options{
 			AllowedOrigins:   allowedOrigins,
 			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
